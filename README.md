@@ -16,6 +16,7 @@ Served at `notes.hannahporras.app`, from a Docker container on the Mac mini behi
 | [docs/architecture.md](docs/architecture.md) | What the app is, the decisions made and why, the flow, the content model, the MCP layer, hosting and data safety, open questions |
 | [docs/features.md](docs/features.md) | The version-one feature list, with an ID per line, and the proposed build order (draft, not locked) |
 | [docs/tech-stack.md](docs/tech-stack.md) | The chosen libraries and tools, the reasons, and the choices still open |
+| [docs/plan.md](docs/plan.md) | The work plan: spikes, stages, work packages with dependencies, and what waits on Alex |
 | [docs/risks.md](docs/risks.md) | Research findings from 2026-11-15: what could go wrong, with sources, and what has not been verified |
 
 ## The decisions in one place
