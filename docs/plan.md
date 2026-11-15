@@ -59,9 +59,9 @@ it, file it under a course, and see it in the browser on an iPad.
 
 | ID | Package | Area | Features | Depends on |
 |---|---|---|---|---|
-| W11 | Block schema and registry: every block type, validation, edit ownership | packages/schema | D2 to D11 | stage 1 |
+| W11 | Block schema and registry: every block type, validation, edit ownership, required citations | packages/schema | D2 to D11, K1, K3, K4, K6 | stage 1 |
 | W12 | Document storage, revisions, change feed, activity log | apps/server | D12, H9, H10 | W11 |
-| W13 | Page view and editor with the basic blocks, outline, source chips, review markers | apps/web | D1, D2, D3, D9, D10, D13 | W11 |
+| W13 | Page view and editor with the basic blocks, outline, citation chips with click-through to the source, reverse view, references list, review markers | apps/web | D1, D2, D3, D10, D13, K2, K5, K7 | W11 |
 | W14 | Study blocks: drug card, comparison table, mnemonic, labelled image, mind map | apps/web | D4 to D8 | W13 |
 | W15 | MCP document and block tools, with helpful validation errors | apps/server | H6 | W12 |
 

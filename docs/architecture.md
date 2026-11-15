@@ -77,7 +77,13 @@ calculations, case-based questions, recall (flashcards, fill-in-the-blank), matc
 - **Study material:** generated documents made of **typed blocks** (callout, highlight,
   drug card, flashcard, multiple choice, fill-in-the-blank, mnemonic, labelled image,
   mind map, table, and more through a block registry).
-- Every generated passage references the source page it came from.
+- **Citations are required.** Every generated block and question cites its sources:
+  file, page, the quoted transcript passage, and a page region when known. She taps a
+  citation to open the original page with the passage highlighted. The agent layer
+  rejects generated content without a citation unless it is explicitly marked as general
+  knowledge, which is labelled as not from her notes. Page-level citation and the quoted
+  passage are always available; an exact region on a handwritten page is best effort,
+  because models locate regions on images imprecisely.
 - Each block records who last touched it (agent or user). Regeneration leaves her edits
   alone unless she asks.
 - **Structured layer:** typed concepts and relationships (drug, class, mechanism, target,

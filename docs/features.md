@@ -84,6 +84,29 @@ proposed for after the first release. See [architecture.md](architecture.md) for
 - **G9** *Later:* spaced-repetition scheduling for flashcards.
 - **G10** *Later:* timed exam mode.
 
+## K. Citations
+
+Added 2026-11-15. Everything generated says where it came from, and she can click
+through to see it.
+
+- **K1** Every generated block and every practice question carries one or more citations.
+  A citation names the source file, the page, the quoted passage from the transcript,
+  and a region on the page when one is known.
+- **K2** Citations show as numbered chips. Tapping one opens the original page beside the
+  document, with the quoted passage highlighted in the transcript, and the region
+  outlined on the page image when available.
+- **K3** A block built from several sources lists each one.
+- **K4** The agent layer refuses a generated block with no citation, unless the agent
+  marks it explicitly as general knowledge; those blocks show a visible "not from your
+  notes" label.
+- **K5** Reverse view on a source page: everything that cites it.
+- **K6** Citations survive edits, moves and regeneration. If a cited source is trashed,
+  the chip says so instead of breaking.
+- **K7** A references list at the end of each document.
+
+K1 to K4 and K6 are built in stage 2 with the block schema; K5 and K7 follow in the
+same stage. Supersedes D9 and G4, which described the same idea more loosely.
+
 ## H. Agent layer (MCP)
 
 - **H1** Remote MCP endpoint with API-key login.
