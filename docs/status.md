@@ -27,6 +27,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 | Upload and inbox | B1 to B7 | Type detected from content. Converter is a locked-down container with no network. |
 | Library | C1 to C6, C8 | The library home is the whole tree on one page, with her files as leaves. |
 | Documents and blocks | D1 to D13 | 16 block types, editor (Tiptap), outline, revision history. Typing shortcuts at the start of a paragraph (`# `, `- `, `1. `, `[] `, `> `, `!! `, `?? `, `---`). A lecture page lists the notes she started under it, and a new document opens ready to type. A formatting ribbon (style menu, marks, colours, lists, insert, shortcut help) shows whenever she edits, from tablet width up; on a phone the same tools sit above the keyboard. Wide tables scroll sideways. No font, size or alignment: the schema has no fields for them. |
+| Sidebars and side notes | P1 to P8 | Her private notes in a document's margin, level with their blocks, stored apart from the blocks (they never change the document, its review state or history), detached rather than lost when a block goes ([side-notes.md](side-notes.md)). Two sidebars around the page with Outline, Resources (the sources of the part she is reading) and Side notes panels she drags between them, remembered per kind of screen; a bottom sheet with tabs on a phone. Agents read them (`side_notes`, 19 tools); search finds them. Not on the canvas, not copied with a document. |
 | References | O | Outside references tied to what she studies ([references.md](references.md)): PharmGuides built in as a trusted reference (search, section links), her own saved references linked to courses and lectures, a reference chip on blocks apart from the slide chips, agents told to check trusted references and label what comes from them (MCP tool `references`, 18 tools). The app links out and stores no outside content; "keep a copy" is not built. |
 | Guide | N | `/help` in the app (sidebar and Settings), written for her, with a PDF download (`pnpm guide:pdf` regenerates it). `/help/print` renders without signing in. |
 | Citations | K1 to K7 | Tap a source chip to see the page with the passage highlighted. |
@@ -35,7 +36,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 | Practice | G1 to G9, G11, G12 | Graded on the server; the answer key never reaches the device before she answers. |
 | Requests | L1 to L5 | Composer available from library items, documents, blocks, source pages, practice and concepts. |
 | Exam planner | M1 to M4 | |
-| Agent layer (MCP) | H1 to H11 | 17 tools, API-key login, tested with live Claude Code and Codex sessions. |
+| Agent layer (MCP) | H1 to H11 | 19 tools, API-key login, tested with live Claude Code and Codex sessions. |
 | Appearance | I1, I2, I4 | Light and dark; phone, tablet and computer layouts. One design system ([design.md](design.md)): ten named colours, roles, scales and shared components; reference page at `/design`. Each course has its own colour. React Bits ([react-bits.md](react-bits.md)): ten components, gallery at `/design/bits`, four placed in the app. |
 | Operations | J1 to J6 scripts | Compose stack, backups, restore drill, admin commands. Running on the mini; restore test passed there in 110 s. |
 
@@ -57,6 +58,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 - **Dragging a card into a frame fails in the browser test at tablet and computer sizes** (it passes at phone size). Not yet investigated: it may be the gesture or the test.
 - On the canvas, a block added to a document with pinned cards can land on top of another card (seen on the Beta blockers canvas after her inserted paragraph). Not investigated.
 - Dragging a card out of a frame pins it outside the frame.
+- Side notes: canvas cards show no note markers, a duplicated document starts without its side notes, and on a phone tapping Undo after deleting a note also closes the panels sheet (the note does come back).
 - The local copy's sample canvas frames have no colour until it is reseeded (`pnpm local:reset`, then `pnpm local:seed`).
 - Skipped practice questions, missed-question reasons and reply links were added late and have less test depth than the rest.
 - The sample data's transcripts are placeholder text and do not match the sample slides.

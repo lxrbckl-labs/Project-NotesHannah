@@ -178,6 +178,23 @@ const FIGURES = [
     },
   },
   {
+    id: "side-notes",
+    device: COMPUTER,
+    async take(page) {
+      await openTreeItem(page, "Beta blockers");
+      const note = page.getByTestId("side-note").filter({ hasText: "labetalol every time" });
+      const anchor = await note.getAttribute("data-anchor");
+      await page
+        .locator(`[data-block-id="${anchor}"]`)
+        .evaluate((el) => el.scrollIntoView({ block: "center" }));
+      await page.waitForTimeout(500);
+      await note.getByTestId("side-note-text").click();
+      await expect(note).toHaveAttribute("data-focused", "true");
+      await page.waitForTimeout(400);
+      return MAIN();
+    },
+  },
+  {
     id: "canvas",
     device: COMPUTER,
     async take(page) {

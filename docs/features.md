@@ -221,3 +221,46 @@ Added 2026-11-16. Details: [references.md](references.md).
 - **O6** The demo set (`pnpm local:seed:pharm`, or `pnpm local:seed:pharm:references` on an existing
   one) saves eight references to guideline organisations' pages and PharmGuides sections, tied to
   the lectures, and adds three agent blocks checked against them.
+
+## P. Sidebars and side notes
+
+Added 2026-11-16. Details: [side-notes.md](side-notes.md).
+
+- **P1** Side notes: her private notes in the margin of a document, like comments in a word
+  processor but to herself. Plain text with line breaks, an optional colour, created and changed
+  times, done (resolve) and delete with Undo. Stored apart from the document's blocks: writing one
+  never edits the document, its review state or its version history, so they work on agent-written
+  guides.
+- **P2** Resources panel: the slide and page sources and the outside references of each block,
+  grouped by section; the section she is reading is open and the entries for the blocks in view are
+  highlighted. An entry jumps to its block (and flashes it) or opens the source (the source panel,
+  or the outside page in a new tab). Pointing at a block lights up its entries and the other way
+  round.
+- **P3** Notes panel: each note sits level with its block and moves with it as she scrolls; notes
+  that compete for the same height stack, the one she is looking at exactly level and the others
+  moving out of its way; a note whose block is on screen but past the panel's edge waits at that
+  edge.
+- **P4** Writing one: the note button in a block's right margin (on hover on a computer, beside the
+  block at the reading line on touch), "Add a side note" in the block menu, `⌘⌥M` / `Ctrl+Alt+M`
+  while editing (words selected in the block become the note's quote), and the + of the Notes
+  panel (the block she is reading). A block with notes shows a marker with the count, which opens
+  them.
+- **P5** Two sidebars: Outline, Resources and Side notes are panels she drags by a grip (mouse,
+  touch or pen) between and within the sidebars, or moves from the grip's menu (other sidebar, up,
+  down, close); a tap on the title folds one; the Panels button shows or hides each sidebar and
+  reopens a closed panel; the inner edge drags the width. Remembered per kind of screen. Defaults:
+  computer, Outline left and Side notes over Resources right; iPad sideways, Side notes right and
+  the Outline folded left; iPad upright, both over the page one at a time; phone, a bottom sheet
+  with Outline, Resources and Notes tabs. Sidebars dock only while the page keeps 460 px; the left
+  gives way first.
+- **P6** One reading position (the block a third of the way down) drives the outline's current
+  heading, the Resources panel's section and the Notes panel's +.
+- **P7** When blocks change: a note on a deleted block, or on generated content an agent replaced,
+  is detached (kept, with the block's last words) until she attaches it to another block or deletes
+  it; a note follows its block when it moves; restoring a revision that brings the block back
+  attaches it again. Copies of a document start without side notes.
+- **P8** Agents read her side notes (the `side_notes` tool: one document, or her open notes
+  everywhere) as her remarks on where she is confused or what she wants; they cannot write them.
+  Search finds them. The guide has a section on them, and the pharmacy demo set has eleven
+  (`pnpm local:seed:pharm:sidenotes`). The formatting ribbon wraps to a second line when even its
+  folded form does not fit (an upright iPad beside the app's sidebar).
