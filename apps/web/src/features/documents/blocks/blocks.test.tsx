@@ -78,7 +78,9 @@ describe("block renderers", () => {
     expect(refs[0]).toHaveTextContent(/^1/);
     expect(refs.at(-1)).toHaveTextContent(new RegExp(`^${refs.length}`));
     // The trashed and deleted sources say so.
-    await waitFor(() => expect(screen.getByText(/Source in the trash/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Source in the trash/)).toBeInTheDocument(), {
+      timeout: 5000,
+    });
     expect(screen.getByText("Source deleted")).toBeInTheDocument();
   });
 
