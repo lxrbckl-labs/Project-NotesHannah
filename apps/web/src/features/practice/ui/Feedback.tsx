@@ -82,8 +82,10 @@ export const FeedbackPanel = forwardRef<
     outcome: QuestionOutcome;
     type: string;
     onOpenSource?: ((citation: SourceCitation) => void) | undefined;
+    /** Ask an agent about this question (the shell opens its request composer). */
+    onAsk?: (() => void) | undefined;
   }
->(function FeedbackPanel({ outcome, type, onOpenSource }, ref) {
+>(function FeedbackPanel({ outcome, type, onOpenSource, onAsk }, ref) {
   const { result } = outcome;
   const v = verdict(result);
   const isCase = type === "case";
@@ -137,6 +139,16 @@ export const FeedbackPanel = forwardRef<
           {outcome.notebookNote}
         </p>
       )}
+      {onAsk ? (
+        <button
+          type="button"
+          data-testid="ask-about-question"
+          onClick={onAsk}
+          className="inline-flex min-h-11 items-center rounded-xl px-1 text-sm font-medium text-accent hover:underline"
+        >
+          Ask an agent about this question
+        </button>
+      ) : null}
     </section>
   );
 });

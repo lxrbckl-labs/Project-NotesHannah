@@ -3,6 +3,7 @@ import { isFixed, lectureLabel } from "@notes/schema";
 import {
   Copy,
   FolderInput,
+  MessageCirclePlus,
   Pencil,
   Plus,
   SlidersHorizontal,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import type { MenuEntry } from "../../components/ui/menu";
 import { useToast } from "../../components/ui/toast";
+import { useAsk } from "../mounts/ask";
 import { useUploadPicker } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
 import { useLibraryDialogs } from "./dialogs";
@@ -27,6 +29,7 @@ export function useNodeMenu(
   const actions = useNodeActions();
   const dialogs = useLibraryDialogs();
   const pickFiles = useUploadPicker();
+  const ask = useAsk();
   const toast = useToast();
 
   const fixed = isFixed(node.kind);
@@ -69,6 +72,13 @@ export function useNodeMenu(
       onSelect: () => pickFiles({ nodeId: node.id, label: node.name }),
     });
   }
+  entries.push({
+    type: "item",
+    label: "Ask an agent…",
+    icon: <MessageCirclePlus size={16} />,
+    disabled: pending,
+    onSelect: () => ask({ target: { type: "node", nodeId: node.id }, label: node.name }),
+  });
   entries.push({
     type: "item",
     label: node.favourite ? "Remove from favourites" : "Add to favourites",

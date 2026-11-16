@@ -299,6 +299,28 @@ export function isUnread(
 const SEEN_KEY = "notes-requests-seen";
 const SEEN_LIMIT = 400;
 
+let firstLoadSeen = false;
+
+/**
+ * A shell turns this on so a device that has never looked (no record at all) treats the answers
+ * already there as seen: otherwise a new phone or a cleared browser shows every old answer as new.
+ */
+export function setFirstLoadCountsAsSeen(on: boolean): void {
+  firstLoadSeen = on;
+}
+
+/** On the very first look on this device, mark what is already answered as seen. Returns true if it did. */
+export function baselineSeen(ids: Iterable<string>): boolean {
+  if (!firstLoadSeen) return false;
+  try {
+    if (localStorage.getItem(SEEN_KEY) !== null) return false;
+  } catch {
+    return false;
+  }
+  writeSeen(ids);
+  return true;
+}
+
 export function readSeen(): Set<string> {
   try {
     const raw = localStorage.getItem(SEEN_KEY);

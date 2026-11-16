@@ -1,6 +1,13 @@
 import type { RequestCounts, RequestStatus } from "@notes/schema";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { badgeCount, type Filter, filterStatuses, pollDelay, readSeen } from "../model/wording";
+import {
+  badgeCount,
+  baselineSeen,
+  type Filter,
+  filterStatuses,
+  pollDelay,
+  readSeen,
+} from "../model/wording";
 import type { RequestsStore, StudyRequestWithContext } from "../types";
 
 export interface RequestsState {
@@ -78,6 +85,7 @@ export function useRequestsBadge(store: RequestsStore, options: { pollMs?: numbe
           store.counts(),
           store.list({ status: ["done", "declined"], order: "newest", limit: 50 }),
         ]);
+        baselineSeen(done.items.map((r) => r.id));
         if (alive) setCount(badgeCount(counts.waiting, done.items, readSeen()));
       } catch {
         // a badge is never worth an error

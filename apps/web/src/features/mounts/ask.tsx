@@ -1,0 +1,100 @@
+import type { CreateRequestInput, RequestKind, RequestTarget } from "@notes/schema";
+import { useQueryClient } from "@tanstack/react-query";
+import { MessageCirclePlus } from "lucide-react";
+import { createContext, type ReactNode, use, useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
+import { appHttp } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { RequestComposer } from "../requests/RequestComposer";
+
+export interface AskOptions {
+  target: RequestTarget;
+  /** What she is asking about, in words ("Beta blockers"). */
+  label?: string;
+  /** A quick action to preselect. */
+  kind?: RequestKind;
+  message?: string;
+}
+
+const Context = createContext<((options: AskOptions) => void) | null>(null);
+
+/** Open the real request composer for any target, from anywhere in the app. */
+export function useAsk(): (options: AskOptions) => void {
+  const value = use(Context);
+  if (!value) throw new Error("useAsk needs AskProvider");
+  return value;
+}
+
+/** One composer for the whole app: every "ask an agent" entry point opens it with its own target. */
+export function AskProvider({ children }: { children: ReactNode }) {
+  const [options, setOptions] = useState<AskOptions | null>(null);
+  const [open, setOpen] = useState(false);
+  const client = useQueryClient();
+  const navigate = useNavigate();
+
+  const ask = useCallback((next: AskOptions) => {
+    setOptions(next);
+    setOpen(true);
+  }, []);
+
+  const submit = useCallback(
+    async (input: CreateRequestInput) => {
+      const result = await appHttp.post<{ request: import("@notes/schema").StudyRequest }>(
+        "/requests",
+        input,
+      );
+      void client.invalidateQueries({ queryKey: ["badge", "requests"] });
+      void client.invalidateQueries({ queryKey: ["requests"] });
+      return result.request;
+    },
+    [client],
+  );
+
+  const value = useMemo(() => ask, [ask]);
+  return (
+    <Context value={value}>
+      {children}
+      {options ? (
+        <RequestComposer
+          open={open}
+          onOpenChange={setOpen}
+          target={options.target}
+          {...(options.label ? { targetLabel: options.label } : {})}
+          {...(options.kind ? { defaultKind: options.kind } : {})}
+          {...(options.message ? { defaultMessage: options.message } : {})}
+          submit={submit}
+          onOpenRequests={() => {
+            setOpen(false);
+            navigate("/requests");
+          }}
+        />
+      ) : null}
+    </Context>
+  );
+}
+
+/** A button that opens the composer for a target. */
+export function AskButton({
+  className,
+  iconOnly,
+  text = "Ask an agent",
+  ...options
+}: AskOptions & { className?: string; iconOnly?: boolean; text?: string }) {
+  const ask = useAsk();
+  return (
+    <button
+      type="button"
+      data-testid="ask-button"
+      aria-label={iconOnly ? `${text}${options.label ? ` about ${options.label}` : ""}` : undefined}
+      onClick={() => ask(options)}
+      className={cn(
+        "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-medium text-accent transition-colors hover:bg-accent-soft active:bg-accent-soft xl:min-h-9",
+        iconOnly && "size-11 px-0 xl:size-9",
+        className,
+      )}
+    >
+      <MessageCirclePlus size={17} aria-hidden />
+      {iconOnly ? null : <span>{text}</span>}
+    </button>
+  );
+}

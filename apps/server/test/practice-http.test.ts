@@ -118,6 +118,12 @@ const WRITES: Array<Route & { session?: boolean }> = [
     body: () => ({ position: 0 }),
     session: true,
   },
+  {
+    method: "POST",
+    path: "/api/practice/sessions/:session/skip",
+    body: () => ({ position: 0 }),
+    session: true,
+  },
   { method: "POST", path: "/api/practice/sessions/:session/finish", session: true },
   { method: "POST", path: "/api/practice/sessions/:session/abandon", session: true },
   {

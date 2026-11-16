@@ -27,7 +27,8 @@ export type FeatureKey =
   | "practiceSession"
   | "exams"
   | "requests"
-  | "concepts";
+  | "concepts"
+  | "conceptsIndex";
 
 /**
  * What each module must export from its `index.ts(x)`. The mount reads these names, builds the
@@ -67,6 +68,12 @@ export const CONTRACT: Record<
   concepts: {
     folder: "concepts",
     root: "ConceptView",
+    store: "createHttpConceptsStore",
+    title: "Concepts",
+  },
+  conceptsIndex: {
+    folder: "concepts",
+    root: "ConceptsIndex",
     store: "createHttpConceptsStore",
     title: "Concepts",
   },

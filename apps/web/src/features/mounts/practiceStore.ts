@@ -29,8 +29,8 @@ import {
  * "Exams"). The module was written against assumed routes and shapes; this adapter is the only
  * place that knows the difference:
  *
- * - the server serves a question as `{ view, selfGraded }` and has no "skip": skipping is kept
- *   here (per session, in the browser) and the server's "first unanswered" is overridden;
+ * - the server serves a question as `{ view, selfGraded }`; skipping is the server's
+ *   (`POST .../skip`), so a session resumes the same on another device;
  * - the key of a flashcard or free response comes from `POST .../reveal`, after which she rates;
  * - there is no overview route: the start screen's scopes are assembled from the question list,
  *   the exams, the notebook and the due deck;
@@ -77,7 +77,13 @@ interface SessionView {
   total: number;
   answered: number;
   shortfall: number;
-  items: Array<{ position: number; questionId: string; type: QuestionType; answered: boolean }>;
+  items: Array<{
+    position: number;
+    questionId: string;
+    type: QuestionType;
+    answered: boolean;
+    skipped: boolean;
+  }>;
 }
 
 interface ServerReveal {
@@ -184,22 +190,6 @@ function placeholder(
 export function createRealPracticeStore(http: AppHttp): PracticeStore {
   const seen = new Map<string, ServedQuestion>(); // `${session}:${position}` -> what she saw
   const outcomes = new Map<string, QuestionOutcome>();
-  const skippedKey = (id: string) => `notes-practice-skipped:${id}`;
-  const skipped = (id: string): Set<number> => {
-    try {
-      return new Set(JSON.parse(sessionStorage.getItem(skippedKey(id)) ?? "[]") as number[]);
-    } catch {
-      return new Set();
-    }
-  };
-  const saveSkipped = (id: string, set: Set<number>) => {
-    try {
-      sessionStorage.setItem(skippedKey(id), JSON.stringify([...set]));
-    } catch {
-      // private mode: skipping lasts until reload
-    }
-  };
-
   const names = new Map<string, Promise<string>>();
   const nodeName = (id: string): Promise<string> => {
     let found = names.get(id);
@@ -241,15 +231,10 @@ export function createRealPracticeStore(http: AppHttp): PracticeStore {
 
   async function sessionState(id: string): Promise<SessionState> {
     const { session } = await http.get<{ session: SessionView }>(`/practice/sessions/${id}`);
-    const skips = skipped(id);
     const items = session.items.map((i) => ({
       index: i.position,
       type: i.type,
-      status: (i.answered
-        ? "answered"
-        : skips.has(i.position)
-          ? "skipped"
-          : "pending") as ItemStatus,
+      status: (i.answered ? "answered" : i.skipped ? "skipped" : "pending") as ItemStatus,
     }));
     const finished = session.status !== "active";
     const pending = items.filter((i) => i.status === "pending");
@@ -587,9 +572,7 @@ export function createRealPracticeStore(http: AppHttp): PracticeStore {
     },
 
     async skip(sessionId, index) {
-      const set = skipped(sessionId);
-      set.add(index);
-      saveSkipped(sessionId, set);
+      await http.post(`/practice/sessions/${sessionId}/skip`, { position: index });
       return sessionState(sessionId);
     },
 
@@ -615,6 +598,7 @@ export function createRealPracticeStore(http: AppHttp): PracticeStore {
           correctRun: number;
           stillNeeds: number;
           question: QuestionSummary;
+          reason?: string | null;
         }>;
       }>("/practice/notebook");
       return Promise.all(
@@ -631,7 +615,7 @@ export function createRealPracticeStore(http: AppHttp): PracticeStore {
             },
             promptText: i.question.text,
             tags: i.question.tags,
-            reason: null,
+            reason: i.reason ?? null,
             leaveRule:
               i.type === "calculation"
                 ? "Two correct answers in a row take it out."

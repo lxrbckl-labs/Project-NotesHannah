@@ -517,6 +517,7 @@ order.
 | `POST /api/practice/sessions/:id/answer` | `{ position?, answer, timeTakenMs? }`. *Session.* | `AnswerOutcome` |
 | `POST /api/practice/sessions/:id/reveal` | `{ position }`. *Session.* | `{ position, reveal }`: the key of a question she marks herself (flashcard, free response, and those parts of a case) |
 | `POST /api/practice/sessions/:id/finish` | none. *Session.* | `SessionResults`; finishing twice is fine |
+| `POST /api/practice/sessions/:id/skip` | `{ position }`. Sets a question aside; it comes back after the questions not yet seen, and answering it clears the mark. Kept on the server, so a session resumes the same on another device. *Session.* | `{ session }` (each item carries `skipped`) |
 | `POST /api/practice/sessions/:id/abandon` | none. *Session.* | `{ session }` |
 | `GET /api/practice/sessions/:id/results` | | `SessionResults` |
 

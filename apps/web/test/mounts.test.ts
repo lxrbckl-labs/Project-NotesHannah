@@ -37,8 +37,8 @@ const session = (overrides = {}) => ({
   answered: 0,
   shortfall: 0,
   items: [
-    { position: 1, questionId: "qst_a", type: "calculation", answered: false },
-    { position: 2, questionId: "qst_b", type: "matching", answered: false },
+    { position: 1, questionId: "qst_a", type: "calculation", answered: false, skipped: false },
+    { position: 2, questionId: "qst_b", type: "matching", answered: false, skipped: false },
   ],
   ...overrides,
 });
@@ -75,11 +75,22 @@ describe("practice store on the real routes", () => {
     expect(JSON.stringify(state.current)).not.toMatch(/correct|answer"/);
   });
 
-  it("keeps skipping in the browser: the server has no skip", async () => {
-    sessionStorage.clear();
-    const { http } = fakeHttp({
+  it("skips on the server, so the session resumes the same on another device", async () => {
+    let skipped = false;
+    const { http, calls } = fakeHttp({
       "GET /nodes/nod_1": () => ({ node: { name: "Lecture 7" } }),
-      "GET /practice/sessions/ses_1": () => ({ session: session() }),
+      "POST /practice/sessions/ses_1/skip": () => {
+        skipped = true;
+        return { session: {} };
+      },
+      "GET /practice/sessions/ses_1": () => ({
+        session: session({
+          items: [
+            { position: 1, questionId: "qst_a", type: "calculation", answered: false, skipped },
+            { position: 2, questionId: "qst_b", type: "matching", answered: false, skipped: false },
+          ],
+        }),
+      }),
       "GET /practice/sessions/ses_1/items/2": () => ({
         answered: false,
         question: {
@@ -99,8 +110,16 @@ describe("practice store on the real routes", () => {
     });
     const store = createRealPracticeStore(http);
     const after = await store.skip("ses_1", 1);
+    expect(calls).toContainEqual({
+      method: "POST",
+      path: "/practice/sessions/ses_1/skip",
+      body: { position: 1 },
+    });
     expect(after.items.map((i) => i.status)).toEqual(["skipped", "pending"]);
     expect(after.current).toMatchObject({ type: "matching", index: 2, rights: ["lorvanol"] });
+    // another device: a fresh store reads the same state from the server
+    const other = await createRealPracticeStore(http).getSession("ses_1");
+    expect(other.items.map((i) => i.status)).toEqual(["skipped", "pending"]);
   });
 
   it("starts a due session with the due scope and posts answers to /answer with the position", async () => {

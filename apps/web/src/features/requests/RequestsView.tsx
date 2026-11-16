@@ -5,6 +5,7 @@ import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states"
 import { describeError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import {
+  baselineSeen,
   FILTER_LABEL,
   type Filter,
   HONEST_NOTE,
@@ -63,6 +64,15 @@ function Screen() {
   const [unreadNow, setUnreadNow] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!items) return;
+    if (
+      baselineSeen(
+        items.filter((r) => r.status === "done" || r.status === "declined").map((r) => r.id),
+      )
+    ) {
+      setSeen(readSeen());
+      window.dispatchEvent(new Event("notes-requests-seen"));
+      return;
+    }
     const fresh = items.filter((r) => isUnread(r, seen)).map((r) => r.id);
     if (fresh.length === 0) return;
     setUnreadNow((prev) => new Set([...prev, ...fresh]));

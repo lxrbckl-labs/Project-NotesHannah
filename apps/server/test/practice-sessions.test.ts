@@ -689,3 +689,53 @@ describe("finishing and abandoning", () => {
     ).toBe(a.id);
   });
 });
+
+describe("skipping a question", () => {
+  beforeEach(() => {
+    for (let i = 0; i < 3; i++)
+      make("multiple_choice", lec[0], { prompt: `Question ${i} about lorvanol (fictional)?` });
+  });
+
+  it("is kept on the server and the skipped question comes back after the others", () => {
+    const { session, next } = start({ kind: "all" }, { length: 3 });
+    const first = (next as { position: number }).position;
+    const after = env.service.skipQuestion(env.she, session.id, first);
+    expect(after.items.filter((i) => i.skipped).map((i) => i.position)).toEqual([first]);
+    // a new request (another device) sees the same order: not-yet-seen first
+    const resumed = env.service.nextQuestion(env.she, session.id);
+    expect(resumed.session.items[first]?.skipped).toBe(true);
+    expect(resumed.next?.position).not.toBe(first);
+    // answer the rest; the skipped one is then the only one left
+    for (let n = 0; n < 2; n++) {
+      env.service.submitAnswer(env.she, session.id, {
+        answer: { type: "multiple_choice", optionId: "a" },
+      });
+    }
+    expect(env.service.nextQuestion(env.she, session.id).next?.position).toBe(first);
+  });
+
+  it("answering a skipped question clears the mark; skipping twice changes nothing", () => {
+    const { session } = start({ kind: "all" }, { length: 3 });
+    env.service.skipQuestion(env.she, session.id, 0);
+    env.service.skipQuestion(env.she, session.id, 0);
+    env.service.submitAnswer(env.she, session.id, {
+      position: 0,
+      answer: { type: "multiple_choice", optionId: "a" },
+    });
+    const view = env.service.getSession(env.she, session.id);
+    expect(view.items[0]).toMatchObject({ answered: true, skipped: false });
+  });
+
+  it("refuses an answered or missing position, an agent, and a closed session", () => {
+    const { session } = start({ kind: "all" }, { length: 3 });
+    env.service.submitAnswer(env.she, session.id, {
+      position: 1,
+      answer: { type: "multiple_choice", optionId: "a" },
+    });
+    expect(code(() => env.service.skipQuestion(env.she, session.id, 1))).toBe("conflict");
+    expect(code(() => env.service.skipQuestion(env.she, session.id, 9))).toBeDefined();
+    expect(code(() => env.service.skipQuestion(env.bot, session.id, 0))).toBe("forbidden");
+    env.service.finishSession(env.she, session.id);
+    expect(code(() => env.service.skipQuestion(env.she, session.id, 0))).toBe("conflict");
+  });
+});

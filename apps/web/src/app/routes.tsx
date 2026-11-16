@@ -107,8 +107,14 @@ export const routes: RouteObject[] = [
           { path: "practice", lazy: practice.practice },
           { path: "practice/session/:id", lazy: practice.session },
           { path: "exams", lazy: practice.exams },
-          // Built by another module; the mount shows "coming soon" until it lands.
+          {
+            path: "question/:questionId",
+            lazy: async () => ({
+              Component: (await import("../features/mounts/QuestionRedirect")).QuestionRedirect,
+            }),
+          },
           { path: "requests", lazy: mount("RequestsMount") },
+          { path: "concepts", lazy: mount("ConceptsIndexMount") },
           { path: "concepts/:id", lazy: mount("ConceptsMount") },
           { path: "*", element: <NotFound /> },
         ],

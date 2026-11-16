@@ -18,6 +18,7 @@ import { appHttp, isApiError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { DocumentView } from "../documents";
 import { useNode } from "../library/queries";
+import { AskButton, useAsk } from "./ask";
 import { useStores } from "./services";
 
 const CanvasScreen = lazy(() => import("./CanvasScreen"));
@@ -43,6 +44,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   const client = useQueryClient();
   const navigate = useNavigate();
   const toast = useToast();
+  const ask = useAsk();
   const [writing, setWriting] = useState(false);
 
   const doc = useQuery({
@@ -107,19 +109,13 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   const title = n.kind === "lecture" ? lectureLabel(n.name, n.lecture) : n.name;
   const base = `/doc/${nodeId}`;
 
-  async function askAgent() {
-    try {
-      await appHttp.post("/requests", {
-        target: { type: "node", nodeId },
-        kind: "other",
-        message: `Write a study guide for ${title}`,
-      });
-      void client.invalidateQueries({ queryKey: ["requests"] });
-      toast.show("Request left. An agent can pick it up from your requests.");
-    } catch (error) {
-      toast.error(error);
-    }
-  }
+  const askAgent = () =>
+    ask({
+      target: { type: "node", nodeId },
+      label: title,
+      kind: "other",
+      message: `Write a study guide for ${title}`,
+    });
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="doc-screen" data-mode={mode}>
@@ -168,6 +164,12 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
               <Paperclip size={15} aria-hidden />
               Sources
             </Link>
+            <AskButton
+              target={{ type: "document", documentId }}
+              label={title}
+              iconOnly
+              text="Ask an agent"
+            />
             <Button onClick={() => navigate(`/practice?node=${n.id}`)} aria-label="Practise this">
               <GraduationCap size={16} aria-hidden />
               <span className="hidden sm:inline">Practise this</span>
@@ -208,7 +210,14 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             store={stores.documents}
             documentId={documentId}
             focusBlockId={search.get("block") ?? undefined}
-            onOpenQuestion={(id) => navigate(`/practice?question=${id}`)}
+            onAskAboutBlock={({ blockId, kind }) =>
+              ask({
+                target: { type: "block", documentId, blockId },
+                label: "this block",
+                kind,
+              })
+            }
+            onOpenQuestion={(id) => navigate(`/question/${id}`)}
             onOpenConcept={(id) => navigate(`/concepts/${id}`)}
             className="h-full"
           />

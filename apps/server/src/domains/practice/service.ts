@@ -148,7 +148,14 @@ export interface SessionView {
   answered: number;
   /** How many questions short of the requested length the pool made it. */
   shortfall: number;
-  items: Array<{ position: number; questionId: string; type: QuestionType; answered: boolean }>;
+  items: Array<{
+    position: number;
+    questionId: string;
+    type: QuestionType;
+    answered: boolean;
+    /** Skipped and not answered since: comes back after the questions not yet seen. */
+    skipped: boolean;
+  }>;
 }
 
 export interface PresentedQuestion {
@@ -230,6 +237,8 @@ export interface SessionResults {
 
 export interface NotebookItem extends practice.NotebookEntry {
   question: QuestionSummary;
+  /** Why it is here: the grader's first plain-language line from the last wrong attempt, or null. */
+  reason: string | null;
 }
 
 export interface NotebookView {
@@ -329,6 +338,7 @@ interface SessionRow {
   started_at: string;
   finished_at: string | null;
   abandoned_at: string | null;
+  skipped: string;
 }
 
 interface AttemptRow {
@@ -1187,12 +1197,14 @@ export function createPracticeService(
     if (!row) throw notFoundSession();
     return row;
   };
+  const skippedOf = (row: SessionRow) => new Set(JSON.parse(row.skipped || "[]") as number[]);
   const itemsOf = (row: SessionRow) => JSON.parse(row.items) as practice.SessionItem[];
   const attemptsOf = (id: string) => q.sessionAttempts.all(id) as AttemptRow[];
 
   function viewOfSession(row: SessionRow, attempts = attemptsOf(row.id)): SessionView {
     const items = itemsOf(row);
     const answered = new Set(attempts.map((a) => a.position));
+    const skips = skippedOf(row);
     return {
       id: row.id,
       scope: JSON.parse(row.scope) as StartScope,
@@ -1211,6 +1223,7 @@ export function createPracticeService(
         questionId: it.questionId,
         type: it.type,
         answered: answered.has(position),
+        skipped: skips.has(position) && !answered.has(position),
       })),
     };
   }
@@ -1279,10 +1292,14 @@ export function createPracticeService(
   function nextOpen(row: SessionRow, attempts: readonly AttemptRow[]): PresentedQuestion | null {
     const items = itemsOf(row);
     const done = new Set(attempts.map((a) => a.position));
-    for (let i = 0; i < items.length; i++) {
-      if (done.has(i)) continue;
-      const p = presented(row, items, i);
-      if (p) return p;
+    const skips = skippedOf(row);
+    // not yet seen first, then what she skipped, each in session order
+    for (const pass of [false, true]) {
+      for (let i = 0; i < items.length; i++) {
+        if (done.has(i) || skips.has(i) !== pass) continue;
+        const p = presented(row, items, i);
+        if (p) return p;
+      }
     }
     return null;
   }
@@ -1661,6 +1678,33 @@ export function createPracticeService(
     return results(auth, sessionId);
   }
 
+  /** Set a question aside; it comes back after the others. Hers only. */
+  function skipQuestion(auth: AuthContext, sessionId: string, position: number): SessionView {
+    assertSession(auth, "Skipping a practice question");
+    const row = sessionRow(auth.userId, sessionId);
+    if (row.status !== "active") {
+      throw new AppError("conflict", `This session is ${row.status}; nothing can be skipped.`, {
+        hint: "Start a new session to keep practising.",
+      });
+    }
+    const items = itemsOf(row);
+    if (!items[position]) throw badPosition(position, items.length);
+    if (attemptsOf(row.id).some((a) => a.position === position)) {
+      throw new AppError("conflict", `Question ${position + 1} was already answered.`, {
+        hint: "Only a question not yet answered can be skipped.",
+      });
+    }
+    const skips = skippedOf(row);
+    if (!skips.has(position)) {
+      skips.add(position);
+      db.prepare("UPDATE practice_sessions SET skipped = ? WHERE id = ?").run(
+        JSON.stringify([...skips].sort((a, b) => a - b)),
+        row.id,
+      );
+    }
+    return getSession(auth, sessionId);
+  }
+
   function abandonSession(auth: AuthContext, sessionId: string): SessionView {
     assertSession(auth, "Abandoning a practice session");
     const row = sessionRow(auth.userId, sessionId);
@@ -1793,9 +1837,25 @@ export function createPracticeService(
         entries.map((e) => live.get(e.questionId) as QuestionRow),
       ).map((s) => [s.id, s]),
     );
+    const lastWrong = db.prepare(
+      "SELECT result FROM attempts WHERE user_id = ? AND question_id = ? AND correct = 0 ORDER BY seq DESC LIMIT 1",
+    );
+    const reasonOf = (questionId: string): string | null => {
+      const row = lastWrong.get(auth.userId, questionId) as { result: string } | undefined;
+      if (!row) return null;
+      try {
+        const result = JSON.parse(row.result) as {
+          feedback?: Array<{ correct: boolean; message: string }>;
+        };
+        return result.feedback?.find((f) => !f.correct && f.message)?.message ?? null;
+      } catch {
+        return null;
+      }
+    };
     const items = entries.map((e) => ({
       ...e,
       question: sums.get(e.questionId) as QuestionSummary,
+      reason: reasonOf(e.questionId),
     }));
     const byType: Partial<Record<QuestionType, number>> = {};
     for (const e of entries) byType[e.type] = (byType[e.type] ?? 0) + 1;
@@ -2140,6 +2200,7 @@ export function createPracticeService(
     submitAnswer,
     finishSession,
     abandonSession,
+    skipQuestion,
     results,
     // her progress
     notebook,

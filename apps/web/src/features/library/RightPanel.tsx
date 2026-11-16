@@ -2,6 +2,7 @@ import { Star } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "../../components/ui/button";
 import { formatDateTime } from "../../lib/format";
+import { AskButton } from "../mounts/ask";
 import { useNodeActions } from "./actions";
 import { NodeIcon } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
@@ -59,6 +60,12 @@ export function RightPanel({ nodeId }: { nodeId: string | undefined }) {
             />
             {node.data.favourite ? "Favourited" : "Add to favourites"}
           </Button>
+          <AskButton
+            target={{ type: "node", nodeId: node.data.id }}
+            label={node.data.name}
+            text="Ask an agent about this"
+            className="justify-start"
+          />
           <Link to="/trash" className="text-text-muted underline-offset-2 hover:underline">
             Open trash
           </Link>

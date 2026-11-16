@@ -75,6 +75,8 @@ export interface DocumentViewProps {
   onOpenQuestion?: (questionId: string) => void;
   /** Start reading or editing; defaults to editing on a computer, reading on touch. */
   initialMode?: "read" | "edit";
+  /** Ask about a block: the shell opens its request composer. Without it the module has its own small dialog. */
+  onAskAboutBlock?: ((target: { blockId: string; kind: RequestKind }) => void) | undefined;
   /** Scroll to this block and flash it once the document has loaded (a search hit, a link). */
   focusBlockId?: string | undefined;
   className?: string;
@@ -119,6 +121,7 @@ function DocumentScreen({
   onOpenQuestion,
   initialMode,
   focusBlockId,
+  onAskAboutBlock,
   className,
 }: DocumentViewProps) {
   const controller = useMemo(() => new DocumentController(store, documentId), [store, documentId]);
@@ -335,7 +338,8 @@ function DocumentScreen({
         onOpenConcept ? onOpenConcept(id) : toast.show("Concept pages open from the library."),
       openQuestion: (id) =>
         onOpenQuestion ? onOpenQuestion(id) : toast.show("Practice questions open in Practice."),
-      askAbout: (blockId, kind = "wrong") => setRequest({ blockId, kind }),
+      askAbout: (blockId, kind = "wrong") =>
+        onAskAboutBlock ? onAskAboutBlock({ blockId, kind }) : setRequest({ blockId, kind }),
       startDrag,
       justDragged: () => Date.now() - lastDragEnd.current < 250,
       pickPage: (type, afterId, replaceId) =>

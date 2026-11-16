@@ -3,6 +3,7 @@ import {
   Bot,
   GraduationCap,
   Inbox,
+  Lightbulb,
   LogOut,
   MessageSquarePlus,
   NotebookPen,
@@ -21,6 +22,7 @@ import { LibraryTree } from "../features/library/LibraryTree";
 import { PickNodesProvider } from "../features/library/pickNodes";
 import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
+import { AskProvider } from "../features/mounts/ask";
 import { QuickFind } from "../features/search/QuickFind";
 import { UploadProvider } from "../features/uploads/UploadProvider";
 import { UploadTray } from "../features/uploads/UploadTray";
@@ -46,7 +48,9 @@ export function AppShell() {
       <UploadProvider>
         <LibraryDialogs>
           <PickNodesProvider>
-            <Shell />
+            <AskProvider>
+              <Shell />
+            </AskProvider>
           </PickNodesProvider>
           <UploadTray />
         </LibraryDialogs>
@@ -201,6 +205,9 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <NavLink to="/inbox" className={linkClass}>
           <Inbox size={18} aria-hidden /> Inbox
           <NavBadge count={badges.inbox} label="files in the inbox" />
+        </NavLink>
+        <NavLink to="/concepts" className={linkClass}>
+          <Lightbulb size={18} aria-hidden /> Concepts
         </NavLink>
         <NavLink to="/requests" className={linkClass}>
           <MessageSquarePlus size={18} aria-hidden /> Requests
