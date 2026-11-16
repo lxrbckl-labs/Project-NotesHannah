@@ -18,7 +18,10 @@ import {
 import { z } from "zod";
 import { AppError } from "../../http/errors.js";
 import { exampleId } from "../errors.js";
-import type { DocumentEditOperation, WriteResult } from "../ports.js";
+import type { WriteSummary } from "../ports.js";
+
+type DocumentEditOperation = Exclude<WriterOperation, "create_document">;
+
 import { describe, flattenActions, type JsonSchema, jsonOf } from "../schema.js";
 import { defineTool, type ToolContext } from "../tool.js";
 
@@ -94,14 +97,14 @@ function problemsError(tool: string, operation: string, problems: Problem[]): Ap
 }
 
 function docs(ctx: ToolContext) {
-  const port = ctx.ports.documents;
+  const port = ctx.backend.documents;
   if (!port) throw new AppError("internal", "Documents are not available.");
   return port;
 }
 
-function resultText(verb: string, r: WriteResult): string {
+function resultText(verb: string, r: WriteSummary): string {
   const lines = [
-    `${verb} document ${r.documentId} (node ${r.nodeId}), now revision ${r.revision}. Pass expectedRevision ${r.revision} on your next edit.`,
+    `${verb} document ${r.documentId}${r.nodeId ? ` (node ${r.nodeId})` : ""}, now revision ${r.revision}. Pass expectedRevision ${r.revision} on your next edit. Check it with get_item {"id":"${r.documentId}"} (blocks and the references list).`,
   ];
   if (r.written.length) lines.push(`Written blocks: ${r.written.join(", ")}`);
   if (r.removed.length)
@@ -141,23 +144,16 @@ export const writeDocument = defineTool({
     "blocks[]",
   ),
   parse(raw) {
+    // Checked here for errors that name this tool; the domain checks again (and the quotes).
     const result = validateOperation("create_document", raw, { writer: "agent" });
     if (!result.ok) throw problemsError("write_document", "create_document", result.problems);
-    return result.value;
+    return raw;
   },
   writes: () => true,
   action: () => "create_document",
   run(ctx, input) {
-    const r = docs(ctx).createDocument(
-      ctx.actor,
-      ctx.userId,
-      input as z.output<typeof CreateDocumentInput>,
-    );
-    return {
-      text: resultText("Created", r),
-      structured: { ...r },
-      targets: [r.documentId, r.nodeId, ...r.written],
-    };
+    const r = docs(ctx).write(ctx.auth, "create_document", input);
+    return { text: resultText("Created", r), structured: { ...r } };
   },
 });
 
@@ -254,7 +250,7 @@ export const editBlocks = defineTool({
       );
       throw problemsError("edit_blocks", operation, problems);
     }
-    return { operation: operation as DocumentEditOperation, value: result.value };
+    return { operation: operation as DocumentEditOperation, value: rest };
   },
   writes: () => true,
   action: (input) => (input as { operation: string }).operation,
@@ -263,11 +259,7 @@ export const editBlocks = defineTool({
       operation: DocumentEditOperation;
       value: never;
     };
-    const r = docs(ctx).applyOperation(ctx.actor, ctx.userId, operation, value);
-    return {
-      text: resultText(`Applied ${operation} to`, r),
-      structured: { operation, ...r },
-      targets: [r.documentId, ...r.written, ...r.removed],
-    };
+    const r = docs(ctx).write(ctx.auth, operation, value);
+    return { text: resultText(`Applied ${operation} to`, r), structured: { operation, ...r } };
   },
 });

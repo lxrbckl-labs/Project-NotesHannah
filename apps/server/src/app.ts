@@ -64,7 +64,10 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.notFound((c) => handleError(new AppError("not_found", "No such route."), c));
   app.use("*", securityHeaders(config));
 
-  app.get("/robots.txt", (c) => c.text("User-agent: *\nDisallow: /\n"));
+  // Crawlers stay out; an agent that arrives by URL finds its guide.
+  app.get("/robots.txt", (c) =>
+    c.text("User-agent: *\nDisallow: /\n\n# AI agents: see /agents.txt for how to connect.\n"),
+  );
   app.route("/", healthRoutes);
 
   app.use("/api/*", authenticate(deps));
@@ -87,7 +90,7 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
     conceptsRoutes(deps, { nameChecker: nameCheckerFromEnv(db, process.env, deps.now) }),
   );
   // The agent front door: POST /mcp (API key only) and GET /agents.txt.
-  app.route("/", mcpRoutes(deps));
+  app.route("/", mcpRoutes(deps, services));
 
   // Unknown API-ish paths are ApiError 404s, never the SPA shell.
   for (const prefix of ["/api", "/mcp"]) {

@@ -54,7 +54,9 @@ describe("start_here", () => {
     expect(r.text).toContain("hannah's private study-notes app");
     expect(r.text).toContain("Your key is read-write");
     expect(r.text).toContain("Library: 1 term(s), 1 course(s)");
-    expect(r.text).toContain("Inbox: 0 file(s) waiting. Converter: ok");
+    expect(r.text).toContain(
+      "Inbox: 0 file(s) not filed (0 converting, 0 ready to transcribe or file, 0 failed). Converter: online.",
+    );
     for (const word of [
       "Sources, Lectures, Study guides, Practice, Exams",
       "generalKnowledge",
@@ -145,7 +147,9 @@ describe("library flows", () => {
     expect(got.text).toContain("Path: Fall 2026 / Pharmacology II");
 
     const found = await a.ok("search_notes", { query: "beta" });
-    expect((found.structured.hits as Item[]).map((h) => h.name)).toEqual(["Beta blockers"]);
+    expect((found.structured.hits as Array<{ node: Item }>).map((h) => h.node.name)).toEqual([
+      "Beta blockers",
+    ]);
   });
 
   test("rename, move, duplicate, trash and restore", async () => {

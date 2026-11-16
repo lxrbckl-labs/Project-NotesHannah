@@ -34,11 +34,13 @@ describe("routing and headers", () => {
     }
   });
 
-  test("robots.txt disallows everything", async () => {
+  test("robots.txt disallows everything and points agents at /agents.txt", async () => {
     const t = makeTestApp();
     const res = await t.request("/robots.txt");
     expect(res.status).toBe(200);
-    expect(res.body).toBe("User-agent: *\nDisallow: /\n");
+    expect(res.body).toBe(
+      "User-agent: *\nDisallow: /\n\n# AI agents: see /agents.txt for how to connect.\n",
+    );
   });
 
   test("API responses are not cached", async () => {

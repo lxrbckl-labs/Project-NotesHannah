@@ -1,34 +1,33 @@
 import {
   type Actor,
-  applyBlockPatch,
   type Block,
-  canAgentOverwrite,
+  type BlockInput,
   type Document,
   documentReviewStatus,
-  insertIds,
-  moveIds,
+  findQuote,
   newId,
   type Page,
-  planRegeneration,
   type SourceFile,
-  stampEditedBlock,
   stampNewBlock,
   type Transcript,
   UPLOAD_LIMITS,
+  validateOperation,
 } from "@notes/schema";
+import type { AuthContext } from "../http/auth-context.js";
 import { AppError } from "../http/errors.js";
 import type {
-  Change,
+  ChangeItem,
   ChangesPort,
   DocumentsPort,
   FilesPort,
   PageResult,
-  WriteResult,
+  WriteSummary,
 } from "./ports.js";
 
 /**
- * In-memory implementations of the MCP ports, for tests and as a reference
- * for the integrator's adapters. Not used in production.
+ * In-memory versions of the MCP ports, for unit tests that do not need the
+ * real domains (the real ones are exercised in test/mcp-real.test.ts). They
+ * follow the domains' rules where a test depends on them, and nothing more.
  */
 
 /** A valid 1x1 PNG. */
@@ -39,25 +38,25 @@ export const TINY_PNG = Buffer.from(
 
 function paged<T>(items: T[], cursor: string | undefined, limit: number): PageResult<T> {
   const start = cursor ? Number(cursor) : 0;
-  const slice = items.slice(start, start + limit);
-  const next = start + limit < items.length ? String(start + limit) : null;
-  return { items: slice, nextCursor: next };
+  return {
+    items: items.slice(start, start + limit),
+    nextCursor: start + limit < items.length ? String(start + limit) : null,
+  };
 }
 
 const missing = (what: string) =>
-  new AppError("not_found", `No such ${what} in your library.`, {
-    hint: 'Check the ID; list files with inbox {"action":"list"}.',
-  });
+  new AppError("not_found", `No such ${what}.`, { hint: "Check the ID." });
 
 const sameAgent = (a: Actor | null, b: Actor) =>
   a?.type === "agent" && b.type === "agent" && a.keyId === b.keyId;
 
+function writeOnly(auth: AuthContext) {
+  if (auth.scope !== "write") throw new AppError("read_only_key", "This API key is read-only.");
+}
+
 export interface FakeFilesOptions {
   now?: () => string;
-  /**
-   * Stands in for the files domain's destination rule: throw an AppError
-   * when a file may not be filed under this node. Default: allow any node.
-   */
+  /** Stands in for the files domain's destination rule (throw to refuse). */
   checkDestination?: (userId: string, nodeId: string) => void;
 }
 
@@ -66,16 +65,18 @@ export function fakeFiles(options: FakeFilesOptions = {}) {
   const files = new Map<string, SourceFile>();
   const pages = new Map<string, Page>();
   const transcripts = new Map<string, Transcript>();
-  const images = new Map<string, { data: Uint8Array; width: number; height: number }>();
+  const images = new Map<string, Uint8Array>();
 
   function addFile(
     userId: string,
     name: string,
     pageCount: number,
-    options: { status?: SourceFile["status"]; nativeText?: string } = {},
+    opts: { status?: SourceFile["status"]; nativeText?: string } = {},
   ) {
     const id = newId("file");
     const at = now();
+    const status = opts.status ?? "converted";
+    const converted = status !== "converting" && status !== "uploaded" && status !== "failed";
     files.set(id, {
       id,
       userId,
@@ -84,10 +85,10 @@ export function fakeFiles(options: FakeFilesOptions = {}) {
       sha256: "0".repeat(64),
       bytes: 1000,
       type: "pdf",
-      status: options.status ?? "converted",
+      status,
       errorCode: null,
       errorMessage: null,
-      pageCount,
+      pageCount: converted ? pageCount : null,
       uploadedBy: { type: "user", userId },
       claimedBy: null,
       claimedAt: null,
@@ -96,151 +97,154 @@ export function fakeFiles(options: FakeFilesOptions = {}) {
       trashedAt: null,
     });
     const pageIds: string[] = [];
-    for (let i = 1; i <= pageCount; i++) {
-      const pid = newId("page");
-      pageIds.push(pid);
-      pages.set(pid, {
-        id: pid,
-        fileId: id,
-        index: i,
-        width: 1568,
-        height: 882,
-        hasTextLayer: options.nativeText !== undefined,
-        nativeText: options.nativeText ?? null,
-        speakerNotes: null,
-        transcriptId: null,
-      });
+    if (converted) {
+      for (let i = 1; i <= pageCount; i++) {
+        const pid = newId("page");
+        pageIds.push(pid);
+        pages.set(pid, {
+          id: pid,
+          fileId: id,
+          index: i,
+          width: 1568,
+          height: 882,
+          hasTextLayer: opts.nativeText !== undefined,
+          nativeText: opts.nativeText ?? null,
+          speakerNotes: null,
+          transcriptId: null,
+        });
+      }
     }
     return { fileId: id, pageIds };
   }
 
-  function file(userId: string, id: string): SourceFile {
+  /** Finish a conversion started with status "converting". */
+  function finishConversion(fileId: string, pageCount: number) {
+    const f = files.get(fileId) as SourceFile;
+    files.set(fileId, { ...f, status: "converted", pageCount });
+    for (let i = 1; i <= pageCount; i++) {
+      const pid = newId("page");
+      pages.set(pid, {
+        id: pid,
+        fileId,
+        index: i,
+        width: 1568,
+        height: 882,
+        hasTextLayer: false,
+        nativeText: null,
+        speakerNotes: null,
+        transcriptId: null,
+      });
+    }
+  }
+
+  function file(auth: AuthContext, id: string): SourceFile {
     const f = files.get(id);
-    if (!f || f.userId !== userId) throw missing("file");
+    if (!f || f.userId !== auth.userId) throw missing("file");
     return f;
   }
 
-  function page(userId: string, id: string): Page {
+  function page(auth: AuthContext, id: string): Page {
     const p = pages.get(id);
     if (!p) throw missing("page");
-    file(userId, p.fileId);
+    file(auth, p.fileId);
     return p;
   }
 
   const pagesOf = (fileId: string) =>
     [...pages.values()].filter((p) => p.fileId === fileId).sort((a, b) => a.index - b.index);
 
+  function recompute(fileId: string) {
+    const f = files.get(fileId) as SourceFile;
+    if (f.status === "converting" || f.status === "failed" || f.status === "uploaded") return;
+    const all = pagesOf(fileId).every((p) => p.transcriptId !== null);
+    const status = f.nodeId !== null ? "filed" : all ? "transcribed" : "converted";
+    files.set(fileId, { ...f, status });
+  }
+
   const port: FilesPort = {
-    inboxSummary(userId) {
-      const mine = [...files.values()].filter((f) => f.userId === userId && f.status !== "filed");
-      const byStatus: Record<string, number> = {};
-      for (const f of mine) byStatus[f.status] = (byStatus[f.status] ?? 0) + 1;
-      return { pending: mine.length, byStatus, converter: "ok" };
-    },
-    listInbox(userId, options) {
+    converterStatus: () => ({ state: "online", lastSeenAt: now(), queued: 0, processing: 0 }),
+    listFiles(auth, opts) {
       const items = [...files.values()].filter(
         (f) =>
-          f.userId === userId &&
-          f.status !== "filed" &&
-          (!options.status || f.status === options.status),
+          f.userId === auth.userId &&
+          (!opts.inbox || f.status !== "filed") &&
+          (!opts.nodeId || f.nodeId === opts.nodeId) &&
+          (!opts.status || f.status === opts.status),
       );
-      return paged(items, options.cursor, options.limit);
-    },
-    listFilesUnder(userId, nodeId, options) {
-      const items = [...files.values()].filter((f) => f.userId === userId && f.nodeId === nodeId);
-      return paged(items, options.cursor, options.limit);
+      return paged(items, opts.cursor, opts.limit);
     },
     getFile: file,
-    listPages(userId, fileId, options) {
-      file(userId, fileId);
-      return paged(pagesOf(fileId), options.cursor, options.limit);
+    listPages(auth, fileId) {
+      file(auth, fileId);
+      return pagesOf(fileId);
     },
-    claim(actor, userId, fileId) {
-      const f = file(userId, fileId);
-      if (f.claimedBy && !sameAgent(f.claimedBy, actor)) {
+    getPage: page,
+    claim(auth, fileId) {
+      writeOnly(auth);
+      const f = file(auth, fileId);
+      if (f.claimedBy && !sameAgent(f.claimedBy, auth.actor)) {
         throw new AppError("conflict", "Another agent has claimed this file.", {
-          hint: 'Pick another file from inbox {"action":"list"}.',
+          hint: "Pick another file.",
         });
       }
-      const next = { ...f, claimedBy: actor, claimedAt: now() };
+      const next = { ...f, claimedBy: auth.actor, claimedAt: now() };
       files.set(fileId, next);
       return next;
     },
-    release(actor, userId, fileId) {
-      const f = file(userId, fileId);
-      if (!sameAgent(f.claimedBy, actor)) {
-        throw new AppError("conflict", "You do not hold a claim on this file.", {
-          hint: "Only the agent that claimed a file can release it.",
-        });
+    release(auth, fileId) {
+      writeOnly(auth);
+      const f = file(auth, fileId);
+      if (f.claimedBy && !sameAgent(f.claimedBy, auth.actor)) {
+        throw new AppError("conflict", "Another agent holds this claim.");
       }
       const next = { ...f, claimedBy: null, claimedAt: null };
       files.set(fileId, next);
       return next;
     },
-    fileUnder(_actor, userId, fileId, nodeId) {
-      const f = file(userId, fileId);
-      if (nodeId !== null) options.checkDestination?.(userId, nodeId);
-      const transcribed = pagesOf(fileId).every((p) => p.transcriptId !== null);
-      const status = nodeId !== null ? "filed" : transcribed ? "transcribed" : "converted";
-      const next = {
-        ...f,
-        nodeId,
-        status: status as SourceFile["status"],
-        claimedBy: null,
-        claimedAt: null,
-      };
+    retry(auth, fileId) {
+      writeOnly(auth);
+      const f = file(auth, fileId);
+      const next = { ...f, status: "converting" as const };
       files.set(fileId, next);
       return next;
     },
-    getPage(userId, pageId) {
-      const p = page(userId, pageId);
-      const f = file(userId, p.fileId);
-      const all = pagesOf(f.id);
-      const at = all.findIndex((x) => x.id === p.id);
-      const t = p.transcriptId ? transcripts.get(p.transcriptId) : undefined;
-      return {
-        page: p,
-        file: {
-          id: f.id,
-          originalName: f.originalName,
-          pageCount: f.pageCount,
-          status: f.status,
-          nodeId: f.nodeId,
-        },
-        previousPageId: all[at - 1]?.id ?? null,
-        nextPageId: all[at + 1]?.id ?? null,
-        transcript: t ? { id: t.id, revision: t.revision, reviewStatus: t.reviewStatus } : null,
-      };
+    fileUnder(auth, fileId, nodeId) {
+      writeOnly(auth);
+      const f = file(auth, fileId);
+      if (nodeId !== null) options.checkDestination?.(auth.userId, nodeId);
+      files.set(fileId, { ...f, nodeId });
+      recompute(fileId);
+      return files.get(fileId) as SourceFile;
     },
-    pageImage(userId, pageId) {
-      page(userId, pageId);
-      const image = images.get(pageId);
-      return image
-        ? { ...image, mimeType: "image/png" }
-        : { data: TINY_PNG, mimeType: "image/png", width: 1, height: 1 };
+    pageImage(auth, pageId) {
+      page(auth, pageId);
+      return { data: images.get(pageId) ?? TINY_PNG, mimeType: "image/png" };
     },
-    pageImageLink(userId, pageId, size) {
-      page(userId, pageId);
+    pageImageLink(auth, pageId, size) {
+      page(auth, pageId);
       return {
-        url: `http://127.0.0.1/files/pages/${pageId}?size=${size}&sig=test`,
+        url: `http://127.0.0.1/api/pages/${pageId}/image?size=${size}&sig=test`,
         expiresAt: now(),
       };
     },
-    getTranscript(userId, transcriptId) {
-      const t = transcripts.get(transcriptId);
-      if (!t) throw missing("transcript");
-      page(userId, t.pageId);
-      return t;
+    getTranscript(auth, pageId) {
+      const p = page(auth, pageId);
+      return p.transcriptId ? (transcripts.get(p.transcriptId) ?? null) : null;
     },
-    saveTranscript(actor, userId, input) {
-      const p = page(userId, input.pageId);
+    saveTranscript(auth, input) {
+      writeOnly(auth);
+      const p = page(auth, input.pageId);
+      const f = file(auth, p.fileId);
+      if (f.claimedBy && !sameAgent(f.claimedBy, auth.actor)) {
+        throw new AppError("conflict", "Another agent has claimed this file.");
+      }
       const previous = p.transcriptId ? transcripts.get(p.transcriptId) : undefined;
       const t: Transcript = {
         id: newId("transcript"),
         pageId: p.id,
         text: input.text,
         flags: input.flags,
-        author: actor,
+        author: auth.actor,
         reviewStatus: "unverified",
         reviewedAt: null,
         revision: (previous?.revision ?? 0) + 1,
@@ -248,64 +252,62 @@ export function fakeFiles(options: FakeFilesOptions = {}) {
       };
       transcripts.set(t.id, t);
       pages.set(p.id, { ...p, transcriptId: t.id });
+      recompute(p.fileId);
       return t;
     },
-    requestUploads(_actor, _userId, input) {
-      return input.files.map((f) => {
-        const id = newId("upload");
-        return {
-          id,
-          name: f.name,
-          url: `http://127.0.0.1/api/uploads/${id}`,
-          method: "PUT" as const,
-          maxBytes: UPLOAD_LIMITS.maxBytes,
-          expiresAt: now(),
-        };
-      });
-    },
-    searchTranscripts(userId, query, options) {
-      const hits = [...transcripts.values()]
-        .filter((t) => t.text.toLowerCase().includes(query.toLowerCase()))
-        .flatMap((t) => {
-          const p = pages.get(t.pageId) as Page;
-          const f = files.get(p.fileId) as SourceFile;
-          if (f.userId !== userId) return [];
-          return [
-            {
-              transcriptId: t.id,
-              pageId: p.id,
-              fileId: f.id,
-              pageIndex: p.index,
-              fileName: f.originalName,
-              snippet: t.text.slice(0, 80),
-            },
-          ];
-        });
-      return paged(hits, options.cursor, options.limit);
+    requestUploads(auth, input) {
+      writeOnly(auth);
+      return input.files.map((f) => ({
+        id: newId("upload"),
+        name: f.name,
+        url: `http://127.0.0.1/api/uploads/${newId("upload")}`,
+        method: "PUT" as const,
+        maxBytes: Math.min(f.bytes, UPLOAD_LIMITS.maxBytes),
+        expiresAt: now(),
+      }));
     },
   };
-  /** Give a page a real PNG (the default is a 1x1 pixel). */
-  function setImage(pageId: string, data: Uint8Array, width: number, height: number) {
-    images.set(pageId, { data, width, height });
+
+  /** Give a page a real image (the default is a 1x1 PNG). */
+  function setImage(pageId: string, data: Uint8Array) {
+    images.set(pageId, data);
   }
 
-  return { port, addFile, setImage, files, pages, transcripts };
+  return { port, addFile, finishConversion, setImage, files, pages, transcripts };
 }
 
-export function fakeDocuments(now: () => string = () => new Date().toISOString()) {
+/**
+ * Documents over a Map: create, insert and delete, with the citation rule and
+ * the quote check against a lookup of page text. Enough for the tool tests.
+ */
+export function fakeDocuments(
+  options: { now?: () => string; pageText?: (pageId: string) => string | null } = {},
+) {
+  const now = options.now ?? (() => new Date().toISOString());
   const docs = new Map<string, { userId: string; doc: Document; blocks: Block[] }>();
 
-  function need(userId: string, id: string) {
+  function need(auth: AuthContext, id: string) {
     const d = docs.get(id);
-    if (!d || d.userId !== userId) throw new AppError("not_found", "No such document.");
+    if (!d || d.userId !== auth.userId) throw new AppError("not_found", "No such document.");
     return d;
   }
 
-  function save(
-    entry: { userId: string; doc: Document; blocks: Block[] },
-    blocks: Block[],
-    actor: Actor,
-  ) {
+  function checkQuotes(blocks: readonly BlockInput[]) {
+    if (!options.pageText) return;
+    blocks.forEach((b, i) => {
+      b.citations.forEach((c, j) => {
+        const text = options.pageText?.(c.pageId) ?? null;
+        if (text !== null && findQuote(text, c.quote) < 0) {
+          throw new AppError(
+            "invalid_input",
+            `$.blocks[${i}].citations[${j}]: The quote does not occur, character for character, in the page's current transcript.`,
+          );
+        }
+      });
+    });
+  }
+
+  function save(entry: { doc: Document; blocks: Block[] }, blocks: Block[], actor: Actor) {
     entry.blocks = blocks;
     entry.doc = {
       ...entry.doc,
@@ -317,206 +319,139 @@ export function fakeDocuments(now: () => string = () => new Date().toISOString()
     };
   }
 
-  function checkRevision(entry: { doc: Document }, expected: number | undefined) {
-    if (expected !== undefined && expected !== entry.doc.revision) {
-      throw new AppError(
-        "conflict",
-        `The document is at revision ${entry.doc.revision}, not ${expected}.`,
-        { hint: "Read it again with get_item and redo the change." },
-      );
-    }
-  }
-
-  const result = (
-    entry: { doc: Document },
-    written: string[],
-    removed: string[] = [],
-    skipped: WriteResult["skipped"] = [],
-  ): WriteResult => ({
-    documentId: entry.doc.id,
-    nodeId: entry.doc.nodeId,
-    revision: entry.doc.revision,
-    written,
-    removed,
-    skipped,
-  });
-
   const port: DocumentsPort = {
-    getDocument(userId, documentId, range) {
-      const d = need(userId, documentId);
-      return { document: d.doc, blocks: d.blocks.slice(range.offset, range.offset + range.limit) };
+    getDocument(auth, id, range) {
+      const d = need(auth, id);
+      return {
+        document: d.doc,
+        blocks: d.blocks.slice(range.offset, range.offset + range.limit),
+        total: d.blocks.length,
+      };
     },
-    documentForNode(userId, nodeId) {
+    documentForNode(auth, nodeId) {
       return (
-        [...docs.values()].find((d) => d.userId === userId && d.doc.nodeId === nodeId)?.doc ?? null
+        [...docs.values()].find((d) => d.userId === auth.userId && d.doc.nodeId === nodeId)?.doc ??
+        null
       );
     },
-    getBlock(userId, blockId) {
-      for (const d of docs.values()) {
-        if (d.userId !== userId) continue;
-        const block = d.blocks.find((b) => b.id === blockId);
-        if (block) return { documentId: d.doc.id, block };
-      }
-      throw new AppError("not_found", "No such block.");
+    getBlock(auth, documentId, blockId) {
+      const block = need(auth, documentId).blocks.find((b) => b.id === blockId);
+      if (!block) throw new AppError("not_found", "No such block.");
+      return block;
     },
-    createDocument(actor, userId, input) {
+    write(auth, operation, raw): WriteSummary {
+      writeOnly(auth);
+      const parsed = validateOperation(operation, raw, { writer: auth.actor });
+      if (!parsed.ok) throw new AppError("invalid_input", parsed.problems[0]?.message ?? "invalid");
       const at = now();
-      const blocks = input.blocks.map((b) => stampNewBlock(b, { actor, now: at }));
-      const doc: Document = {
-        id: newId("document"),
-        nodeId: input.nodeId ?? newId("node"),
-        kind: input.kind,
-        title: input.title,
-        blockIds: blocks.map((b) => b.id),
-        reviewStatus: documentReviewStatus(blocks),
-        revision: 1,
-        createdBy: actor,
-        createdAt: at,
-        lastEditedBy: actor,
-        updatedAt: at,
-        trashedAt: null,
+      const input = parsed.value as Record<string, unknown> & {
+        documentId: string;
+        blocks?: BlockInput[];
+        expectedRevision?: number;
       };
-      docs.set(doc.id, { userId, doc, blocks });
-      return result({ doc }, doc.blockIds);
-    },
-    applyOperation(actor, userId, operation, input) {
-      const body = input as unknown as { documentId: string; expectedRevision?: number };
-      const entry = need(userId, body.documentId);
-      checkRevision(entry, body.expectedRevision);
-      const at = now();
-      switch (operation) {
-        case "insert_blocks": {
-          const i = input as unknown as {
-            blocks: Parameters<typeof stampNewBlock>[0][];
-            position: Parameters<typeof insertIds>[2];
-          };
-          const fresh = i.blocks.map((b) => stampNewBlock(b, { actor, now: at }));
-          const order = insertIds(
-            entry.blocks.map((b) => b.id),
-            fresh.map((b) => b.id),
-            i.position,
-          );
-          if (!order)
-            throw new AppError("invalid_input", "position names a block not in this document.");
-          const all = new Map([...entry.blocks, ...fresh].map((b) => [b.id, b]));
-          save(
-            entry,
-            order.map((id) => all.get(id) as Block),
-            actor,
-          );
-          return result(
-            entry,
-            fresh.map((b) => b.id),
-          );
-        }
-        case "update_block": {
-          const u = input as unknown as {
-            mode: "replace" | "patch";
-            blockId: string;
-            block?: Parameters<typeof stampNewBlock>[0];
-            patch?: Parameters<typeof applyBlockPatch>[1];
-            requestId?: string;
-          };
-          const at0 = entry.blocks.findIndex((b) => b.id === u.blockId);
-          const existing = entry.blocks[at0];
-          if (!existing) throw new AppError("not_found", "No such block in this document.");
-          const decision = canAgentOverwrite(existing, { requestId: u.requestId });
-          if (!decision.allowed) {
-            throw new AppError(
-              "conflict",
-              `She ${decision.reason === "reviewed" ? "reviewed" : "edited"} this block, so it is protected.`,
-              {
-                hint: "Leave it, or act on her request and pass its requestId.",
-              },
-            );
-          }
-          let next: Parameters<typeof stampNewBlock>[0];
-          if (u.mode === "replace") next = u.block as Parameters<typeof stampNewBlock>[0];
-          else {
-            const patched = applyBlockPatch(existing, u.patch as never);
-            if (!patched.ok) {
-              throw new AppError(
-                "invalid_input",
-                patched.problems.map((p) => `${p.path}: ${p.message}`).join("; "),
-              );
-            }
-            next = patched.block;
-          }
-          const blocks = [...entry.blocks];
-          blocks[at0] = stampEditedBlock(existing, next, { actor, now: at });
-          save(entry, blocks, actor);
-          return result(entry, [u.blockId]);
-        }
-        case "move_blocks": {
-          const m = input as unknown as {
-            blockIds: string[];
-            position: Parameters<typeof moveIds>[2];
-          };
-          const order = moveIds(
-            entry.blocks.map((b) => b.id),
-            m.blockIds,
-            m.position,
-          );
-          if (!order)
-            throw new AppError("invalid_input", "A block or the position is not in this document.");
-          const all = new Map(entry.blocks.map((b) => [b.id, b]));
-          save(
-            entry,
-            order.map((id) => all.get(id) as Block),
-            actor,
-          );
-          return result(entry, m.blockIds);
-        }
-        case "delete_blocks": {
-          const d = input as unknown as { blockIds: string[]; requestId?: string };
-          for (const id of d.blockIds) {
-            const b = entry.blocks.find((x) => x.id === id);
-            if (!b) throw new AppError("not_found", `No block ${id} in this document.`);
-            if (!canAgentOverwrite(b, { requestId: d.requestId }).allowed) {
-              throw new AppError("conflict", `Block ${id} is protected.`);
-            }
-          }
-          save(
-            entry,
-            entry.blocks.filter((b) => !d.blockIds.includes(b.id)),
-            actor,
-          );
-          return result(entry, [], d.blockIds);
-        }
-        case "replace_generated": {
-          const r = input as unknown as {
-            blocks: Parameters<typeof stampNewBlock>[0][];
-            scope?: string[];
-            requestId?: string;
-          };
-          const plan = planRegeneration(entry.blocks, r.blocks, {
-            actor,
-            now: at,
-            ...(r.scope ? { scope: r.scope } : {}),
-            requestId: r.requestId,
-          });
-          save(entry, plan.blocks, actor);
-          return result(entry, plan.written, plan.removed, plan.skipped);
-        }
-        default:
-          throw new AppError("invalid_input", "restore_revision is not supported by the fake.");
+      if (operation === "create_document") {
+        const c = input as unknown as {
+          nodeId?: string;
+          kind: Document["kind"];
+          title: string;
+          blocks: BlockInput[];
+        };
+        checkQuotes(c.blocks);
+        const blocks = c.blocks.map((b) => stampNewBlock(b, { actor: auth.actor, now: at }));
+        const doc: Document = {
+          id: newId("document"),
+          nodeId: c.nodeId ?? newId("node"),
+          kind: c.kind,
+          title: c.title,
+          blockIds: blocks.map((b) => b.id),
+          reviewStatus: documentReviewStatus(blocks),
+          revision: 1,
+          createdBy: auth.actor,
+          createdAt: at,
+          lastEditedBy: auth.actor,
+          updatedAt: at,
+          trashedAt: null,
+        };
+        docs.set(doc.id, { userId: auth.userId, doc, blocks });
+        return {
+          documentId: doc.id,
+          nodeId: doc.nodeId,
+          revision: 1,
+          written: doc.blockIds,
+          removed: [],
+          skipped: [],
+        };
       }
+      const entry = need(auth, input.documentId);
+      if (input.expectedRevision !== undefined && input.expectedRevision !== entry.doc.revision) {
+        throw new AppError(
+          "conflict",
+          `The document is at revision ${entry.doc.revision}, not ${input.expectedRevision}.`,
+        );
+      }
+      if (operation === "insert_blocks") {
+        checkQuotes(input.blocks ?? []);
+        const fresh = (input.blocks ?? []).map((b) =>
+          stampNewBlock(b, { actor: auth.actor, now: at }),
+        );
+        save(entry, [...fresh, ...entry.blocks], auth.actor);
+        return {
+          documentId: entry.doc.id,
+          revision: entry.doc.revision,
+          written: fresh.map((b) => b.id),
+          removed: [],
+          skipped: [],
+        };
+      }
+      if (operation === "delete_blocks") {
+        const ids = (input as unknown as { blockIds: string[] }).blockIds;
+        save(
+          entry,
+          entry.blocks.filter((b) => !ids.includes(b.id)),
+          auth.actor,
+        );
+        return {
+          documentId: entry.doc.id,
+          revision: entry.doc.revision,
+          written: [],
+          removed: ids,
+          skipped: [],
+        };
+      }
+      throw new AppError("invalid_input", `The fake does not support ${operation}.`);
     },
+    references(auth, documentId) {
+      const d = need(auth, documentId);
+      return d.blocks
+        .flatMap((b) => b.citations)
+        .map((c, i) => ({
+          number: i + 1,
+          fileId: c.fileId,
+          pageId: c.pageId,
+          quote: c.quote,
+          status: "available",
+          fileName: null,
+          pageIndex: null,
+          quoteStillPresent: null,
+        }));
+    },
+    citedByCount: () => 0,
   };
   return { port, docs };
 }
 
-export function fakeChanges(changes: Change[] = []) {
+export function fakeChanges(changes: ChangeItem[] = []) {
   const port: ChangesPort = {
-    changesSince(_userId, options) {
-      const start = options.cursor ? Number(options.cursor) : 0;
-      const items = changes.slice(start, start + options.limit);
+    changesSince(_userId, cursor, limit) {
+      const start = cursor ? Number(cursor) : 0;
+      const items = changes.slice(start, start + limit);
       return {
         items,
-        cursor: String(start + items.length),
-        more: start + items.length < changes.length,
+        nextCursor: String(start + items.length),
+        hasMore: start + items.length < changes.length,
       };
     },
+    latestCursor: () => String(changes.length),
   };
   return { port, changes };
 }

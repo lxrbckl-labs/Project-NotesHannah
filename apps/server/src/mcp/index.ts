@@ -1,20 +1,42 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import type { ApiError } from "@notes/schema";
+import type { Actor, ApiError } from "@notes/schema";
 import { type Context, Hono } from "hono";
-import { createLibraryService } from "../domains/library/index.js";
-import type { AppEnv } from "../http/auth-context.js";
+import type { AppEnv, AuthContext } from "../http/auth-context.js";
 import { authenticate } from "../http/authenticate.js";
 import type { ServerDeps } from "../http/deps.js";
+import type { Services } from "../services.js";
+import { backendFromServices } from "./adapters.js";
 import { agentGuide } from "./agent-guide.js";
-import { sqliteAudit } from "./audit.js";
-import type { McpPorts } from "./ports.js";
+import type { McpBackend } from "./ports.js";
 import { createRateLimiter, DEFAULT_RATE_LIMIT, type RateLimitOptions } from "./rate-limit.js";
 import { buildMcpServer, toolsFor } from "./server.js";
 
-export type { McpPorts } from "./ports.js";
+export type { McpBackend } from "./ports.js";
 
 export interface McpOptions {
   rateLimit?: RateLimitOptions;
+  /** Where refused writes are noted. Default: the server log. */
+  log?: (line: string) => void;
+}
+
+/**
+ * The name the activity log shows for an agent: its X-Agent-Label header, or
+ * else what its User-Agent says it is. Claude Code sends "claude-code/<v>",
+ * Codex "codex_cli_rs/<v>" (seen in the live check).
+ */
+export function agentActor(actor: Actor, userAgent: string | undefined): Actor {
+  if (actor.type !== "agent" || actor.label) return actor;
+  const ua = userAgent ?? "";
+  const label = /claude-code|claude-cli/i.test(ua)
+    ? "Claude Code"
+    : /codex/i.test(ua)
+      ? "Codex"
+      : undefined;
+  return label ? { ...actor, label } : actor;
+}
+
+function isServices(value: McpBackend | Services): value is Services {
+  return "activity" in value && "sources" in value;
 }
 
 function publicOrigin(c: Context, deps: ServerDeps): string {
@@ -24,18 +46,19 @@ function publicOrigin(c: Context, deps: ServerDeps): string {
 /**
  * The agent front door: `POST /mcp` (stateless Streamable HTTP, JSON
  * responses, API key only) and `GET /agents.txt`. Mount with
- * `app.route("/", mcpRoutes(deps, ports))` before the catch-all for /mcp.
- * Tools whose port is not given are not advertised.
+ * `app.route("/", mcpRoutes(deps, services))` before the catch-all for /mcp.
+ * Pass the app's shared `Services` (production), or a `McpBackend` of ports
+ * (tests with fakes); tools whose port is missing are not advertised.
  */
 export function mcpRoutes(
   deps: ServerDeps,
-  ports: McpPorts = {},
+  source: McpBackend | Services,
   options: McpOptions = {},
 ): Hono<AppEnv> {
-  const library = createLibraryService(deps.db, { now: () => new Date(deps.now()) });
-  const audit = ports.audit ?? sqliteAudit(deps.db);
+  const backend = isServices(source) ? backendFromServices(source) : source;
   const limiter = createRateLimiter(options.rateLimit ?? DEFAULT_RATE_LIMIT, deps.now);
-  const tools = toolsFor(ports);
+  const log = options.log ?? ((line: string) => console.log(line));
+  const tools = toolsFor(backend);
   const available = new Set(tools.map((t) => t.name));
   const app = new Hono<AppEnv>();
 
@@ -79,21 +102,22 @@ export function mcpRoutes(
         405,
       );
     }
-    const label = auth.actor.type === "agent" ? (auth.actor.label ?? null) : null;
+    const actor = agentActor(auth.actor, c.req.header("user-agent"));
+    const caller: AuthContext = { ...auth, actor };
     const server = buildMcpServer(tools, {
       context: {
+        auth: caller,
         userId: auth.userId,
-        keyId: auth.actor.type === "agent" ? auth.actor.keyId : "",
+        keyId: actor.type === "agent" ? actor.keyId : "",
         scope: auth.scope,
-        actor: auth.actor,
+        actor,
         db: deps.db,
-        library,
-        ports,
+        library: backend.library,
+        backend,
         available,
         now: deps.now,
       },
-      agentLabel: label,
-      audit,
+      log,
       rateLimit: () => limiter.take(auth.actor.type === "agent" ? auth.actor.keyId : auth.userId),
     });
     const transport = new WebStandardStreamableHTTPServerTransport({

@@ -31,7 +31,8 @@ const KIND_ROUTES: Partial<Record<IdKind, string>> = {
   node: "Read it with get_item, list its children with browse_library, change it with edit_library.",
   file: "Read it with get_item; claim, file or move it with source_files.",
   page: "Read it with get_page (image and text) or get_item.",
-  transcript: "Read it with get_item; replace it with save_transcript (which takes the pageId).",
+  transcript:
+    "Read it through its page with get_page; replace it with save_transcript (which takes the pageId).",
   document: "Read it with get_item; change its blocks with edit_blocks.",
   block: "Read it with get_item; change it with edit_blocks (which also needs its documentId).",
 };
@@ -148,15 +149,28 @@ export function checkIdShape(id: string, allowed: IdKind[]): IdKind {
 const NODE_ROUTE = /(POST|GET|DELETE|PATCH) (\/api\/[^\s,.]+(?:\?[^\s,]+)?)/g;
 
 function translateRoute(method: string, path: string): string {
+  if (method === "DELETE") return "a permanent delete, which only she can do in the browser";
   const m = /^\/api\/nodes\/([^/\s]+)\/(restore|trash|duplicate|move)$/.exec(path);
   if (m) return `edit_library {"action":"${m[2]}","id":"${m[1]}"}`;
   const f = /^\/api\/files\/([^/\s]+)\/file$/.exec(path);
   if (f)
     return `source_files {"action":"move","fileId":"${f[1]}","nodeId":"<lecture or folder id, or null for the inbox>"}`;
-  if (/^\/api\/files\/[^/\s]+\/retry$/.test(path))
-    return "a retry, which she can start from the inbox in the app";
+  const r = /^\/api\/files\/([^/\s]+)\/(retry|restore|claim|release)$/.exec(path);
+  if (r && r[2] !== "restore") return `source_files {"action":"${r[2]}","fileId":"${r[1]}"}`;
+  if (r) return "a restore, which she can do from the trash in the app";
+  const fileGet = /^\/api\/files\/([^/\s?]+)$/.exec(path);
+  if (fileGet && !fileGet[1]?.startsWith(":")) return `get_item {"id":"${fileGet[1]}"}`;
   if (path.startsWith("/api/files")) return `source_files {"action":"list"}`;
-  if (method === "DELETE") return "a permanent delete, which only she can do in the browser";
+  if (path.startsWith("/api/converter"))
+    return `source_files {"action":"list"} (it shows the converter's state)`;
+  const page = /^\/api\/pages\/([^/\s]+)\/(transcript|image|image-url)/.exec(path);
+  if (page && !page[1]?.startsWith(":")) return `get_page {"pageId":"${page[1]}"}`;
+  if (page) return "get_page";
+  const nodeDoc = /^\/api\/nodes\/([^/\s]+)\/document$/.exec(path);
+  if (nodeDoc && !nodeDoc[1]?.startsWith(":")) return `get_item {"id":"${nodeDoc[1]}"}`;
+  if (nodeDoc) return "get_item on the node";
+  const nodeGet = /^\/api\/nodes\/([^/\s?]+)$/.exec(path);
+  if (nodeGet && !nodeGet[1]?.startsWith(":")) return `get_item {"id":"${nodeGet[1]}"}`;
   if (path.startsWith("/api/trash")) return `browse_library {"view":"trash"}`;
   if (path.startsWith("/api/nodes?parentId")) return `browse_library {"parentId":"<id>"}`;
   if (path === "/api/nodes") return "browse_library {}";
@@ -203,12 +217,20 @@ export function translateLibraryError(
  * tool to call. Domains write hints for the browser API; agents need tools.
  */
 export function agentFacing(error: unknown): unknown {
-  if (!(error instanceof AppError) || !error.hint?.includes("/api/")) return error;
-  return new AppError(error.code, error.message, {
-    hint: error.hint.replace(NODE_ROUTE, (_all, method: string, path: string) =>
-      translateRoute(method, path),
-    ),
-    ...(error.example !== undefined ? { example: error.example } : {}),
+  if (!(error instanceof AppError)) return error;
+  const rewrite = (text: string) =>
+    text.replace(NODE_ROUTE, (_all, method: string, path: string) => translateRoute(method, path));
+  let example = error.example;
+  if (example && typeof example === "object" && "method" in example && "path" in example) {
+    // A web-API call shown as the example; the hint carries the tool call instead.
+    example = undefined;
+  }
+  if (!`${error.message}${error.hint ?? ""}`.includes("/api/") && example === error.example) {
+    return error;
+  }
+  return new AppError(error.code, rewrite(error.message), {
+    ...(error.hint !== undefined ? { hint: rewrite(error.hint) } : {}),
+    ...(example !== undefined ? { example } : {}),
     ...(error.retryAfter !== undefined ? { retryAfter: error.retryAfter } : {}),
   });
 }
