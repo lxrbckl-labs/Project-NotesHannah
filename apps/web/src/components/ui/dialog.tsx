@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "../../lib/cn";
 import { Button, IconButton } from "./button";
 
-const overlay = "fixed inset-0 z-40 bg-(--color-overlay) anim-fade";
+const overlay = "fixed inset-0 z-[70] bg-(--color-overlay) anim-fade";
 
 function contentClass(sheet: "touch" | "phone") {
   const bottom =
@@ -12,7 +12,7 @@ function contentClass(sheet: "touch" | "phone") {
       ? "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-3xl xl:inset-auto xl:left-1/2 xl:top-1/2 xl:max-h-[85dvh] xl:w-[30rem] xl:-translate-x-1/2 xl:-translate-y-1/2 xl:rounded-2xl"
       : "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-3xl md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[85dvh] md:w-[30rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl";
   return cn(
-    "fixed z-50 flex flex-col border border-border bg-surface text-text shadow-pop outline-none anim-sheet",
+    "fixed z-[71] flex flex-col border border-border bg-surface text-text shadow-pop outline-none anim-sheet",
     bottom,
   );
 }

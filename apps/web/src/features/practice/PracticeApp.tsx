@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ExamPlanner, UpcomingExamsCard } from "../exams";
 import type { PickNodes } from "../exams/types";
 import "./practice.css";
@@ -35,6 +35,10 @@ export interface PracticeAppProps {
   onViewChange?: (view: PracticeView) => void;
   /** True while a session is on screen, so the shell can guard its own navigation. */
   onActiveChange?: (active: boolean) => void;
+  /** Open straight into this session (a link to /practice/session/:id). */
+  initialSessionId?: string | undefined;
+  /** Start a session on this scope at once ("Practise this"). */
+  autoStart?: SessionScope | undefined;
   className?: string;
 }
 
@@ -55,6 +59,8 @@ export function PracticeApp({
   view: controlledView,
   onViewChange,
   onActiveChange,
+  initialSessionId,
+  autoStart,
   className = "",
 }: PracticeAppProps) {
   const [ownView, setOwnView] = useState<PracticeView>("start");
@@ -66,7 +72,9 @@ export function PracticeApp({
     },
     [onViewChange],
   );
-  const [mode, setMode] = useState<Mode>({ kind: "browse" });
+  const [mode, setMode] = useState<Mode>(() =>
+    initialSessionId ? { kind: "play", sessionId: initialSessionId } : { kind: "browse" },
+  );
   const [refresh, setRefresh] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
   const bump = () => setRefresh((n) => n + 1);
@@ -104,6 +112,14 @@ export function PracticeApp({
       setProblem(e instanceof Error ? e.message : "Could not start a session.");
     }
   };
+
+  const autoStarted = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: start once, when asked to
+  useEffect(() => {
+    if (!autoStart || autoStarted.current) return;
+    autoStarted.current = true;
+    void startScope(autoStart);
+  }, [autoStart]);
 
   if (mode.kind === "play") {
     return (

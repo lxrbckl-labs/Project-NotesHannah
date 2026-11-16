@@ -1,8 +1,10 @@
 import {
   BookOpen,
   Bot,
+  GraduationCap,
   Inbox,
   LogOut,
+  MessageSquarePlus,
   NotebookPen,
   PanelLeft,
   PanelRight,
@@ -16,6 +18,7 @@ import { IconButton } from "../components/ui/button";
 import { useMe, useSignOut } from "../features/auth/useAuth";
 import { LibraryDialogs, useLibraryDialogs } from "../features/library/dialogs";
 import { LibraryTree } from "../features/library/LibraryTree";
+import { PickNodesProvider } from "../features/library/pickNodes";
 import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
 import { QuickFind } from "../features/search/QuickFind";
@@ -24,6 +27,7 @@ import { UploadTray } from "../features/uploads/UploadTray";
 import { cn } from "../lib/cn";
 import { readFlag, writeFlag } from "../lib/storage";
 import { useLayout } from "../lib/useMedia";
+import { NavBadge, useBadges } from "./badges";
 
 const SIDEBAR_KEY = "notes-sidebar";
 const PANEL_KEY = "notes-panel";
@@ -41,7 +45,9 @@ export function AppShell() {
     <TreeStateProvider userId={me.data?.id ?? "unknown"}>
       <UploadProvider>
         <LibraryDialogs>
-          <Shell />
+          <PickNodesProvider>
+            <Shell />
+          </PickNodesProvider>
           <UploadTray />
         </LibraryDialogs>
       </UploadProvider>
@@ -87,7 +93,11 @@ function Shell() {
   }, [layout]);
 
   const showSidebar = layout !== "phone" && sidebarOpen;
-  const showPanel = layout === "computer" && panelOpen;
+  // Details belong to the library; a document, practice or the viewer want the width.
+  const inLibraryPage = useMatch("/library/*");
+  const inLibraryHome = useMatch("/library");
+  const inLibrary = !!inLibraryPage || !!inLibraryHome;
+  const showPanel = layout === "computer" && panelOpen && inLibrary;
 
   return (
     <div className="flex h-dvh overflow-hidden bg-bg">
@@ -121,7 +131,7 @@ function Shell() {
               ) : null}
             </button>
             <div className="flex-1" />
-            {layout === "computer" ? (
+            {layout === "computer" && inLibrary ? (
               <IconButton
                 aria-label={panelOpen ? "Hide details panel" : "Show details panel"}
                 aria-pressed={panelOpen}
@@ -163,6 +173,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   const me = useMe();
   const signOut = useSignOut();
   const dialogs = useLibraryDialogs();
+  const badges = useBadges();
   return (
     <aside
       data-testid="sidebar"
@@ -183,8 +194,17 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <NavLink to="/library" end className={linkClass}>
           <BookOpen size={18} aria-hidden /> Library
         </NavLink>
+        <NavLink to="/practice" className={linkClass}>
+          <GraduationCap size={18} aria-hidden /> Practice
+          <NavBadge count={badges.practice} label="cards due" />
+        </NavLink>
         <NavLink to="/inbox" className={linkClass}>
           <Inbox size={18} aria-hidden /> Inbox
+          <NavBadge count={badges.inbox} label="files in the inbox" />
+        </NavLink>
+        <NavLink to="/requests" className={linkClass}>
+          <MessageSquarePlus size={18} aria-hidden /> Requests
+          <NavBadge count={badges.requests} label="open requests" />
         </NavLink>
         <NavLink to="/activity" className={linkClass}>
           <Bot size={18} aria-hidden /> Activity
@@ -229,14 +249,18 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   );
 }
 
+// Five at most on a phone: the things she opens most. Requests, Activity and Trash live in Settings.
 const TABS = [
   { to: "/library", label: "Library", icon: BookOpen },
+  { to: "/practice", label: "Practice", icon: GraduationCap },
   { to: "/search", label: "Search", icon: Search },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 function TabBar() {
+  const badges = useBadges();
+  const count: Record<string, number> = { "/practice": badges.practice, "/inbox": badges.inbox };
   return (
     <nav
       data-testid="tab-bar"
@@ -255,7 +279,15 @@ function TabBar() {
                 )
               }
             >
-              <Icon size={22} aria-hidden />
+              <span className="relative">
+                <Icon size={22} aria-hidden />
+                {(count[to] ?? 0) > 0 ? (
+                  <span className="absolute -right-2.5 -top-1 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold text-accent-contrast">
+                    {count[to]}
+                    <span className="sr-only"> waiting</span>
+                  </span>
+                ) : null}
+              </span>
               {label}
             </NavLink>
           </li>

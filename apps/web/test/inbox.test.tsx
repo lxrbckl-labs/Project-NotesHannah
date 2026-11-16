@@ -193,13 +193,9 @@ describe("search and activity", () => {
 });
 
 describe("mount points", () => {
-  it("shows coming soon where a feature module does not exist yet", async () => {
+  it("shows coming soon where a feature module has not landed yet (requests, concepts)", async () => {
     await startBackend();
     for (const [path, title] of [
-      ["/doc/nod_x", "Documents"],
-      ["/doc/nod_x/canvas", "Canvas"],
-      ["/practice", "Practice"],
-      ["/exams", "Exams"],
       ["/requests", "Requests"],
       ["/concepts/con_x", "Concepts"],
     ] as const) {

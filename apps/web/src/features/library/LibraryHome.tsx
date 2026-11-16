@@ -2,17 +2,20 @@ import type { NodeWithLinks } from "@notes/schema";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarRange, ChevronsDownUp, ChevronsUpDown, Plus, Star, Trash2 } from "lucide-react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Page, SectionTitle } from "../../components/Page";
 import { Button } from "../../components/ui/button";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { useMe } from "../auth/useAuth";
+import { UpcomingExamsCard } from "../exams";
+import { useStores } from "../mounts/services";
 import { UploadButton } from "../uploads/UploadButton";
 import { useLibraryDialogs } from "./dialogs";
 import { LibraryTree } from "./LibraryTree";
 import { NodeIcon } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { childrenQuery, useChildren, useFavourites, useRecents } from "./queries";
+import { nodeHref } from "./rules";
 import { useTreeState } from "./treeState";
 
 function greeting(): string {
@@ -176,6 +179,8 @@ export function LibraryHome() {
         </div>
       </section>
 
+      {import.meta.env.VITE_MOCK_API === "1" ? null : <ExamsStrip />}
+
       <section aria-labelledby="favourites-title" className="mb-8">
         <SectionTitle>
           <span id="favourites-title">Favourites</span>
@@ -239,7 +244,7 @@ function ItemStrip({
       {items.map((n) => (
         <li key={n.id} className="min-w-64 md:min-w-0">
           <Link
-            to={`/library/${n.id}`}
+            to={nodeHref(n)}
             className="flex min-h-16 items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-card hover:border-border-strong"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
@@ -253,5 +258,20 @@ function ItemStrip({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The next few exams, with days remaining and how much she has reviewed (M2). */
+function ExamsStrip() {
+  const stores = useStores();
+  const navigate = useNavigate();
+  return (
+    <section aria-label="Upcoming exams" className="mb-8">
+      <UpcomingExamsCard
+        api={stores.practice}
+        onPractice={(examId) => navigate(`/practice?exam=${examId}`)}
+        onOpenPlanner={() => navigate("/exams")}
+      />
+    </section>
   );
 }

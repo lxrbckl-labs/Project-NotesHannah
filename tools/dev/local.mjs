@@ -169,4 +169,9 @@ for (const child of children) {
 
 await waitFor(`${serverUrl}/healthz`, "the server");
 await waitFor(appOrigin, "the web app");
+if (process.env.NOTES_LOCAL_SEED === "1") {
+  say("seeding a small library (NOTES_LOCAL_SEED=1)");
+  const code = await run("node", ["tools/dev/seed.mjs"], { env });
+  if (code !== 0) say("the seed did not finish; continuing without it");
+}
 console.log(`\n[local] Ready. Open ${appOrigin}\n`);

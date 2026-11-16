@@ -75,6 +75,8 @@ export interface DocumentViewProps {
   onOpenQuestion?: (questionId: string) => void;
   /** Start reading or editing; defaults to editing on a computer, reading on touch. */
   initialMode?: "read" | "edit";
+  /** Scroll to this block and flash it once the document has loaded (a search hit, a link). */
+  focusBlockId?: string | undefined;
   className?: string;
 }
 
@@ -116,6 +118,7 @@ function DocumentScreen({
   onOpenConcept,
   onOpenQuestion,
   initialMode,
+  focusBlockId,
   className,
 }: DocumentViewProps) {
   const controller = useMemo(() => new DocumentController(store, documentId), [store, documentId]);
@@ -219,6 +222,18 @@ function DocumentScreen({
     },
     [reduced],
   );
+
+  // A link or search hit names a block: scroll to it once the document is there.
+  const focused = useRef<string | undefined>(undefined);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once per block id, when the document has loaded
+  useEffect(() => {
+    if (!focusBlockId || !doc || focused.current === focusBlockId) return;
+    const t = setTimeout(() => {
+      focused.current = focusBlockId;
+      scrollToBlock(focusBlockId);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [focusBlockId, doc === null]);
 
   const startDrag = useCallback(
     (blockId: string, event: PointerEvent, touch: boolean) => {
