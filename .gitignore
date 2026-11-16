@@ -6,3 +6,6 @@ dist/
 .DS_Store
 data/
 .worktrees/
+playwright-report/
+test-results/
+*.log

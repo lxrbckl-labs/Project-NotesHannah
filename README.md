@@ -27,3 +27,30 @@ Served at `notes.hannahporras.app`, from a Docker container on the Mac mini behi
 - **One block tree, two views:** a linear page and a canvas.
 - **Login-gated, per-user data, no sharing.** Accounts are created by the admin.
 - **Her data must not be lost:** originals kept, revision history, trash, backups with a tested restore.
+
+## Development
+
+Requires Node 25 and pnpm 10 (see `.nvmrc`). Copy `.env.example` to `.env` to change defaults.
+
+```sh
+pnpm install            # install the workspace
+pnpm dev                # server on :3000, web on :5173 (proxies /api and /mcp to the server)
+pnpm test               # unit tests in every package
+pnpm gate               # lint + typecheck + test + build: run before every commit
+pnpm format             # apply Biome formatting and safe fixes
+pnpm exec playwright install chromium   # once, for the end-to-end layout check
+pnpm e2e                # Playwright smoke spec at phone, tablet and computer sizes
+```
+
+Layout: `apps/web` (React, Vite, Tailwind 4), `apps/server` (Hono: API, MCP endpoint, static
+files), `apps/converter` (file conversion worker), `packages/schema` (shared Zod schema),
+`deploy/` (Dockerfile and compose file), `fixtures/` (test material).
+
+Container, from the repository root:
+
+```sh
+docker build -f deploy/Dockerfile -t notes-app .
+docker run --rm -p 3000:3000 notes-app && curl localhost:3000/healthz
+# or, with a named volume for the database and a bind mount for DATA_DIR:
+PORT=3000 DATA_DIR=./data docker compose -f deploy/docker-compose.yml up --build
+```

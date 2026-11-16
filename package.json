@@ -1,0 +1,27 @@
+{
+  "name": "project-noteshannah",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.30.2",
+  "engines": {
+    "node": ">=25",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm build:schema && pnpm -r --parallel --filter @notes/server --filter @notes/web dev",
+    "test": "pnpm build:schema && pnpm -r test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "pnpm build:schema && pnpm -r typecheck",
+    "build:schema": "pnpm --filter @notes/schema build",
+    "e2e": "pnpm --filter @notes/web e2e",
+    "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.8",
+    "@types/node": "^25.0.0",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}
