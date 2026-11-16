@@ -6,6 +6,7 @@ dist/
 .DS_Store
 data/
 .worktrees/
+.claude/worktrees/
 playwright-report/
 test-results/
 *.log

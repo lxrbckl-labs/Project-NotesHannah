@@ -10,7 +10,8 @@
       "!**/test-results",
       "!pnpm-lock.yaml",
       "!**/*.md",
-      "!spikes"
+      "!spikes",
+      "!!.claude"
     ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

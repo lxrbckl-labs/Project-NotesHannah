@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { SCHEMA_VERSION } from "@notes/schema";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { type Config, webDistDir } from "./config.js";
 import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
@@ -104,13 +104,28 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
       throw new Error(`Built web app not found at ${indexPath}. Run \`pnpm build\` first.`);
     }
     const indexHtml = readFileSync(indexPath, "utf8");
+    // The shell names the current build's files, so it is never served from a cache, however it is asked for.
+    const shell = (c: Context) => {
+      c.header("Cache-Control", "no-cache");
+      return c.html(indexHtml);
+    };
+    app.get("/", shell);
+    app.get("/index.html", shell);
     app.use("*", serveStatic({ root: relative(process.cwd(), dist) || "." }));
     app.get("*", (c) => {
       if (API_PREFIXES.some((p) => c.req.path === p || c.req.path.startsWith(`${p}/`))) {
         return notFound();
       }
-      return c.html(indexHtml);
+      // A missing file is a 404, never the page shell. After a rebuild, a tab still on the old build asks for
+      // script files that no longer exist; answering those with HTML breaks it with a confusing error.
+      if (isFilePath(c.req.path)) return c.text("Not found", 404);
+      return shell(c);
     });
   }
   return app;
+}
+
+/** True for a request that names a file (anything under /assets, or a last segment with an extension). */
+export function isFilePath(path: string): boolean {
+  return path.startsWith("/assets/") || /\.[a-z0-9]{2,5}$/i.test(path.split("/").pop() ?? "");
 }
