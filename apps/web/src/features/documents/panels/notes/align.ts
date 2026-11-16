@@ -173,11 +173,18 @@ export class AlignedLayout {
     // short, or shares the sidebar) waits at the foot, pushing the ones above it up too (never
     // past the card she is looking at).
     const screenBottom = view + this.scroller.clientHeight;
+    // The highest each card may rise to: just under the card she is looking at.
+    const lowest: number[] = placed.map(() => Number.NEGATIVE_INFINITY);
+    for (let i = f + 1; f >= 0 && i < placed.length; i++) {
+      const prev = placed[i - 1] as Placed;
+      lowest[i] = (i === f + 1 ? (ys[f] as number) : (lowest[i - 1] as number)) + prev.height + GAP;
+    }
     let ceiling = bottom;
     for (let i = placed.length - 1; i > (f >= 0 ? f : -1); i--) {
       const p = placed[i] as Placed;
       if (p.anchor + offset >= screenBottom - 24) continue;
-      if ((ys[i] as number) + p.height > ceiling) ys[i] = ceiling - p.height;
+      if ((ys[i] as number) + p.height > ceiling)
+        ys[i] = Math.max(ceiling - p.height, lowest[i] as number);
       ceiling = Math.min(ceiling, ys[i] as number) - GAP;
     }
     for (const [i, p] of this.placed.entries()) {

@@ -195,11 +195,12 @@ export function NoteCard({
       // biome-ignore lint/a11y/noNoninteractiveTabindex: the card is focusable so the keyboard can look at it
       tabIndex={0}
       className={cn(
-        "rounded-card border bg-surface px-3 py-2.5 text-ui shadow-card outline-none transition-[box-shadow,border-color,opacity] duration-(--duration-fast)",
+        // An outline, not a ring: the card's own shadow would paint over a ring.
+        "rounded-card border bg-surface px-3 py-2.5 text-ui shadow-card outline-offset-1 transition-[box-shadow,border-color,opacity] duration-(--duration-fast)",
         note.colour ? "border-l-4 border-tone-border border-l-tone-solid" : "border-border",
         focused
-          ? "shadow-pop ring-2 ring-accent"
-          : "focus-visible:ring-2 focus-visible:ring-accent",
+          ? "shadow-pop outline-2 outline-accent"
+          : "outline-none focus-visible:outline-2 focus-visible:outline-accent",
         note.resolved && !focused && "opacity-70",
         here && !focused && "border-accent-border",
         className,

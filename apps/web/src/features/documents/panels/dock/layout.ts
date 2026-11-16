@@ -57,7 +57,7 @@ export function defaultDock(layout: LayoutClass): DockState {
     case "tablet-landscape":
       return {
         left: { panels: ["outline"], collapsed: true, width: 260 },
-        right: { panels: ["notes"], collapsed: false, width: 272 },
+        right: { panels: ["notes"], collapsed: false, width: 288 },
         folded: [],
       };
     case "tablet-portrait":
