@@ -7,6 +7,7 @@ import { Tooltip } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/cn";
 import { HUE_LABEL } from "../../../lib/hues";
 import { useActions } from "../context";
+import { useScrollEdges } from "../ui/hooks";
 import { BlockStyleMenu } from "./BlockStyleMenu";
 import {
   ActionButtons,
@@ -47,6 +48,9 @@ const COLOURABLE = new Set([
  * then indent, then the list toggles, then the block colour.
  */
 const MAX_FOLD = 4;
+
+/** Width of the fade at a cut edge (the same as the shared ScrollCue's). */
+const FADE = 28;
 
 /**
  * The formatting ribbon, Word and AFFiNE style: always shown under the
@@ -106,6 +110,15 @@ export function Ribbon({
     if (el.scrollWidth > box.clientWidth + 1 && fold < MAX_FOLD) setFold(fold + 1);
   }, [fold, width]);
 
+  // Still too wide after folding (a narrow page beside the app's sidebar): the row scrolls inside
+  // itself, and the cut edge fades, as the shared ScrollCue does, so a half-shown button reads as
+  // "more this way" rather than as a broken bar.
+  const edges = useScrollEdges(outer);
+  const mask =
+    edges.start || edges.end
+      ? `linear-gradient(to right, ${edges.start ? "transparent 0" : "#000 0"}, #000 ${FADE}px, #000 calc(100% - ${FADE}px), ${edges.end ? "transparent 100%" : "#000 100%"})`
+      : undefined;
+
   const colourable = Boolean(block && COLOURABLE.has(block.type));
   const colour = block?.style?.color ?? null;
   const pickColour = (token: (typeof COLOR_TOKENS)[number] | null) => {
@@ -129,7 +142,10 @@ export function Ribbon({
       aria-label="Formatting"
       data-testid="format-ribbon"
       data-live={editor ? "true" : "false"}
+      data-more-start={edges.start}
+      data-more-end={edges.end}
       className="relative z-(--z-sticky) shrink-0 overflow-x-auto overscroll-x-contain border-b border-border bg-surface [scrollbar-width:none]"
+      style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
     >
       <div
         ref={row}
