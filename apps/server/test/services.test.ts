@@ -83,7 +83,7 @@ describe("library hooks: documents follow their node", () => {
     expect(t.db.prepare("SELECT COUNT(*) AS n FROM blocks").get()).toEqual({ n: 1 });
     const kinds = t.changes().map((c) => c.action);
     expect(kinds).toContain("document.trashed");
-    expect(kinds).toContain("document.restored_from_trash");
+    expect(kinds).toContain("document.untrashed");
     expect(kinds).toContain("document.deleted");
   });
 
@@ -251,6 +251,36 @@ describe("citations to a trashed source, end to end", () => {
 });
 
 describe("change feed and activity log cover every domain", () => {
+  it("a forced filing of untranscribed pages carries its reason in the activity log", async () => {
+    const t = composed();
+    const { sections } = t.spine();
+    const lecture = t.services.library.create(
+      t.alice,
+      {
+        parentId: sections.lectures as string,
+        kind: "lecture",
+        name: "Beta blockers",
+        lecture: { number: 7, date: "2026-10-14" },
+      },
+      t.bot.actor,
+    );
+    const { file } = await t.convertedFile(t.bot, { name: "scan.pptx" });
+    expect(() => t.services.files.fileUnder(t.bot, file.id, lecture.id)).toThrow(
+      /without a transcript/,
+    );
+    t.services.files.fileUnder(t.bot, file.id, lecture.id, {
+      force: true,
+      reason: "the slides are pictures only",
+    });
+    const filed = t.activity().find((a) => a.action === "file.filed");
+    expect(filed?.summary).toContain(
+      "(forced; 2 pages not transcribed: the slides are pictures only)",
+    );
+    // she is never asked
+    const hers = await t.convertedFile(t.bot, { name: "hers.pptx" });
+    expect(() => t.services.files.fileUnder(t.she, hers.file.id, lecture.id)).not.toThrow();
+  });
+
   it("agent work reads as plain words in the activity log; hers does not appear", async () => {
     const t = composed();
     const { sections } = t.spine();
@@ -275,6 +305,11 @@ describe("change feed and activity log cover every domain", () => {
     t.services.files.saveTranscript(t.bot, {
       pageId: pages[1]?.id as string,
       text: "Page two text",
+      flags: [],
+    });
+    t.services.files.saveTranscript(t.bot, {
+      pageId: pages[0]?.id as string,
+      text: "Page one text",
       flags: [],
     });
     t.services.files.fileUnder(t.bot, file.id, lecture.id);
@@ -313,12 +348,12 @@ describe("change feed and activity log cover every domain", () => {
     const feed = t.changes();
     const actions = feed.map((c) => c.action);
     for (const expected of [
-      "node.created",
+      "library.created",
       "file.uploaded",
       "file.converted",
       "transcript.saved",
       "transcript.reviewed",
-      "node.trashed",
+      "library.trashed",
       "file.unfiled",
     ]) {
       expect(actions, expected).toContain(expected);

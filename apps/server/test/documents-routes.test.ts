@@ -290,7 +290,7 @@ describe("document routes", () => {
     expect(changes.body.hasMore).toBe(true);
     const rest = await f.t.call(f.alice, "GET", `/api/changes?cursor=${changes.body.nextCursor}`);
     expect(rest.body.items).toHaveLength(1);
-    const act = await f.t.call(f.alice, "GET", "/api/activity?action=insert_blocks");
+    const act = await f.t.call(f.alice, "GET", "/api/activity?action=block.inserted");
     expect(act.body.items).toHaveLength(1);
     expect(act.body.items[0]).toMatchObject({
       keyLabel: expect.any(String),

@@ -21,6 +21,7 @@ import { findUserById } from "../../domains/accounts/users.js";
 import { json } from "../format.js";
 import { describe, jsonOf } from "../schema.js";
 import { defineTool, parseWith, type ToolContext } from "../tool.js";
+import { studyMapGuide } from "./study-map.js";
 
 /** The server `instructions`, sent on connect. Kept short: some clients show only the start, Codex none. */
 export const SERVER_INSTRUCTIONS =
@@ -36,6 +37,7 @@ const TOPICS = [
   "practice",
   "concepts",
   "requests",
+  "study_map",
 ] as const;
 type Topic = (typeof TOPICS)[number];
 
@@ -116,6 +118,7 @@ function toolMap(f: Facts): string {
     ["save_transcript", "a page's verbatim transcript with flags"],
     ["write_document", "create a document of cited study material"],
     ["edit_blocks", "insert, change, move, delete or regenerate blocks"],
+    ["study_map", "read or arrange a document's study map (frames, cards, labelled connectors)"],
     ["concepts", "upsert concepts and relations; search, page, graph, filter, compare"],
     ["practice_questions", "create (or validate), list, update, trash questions"],
     ["study_progress", "her weak areas, missed notebook, due cards, sessions (read only)"],
@@ -172,7 +175,7 @@ function workflow(f: Facts, detail: boolean): string {
     [
       "edit_library",
       'Find or create the term, course and lecture (lectures go in the course\'s Lectures section, numbered and dated), then source_files "file" it under the lecture.',
-      " Filing with untranscribed pages is allowed but warns.",
+      ' Filing is refused while any page has no transcript (the error lists the page numbers); only if a page truly cannot be transcribed, pass "force": true with a short "reason".',
     ],
     [
       "write_document",
@@ -306,6 +309,24 @@ function blockCatalogue(full: boolean): string {
   return lines.join("\n");
 }
 
+/** What the study map is for, short; the detail is the study_map topic. */
+function studyMapSection(): string {
+  return [
+    "Study map: every document also has a map she can open: its blocks as cards on a canvas, grouped in frames and joined by labelled connectors. When she asks you to arrange or summarise a document visually, or after writing a long guide, use study_map. You describe STRUCTURE only (which cards, which frame, how they relate) and the app lays it out; she can drag cards and what she places stays where she put it. Never send coordinates.",
+    `study_map ${json({
+      action: "set_structure",
+      documentId: "doc_…",
+      cards: [
+        { ref: "a", content: { kind: "block", blockIds: ["blk_…"] } },
+        { ref: "b", content: { kind: "note", text: "Key point" } },
+      ],
+      connectors: [{ from: "a", to: "b", label: "leads to", kind: "leads_to" }],
+      frames: [{ title: "Topic", members: ["a", "b"] }],
+    })}`,
+    'Her pinned or edited items are left alone unless you pass the requestId of her request about the whole document. start_here {"topic":"study_map"} has every op.',
+  ].join("\n");
+}
+
 function overview(f: Facts): string {
   const scopeLine =
     f.scope === "write"
@@ -339,13 +360,14 @@ function overview(f: Facts): string {
     "- Her blocks, questions and reviewed items are protected; only a claimed request of hers lifts that (pass its requestId).",
     "- Before writing for a lecture, claim it (edit_library claim) so two agents do not write the same thing.",
     "",
+    ...(has(f, "study_map") ? ["## Study map", studyMapSection(), ""] : []),
     "## Content types",
     blockCatalogue(false),
     practiceGuide(false),
     conceptsGuide(false),
     "",
     "## Results and errors",
-    'Results are readable text with the facts as structured JSON. Lists are paged (nextCursor). A refused call says the code, the field or rule, a hint and a valid example: fix and retry. Topics for detail: start_here {"topic":"workflow"} (and library, transcription, citations, blocks, practice, concepts, requests).',
+    'Results are readable text with the facts as structured JSON. Lists are paged (nextCursor). A refused call says the code, the field or rule, a hint and a valid example: fix and retry. Topics for detail: start_here {"topic":"workflow"} (and library, transcription, citations, blocks, practice, concepts, requests, study_map).',
   ].join("\n");
 }
 
@@ -362,7 +384,7 @@ export const startHere = defineTool({
   },
   inputSchema: describe(jsonOf(StartInput), {
     topic:
-      '"overview" (default: everything in brief), or one topic in full: "workflow", "library", "transcription", "citations", "blocks" (every block type with an example), "practice" (every question type with an example), "concepts" (types and which relation fits which pair), "requests".',
+      '"overview" (default: everything in brief), or one topic in full: "workflow", "library", "transcription", "citations", "blocks" (every block type with an example), "practice" (every question type with an example), "concepts" (types and which relation fits which pair), "requests", "study_map" (every op with an example, the pin rule).',
   }),
   parse: (raw) =>
     parseWith("start_here", StartInput, raw, { topic: "overview" }) as z.output<typeof StartInput>,
@@ -378,6 +400,7 @@ export const startHere = defineTool({
       practice: () => practiceGuide(true),
       concepts: () => conceptsGuide(true),
       requests: requestsGuide,
+      study_map: studyMapGuide,
       citations: citationRules,
       transcription: transcriptionRules,
     };

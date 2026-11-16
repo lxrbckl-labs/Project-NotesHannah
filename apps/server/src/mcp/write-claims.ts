@@ -56,12 +56,33 @@ export function createWriteClaims(db: Db, library: LibraryService, now: () => nu
 
   /** The live claim on this node or the nearest claimed ancestor. */
   function covering(userId: string, nodeId: string): WriteClaim | null {
-    const node = library.get(userId, nodeId);
+    let node: ReturnType<LibraryService["get"]>;
+    try {
+      node = library.get(userId, nodeId);
+    } catch {
+      return null; // not in her library (any more): nothing can be claimed there
+    }
     for (const id of [node.id, ...[...node.ancestors].reverse()]) {
       const c = live(userId, id);
       if (c) return c;
     }
     return null;
+  }
+
+  /** Live claims on nodes strictly below this one (a study guide being written in a section, say). */
+  function under(userId: string, nodeId: string): WriteClaim[] {
+    const rows = db
+      .prepare(
+        "SELECT * FROM mcp_write_claims WHERE user_id = ? AND expires_at > ? AND node_id != ?",
+      )
+      .all(userId, now(), nodeId) as Row[];
+    return rows.map(toClaim).filter((c) => {
+      try {
+        return library.get(userId, c.nodeId).ancestors.includes(nodeId);
+      } catch {
+        return false;
+      }
+    });
   }
 
   function claim(
@@ -112,7 +133,7 @@ export function createWriteClaims(db: Db, library: LibraryService, now: () => nu
     }
   }
 
-  return { live, covering, claim, release, assertFree };
+  return { live, covering, under, claim, release, assertFree };
 }
 
 export type WriteClaims = ReturnType<typeof createWriteClaims>;

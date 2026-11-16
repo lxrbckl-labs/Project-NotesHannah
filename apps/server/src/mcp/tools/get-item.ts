@@ -20,7 +20,7 @@ import { childKindsOf, clip, nodeItem, nodeLine, placementRule } from "../format
 import { describe, jsonOf } from "../schema.js";
 import { fileItem, fileLine, pagesIfAny, progressOf } from "../sources.js";
 import { defineTool, parseWith, type ToolContext, type ToolOutput } from "../tool.js";
-import { holderName } from "../write-claims.js";
+import { holderName, type WriteClaim } from "../write-claims.js";
 import { conceptPage } from "./concepts.js";
 import { getExam } from "./exams.js";
 import { getQuestion } from "./practice.js";
@@ -65,6 +65,30 @@ function docs(ctx: ToolContext) {
   return port;
 }
 
+/** Who is writing here (a claim on this node or above) and below it. */
+function writingLines(
+  ctx: ToolContext,
+  covering: WriteClaim | null,
+  below: readonly WriteClaim[],
+): string[] {
+  const lines: string[] = [];
+  if (covering) {
+    lines.push(
+      covering.keyId === ctx.keyId
+        ? `You hold the writing claim on ${covering.nodeId} until ${covering.expiresAt}.`
+        : `Being written for by ${holderName(covering)} until ${covering.expiresAt}${covering.note ? ` ("${covering.note}")` : ""}: pick other work; writes here by you are refused until then.`,
+    );
+  }
+  for (const c of below) {
+    lines.push(
+      c.keyId === ctx.keyId
+        ? `You hold the writing claim on ${c.nodeId} below this until ${c.expiresAt}.`
+        : `Being written below this: ${c.nodeId} by ${holderName(c)} until ${c.expiresAt}${c.note ? ` ("${c.note}")` : ""}; do not write the same thing.`,
+    );
+  }
+  return lines;
+}
+
 function getNode(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
   let node: NodeWithLinks;
   try {
@@ -100,13 +124,7 @@ function getNode(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
   }
   lines.push(placementRule(node.kind));
   const writing = ctx.claims.covering(ctx.userId, id);
-  if (writing) {
-    lines.push(
-      writing.keyId === ctx.keyId
-        ? `You hold the writing claim on ${writing.nodeId} until ${writing.expiresAt}.`
-        : `Being written for by ${holderName(writing)} until ${writing.expiresAt}${writing.note ? ` ("${writing.note}")` : ""}: pick other work; writes here by you are refused until then.`,
-    );
-  }
+  lines.push(...writingLines(ctx, writing, ctx.claims.under(ctx.userId, id)));
   const links: Record<string, unknown> = {
     parent: node.parentId,
     ancestors,
@@ -114,6 +132,7 @@ function getNode(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
     childrenNextCursor: children.nextCursor,
     canCreateHere: childKindsOf(node.kind),
     writingClaim: writing,
+    writingClaimsBelow: ctx.claims.under(ctx.userId, id),
   };
   if (ctx.backend.documents && (node.kind === "lecture" || node.kind === "document")) {
     const doc = ctx.backend.documents.documentForNode(ctx.auth, id);
@@ -278,6 +297,7 @@ function getDocument(ctx: ToolContext, id: string, input: GetInput): ToolOutput 
       return `- ${b.id} ${b.type} [${b.origin}, ${b.review.status}${b.citations.length ? `, ${b.citations.length} citation(s)` : ""}${b.generalKnowledge ? ", general knowledge" : ""}] ${text}`;
     }),
   ];
+  lines.push(...writingLines(ctx, ctx.claims.covering(ctx.userId, document.nodeId), []));
   if (end < total) lines.push(`More blocks: get_item {"id":"${id}","offset":${end}}.`);
   const references = input.offset === 0 ? port.references(ctx.auth, id) : [];
   if (references.length) {
@@ -290,7 +310,7 @@ function getDocument(ctx: ToolContext, id: string, input: GetInput): ToolOutput 
     }
   }
   lines.push(
-    `Full block JSON is in "blocks". Change blocks with edit_blocks; pass expectedRevision ${document.revision}.`,
+    `Full block JSON is in "blocks". Change blocks with edit_blocks; pass expectedRevision ${document.revision}.${ctx.available.has("study_map") ? ` Its study map: study_map {"action":"get","documentId":"${id}"}.` : ""}`,
   );
   return {
     text: lines.join("\n"),
@@ -301,6 +321,7 @@ function getDocument(ctx: ToolContext, id: string, input: GetInput): ToolOutput 
       references,
       range: { offset: input.offset, end, total },
       links: { node: document.nodeId },
+      writingClaim: ctx.claims.covering(ctx.userId, document.nodeId),
     },
   };
 }

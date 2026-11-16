@@ -17,7 +17,7 @@ export interface ActivityLink {
 /** What other domains hand to the log. */
 export interface ActivityInput {
   actor: Actor;
-  /** A stable code, e.g. "blocks.insert". */
+  /** A stable code, e.g. "block.inserted". */
   action: string;
   /** What the agent did, in plain words. */
   summary: string;

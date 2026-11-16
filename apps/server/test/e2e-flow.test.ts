@@ -359,23 +359,23 @@ describe("end to end: from upload to study guide and back through the trash", ()
     const feed = (await ok(as.user("GET", "/api/changes?limit=500"))).items as Json[];
     const actions = new Set(feed.map((c) => c.action));
     for (const action of [
-      "node.created",
-      "node.trashed",
-      "node.restored",
+      "library.created",
+      "library.trashed",
+      "library.restored",
       "file.uploaded",
       "file.converted",
       "file.filed",
       "file.unfiled",
       "transcript.saved",
       "document.created",
-      "document.updated",
-      "document.reviewed",
+      "block.edited",
+      "block.reviewed",
       "document.trashed",
-      "document.restored_from_trash",
+      "document.untrashed",
     ]) {
       expect(actions, action).toContain(action);
     }
-    expect(feed.find((c) => c.action === "node.trashed")?.actor).toEqual({
+    expect(feed.find((c) => c.action === "library.trashed")?.actor).toEqual({
       type: "user",
       userId: hannah.id,
     });

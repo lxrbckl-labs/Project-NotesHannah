@@ -66,7 +66,7 @@ describe("canvas follows the document's blocks", () => {
     expect(pinnedCards(s, doc.documentId)).toEqual([...pinned].sort());
     expect(canvasIntegrityProblems(c)).toEqual([]);
     expect(
-      s.changes().some((e) => e.action === "canvas.merged" && e.documentId === doc.documentId),
+      s.changes().some((e) => e.action === "canvas.synced" && e.documentId === doc.documentId),
     ).toBe(true);
   });
 

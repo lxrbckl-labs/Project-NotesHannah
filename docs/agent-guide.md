@@ -97,6 +97,25 @@ with "text": true), write the lecture note (write_document), record concepts and
 relations (concepts upsert), author practice questions (practice_questions
 create), and release every claim.
 
+Filing needs transcripts: source_files file (and move) is refused while any page
+of the file has no transcript, and the error lists the page numbers. Only if a
+page truly cannot be transcribed, pass "force": true with a short "reason"
+(it is recorded in the activity log).
+
+Study map: every document has a map she can open, its blocks as cards in frames
+joined by labelled connectors. When she asks you to arrange or summarise a
+document visually, use study_map (get, set_structure, change). You describe the
+structure only; the app lays it out, she can drag cards, and what she places
+stays where she put it. Never send coordinates. Her pinned or edited items are
+left alone unless you pass the requestId of her request about the whole document.
+start_here with topic "study_map" has every operation.
+
+Answering a request: the numbers with units in your reply (doses, ranges,
+decimals) are checked against the page or block the request is about and what you
+link. Figures found nowhere come back as a warning and nothing is completed; link
+a source that has them, or pass "acknowledgeUnsourced": true if they truly come
+from general knowledge (she then sees the reply flagged).
+
 Rules in one breath
 -------------------
 Transcribe verbatim and flag every dose, unit and decimal. Every generated

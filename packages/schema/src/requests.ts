@@ -350,6 +350,14 @@ export const RequestReply = z.object({
   links: z.array(RequestLink).max(REQUEST_LIMITS.links),
   by: ReplyAuthor,
   at: Timestamp,
+  /**
+   * The reply states numbers with units (doses, ranges, decimals) that its sources (the pages or
+   * blocks the request is about, and what the agent cited) do not contain, and the agent said to
+   * go ahead anyway. She sees "contains figures not found in your notes". Absent on older replies.
+   */
+  unsourcedFigures: z.boolean().optional(),
+  /** Which figures, as the agent wrote them; present when `unsourcedFigures` is true. */
+  unsourcedFigureList: z.array(z.string().max(60)).max(20).optional(),
 });
 export type RequestReply = z.infer<typeof RequestReply>;
 
@@ -468,6 +476,12 @@ export const CompleteRequestInput = z.strictObject({
     .min(1, { error: "Say what you did, in a sentence or two, so she can see the answer." })
     .max(REQUEST_LIMITS.replyChars),
   links: z.array(RequestLink).max(REQUEST_LIMITS.links).default([]),
+  /**
+   * The reply's numbers with units are checked against the pages and blocks the request is about
+   * and the ones you cite in `links`. Figures found nowhere are refused with a warning; send true
+   * only when they truly come from general knowledge: she then sees the reply flagged.
+   */
+  acknowledgeUnsourced: z.boolean().optional(),
 });
 export type CompleteRequestInput = z.infer<typeof CompleteRequestInput>;
 

@@ -22,7 +22,7 @@ export function backendFromServices(services: Services): McpBackend {
     claim: (auth, id) => files.claim(auth, id),
     release: (auth, id) => files.release(auth, id),
     retry: (auth, id) => files.retry(auth, id),
-    fileUnder: (auth, id, nodeId) => files.fileUnder(auth, id, nodeId),
+    fileUnder: (auth, id, nodeId, options) => files.fileUnder(auth, id, nodeId, options),
     pageImage(auth, pageId, size) {
       const stored = files.pageImage(auth, pageId, size);
       return { data: readFileSync(stored.path), mimeType: stored.contentType };
@@ -97,6 +97,7 @@ export function backendFromServices(services: Services): McpBackend {
     exams: services.exams,
     requests: services.requests,
     concepts: services.concepts,
+    canvas: services.canvasPort,
     search: { search: (userId, request) => search.search(userId, request) },
     files: filesPort,
     documents: documentsPort,

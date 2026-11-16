@@ -601,15 +601,15 @@ describe("canvas: the activity log and the change feed", () => {
     expect(log.some((x) => /^Changed the study map for Beta blockers: added 1 card/.test(x))).toBe(
       true,
     );
-    const entry = s.activity().find((e) => e.action === "canvas.structure_set");
+    const entry = s.activity().find((e) => e.action === "canvas.arranged");
     expect(entry?.links[0]).toMatchObject({ type: "document", id: doc.documentId });
 
     const [a] = s.canvasOf(doc.documentId).cards;
     s.place(doc.documentId, [{ id: a?.id as string, x: 3, y: 3 }]);
     const feed = s.changes().filter((e) => e.objectType === "canvas");
     expect(feed.map((e) => e.action)).toEqual([
-      "canvas.structure_set",
-      "canvas.changed",
+      "canvas.arranged",
+      "canvas.edited",
       "canvas.placed",
     ]);
     expect(feed[0]).toMatchObject({

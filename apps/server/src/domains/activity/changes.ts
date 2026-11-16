@@ -7,7 +7,7 @@ export interface ChangeEntry {
   /** Position in the feed. Strictly increasing; pass the last one back as `cursor`. */
   seq: number;
   at: string;
-  /** e.g. "document.created", "document.updated", "document.trashed". */
+  /** e.g. "document.created", "block.edited", "library.moved". */
   action: string;
   objectType: string;
   /** The objects touched: the document, plus any blocks. */

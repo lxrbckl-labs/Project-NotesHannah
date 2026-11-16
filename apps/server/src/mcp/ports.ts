@@ -12,6 +12,7 @@ import type {
   UploadTicket,
   WriterOperation,
 } from "@notes/schema";
+import type { CanvasPort } from "../domains/canvas/index.js";
 import type { ConceptsService } from "../domains/concepts/index.js";
 import type { ExamsService } from "../domains/exams/index.js";
 import type { LibraryService } from "../domains/library/index.js";
@@ -72,7 +73,12 @@ export interface FilesPort {
   /** Queue a failed conversion again. */
   retry(auth: AuthContext, fileId: string): SourceFile;
   /** File it under a lecture, folder or Sources section; null takes it back to the inbox. */
-  fileUnder(auth: AuthContext, fileId: string, nodeId: string | null): SourceFile;
+  fileUnder(
+    auth: AuthContext,
+    fileId: string,
+    nodeId: string | null,
+    options?: { force?: boolean | undefined; reason?: string | undefined },
+  ): SourceFile;
   pageImage(auth: AuthContext, pageId: string, size: "page" | "thumb"): PageImage;
   /** A signed URL that needs no credential, valid for minutes. */
   pageImageLink(
@@ -200,6 +206,9 @@ export type ConceptsToolPort = Pick<
   | "suggestionsFor"
 >;
 
+/** The study map (docs/canvas.md): read, set the structure, change; validation problems come back, not thrown. */
+export type CanvasToolPort = CanvasPort;
+
 /** Everything the MCP layer runs on. Only `library` is required. */
 export interface McpBackend {
   library: LibraryService;
@@ -211,4 +220,5 @@ export interface McpBackend {
   exams?: ExamsToolPort | undefined;
   requests?: RequestsToolPort | undefined;
   concepts?: ConceptsToolPort | undefined;
+  canvas?: CanvasToolPort | undefined;
 }

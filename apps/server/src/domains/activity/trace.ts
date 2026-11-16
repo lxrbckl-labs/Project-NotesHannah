@@ -14,7 +14,7 @@ export interface Trace {
 }
 
 export interface TraceEntry {
-  /** The change feed's action, e.g. "question.created"; the activity log gets the same code. */
+  /** The change feed's action, e.g. "question.authored"; the activity log gets the same code. */
   action: string;
   objectType: string;
   objectIds: readonly string[];

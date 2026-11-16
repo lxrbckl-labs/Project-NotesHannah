@@ -201,7 +201,7 @@ describe("requests over MCP", () => {
 
     const actions = s.services.activity.list(a.user.id, { limit: 200 }).items.map((e) => e.action);
     expect(actions).toEqual(
-      expect.arrayContaining(["request.claim", "request.complete", "request.decline"]),
+      expect.arrayContaining(["request.claimed", "request.completed", "request.declined"]),
     );
   });
 });
@@ -524,7 +524,7 @@ describe("writing claims", () => {
 });
 
 describe("the full surface", () => {
-  test("sixteen tools, each described field by field, small and valid; start_here within budget", async () => {
+  test("seventeen tools, each described field by field, small and valid; start_here within budget", async () => {
     const { AjvJsonSchemaValidator } = await import("@modelcontextprotocol/sdk/validation/ajv");
     const { undescribed } = await import("../src/mcp/schema.js");
     const s = await realSetup();
@@ -543,6 +543,7 @@ describe("the full surface", () => {
       "save_transcript",
       "write_document",
       "edit_blocks",
+      "study_map",
       "concepts",
       "practice_questions",
       "study_progress",

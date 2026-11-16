@@ -25,7 +25,7 @@ describe("change feed", () => {
     expect(new Set(seqs).size).toBe(5);
     expect(all.hasMore).toBe(false);
     expect(all.items[2]).toMatchObject({
-      action: "document.updated",
+      action: "block.inserted",
       objectType: "document",
       nodeId: a.nodeId,
       summary: "A: Inserted 1 block",
@@ -112,11 +112,11 @@ describe("activity log", () => {
     expect(items[0]).toMatchObject({
       keyId: t.otherBot.actor.type === "agent" ? t.otherBot.actor.keyId : "",
       keyLabel: "Codex",
-      action: "delete_blocks",
+      action: "block.deleted",
       summary: "Guide: Deleted 1 block",
     });
     expect(items[1]).toMatchObject({
-      action: "insert_blocks",
+      action: "block.inserted",
       summary: "Guide: Inserted 2 blocks",
       keyLabel: "Claude Code",
     });
@@ -152,7 +152,7 @@ describe("activity log", () => {
     expect(t.log.list(t.alice, { keyId: keyOf(t.bot) }).items).toHaveLength(3);
     expect(t.log.list(t.alice, { keyId: keyOf(t.otherBot) }).items).toHaveLength(1);
     expect(t.log.list(t.alice, { objectId: b.documentId }).items).toHaveLength(1);
-    expect(t.log.list(t.alice, { action: "delete_blocks" }).items).toHaveLength(0);
+    expect(t.log.list(t.alice, { action: "block.deleted" }).items).toHaveLength(0);
     const all = t.log.list(t.alice, { limit: 3 });
     expect(all.items.map((e) => e.id)).toEqual(
       [...all.items.map((e) => e.id)].sort((x, y) => y - x),
