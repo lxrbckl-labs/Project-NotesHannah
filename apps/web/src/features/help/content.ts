@@ -655,6 +655,48 @@ export const SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "references",
+    title: "References",
+    lead: "Outside guidelines and tools you trust, tied to what you are studying.",
+    blocks: [
+      {
+        kind: "p",
+        text: "Your notes are built from your slides and your own notes. Trusted references such as PharmGuides are used to check and extend them, and anything that comes from a reference is labelled. It shows as its own small chip, like “PharmGuides · DoseDex”, apart from the numbered chips that open your slides, so you can always tell what came from class and what came from outside.",
+      },
+      { kind: "h3", text: "The References page" },
+      {
+        kind: "list",
+        items: [
+          "Open References from the sidebar. On a phone, use the References button on the library home, or the row in Settings.",
+          "PharmGuides sits at the top. Search it from here, or jump straight to its guideline index, AntibioticDex, DoseDex, TNKalc or Pharmacy Notes. It opens in a new tab.",
+          "Below it is your own list. Choose **Save a reference**, paste an address, give it a title and a note, and say what kind it is: a guideline, a calculator, a chart or an article.",
+          "Tie a reference to the courses, folders or lectures it belongs with. It then shows on those pages, under References, with Add a reference here beside it.",
+        ],
+      },
+      { kind: "h3", text: "In your notes" },
+      {
+        kind: "list",
+        items: [
+          "To mark a block yourself, open its menu and choose **Add a reference**. Pick one you saved or paste an address.",
+          "A document’s list of sources has a separate group, Outside references, and each saved reference shows where it is used.",
+          "Every drug and concept page has a Look up on PharmGuides link.",
+          "Search finds your saved references, and offers to search PharmGuides for the same words.",
+        ],
+      },
+      {
+        kind: "note",
+        tone: "tip",
+        title: "How assistants use them",
+        text: "An assistant writing your study guide starts from your slides, then checks the matching reference. Where the two disagree it keeps what your slide says and tells you. It links to a reference and never pastes long passages from one.",
+      },
+      {
+        kind: "note",
+        tone: "limit",
+        text: "The app links to outside sites and does not keep copies of their pages. A reference is a starting point: check the primary guideline before relying on it.",
+      },
+    ],
+  },
+  {
     id: "asking-for-help",
     title: "Asking for help",
     lead: "Leave a request and an assistant will pick it up.",
@@ -787,8 +829,8 @@ export const PARTS: GuidePart[] = [
     id: "part-study-tools",
     label: "Part three",
     title: "Study tools",
-    lead: "The canvas, concepts, practice and exams: four ways to learn from what is in your library.",
-    sections: ["canvas", "concepts", "practice", "exams"],
+    lead: "The canvas, concepts, practice, exams and references: five ways to learn from what is in your library.",
+    sections: ["canvas", "concepts", "practice", "exams", "references"],
   },
   {
     id: "part-help-and-housekeeping",

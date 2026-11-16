@@ -67,6 +67,7 @@ const screens: Screen[] = [
     ready: (p) => p.getByText(/Question 1 of 2/),
   },
   { pattern: "exams", at: () => "/exams", ready: h1("Exams") },
+  { pattern: "references", at: () => "/references", ready: h1("References") },
   {
     // sends her on to the question's own screen
     pattern: "question/:questionId",
