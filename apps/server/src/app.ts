@@ -9,9 +9,11 @@ import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { activityRoutes } from "./domains/activity/index.js";
 import { documentsRoutes } from "./domains/documents/index.js";
+import { examsRoutes } from "./domains/exams/index.js";
 import { filesRoutes } from "./domains/files/index.js";
 import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
+import { practiceRoutes } from "./domains/practice/index.js";
 import { searchRoutes } from "./domains/search/index.js";
 import type { AppEnv } from "./http/auth-context.js";
 import { authenticate } from "./http/authenticate.js";
@@ -74,6 +76,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/", filesRoutes(deps, {}, services.files));
   app.route("/api", documentsRoutes(deps, {}, services.documents));
   app.route("/api", activityRoutes(deps, services));
+  app.route("/api", practiceRoutes(deps));
+  app.route("/api", examsRoutes(deps));
   // The agent front door: POST /mcp (API key only) and GET /agents.txt.
   app.route("/", mcpRoutes(deps));
 

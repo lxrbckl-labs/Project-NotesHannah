@@ -16,7 +16,6 @@ export * from "./registry.js";
 export * from "./rng.js";
 export * from "./scheduler.js";
 export * from "./session.js";
-export * from "./source-ref.js";
 export { matchBlank, normaliseLoose, normaliseStrict } from "./text-match.js";
 export * from "./units.js";
 export * from "./validate.js";

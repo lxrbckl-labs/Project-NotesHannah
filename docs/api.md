@@ -396,3 +396,174 @@ blockers`, `Uploaded beta-blockers.pptx`, `Transcribed page 3 of beta-blockers.p
 the `node`, `file` and `page`. `objectId` filters on any of those IDs. Conversion results
 (done by the converter, not an agent) and the knock-on effects of trashing a node are in the
 change feed only.
+(`insert_blocks`, `replace_generated`, ...) or `batch`; `summary` is plain words such as
+`Beta blockers: Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone`; `links` point at
+the document (with its library `nodeId`), up to 15 of the blocks, and the request when one
+was named. `objectId` filters on any of those IDs.
+
+## Practice
+
+Questions, practice sessions, the missed-questions notebook, weak areas and the review
+schedule. Code: `apps/server/src/domains/practice/`; the question schemas, grading and
+scheduling are the pure functions of `packages/schema/src/practice/` (see
+[practice.md](practice.md)). Types are `practice.Question`, `practice.QuestionInput`,
+`practice.Answer`, `practice.GradeResult`. Reads need any signed-in caller; changing routes
+need a session or a **write** key (`read_only_key` otherwise); the routes marked *session*
+need her browser session (an agent key gets `forbidden`). Everything is scoped to the caller:
+another user's question, session or exam is `not_found`.
+
+### Questions
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `POST /api/practice/questions` | `{ nodeIds, questions, partial? }`: 1 to 10 nodes, 1 to 100 questions as `QuestionInput` | `201` (`200` when nothing was stored) `{ stored, created: QuestionSummary[], problems }` |
+| `POST /api/practice/questions/validate` | `{ questions }` | `{ valid, problems }`; checks only, stores nothing |
+| `GET /api/practice/questions` | `nodeId` (and everything below it), `type`, `tag`, `conceptId`, `difficulty`, `review`, `examId`, `author` (`agent` or `user`), `trashed=true` (the trash instead), `full=true` (content with each item), `cursor`, `limit` | `{ items: QuestionSummary[] \| QuestionDetail[], nextCursor }`, in creation order |
+| `GET /api/practice/questions/:id` | | `{ question: QuestionDetail }`: the stored `question`, its `nodeIds`, `examIds`, `stats`, and its `card` |
+| `PATCH /api/practice/questions/:id` | `{ question?, nodeIds? }`: the whole new content (same type), and/or where it lives | `{ question: QuestionDetail }` |
+| `POST /api/practice/questions/:id/trash` / `restore` | none | `{ question: QuestionSummary }` |
+| `DELETE /api/practice/questions/:id` | none | `204`. *Session.* Only from the trash. Her attempts stay as history. |
+| `POST /api/practice/questions/:id/review` | `{ status: "reviewed" \| "unverified" }` | `{ question, changed }`. *Session.* |
+| `POST /api/practice/questions/review` | `{ questionIds (1 to 200), status }` | `{ changed, items }`. *Session.* |
+| `POST /api/practice/questions/:id/schedule` | `{ enabled }` | `{ question }`; puts any question type on the review schedule (flashcards always are) |
+| `GET /api/practice/questions/:id/attempts` | `cursor`, `limit` | list of her answers to it, newest first |
+| `GET /api/practice/citations/pages/:pageId`, `/files/:fileId` | `cursor`, `limit` | questions that cite a page (K5): `{ pageId, fileId, items: CitationBacklink[], nextCursor }` |
+
+`QuestionSummary` is `{ id, type, text, difficulty, tags, conceptIds, nodeIds, review, author,
+generalKnowledge, citationCount, scheduled, createdAt, updatedAt, trashedAt }`.
+
+- **Filing.** Every question lives under one or more library nodes: a lecture, a folder, a
+  document, or the Practice section itself. Another user's node is `not_found`; a trashed node
+  or any other kind of node is `invalid_input`. Listing by `nodeId` includes everything below
+  it, so a course lists all its questions.
+- **Authoring.** Each question is checked with `validateQuestionInput`. A batch is **atomic**:
+  if any question has a problem the whole call is `invalid_input`, nothing is stored, `message`
+  says how many failed and the first problem, `hint` lists every problem as
+  `questions[3] $.options[1].text: ...`, and `example` is a valid question of the first one's
+  type. With `"partial": true` the valid questions are stored and `problems` is
+  `[{ index, problems: [{ path, message, example }] }]` for the rest.
+  `POST .../validate` returns the same structure without storing anything.
+- **Citation rule.** Every question, from an agent or from her, needs at least one citation
+  or `generalKnowledge: true` (never both). Citations are checked against her library like
+  document citations: the page must be hers and not trashed, and the quote must occur
+  character for character in the page's current transcript (`$.sources[0].quote` otherwise).
+- **Provenance.** The server stamps `author` from the caller. An agent's questions start
+  `unverified`; hers are `reviewed`. Only her session marks questions reviewed. An agent may
+  not rewrite a question she reviewed or wrote (`forbidden`; moving it between nodes is
+  allowed). A rewrite by an agent makes the question the agent's and unverified again.
+- **Trash.** A question is hidden when it is trashed, or when every node it lives under is in
+  the trash; restoring brings it back with its history and schedule.
+
+### Sessions
+
+A session belongs to her. An agent can read sessions and results (G8) but cannot start one or
+answer. The server stores the question order, every variant seed (the numbers of a
+calculation) and every shuffle seed (option order), so a session is reproducible, and a
+session started on a phone continues on another device with the same questions, numbers and
+order.
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `POST /api/practice/sessions` | `{ scope, formats?, length? (default 10, at most 100), seed? }`. *Session.* | `201 { session: SessionView, next: PresentedQuestion \| null }` |
+| `GET /api/practice/sessions` | `status`, `cursor`, `limit` | list of `SessionView` (with `correct`), newest first |
+| `GET /api/practice/sessions/:id` | | `{ session }` |
+| `GET /api/practice/sessions/:id/next` | | `{ session, next }`: the first unanswered question, without its answer key; `null` when none is left |
+| `GET /api/practice/sessions/:id/items/:position` | | one position: unanswered `{ answered: false, question }`, or answered with her `attempt`, the `reveal` and the citations |
+| `POST /api/practice/sessions/:id/answer` | `{ position?, answer, timeTakenMs? }`. *Session.* | `AnswerOutcome` |
+| `POST /api/practice/sessions/:id/reveal` | `{ position }`. *Session.* | `{ position, reveal }`: the key of a question she marks herself (flashcard, free response, and those parts of a case) |
+| `POST /api/practice/sessions/:id/finish` | none. *Session.* | `SessionResults`; finishing twice is fine |
+| `POST /api/practice/sessions/:id/abandon` | none. *Session.* | `{ session }` |
+| `GET /api/practice/sessions/:id/results` | | `SessionResults` |
+
+`scope` is one of `{ kind: "nodes", nodeIds }` (each and everything below it),
+`{ kind: "concepts", conceptIds }`, `{ kind: "exam", examId }`, `{ kind: "missed", examId?,
+nodeIds? }` (the notebook), `{ kind: "due", examId?, nodeIds? }` (flashcards and scheduled
+questions due now, most overdue first, then new cards) or `{ kind: "all" }`. `formats` limits
+the question types (all by default). Questions are chosen by the shared `buildSession`:
+balanced across the types, weak questions more likely, shuffled. A small pool gives a shorter
+session (`shortfall` says by how much); an empty one is `invalid_input` with a hint saying why.
+
+- **No answer leaks.** `PresentedQuestion` is `{ position, total, questionId, type, view,
+  selfGraded }`. `view` is written field by field for each type (never the question minus a few
+  keys): multiple choice and select-all show option ids and texts in this session's order;
+  matching shows the left items and the right-hand column (always shuffled); fill-in shows the
+  text and the number of blanks; a calculation shows the prompt with her variant's numbers
+  filled in and `needsUnit`; a flashcard its front; free response its prompt; a case its
+  vignette and the views of its parts. Correct flags, rationales, accepted answers,
+  expressions, variables, units, rubrics, model answers, backs and explanations are absent until
+  she has answered.
+- **Grading is on the server.** `answer` is an `Answer` (one shape per type) graded with
+  `grade` from the stored question and the stored variant seed. Any `correct`, `score` or
+  `result` the client adds is ignored. An answer that cannot be read for the type (unknown option
+  id, wrong number of blanks, a free-response tick for a point that does not exist) is
+  `invalid_input` and does not use up the question; a calculation with a missing or wrong unit
+  is a graded wrong answer with feedback. Position defaults to the first unanswered one. A
+  position is answered once: a second answer is `conflict`.
+- **Self-graded types** (flashcard, free response, and those parts of a case) take her own
+  judgement in the answer (`rating`, or `covered` rubric positions). Call `reveal` first to show
+  the key; it never reveals the app-graded parts of a case.
+- **Time.** `timeTakenMs` is stored when sent; otherwise the server measures from the previous
+  answer (or the start of the session).
+- `AnswerOutcome` is `{ attempt, result: GradeResult, reveal, citations, generalKnowledge,
+  schedule, progress: { answered, total, finished }, next }`. `reveal` carries the explanation
+  (with a calculation's numbers filled in), each option's correctness and rationale, the pairs,
+  the accepted answers, the rubric and model answer, and for a case each part's. `schedule` is
+  `{ rating, intervalDays, due }` when the question has a card. Answering the last question
+  finishes the session.
+- `SessionResults` is `{ session, summary: { total, answered, unanswered, correct, incorrect,
+  accuracy, points, maxPoints, percent, timeTakenMs, durationMs }, items: [{ position,
+  questionId, type, text, answered, correct, score, points, maxPoints, timeTakenMs, answer,
+  result, tags, conceptIds, nodeIds }] }`. Unanswered items show no key. `text` is `null` for a
+  question deleted for good. `finish` closes the session with the questions she answered;
+  `abandon` closes it without finishing (its answers still count in the notebook and weak
+  areas). A closed session takes no more answers (`conflict`).
+
+### Notebook, weak areas, review schedule
+
+| Method and path | Query | Returns |
+|---|---|---|
+| `GET /api/practice/notebook` | `nodeId`, `type` | `{ items: [{ questionId, type, timesMissed, firstMissedAt, lastMissedAt, correctRun, stillNeeds, question: QuestionSummary }], counts: { total, byType } }`, newest miss first |
+| `GET /api/practice/weak-areas` | `nodeId`, `minAttempts` (5), `minQuestions` (3), `weakBelow` (0.7) | `{ byTag, byConcept, byNode, unmatchedAttempts, thresholds }`; each area is `{ key, attempts, correct, accuracy, meanScore, questions, status, label }` with `status` `weak`, `ok` or `insufficient_data`; `label` is the readable path of a library area |
+| `GET /api/practice/due` | `nodeId`, `examId`, `type`, `limit`, `utcOffsetMinutes` | `{ items: [{ question, card, overdueDays, intervals }], counts: { due, new, total, byDay: [{ date, count }] } }` |
+
+- **Notebook (G11).** Exactly the pure rule `notebookEntries` over her stored attempts: a
+  miss puts a question in; one correct answer takes it out (two in a row for a calculation);
+  flashcards never enter. There is no manual removal. Questions in the trash are not listed.
+- **Weak areas (G6).** `weakAreas` over her attempts, with each question's tags, concepts and
+  every node above its lecture (so a course and a folder have figures too). An area stays
+  `insufficient_data` until it has 5 attempts across 3 different questions.
+- **Spaced repetition (G9).** One card per (her, question), FSRS-6 via `reviewCard`. Flashcards
+  get one when they are created (new, due at once); other types join with
+  `POST .../schedule`. Any answer to a question that has a card reviews it: a flashcard uses
+  the rating she gave, other types `ratingFromGrade`. `due` lists reviews due now, most
+  overdue first, then new cards. `byDay` forecasts the next 14 days (today includes anything
+  overdue); `utcOffsetMinutes` says where her day ends (default 0, UTC). `intervals` previews
+  the days to the next review for each of the four buttons.
+
+## Exams
+
+An exam belongs to a course, has a date and lists the lectures, folders or documents it
+covers; each covered node must be inside the course. Code: `apps/server/src/domains/exams/`.
+Reads need any signed-in caller (agents read exams to plan a review schedule backwards from
+the date, M4); changing routes need a session or a write key; delete needs her session.
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `POST /api/exams` | `{ courseId, title, date, nodeIds?, notes? }`; `date` is `YYYY-MM-DD` | `201 { exam: ExamDetail }` |
+| `GET /api/exams` | `courseId`, `from`, `to` (days), `cursor`, `limit` | `{ items: [ExamView + daysRemaining], nextCursor }` by date, soonest first |
+| `GET /api/exams/upcoming` | `limit` (10), `withinDays`, `utcOffsetMinutes` | `{ items: ExamDetail[] }`: exams from today on, soonest first (the home screen, M2) |
+| `GET /api/exams/:id` | `utcOffsetMinutes` | `{ exam: ExamDetail }` |
+| `PATCH /api/exams/:id` | any of `title`, `date`, `nodeIds`, `notes` | `{ exam }` |
+| `DELETE /api/exams/:id` | none | `204`. *Session.* The material it covered is untouched. |
+
+`ExamView` is `{ id, courseId, courseName, title, date, notes, nodeIds, coverage: [{ nodeId,
+name, path }], createdBy, createdAt, updatedAt }`. `ExamDetail` adds `daysRemaining` (whole days
+from today, 0 on the day, negative once past) and `progress`: `{ questions, attempted,
+attemptedShare, attempts, correct, accuracy, dueCards, newCards, notebook }`, over the live
+questions filed under the covered nodes and everything below them (`attemptedShare` and
+`accuracy` are `null` until there is something to divide). A course in the trash hides its
+exams; a covered node deleted for good drops out of the list.
+
+An exam is also a session scope (`{ kind: "exam", examId }`, or `examId` on `missed` and `due`
+scopes, and a filter on the question list and the due deck): the questions in scope are those
+filed under the covered nodes.

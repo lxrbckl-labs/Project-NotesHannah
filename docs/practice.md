@@ -30,15 +30,15 @@ and pair ids optional). **`Question`** is the stored form (adds `id`, `author`, 
 | `prompt` | the question text (not on `fill_blank`, `flashcard`, `case`; see each type) |
 | `image` | optional `{ pageId, region? }`; `region` is `{ x, y, width, height }` as fractions 0 to 1 of the page |
 | `explanation` | required, shown after answering (optional on `flashcard` and `case`) |
-| `sources` | up to 10 `SourceRef`: `{ fileId, pageId, quote (1..1000), transcriptId?, label? }` |
+| `sources` | up to 10 `Citation` (the shared type): `{ fileId, pageId, quote (1..1000), transcriptId?, transcriptRevision?, region?, label? }` |
 | `generalKnowledge` | `true` only for a question not from her notes; labelled "not from your notes" |
 | `difficulty` | 1 to 3, default 2 |
 | `tags` | up to 20, lower-cased and de-duplicated on the way in |
 | `conceptIds` | up to 20 concept links |
 | stored only: `id`, `author` (Actor), `createdAt`, `updatedAt`, `review` (`unverified` or `reviewed`) | |
 
-**Citation rule:** at least one source, or `generalKnowledge: true`, never both. `SourceRef` is a local
-stand-in (`source-ref.ts`) that the integrator replaces with the shared Citation type.
+**Citation rule:** at least one source, or `generalKnowledge: true`, never both. Sources are the shared
+`Citation` type of `citations.ts`.
 
 **Light markdown** is allowed in `prompt`, `explanation`, `vignette`, `front`, `back` and `text`:
 `**bold**`, `*italic*`, `` `code` ``, line breaks, and `- ` or `1. ` lists. Not allowed: headings, tables, code
