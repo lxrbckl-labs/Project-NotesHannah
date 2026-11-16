@@ -4,12 +4,15 @@ import { GripVertical, MoreHorizontal, Star } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
 import { Link } from "react-router";
 import { IconButton } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { ActionMenu, ContextActions } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
+import type { Hue } from "../../lib/hues";
 import { useNodeActions } from "./actions";
+import { courseHue } from "./courseHue";
 import { useRowDnd } from "./dnd";
 import { InlineName } from "./InlineName";
-import { NodeIcon } from "./NodeIcon";
+import { NodeTile } from "./NodeIcon";
 import { folderDepthOf } from "./queries";
 import { type Destination, isPending, KIND_NAME, nodeHref, toDestination } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
@@ -41,12 +44,16 @@ export function NodeRow({
   parent,
   previousId,
   dnd,
+  hue: inherited,
 }: {
   node: NodeWithLinks;
   parent: NodeWithLinks | null;
   previousId: string | null;
   dnd: boolean;
+  /** The course colour of the page this row is on; terms have none. */
+  hue?: Hue | null | undefined;
 }) {
+  const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
   const client = useQueryClient();
   const actions = useNodeActions();
   const [renaming, setRenaming] = useState(false);
@@ -77,7 +84,9 @@ export function NodeRow({
 
   return (
     <ContextActions entries={entries}>
-      <li
+      <Card
+        as="li"
+        padding="none"
         data-testid="node-row"
         data-kind={node.kind}
         data-drop={dropMode ?? undefined}
@@ -85,7 +94,7 @@ export function NodeRow({
         {...dragProps}
         {...dropProps}
         className={cn(
-          "group flex min-h-16 items-center gap-1 rounded-2xl border border-border bg-surface pl-3 pr-1.5 shadow-card transition-colors hover:border-border-strong",
+          "group flex min-h-16 items-center gap-1 pl-3 pr-1.5 transition-colors duration-(--duration-fast) hover:border-border-strong",
           isPending(node) && "opacity-60",
         )}
       >
@@ -98,9 +107,7 @@ export function NodeRow({
         ) : null}
         {renaming ? (
           <div className="flex min-w-0 flex-1 items-center gap-3 py-2">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <NodeIcon kind={node.kind} section={node.section} />
-            </span>
+            <NodeTile kind={node.kind} section={node.section} hue={hue} />
             <InlineName
               value={node.name}
               label={`Rename ${node.name}`}
@@ -115,14 +122,12 @@ export function NodeRow({
           <Link
             to={nodeHref(node)}
             draggable={false}
-            className="flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-xl py-2"
+            className="flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-control py-2"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <NodeIcon kind={node.kind} section={node.section} />
-            </span>
+            <NodeTile kind={node.kind} section={node.section} hue={hue} />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{nodeTitle(node)}</span>
-              <span className="block truncate text-sm text-text-muted">{nodeMeta(node)}</span>
+              <span className="block truncate text-ui text-text-muted">{nodeMeta(node)}</span>
             </span>
             {node.favourite ? (
               <Star size={15} aria-label="Favourite" className="shrink-0 fill-accent text-accent" />
@@ -137,7 +142,7 @@ export function NodeRow({
           }
           entries={entries}
         />
-      </li>
+      </Card>
     </ContextActions>
   );
 }

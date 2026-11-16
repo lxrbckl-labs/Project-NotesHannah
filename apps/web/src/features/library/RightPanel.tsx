@@ -4,7 +4,8 @@ import { Button } from "../../components/ui/button";
 import { formatDateTime } from "../../lib/format";
 import { AskButton } from "../mounts/ask";
 import { useNodeActions } from "./actions";
-import { NodeIcon } from "./NodeIcon";
+import { useCourseHue } from "./courseHue";
+import { NodeTile } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { useNode } from "./queries";
 import { KIND_NAME } from "./rules";
@@ -13,13 +14,14 @@ import { KIND_NAME } from "./rules";
 export function RightPanel({ nodeId }: { nodeId: string | undefined }) {
   const node = useNode(nodeId);
   const actions = useNodeActions();
+  const hue = useCourseHue(node.data);
   return (
     <aside
       data-testid="right-panel"
       aria-label="Details"
       className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-border bg-surface p-5"
     >
-      <h2 className="mb-4 font-sans text-xs font-semibold uppercase tracking-wide text-text-muted">
+      <h2 className="mb-4 font-sans text-caption font-semibold uppercase tracking-wide text-text-muted">
         Details
       </h2>
       {!nodeId ? (
@@ -31,11 +33,9 @@ export function RightPanel({ nodeId }: { nodeId: string | undefined }) {
       ) : node.isError ? (
         <p className="text-sm text-danger">Details could not load.</p>
       ) : (
-        <div className="grid gap-4 text-sm">
+        <div data-hue={hue ?? undefined} className="grid gap-4 text-ui">
           <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-accent-soft text-accent">
-              <NodeIcon kind={node.data.kind} section={node.data.section} size={22} />
-            </span>
+            <NodeTile kind={node.data.kind} section={node.data.section} hue={hue} size="lg" />
             <div className="min-w-0">
               <p className="truncate font-semibold">{nodeTitle(node.data)}</p>
               <p className="text-text-muted">
@@ -78,7 +78,7 @@ export function RightPanel({ nodeId }: { nodeId: string | undefined }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-text-muted">{label}</dt>
+      <dt className="text-caption text-text-muted">{label}</dt>
       <dd className="mt-0.5 break-words">{value}</dd>
     </div>
   );

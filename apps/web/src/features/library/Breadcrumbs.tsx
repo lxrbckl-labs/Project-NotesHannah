@@ -10,9 +10,9 @@ export function Breadcrumbs({ node }: { node: NodeWithLinks }) {
   const ancestors = useQueries({ queries: node.ancestors.map((id) => nodeQuery(id)) });
   return (
     <nav aria-label="Breadcrumb" className="min-w-0">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-text-muted">
+      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-ui text-text-muted">
         <li>
-          <Link className="rounded-md px-1 hover:text-text hover:underline" to="/library">
+          <Link className="rounded-inline px-1 hover:text-text hover:underline" to="/library">
             Library
           </Link>
         </li>
@@ -21,7 +21,7 @@ export function Breadcrumbs({ node }: { node: NodeWithLinks }) {
             <ChevronRight size={14} aria-hidden />
             {q.data ? (
               <Link
-                className="max-w-40 truncate rounded-md px-1 hover:text-text hover:underline"
+                className="max-w-40 truncate rounded-inline px-1 hover:text-text hover:underline"
                 to={nodeHref(q.data)}
               >
                 {q.data.name}

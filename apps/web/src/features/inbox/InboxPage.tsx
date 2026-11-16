@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { CircleAlert, Inbox } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { Page } from "../../components/Page";
+import { Notice } from "../../components/ui/notice";
+import { PageHeader } from "../../components/ui/page-header";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
@@ -22,16 +24,13 @@ export function ConverterNotice() {
   const state = status.data?.state;
   if (!state || state === "online") return null;
   return (
-    <p
-      role="status"
-      data-testid="converter-notice"
-      className="mb-4 flex items-start gap-2.5 rounded-2xl bg-surface-muted px-4 py-3 text-sm text-text-muted"
-    >
-      <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
-      {state === "offline"
-        ? "The converter is not running right now. Uploads are saved and will be converted when it is back."
-        : "The converter is running slowly. Uploads will be converted as soon as it catches up."}
-    </p>
+    <div role="status" data-testid="converter-notice" className="mb-4">
+      <Notice tone={state === "offline" ? "warning" : "info"}>
+        {state === "offline"
+          ? "The converter is not running right now. Uploads are saved and will be converted when it is back."
+          : "The converter is running slowly. Uploads will be converted as soon as it catches up."}
+      </Notice>
+    </div>
   );
 }
 
@@ -51,19 +50,18 @@ export function InboxPage() {
       <div
         {...drop.props}
         data-drop={drop.over ? "into" : undefined}
-        className={cn("rounded-3xl", drop.over && "outline-2 outline-accent outline-offset-4")}
+        className={cn("rounded-panel", drop.over && "outline-2 outline-accent outline-offset-4")}
       >
-        <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-semibold">Inbox</h1>
-            <p className="mt-1 text-sm text-text-muted">
-              New uploads wait here until they are filed under a lecture or folder.
-            </p>
-          </div>
-          <UploadButton nodeId={null} target="the inbox" variant="primary">
-            Upload files
-          </UploadButton>
-        </header>
+        <PageHeader
+          title="Inbox"
+          description="New uploads wait here until they are filed under a lecture or folder."
+          icon={<Inbox />}
+          actions={
+            <UploadButton nodeId={null} target="the inbox" variant="primary">
+              Upload files
+            </UploadButton>
+          }
+        />
 
         <ConverterNotice />
 

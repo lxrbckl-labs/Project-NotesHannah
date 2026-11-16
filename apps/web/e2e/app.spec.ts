@@ -385,7 +385,7 @@ test.describe("settings", () => {
     expect(await background()).not.toBe(light);
     await page.reload();
     await expect(html).toHaveAttribute("data-theme", "dark");
-    await page.getByRole("button", { name: "System", exact: true }).click();
+    await page.getByRole("radio", { name: "System", exact: true }).click();
     await expect(html).not.toHaveAttribute("data-theme", /.+/);
   });
 

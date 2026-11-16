@@ -9,9 +9,10 @@ import { useBack } from "../../lib/useBack";
 import { UploadButton } from "../uploads/UploadButton";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { useCourseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
 import { InlineName } from "./InlineName";
-import { NodeIcon } from "./NodeIcon";
+import { NodeTile } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { creatableIn, KIND_NAME } from "./rules";
@@ -22,6 +23,7 @@ const MOCK = import.meta.env.VITE_MOCK_API === "1";
 /** Back link, breadcrumbs, title (renamable in place), favourite, New and the "..." menu. */
 export function NodeHeader({ node }: { node: NodeWithLinks }) {
   const navigate = useNavigate();
+  const hue = useCourseHue(node);
   const actions = useNodeActions();
   const dialogs = useLibraryDialogs();
   const [renaming, setRenaming] = useState(false);
@@ -34,25 +36,18 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
   const fixed = node.kind === "section";
 
   return (
-    <header className="mb-6">
+    <header data-hue={hue ?? undefined} className="mb-6">
       <div className="mb-3 flex items-center gap-1">
-        <button
-          type="button"
-          onClick={back}
-          aria-label="Back"
-          className="-ml-2 inline-flex size-11 items-center justify-center rounded-xl text-text-muted hover:bg-surface-muted hover:text-text md:hidden"
-        >
+        <IconButton aria-label="Back" onClick={back} className="-ml-2 md:hidden">
           <ArrowLeft size={20} />
-        </button>
+        </IconButton>
         <div className="min-w-0 flex-1 overflow-x-auto">
           <Breadcrumbs node={node} />
         </div>
       </div>
 
       <div className="flex items-start gap-3">
-        <span className="hidden size-14 shrink-0 items-center justify-center rounded-3xl bg-accent-soft text-accent md:flex">
-          <NodeIcon kind={node.kind} section={node.section} size={26} />
-        </span>
+        <NodeTile kind={node.kind} section={node.section} hue={hue} size="lg" />
         <div className="min-w-0 flex-1">
           {renaming ? (
             <InlineName
@@ -66,19 +61,19 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
               }}
             />
           ) : (
-            <h1 className="break-words text-2xl font-semibold leading-tight md:text-3xl">
+            <h1 className="break-words font-display text-heading font-semibold leading-tight md:text-display">
               {nodeTitle(node)}
             </h1>
           )}
-          <p className="mt-1 text-sm text-text-muted">{nodeMeta(node)}</p>
+          <p className="mt-1 text-ui text-text-muted">{nodeMeta(node)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <IconButton
             aria-label={node.favourite ? "Remove from favourites" : "Add to favourites"}
-            aria-pressed={node.favourite}
+            pressed={node.favourite}
             onClick={() => void actions.setFavourite(node, !node.favourite)}
           >
-            <Star size={20} className={cn(node.favourite && "fill-accent text-accent")} />
+            <Star size={20} className={cn(node.favourite && "fill-current")} />
           </IconButton>
           <ActionMenu
             trigger={

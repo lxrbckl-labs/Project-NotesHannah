@@ -5,6 +5,8 @@ import { Link } from "react-router";
 import { inputClass } from "../../components/ui/field";
 import { ErrorState, LoadingList } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
+import { CONCEPT_TYPE_HUE } from "../../lib/roles";
+import { useCourseHue } from "../library/courseHue";
 import { NodeIcon } from "../library/NodeIcon";
 import { nodeTitle } from "../library/NodeRow";
 import { useSearch } from "../library/queries";
@@ -57,6 +59,13 @@ function HitLink({
   q: string;
   onPick: (() => void) | undefined;
 }) {
+  const courseColour = useCourseHue(hit.kind === "node" ? hit.node : undefined);
+  const hue =
+    hit.kind === "node"
+      ? courseColour
+      : hit.kind === "concept"
+        ? CONCEPT_TYPE_HUE[hit.conceptType]
+        : null;
   const title =
     hit.kind === "node"
       ? nodeTitle(hit.node)
@@ -71,9 +80,10 @@ function HitLink({
     <Link
       to={hitHref(hit, q)}
       onClick={onPick}
-      className="flex min-h-14 items-center gap-3 rounded-2xl border border-transparent px-2.5 py-2 hover:border-border hover:bg-surface-muted focus-visible:bg-surface-muted"
+      data-hue={hue ?? "accent"}
+      className="flex min-h-14 items-center gap-3 rounded-card border border-transparent px-2.5 py-2 hover:border-border hover:bg-surface-muted focus-visible:bg-surface-muted"
     >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
         {hit.kind === "node" ? (
           <NodeIcon kind={hit.node.kind} section={hit.node.section} size={18} />
         ) : hit.kind === "page" ? (
@@ -88,7 +98,7 @@ function HitLink({
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{title}</span>
-        <span className="block truncate text-sm text-text-muted">{hit.snippet}</span>
+        <span className="block truncate text-ui text-text-muted">{hit.snippet}</span>
       </span>
     </Link>
   );
@@ -171,7 +181,7 @@ export function SearchPanel({
 
       <div className="mt-4" aria-live="polite">
         {debounced === "" ? (
-          <p className="px-1 text-sm text-text-muted">
+          <p className="px-1 text-ui text-text-muted">
             Type to search the names of everything in your library.
           </p>
         ) : query.isPending ? (
@@ -179,7 +189,7 @@ export function SearchPanel({
         ) : query.isError ? (
           <ErrorState error={query.error} onRetry={() => query.refetch()} />
         ) : query.data.length === 0 ? (
-          <p className="px-1 text-sm text-text-muted">Nothing matches “{debounced}”.</p>
+          <p className="px-1 text-ui text-text-muted">Nothing matches “{debounced}”.</p>
         ) : (
           // biome-ignore lint/a11y/noStaticElementInteractions: arrow keys move between the result links
           <div ref={list} onKeyDown={onListKey} className="grid gap-4">
@@ -188,7 +198,7 @@ export function SearchPanel({
               if (hits.length === 0) return null;
               return (
                 <section key={kind} aria-label={title} data-testid={`results-${kind}`}>
-                  <h3 className="mb-1.5 px-1 font-sans text-xs font-semibold uppercase tracking-wide text-text-muted">
+                  <h3 className="mb-1.5 px-1 font-sans text-caption font-semibold uppercase tracking-wide text-text-muted">
                     {title}
                   </h3>
                   <ul className="grid gap-1.5" aria-label={title}>

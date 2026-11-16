@@ -9,16 +9,16 @@ test("theme switch sets data-theme, persists, and returns to system", async () =
   render(<ThemeSwitch />);
   const html = document.documentElement;
 
-  expect(screen.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "System" })).toHaveAttribute("aria-checked", "true");
 
-  await user.click(screen.getByRole("button", { name: "Dark" }));
+  await user.click(screen.getByRole("radio", { name: "Dark" }));
   expect(html.dataset.theme).toBe("dark");
   expect(localStorage.getItem(THEME_KEY)).toBe("dark");
 
-  await user.click(screen.getByRole("button", { name: "Light" }));
+  await user.click(screen.getByRole("radio", { name: "Light" }));
   expect(html.dataset.theme).toBe("light");
 
-  await user.click(screen.getByRole("button", { name: "System" }));
+  await user.click(screen.getByRole("radio", { name: "System" }));
   expect(html.dataset.theme).toBeUndefined();
   expect(localStorage.getItem(THEME_KEY)).toBeNull();
 });
@@ -26,6 +26,6 @@ test("theme switch sets data-theme, persists, and returns to system", async () =
 test("restores a stored choice on mount", () => {
   localStorage.setItem(THEME_KEY, "dark");
   render(<ThemeSwitch />);
-  expect(screen.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
   expect(document.documentElement.dataset.theme).toBe("dark");
 });

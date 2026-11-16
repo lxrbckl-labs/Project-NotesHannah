@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useMatch } from "react-router";
+import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
 import { useMe, useSignOut } from "../features/auth/useAuth";
 import { LibraryDialogs, useLibraryDialogs } from "../features/library/dialogs";
@@ -107,7 +108,7 @@ function Shell() {
     <div className="flex h-dvh overflow-hidden bg-bg">
       <a
         href="#main"
-        className="sr-only z-[70] rounded-xl bg-accent px-4 py-2 text-accent-contrast focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+        className="sr-only z-(--z-skip) rounded-control bg-accent px-4 py-2 text-accent-contrast focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
       >
         Skip to content
       </a>
@@ -124,12 +125,12 @@ function Shell() {
             <button
               type="button"
               onClick={() => setFindOpen(true)}
-              className="flex min-h-11 max-w-md flex-1 items-center gap-2.5 rounded-xl border border-border bg-bg px-3.5 text-sm text-text-muted hover:border-border-strong xl:min-h-9"
+              className="flex min-h-11 max-w-md flex-1 items-center gap-2.5 rounded-control border border-border bg-bg px-3.5 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:border-border-strong xl:min-h-9"
             >
               <Search size={16} aria-hidden />
               <span className="flex-1 text-left">Quick find</span>
               {layout === "computer" ? (
-                <kbd className="rounded-md border border-border bg-surface px-1.5 text-xs">
+                <kbd className="rounded-inline border border-border bg-surface px-1.5 text-caption">
                   {MOD_KEY}K
                 </kbd>
               ) : null}
@@ -169,7 +170,7 @@ function Shell() {
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium xl:min-h-9",
+    "flex min-h-11 items-center gap-3 rounded-control px-3 text-ui font-medium transition-colors duration-(--duration-instant) xl:min-h-9",
     isActive ? "bg-accent-soft text-accent" : "text-text hover:bg-surface-muted",
   );
 
@@ -185,7 +186,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
       className="pt-safe pb-safe flex w-72 shrink-0 flex-col border-r border-border bg-surface xl:w-64"
     >
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-contrast">
+        <span className="flex size-9 items-center justify-center rounded-control bg-accent text-accent-contrast">
           <NotebookPen size={18} aria-hidden />
         </span>
         <span className="flex-1 font-display text-lg font-semibold">Notes</span>
@@ -208,6 +209,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         </NavLink>
         <NavLink to="/concepts" className={linkClass}>
           <Lightbulb size={18} aria-hidden /> Concepts
+          <NavBadge count={badges.review} label="concepts to review" tone="warning" />
         </NavLink>
         <NavLink to="/requests" className={linkClass}>
           <MessageSquarePlus size={18} aria-hidden /> Requests
@@ -222,13 +224,13 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
       </nav>
 
       <div className="mt-4 flex items-center justify-between px-5 pb-1.5">
-        <h2 className="font-sans text-xs font-semibold uppercase tracking-wide text-text-muted">
+        <h2 className="font-sans text-caption font-semibold uppercase tracking-wide text-text-muted">
           Terms and courses
         </h2>
         <button
           type="button"
           onClick={() => dialogs.openCreate(null, "term")}
-          className="rounded-lg px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft"
+          className="hit-area rounded-inline px-2 py-1 text-caption font-medium text-accent hover:bg-accent-soft"
         >
           New term
         </button>
@@ -244,7 +246,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <button
           type="button"
           onClick={() => void signOut()}
-          className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-left text-sm text-text-muted hover:bg-surface-muted hover:text-text xl:min-h-9"
+          className="flex min-h-11 items-center gap-3 rounded-control px-3 text-left text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:min-h-9"
         >
           <LogOut size={18} aria-hidden />
           <span className="min-w-0 flex-1 truncate">
@@ -272,7 +274,7 @@ function TabBar() {
     <nav
       data-testid="tab-bar"
       aria-label="Primary"
-      className="pb-safe px-safe fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur"
+      className="pb-safe px-safe fixed inset-x-0 bottom-0 z-(--z-nav) border-t border-border bg-surface/95 backdrop-blur"
     >
       <ul className="flex">
         {TABS.map(({ to, label, icon: Icon }) => (
@@ -281,7 +283,7 @@ function TabBar() {
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium",
+                  "flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption font-medium",
                   isActive ? "text-accent" : "text-text-muted",
                 )
               }
@@ -292,9 +294,16 @@ function TabBar() {
                   <span
                     aria-hidden="true"
                     title={`${count[to]} waiting`}
-                    className="absolute -right-2.5 -top-1 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold text-accent-contrast"
+                    className="absolute -right-3 -top-1.5"
                   >
-                    {count[to]}
+                    <Badge
+                      variant="solid"
+                      hue="accent"
+                      size="sm"
+                      className="min-w-4 justify-center px-1"
+                    >
+                      {count[to]}
+                    </Badge>
                   </span>
                 ) : null}
               </span>

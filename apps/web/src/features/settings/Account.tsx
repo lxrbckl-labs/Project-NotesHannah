@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { ConfirmDialog } from "../../components/ui/dialog";
 import { Field, TextInput } from "../../components/ui/field";
+import { Notice } from "../../components/ui/notice";
 import { api, describeError } from "../../lib/api";
 import { useSignOut } from "../auth/useAuth";
 
@@ -44,15 +45,11 @@ export function ChangePassword() {
 
   return (
     <form onSubmit={submit} className="grid max-w-md gap-4" noValidate>
-      {error ? (
-        <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
       {done ? (
-        <p role="status" className="rounded-xl bg-accent-soft px-3.5 py-2.5 text-sm text-accent">
-          Password changed. Your other devices were signed out.
-        </p>
+        <div role="status">
+          <Notice tone="success">Password changed. Your other devices were signed out.</Notice>
+        </div>
       ) : null}
       <Field label="Current password">
         {(p) => (
