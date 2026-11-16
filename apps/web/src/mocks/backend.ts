@@ -16,8 +16,10 @@ import {
   type NodeWithLinks,
   newId,
   type Page,
+  PreferencesPatch,
   type ReferenceKind,
   referenceSourceOf,
+  resolveTabOrder,
   type SavedReference,
   type SourceFile,
   type Transcript,
@@ -47,6 +49,8 @@ export interface MockSnapshot {
   password: string;
   /** Saved references (the references domain). Missing in snapshots from before it existed. */
   references?: MockReference[];
+  /** Her saved tab order (the preferences store); absent means the default. */
+  tabOrder?: string[] | null;
 }
 
 /** A saved reference as the mock keeps it; places are resolved when it is read. */
@@ -147,6 +151,7 @@ export function createMockBackend(options: MockOptions = {}) {
   let recents: string[];
   let keys: Array<{ key: ApiKey; secret: string }>;
   let references: MockReference[] = [];
+  let tabOrder: string[] | null = null;
   let signedIn = false;
   let password = MOCK_PASSWORD;
   let failedLogins = 0;
@@ -163,6 +168,7 @@ export function createMockBackend(options: MockOptions = {}) {
       recents = snapshot.recents;
       keys = snapshot.keys;
       references = snapshot.references ?? [];
+      tabOrder = snapshot.tabOrder ?? null;
       signedIn = snapshot.signedIn;
       password = snapshot.password;
       user.id = nodes[0]?.userId ?? newId("user");
@@ -178,6 +184,7 @@ export function createMockBackend(options: MockOptions = {}) {
     activity = seed.activity;
     recents = seed.recents;
     references = [];
+    tabOrder = null;
     signedIn = false;
     password = MOCK_PASSWORD;
     keys = [
@@ -810,6 +817,16 @@ export function createMockBackend(options: MockOptions = {}) {
       return noContent();
     }
     if (method === "GET" && path === "/me") return ok({ user });
+    if (path === "/me/preferences" && method === "GET") {
+      return ok({ preferences: { tabOrder: resolveTabOrder(tabOrder) } });
+    }
+    if (path === "/me/preferences" && method === "PATCH") {
+      const patch = body(PreferencesPatch, payload);
+      if (patch.tabOrder !== undefined) {
+        tabOrder = patch.tabOrder === null || patch.tabOrder.length === 0 ? null : patch.tabOrder;
+      }
+      return ok({ preferences: { tabOrder: resolveTabOrder(tabOrder) } });
+    }
     if (method === "POST" && path === "/me/password") {
       const input = body(ChangePasswordInput, payload);
       if (input.currentPassword !== password) {
@@ -1233,6 +1250,7 @@ export function createMockBackend(options: MockOptions = {}) {
       signedIn,
       password,
       references,
+      tabOrder,
     });
   }
 

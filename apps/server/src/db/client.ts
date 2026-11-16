@@ -30,6 +30,7 @@ export function openDatabase(path: string): Db {
  *   0400-0499 practice            0500-0599 concepts and canvas
  *   0600-0699 agent layer and integration   0700-0799 requests
  *   0800-0899 references
+ *   0900-0999 per-person preferences
  *   0600-0699 integration (changes that span domains)
  */
 export function migrate(db: Db, dir: string = MIGRATIONS_DIR): string[] {

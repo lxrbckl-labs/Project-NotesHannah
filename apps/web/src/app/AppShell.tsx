@@ -26,6 +26,7 @@ import { PickNodesProvider } from "../features/library/pickNodes";
 import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
 import { AskProvider } from "../features/mounts/ask";
+import { useTabOrder } from "../features/preferences/usePreferences";
 import { QuickFind } from "../features/search/QuickFind";
 import { UploadProvider } from "../features/uploads/UploadProvider";
 import { UploadTray } from "../features/uploads/UploadTray";
@@ -34,6 +35,7 @@ import { readFlag, writeFlag } from "../lib/storage";
 import { useLayout } from "../lib/useMedia";
 import { NavBadge, useBadges } from "./badges";
 import { tabDirection } from "./tabDirection";
+import { TAB_DEFS } from "./tabs";
 
 const SIDEBAR_KEY = "notes-sidebar";
 const PANEL_KEY = "notes-panel";
@@ -270,22 +272,15 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   );
 }
 
-// Five at most on a phone: the things she opens most. Requests, Activity, Trash and the Guide live in Settings.
-const TABS = [
-  { to: "/library", label: "Library", icon: BookOpen },
-  { to: "/practice", label: "Practice", icon: GraduationCap },
-  { to: "/search", label: "Search", icon: Search },
-  { to: "/inbox", label: "Inbox", icon: Inbox },
-  { to: "/settings", label: "Settings", icon: Settings },
-] as const;
-
-const TAB_PATHS = TABS.map((t) => t.to);
-
 /** Longer than the slide itself (260ms in styles.css), with room for a slow device to start it. */
 const TAB_SLIDE_MS = 700;
 
 function TabBar() {
   const badges = useBadges();
+  // Her order, from Settings. The slide direction below is measured against the same list.
+  const order = useTabOrder();
+  const tabs = order.map((id) => ({ id, ...TAB_DEFS[id] }));
+  const tabPaths = tabs.map((t) => t.to);
   const slideTimer = useRef<number | undefined>(undefined);
   const count: Record<string, number> = { "/practice": badges.practice, "/inbox": badges.inbox };
   return (
@@ -295,8 +290,8 @@ function TabBar() {
       className="vt-tabbar pb-safe px-safe fixed inset-x-0 bottom-0 z-(--z-nav) border-t border-border bg-surface/95 backdrop-blur print:hidden"
     >
       <ul className="flex">
-        {TABS.map(({ to, label, icon: Icon }) => (
-          <li key={to} className="flex-1">
+        {tabs.map(({ id, to, label, icon: Icon }) => (
+          <li key={id} className="flex-1">
             <NavLink
               to={to}
               // The new page slides in from the side of the tab she tapped (styles.css, "Tab changes").
@@ -304,7 +299,7 @@ function TabBar() {
               // The address bar, not React state: a tap during a transition must still read where she is now.
               onClick={() => {
                 const root = document.documentElement;
-                root.dataset.tabDir = tabDirection(TAB_PATHS, window.location.pathname, to);
+                root.dataset.tabDir = tabDirection(tabPaths, window.location.pathname, to);
                 // The slide's layers exist only for the length of the slide.
                 root.classList.add("tab-sliding");
                 window.clearTimeout(slideTimer.current);

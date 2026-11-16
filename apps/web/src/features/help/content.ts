@@ -768,6 +768,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "list",
         items: [
           "**Light and dark:** Settings, then Appearance. Follow your device, or choose light or dark.",
+          "**Your tab bar:** on a phone, Settings, then Tab bar, shows a copy of the bar along the bottom. Drag the icons into the order you want, for example Settings at the far left, and press Save. The real bar changes when you save, and the order is kept for your account on every device. If you would rather not drag, tap an icon and use Move left and Move right, or the arrow keys. Reset to default puts the usual order back.",
           "**Signing in:** you stay signed in on each device until you sign out. After several wrong passwords the app slows down further attempts.",
           "**Change your password:** Settings, then Password. It needs at least 10 characters, and it signs your other devices out.",
           "**Sign out everywhere** ends every session on every device, including the one you are using.",
