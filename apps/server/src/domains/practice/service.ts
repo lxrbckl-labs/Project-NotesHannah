@@ -10,6 +10,7 @@ import type { Db } from "../../db/client.js";
 import type { AuthContext } from "../../http/auth-context.js";
 import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
+import { leaveTrace, plural, type Trace } from "../activity/trace.js";
 import { type SourceLookup, unknownSources } from "../documents/ports.js";
 import { createExamsRepo } from "../exams/repo.js";
 import {
@@ -18,7 +19,7 @@ import {
   StartSessionInput,
   UpdateQuestionInput,
 } from "./inputs.js";
-import { loadTree, type Tree } from "./tree.js";
+import { loadTree, nodeWords, type Tree } from "./tree.js";
 import {
   hasSelfGraded,
   type QuestionView,
@@ -40,10 +41,31 @@ export const FORECAST_DAYS = 14;
 /** Node kinds a question can live under (a practice-section folder, a lecture, a document). */
 const ATTACHABLE_KINDS = ["lecture", "folder", "document"];
 
-export interface PracticePorts {
+export interface PracticePorts extends Trace {
   /** Checks the pages and quotes that questions cite. Default: every source is allowed. */
   sources?: SourceLookup;
+  /**
+   * Told, inside the same transaction, when questions are deleted for good (by hand, or because
+   * the last node they lived under was deleted). Her attempts stay as history.
+   */
+  onQuestionsDeleted?: (userId: string, questionIds: readonly string[]) => void;
 }
+
+const TYPE_WORDS: Record<string, string> = {
+  multiple_choice: "multiple choice",
+  select_all: "select-all",
+  calculation: "calculation",
+  case: "case",
+  flashcard: "flashcard",
+  fill_in_the_blank: "fill-in-the-blank",
+  matching: "matching",
+  short_answer: "short answer",
+};
+const typeWords = (type: string) => TYPE_WORDS[type] ?? type.replaceAll("_", " ");
+const snip = (text: string, max = 70) => {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+};
 
 // ------------------------------------------------------------------ types
 
@@ -478,12 +500,14 @@ export function createPracticeService(
     return new Set(rows.map((r) => r.question_id));
   }
 
-  function nodeMap(ids: readonly string[]): Map<string, string[]> {
+  function nodeMap(ids: readonly string[], liveOnly = false): Map<string, string[]> {
     const map = new Map<string, string[]>();
     if (ids.length === 0) return map;
     const rows = db
       .prepare(
-        "SELECT question_id, node_id FROM question_nodes WHERE question_id IN (SELECT value FROM json_each(?)) ORDER BY rowid",
+        `SELECT question_id, node_id FROM question_nodes WHERE question_id IN (SELECT value FROM json_each(?))${
+          liveOnly ? " AND node_trashed = 0" : ""
+        } ORDER BY rowid`,
       )
       .all(json(ids)) as Array<{ question_id: string; node_id: string }>;
     for (const r of rows) {
@@ -784,6 +808,21 @@ export function createPracticeService(
         ensureCard(auth.userId, question, now);
         out.push(questionRow(auth.userId, question.id) as QuestionRow);
       }
+      if (out.length > 0) {
+        const byType = new Map<string, number>();
+        for (const r of out) byType.set(r.type, (byType.get(r.type) ?? 0) + 1);
+        const mix = [...byType].map(([t, n]) => `${n} ${typeWords(t)}`).join(", ");
+        leaveTrace(ports, auth.userId, auth.actor, {
+          action: "question.created",
+          objectType: "question",
+          objectIds: out.map((r) => r.id),
+          nodeId: nodeIds[0] ?? null,
+          summary: `Wrote ${plural(out.length, "practice question")} (${mix}) for ${nodeIds
+            .slice(0, 3)
+            .map((n) => nodeWords(tree.nodes.get(n)))
+            .join(", ")}${nodeIds.length > 3 ? " and more" : ""}`,
+        });
+      }
       return out;
     })();
     return { stored: rows.length, created: summaries(auth.userId, rows), problems };
@@ -966,6 +1005,18 @@ export function createPracticeService(
         for (const n of nodeIds) q.addNode.run(id, auth.userId, n);
         db.prepare("UPDATE questions SET updated_at = ? WHERE id = ?").run(nowIso(), id);
       }
+      leaveTrace(ports, auth.userId, auth.actor, {
+        action: "question.updated",
+        objectType: "question",
+        objectIds: [id],
+        nodeId: (nodeIds ?? nodeRowsOf(id).map((n) => n.node_id))[0] ?? null,
+        summary: next
+          ? `Rewrote a ${typeWords(next.type)} question: "${snip(row.text)}"`
+          : `Moved a ${typeWords(row.type)} question to ${(nodeIds ?? [])
+              .slice(0, 3)
+              .map((n) => nodeWords(tree.nodes.get(n)))
+              .join(", ")}: "${snip(row.text)}"`,
+      });
     })();
     return getQuestion(auth, id);
   }
@@ -979,6 +1030,12 @@ export function createPracticeService(
       });
     }
     db.prepare("UPDATE questions SET trashed_at = ? WHERE id = ?").run(nowIso(), id);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "question.trashed",
+      objectType: "question",
+      objectIds: [id],
+      summary: `Moved a ${typeWords(row.type)} question to the trash: "${snip(row.text)}"`,
+    });
     return summaries(auth.userId, [
       questionRow(auth.userId, id) as QuestionRow,
     ])[0] as QuestionSummary;
@@ -994,6 +1051,12 @@ export function createPracticeService(
       });
     }
     db.prepare("UPDATE questions SET trashed_at = NULL WHERE id = ?").run(id);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "question.restored",
+      objectType: "question",
+      objectIds: [id],
+      summary: `Restored a ${typeWords(row.type)} question from the trash: "${snip(row.text)}"`,
+    });
     return summaries(auth.userId, [
       questionRow(auth.userId, id) as QuestionRow,
     ])[0] as QuestionSummary;
@@ -1009,7 +1072,16 @@ export function createPracticeService(
         hint: `Trash it first with POST /api/practice/questions/${id}/trash.`,
       });
     }
-    db.prepare("DELETE FROM questions WHERE id = ? AND user_id = ?").run(id, auth.userId);
+    db.transaction(() => {
+      db.prepare("DELETE FROM questions WHERE id = ? AND user_id = ?").run(id, auth.userId);
+      leaveTrace(ports, auth.userId, auth.actor, {
+        action: "question.deleted",
+        objectType: "question",
+        objectIds: [id],
+        summary: `Deleted a ${typeWords(row.type)} question for good: "${snip(row.text)}"`,
+      });
+      ports.onQuestionsDeleted?.(auth.userId, [id]);
+    })();
   }
 
   /** She marks questions reviewed (or takes it back). Only her browser session can. */
@@ -1736,16 +1808,37 @@ export function createPracticeService(
     const tree = loadTree(db, userId);
     const rows = scopedRows(userId, opts.nodeId);
     const direct = nodeMap(rows.map((r) => r.id));
-    const labels: practice.QuestionLabels[] = rows.map((r) => {
-      const data = parseQuestion(r);
-      const chain = new Set((direct.get(r.id) ?? []).flatMap((n) => tree.chain(n)));
-      return {
-        questionId: r.id,
-        tags: data.tags,
-        conceptIds: data.conceptIds,
-        nodeIds: [...chain],
-      };
-    });
+    // Tags and concepts come from their own tables, not from parsing every question's JSON.
+    const grouped = (sql: string) => {
+      const map = new Map<string, string[]>();
+      for (const r of db.prepare(sql).all(userId) as Array<{ id: string; v: string }>) {
+        const list = map.get(r.id);
+        if (list) list.push(r.v);
+        else map.set(r.id, [r.v]);
+      }
+      return map;
+    };
+    const tagsOf = grouped(
+      "SELECT question_id AS id, tag AS v FROM question_tags WHERE user_id = ?",
+    );
+    const conceptsOf = grouped(
+      "SELECT question_id AS id, concept_id AS v FROM question_concepts WHERE user_id = ?",
+    );
+    const chains = new Map<string, string[]>();
+    const chainOf = (n: string): string[] => {
+      let c = chains.get(n);
+      if (!c) {
+        c = tree.chain(n);
+        chains.set(n, c);
+      }
+      return c;
+    };
+    const labels: practice.QuestionLabels[] = rows.map((r) => ({
+      questionId: r.id,
+      tags: tagsOf.get(r.id) ?? [],
+      conceptIds: conceptsOf.get(r.id) ?? [],
+      nodeIds: [...new Set((direct.get(r.id) ?? []).flatMap(chainOf))],
+    }));
     const limits = {
       minAttempts: opts.minAttempts ?? 5,
       minQuestions: opts.minQuestions ?? 3,
@@ -1867,22 +1960,74 @@ export function createPracticeService(
     const tree = loadTree(db, userId);
     const under = new Set(nodeIds.flatMap((n) => tree.subtree(n)));
     const nowMs = deps.now();
-    const rows = scopedRows(userId).filter((r) =>
-      nodeRowsOf(r.id).some((n) => n.node_trashed === 0 && under.has(n.node_id)),
+    const all = scopedRows(userId);
+    const homes = nodeMap(
+      all.map((r) => r.id),
+      true,
     );
+    const rows = all.filter((r) => (homes.get(r.id) ?? []).some((n) => under.has(n)));
     const ids = new Set(rows.map((r) => r.id));
-    const all = history(userId).filter((a) => ids.has(a.questionId));
+    const mine = history(userId).filter((a) => ids.has(a.questionId));
     const cards = allCards(userId).filter((c) => ids.has(c.id));
     return {
       questions: rows.length,
-      attempted: new Set(all.map((a) => a.questionId)).size,
-      attempts: all.length,
-      correct: all.filter((a) => a.result.correct).length,
+      attempted: new Set(mine.map((a) => a.questionId)).size,
+      attempts: mine.length,
+      correct: mine.filter((a) => a.result.correct).length,
       dueCards: cards.filter((c) => c.card.phase === "review" && Date.parse(c.card.due) <= nowMs)
         .length,
       newCards: cards.filter((c) => c.card.phase === "new").length,
-      notebook: practice.notebookEntries(all).length,
+      notebook: practice.notebookEntries(mine).length,
     };
+  }
+
+  // ---- search ------------------------------------------------------------------------------
+
+  /** Turn free text into a safe FTS5 query: every word a quoted prefix term. */
+  function ftsQuery(text: string): string | null {
+    const words = text.match(/[\p{L}\p{N}]+/gu)?.slice(0, 12) ?? [];
+    return words.length === 0 ? null : words.map((w) => `"${w}"*`).join(" ");
+  }
+
+  /**
+   * Questions whose prompt text matches, best first. Questions in the trash, and questions
+   * filed only under nodes in the trash, are left out.
+   */
+  function searchQuestions(
+    userId: string,
+    text: string,
+    options: { offset?: number | undefined; limit?: number | undefined } = {},
+  ): Array<{
+    questionId: string;
+    questionType: string;
+    nodeId: string | null;
+    snippet: string;
+  }> {
+    const match = ftsQuery(text);
+    if (match === null) return [];
+    const rows = db
+      .prepare(
+        `SELECT q.id AS question_id, q.type,
+                (SELECT n.node_id FROM question_nodes n
+                 WHERE n.question_id = q.id AND n.node_trashed = 0 ORDER BY n.rowid LIMIT 1) AS node_id,
+                snippet(questions_fts, 0, '', '', '…', 12) AS snippet
+         FROM questions_fts JOIN questions q ON q.seq = questions_fts.rowid
+         WHERE questions_fts MATCH ? AND q.user_id = ? AND q.trashed_at IS NULL
+           AND EXISTS (SELECT 1 FROM question_nodes n WHERE n.question_id = q.id AND n.node_trashed = 0)
+         ORDER BY questions_fts.rank, q.seq LIMIT ? OFFSET ?`,
+      )
+      .all(match, userId, options.limit ?? DEFAULT_LIMIT, options.offset ?? 0) as Array<{
+      question_id: string;
+      type: string;
+      node_id: string | null;
+      snippet: string;
+    }>;
+    return rows.map((r) => ({
+      questionId: r.question_id,
+      questionType: r.type,
+      nodeId: r.node_id,
+      snippet: r.snippet,
+    }));
   }
 
   // ---- node hooks (the integrator calls these from the library routes) -------------------------
@@ -1918,12 +2063,17 @@ export function createPracticeService(
       db.prepare(
         "DELETE FROM question_nodes WHERE user_id = ? AND node_id IN (SELECT value FROM json_each(?))",
       ).run(userId, ids);
+      const gone: string[] = [];
       for (const { question_id } of affected) {
         const left = db
           .prepare("SELECT COUNT(*) AS n FROM question_nodes WHERE question_id = ?")
           .get(question_id) as { n: number };
-        if (left.n === 0) db.prepare("DELETE FROM questions WHERE id = ?").run(question_id);
+        if (left.n === 0) {
+          db.prepare("DELETE FROM questions WHERE id = ?").run(question_id);
+          gone.push(question_id);
+        }
       }
+      if (gone.length > 0) ports.onQuestionsDeleted?.(userId, gone);
     })();
   }
 
@@ -1979,6 +2129,7 @@ export function createPracticeService(
     setSchedule,
     citedBy,
     listAttempts,
+    searchQuestions,
     // sessions
     startSession,
     getSession,

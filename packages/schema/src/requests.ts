@@ -363,7 +363,7 @@ export const RequestReopen = z.object({
 });
 export type RequestReopen = z.infer<typeof RequestReopen>;
 
-export const Request = z.object({
+export const StudyRequest = z.object({
   id: RequestId,
   userId: UserId,
   target: RequestTarget,
@@ -386,10 +386,10 @@ export const Request = z.object({
   /** When it last became done, declined or cancelled; null while open. */
   closedAt: Timestamp.nullable(),
 });
-export type Request = z.infer<typeof Request>;
+export type StudyRequest = z.infer<typeof StudyRequest>;
 
 /** Where a request points, described for the agent that picks it up. */
-export const RequestContext = z.object({
+export const StudyRequestContext = z.object({
   /** The target's name: a node name, a document title, "Library"… */
   name: z.string().nullable(),
   /** Readable path in the library, e.g. "Fall 2026 / Pharmacology II / Lectures". */
@@ -401,10 +401,10 @@ export const RequestContext = z.object({
   /** Says what is special: a regenerated block, a trashed target. */
   note: z.string().nullable(),
 });
-export type RequestContext = z.infer<typeof RequestContext>;
+export type StudyRequestContext = z.infer<typeof StudyRequestContext>;
 
-export const RequestWithContext = Request.extend({ context: RequestContext });
-export type RequestWithContext = z.infer<typeof RequestWithContext>;
+export const StudyRequestWithContext = StudyRequest.extend({ context: StudyRequestContext });
+export type StudyRequestWithContext = z.infer<typeof StudyRequestWithContext>;
 
 export const RequestCounts = z.object({
   waiting: z.number().int().min(0),

@@ -52,6 +52,18 @@ const envSchema = z
     APP_ORIGIN: OriginString.optional(),
     /** Reverse proxies whose X-Forwarded-For is believed. Empty: use the socket address only. */
     TRUSTED_PROXIES: ProxyList,
+    /**
+     * "1" switches the drug-name check on: concept names of type drug (the name itself, never notes or
+     * user data) are sent to the US National Library of Medicine's RxNav service. Anything else (or
+     * unset): off, and nothing leaves the server.
+     */
+    RXNORM_CHECK: z
+      .string()
+      .default("0")
+      .refine((value) => ["", "0", "1"].includes(value), {
+        message: 'Expected "1" (on) or "0" (off, the default)',
+      })
+      .transform((value) => value === "1"),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && !env.APP_ORIGIN) {

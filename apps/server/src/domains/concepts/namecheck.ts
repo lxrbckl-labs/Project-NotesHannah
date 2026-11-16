@@ -294,3 +294,13 @@ export function nameCheckerFromEnv(
   if (!rxnormEnabled(env)) return undefined;
   return createRxNavChecker({ cache: createDbNameCache(db, now), now });
 }
+
+/** The same, from the validated config (`RXNORM_CHECK` in config.ts). */
+export function nameCheckerFromConfig(
+  db: Db,
+  config: { RXNORM_CHECK?: boolean | undefined },
+  now: () => number = Date.now,
+): DrugNameChecker | undefined {
+  if (config.RXNORM_CHECK !== true) return undefined;
+  return createRxNavChecker({ cache: createDbNameCache(db, now), now });
+}

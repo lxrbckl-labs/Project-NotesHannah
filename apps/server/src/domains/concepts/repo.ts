@@ -5,6 +5,7 @@ import {
   type ConceptSummary,
   type ConceptType,
   type DrugInfo,
+  type DuplicateCandidate,
   normalizeName,
   RELATION_RULES,
   type Relation,
@@ -33,6 +34,15 @@ export interface ConceptRow {
   last_edited_by: string;
   last_edited_at: string;
   search_text: string;
+}
+
+interface CandidateRow {
+  id: string;
+  type: ConceptType;
+  name: string;
+  name_key: string;
+  aliases: string;
+  drug: string | null;
 }
 
 export interface RelationRow {
@@ -123,6 +133,9 @@ export function createConceptsRepo(db: Db) {
     byKey: db.prepare("SELECT * FROM concepts WHERE user_id = ? AND type = ? AND name_key = ?"),
     ofType: db.prepare(
       "SELECT * FROM concepts WHERE user_id = ? AND type = ? ORDER BY name_key, seq",
+    ),
+    candidates: db.prepare(
+      "SELECT id, type, name, name_key, aliases, drug FROM concepts WHERE user_id = ? AND type = ? ORDER BY name_key, seq",
     ),
     redirect: db.prepare("SELECT to_id FROM concept_redirects WHERE from_id = ? AND user_id = ?"),
     redirectsTo: db.prepare(
@@ -237,6 +250,25 @@ export function createConceptsRepo(db: Db) {
       one(q.byKey.get(userId, type, normalizeName(name)), toConcept),
     conceptsOfType: (userId: string, type: ConceptType) =>
       (q.ofType.all(userId, type) as ConceptRow[]).map(toConcept),
+    /**
+     * Who might be the same as a new concept of this type: names only, read without parsing
+     * summaries and citations (this runs once per concept a bulk call creates).
+     */
+    duplicateCandidates: (userId: string, type: ConceptType): DuplicateCandidate[] =>
+      (q.candidates.all(userId, type) as CandidateRow[]).map((row) => {
+        const drug = row.drug === null ? null : (JSON.parse(row.drug) as DrugInfo);
+        return {
+          id: row.id,
+          type: row.type,
+          name: row.name,
+          nameKey: row.name_key,
+          aliases: row.aliases === "[]" ? [] : (JSON.parse(row.aliases) as string[]),
+          extraNames: [
+            ...(drug?.genericName ? [drug.genericName] : []),
+            ...(drug?.brandNames ?? []),
+          ],
+        };
+      }),
     /** The ID a merged-away ID now leads to, if any. */
     redirect: (userId: string, id: string): string | undefined =>
       (q.redirect.get(id, userId) as { to_id: string } | undefined)?.to_id,

@@ -12,20 +12,21 @@ import {
   REQUEST_LIMITS,
   type ReleaseRequestInput,
   type ReopenRequestInput,
-  type Request,
   type RequestAction,
-  type RequestContext,
   type RequestCounts,
   type RequestReopen,
   type RequestReply,
   type RequestStatus,
   type RequestTarget,
-  type RequestWithContext,
+  type StudyRequest,
+  type StudyRequestContext,
+  type StudyRequestWithContext,
 } from "@notes/schema";
 import type { AuthContext } from "../../http/auth-context.js";
 import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
 import { type ActivityPort, createActivityLog } from "../activity/activity.js";
+import type { ChangeRecorder } from "../activity/trace.js";
 import { createDbTargetLookup, type TargetInfo, type TargetLookup } from "./lookup.js";
 
 /** How long a claim lasts without being renewed. */
@@ -40,6 +41,8 @@ export interface RequestsPorts {
   lookup?: TargetLookup;
   /** Agent work is logged here. Default: the shared activity log over the same database. */
   activity?: ActivityPort;
+  /** Every step of a request (made, claimed, answered, ...) is appended here. Default: none. */
+  changes?: ChangeRecorder;
   /** Default claim length in milliseconds (default 30 minutes). */
   claimTtlMs?: number;
 }
@@ -56,7 +59,7 @@ interface Row {
   page_id: string | null;
   question_id: string | null;
   scope_node_id: string | null;
-  kind: Request["kind"];
+  kind: StudyRequest["kind"];
   message: string;
   status: RequestStatus;
   claimed_by: string | null;
@@ -87,7 +90,7 @@ export interface ListFilters {
 }
 
 export interface RequestPage {
-  items: RequestWithContext[];
+  items: StudyRequestWithContext[];
   nextCursor: string | null;
 }
 
@@ -196,7 +199,7 @@ export function createRequestsService(
     }
   }
 
-  function toRequest(r: Row): Request {
+  function toRequest(r: Row): StudyRequest {
     const claimed = r.status === "in_progress" && r.claimed_by !== null;
     return {
       id: r.id,
@@ -217,7 +220,7 @@ export function createRequestsService(
     };
   }
 
-  function contextOf(userId: string, target: RequestTarget): RequestContext {
+  function contextOf(userId: string, target: RequestTarget): StudyRequestContext {
     const info: TargetInfo = lookup.describe(userId, target);
     let note = info.note;
     if (!info.exists) note = "What this request was about no longer exists.";
@@ -231,7 +234,7 @@ export function createRequestsService(
     };
   }
 
-  function view(r: Row): RequestWithContext {
+  function view(r: Row): StudyRequestWithContext {
     const request = toRequest(r);
     return { ...request, context: contextOf(r.user_id, request.target) };
   }
@@ -275,6 +278,18 @@ export function createRequestsService(
 
   function log(auth: AuthContext, r: Row, action: string, summary: string): void {
     const name = contextOf(r.user_id, targetOf(r)).name;
+    const nodeId = r.scope_node_id ?? r.node_id;
+    ports.changes?.record(auth.userId, {
+      action,
+      objectType: "request",
+      objectIds: [r.id],
+      documentId: r.document_id,
+      nodeId,
+      actor: auth.actor,
+      requestId: r.id,
+      summary,
+      at: iso(now()),
+    });
     activity.record(auth.userId, {
       actor: auth.actor,
       action,
@@ -284,9 +299,15 @@ export function createRequestsService(
     });
   }
 
+  /** "a fix request on "Beta blockers"": a request in plain words. */
+  function words(r: Row): string {
+    const name = contextOf(r.user_id, targetOf(r)).name;
+    return `a ${r.kind.replaceAll("_", " ")} request${name ? ` on "${name}"` : ""}`;
+  }
+
   // ---- her side --------------------------------------------------------------------
 
-  function create(auth: AuthContext, input: CreateRequestInput): RequestWithContext {
+  function create(auth: AuthContext, input: CreateRequestInput): StudyRequestWithContext {
     if (actorKind(auth) !== "user") {
       throw new AppError(
         "forbidden",
@@ -332,17 +353,21 @@ export function createRequestsService(
       page_id: target.type === "source" ? (target.pageId ?? null) : null,
       question_id: target.type === "question" ? target.questionId : null,
       scope_node_id:
-        target.type === "node" || target.type === "document" || target.type === "block"
+        target.type === "node" ||
+        target.type === "document" ||
+        target.type === "block" ||
+        target.type === "question"
           ? info.nodeId
           : null,
       kind: input.kind,
       message: input.message,
       t,
     });
+    log(auth, need(auth.userId, id), "request.created", `Left ${words(need(auth.userId, id))}`);
     return view(need(auth.userId, id));
   }
 
-  function edit(auth: AuthContext, id: string, input: EditRequestInput): RequestWithContext {
+  function edit(auth: AuthContext, id: string, input: EditRequestInput): StudyRequestWithContext {
     const r = need(auth.userId, id);
     check(auth, r.status, "edit");
     const kind = input.kind ?? r.kind;
@@ -359,10 +384,11 @@ export function createRequestsService(
       now(),
       r.id,
     );
+    log(auth, need(auth.userId, id), "request.edited", `Changed ${words(r)}`);
     return view(need(auth.userId, id));
   }
 
-  function cancel(auth: AuthContext, id: string): RequestWithContext {
+  function cancel(auth: AuthContext, id: string): StudyRequestWithContext {
     const r = need(auth.userId, id);
     check(auth, r.status, "cancel");
     const t = now();
@@ -370,10 +396,15 @@ export function createRequestsService(
       `UPDATE requests SET status = 'cancelled', claimed_by = NULL, claimed_at = NULL,
          claim_expires_at = NULL, updated_at = ?, closed_at = ? WHERE id = ?`,
     ).run(t, t, r.id);
+    log(auth, need(auth.userId, id), "request.cancelled", `Withdrew ${words(r)}`);
     return view(need(auth.userId, id));
   }
 
-  function reopen(auth: AuthContext, id: string, input: ReopenRequestInput): RequestWithContext {
+  function reopen(
+    auth: AuthContext,
+    id: string,
+    input: ReopenRequestInput,
+  ): StudyRequestWithContext {
     const r = need(auth.userId, id);
     check(auth, r.status, "reopen");
     const reopens = JSON.parse(r.reopens) as RequestReopen[];
@@ -407,12 +438,13 @@ export function createRequestsService(
       `UPDATE requests SET status = 'waiting', reopens = ?, claimed_by = NULL, claimed_at = NULL,
          claim_expires_at = NULL, updated_at = ?, closed_at = NULL WHERE id = ?`,
     ).run(JSON.stringify([...reopens, entry]), t, r.id);
+    log(auth, need(auth.userId, id), "request.reopened", `Reopened ${words(r)}`);
     return view(need(auth.userId, id));
   }
 
   // ---- reading -----------------------------------------------------------------------------
 
-  function get(auth: AuthContext, id: string): RequestWithContext {
+  function get(auth: AuthContext, id: string): StudyRequestWithContext {
     return view(need(auth.userId, id));
   }
 
@@ -487,7 +519,11 @@ export function createRequestsService(
 
   // ---- the agent's side ---------------------------------------------------------------------------
 
-  function claim(auth: AuthContext, id: string, input: ClaimRequestInput = {}): RequestWithContext {
+  function claim(
+    auth: AuthContext,
+    id: string,
+    input: ClaimRequestInput = {},
+  ): StudyRequestWithContext {
     const r = need(auth.userId, id);
     const ttl = Math.min(
       input.ttlSeconds !== undefined ? input.ttlSeconds * 1000 : defaultTtl,
@@ -520,7 +556,7 @@ export function createRequestsService(
          claim_expires_at = ?, updated_at = ? WHERE id = ?`,
     ).run(JSON.stringify(auth.actor), t, t + ttl, t, r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.claim", `Claimed a request (${fresh.kind}).`);
+    log(auth, fresh, "request.claim", `Claimed ${words(fresh)}`);
     return view(fresh);
   }
 
@@ -528,7 +564,7 @@ export function createRequestsService(
     auth: AuthContext,
     id: string,
     _input: ReleaseRequestInput = {},
-  ): RequestWithContext {
+  ): StudyRequestWithContext {
     const r = need(auth.userId, id);
     check(auth, r.status, "release");
     needClaim(auth, r, "release");
@@ -537,7 +573,7 @@ export function createRequestsService(
          claim_expires_at = NULL, updated_at = ? WHERE id = ?`,
     ).run(now(), r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.release", `Handed a request back (${fresh.kind}).`);
+    log(auth, fresh, "request.release", `Handed ${words(fresh)} back`);
     return view(fresh);
   }
 
@@ -557,7 +593,7 @@ export function createRequestsService(
     auth: AuthContext,
     id: string,
     input: CompleteRequestInput,
-  ): RequestWithContext {
+  ): StudyRequestWithContext {
     const r = need(auth.userId, id);
     if (r.status === "waiting" && actorKind(auth) === "agent") {
       throw new AppError("conflict", "Claim this request before completing it.", {
@@ -572,11 +608,15 @@ export function createRequestsService(
          claim_expires_at = NULL, updated_at = ?, closed_at = ? WHERE id = ?`,
     ).run(JSON.stringify(replyOf(auth, input.reply, input.links)), t, t, r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.complete", `Answered a request: ${input.reply}`);
+    log(auth, fresh, "request.complete", `Answered ${words(fresh)}: ${input.reply}`);
     return view(fresh);
   }
 
-  function decline(auth: AuthContext, id: string, input: DeclineRequestInput): RequestWithContext {
+  function decline(
+    auth: AuthContext,
+    id: string,
+    input: DeclineRequestInput,
+  ): StudyRequestWithContext {
     const r = need(auth.userId, id);
     check(auth, r.status, "decline");
     needClaim(auth, r, "decline");
@@ -586,7 +626,7 @@ export function createRequestsService(
          claim_expires_at = NULL, updated_at = ?, closed_at = ? WHERE id = ?`,
     ).run(JSON.stringify(replyOf(auth, input.reason, [])), t, t, r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.decline", `Declined a request: ${input.reason}`);
+    log(auth, fresh, "request.decline", `Declined ${words(fresh)}: ${input.reason}`);
     return view(fresh);
   }
 

@@ -74,7 +74,16 @@ export interface FilesDeps {
   now: () => number;
 }
 
+/** Told, inside the same transaction, when source files go to the trash, come back, or are deleted for good. */
+export interface FilesListener {
+  trashed?(event: { userId: string; actor: Actor; fileIds: readonly string[] }): void;
+  restored?(event: { userId: string; actor: Actor; fileIds: readonly string[] }): void;
+  /** Runs before the rows go; the pages and the original are still there. */
+  deleted?(event: { userId: string; actor: Actor; fileIds: readonly string[] }): void;
+}
+
 export interface FilesServiceOptions extends Partial<QueueOptions> {
+  listener?: FilesListener;
   /** Use this storage instead of opening `config.DATA_DIR` on first use. */
   storage?: Storage;
   /** Key for signed page-image links. By default one is made once and kept in the database. */
@@ -736,6 +745,7 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
           summary: `Moved ${file.original_name} to the trash`,
           file: needFile(auth.userId, id),
         });
+        options.listener?.trashed?.({ userId: auth.userId, actor: auth.actor, fileIds: [id] });
       })();
     }
     return view(needFile(auth.userId, id));
@@ -755,6 +765,7 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
           summary: `Restored ${file.original_name} from the trash`,
           file: needFile(auth.userId, id),
         });
+        options.listener?.restored?.({ userId: auth.userId, actor: auth.actor, fileIds: [id] });
       })();
     }
     return view(needFile(auth.userId, id));
@@ -786,6 +797,7 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
         summary: `Deleted ${file.original_name} for good`,
         file,
       });
+      options.listener?.deleted?.({ userId: auth.userId, actor: auth.actor, fileIds: [id] });
       db.prepare("DELETE FROM source_files WHERE id = ?").run(file.id);
       shared =
         (

@@ -1,14 +1,18 @@
 import { SEARCH_KINDS, type SearchHit, type SearchKind, type SearchPage } from "@notes/schema";
 import { AppError } from "../../http/errors.js";
+import type { ConceptsService } from "../concepts/index.js";
 import type { DocumentsService } from "../documents/index.js";
 import type { FilesService } from "../files/index.js";
 import type { LibraryService } from "../library/index.js";
+import type { PracticeService } from "../practice/index.js";
 
 /** What the search needs from each domain: its own ranked, user-scoped, paged text search. */
 export interface SearchSources {
   library: Pick<LibraryService, "search">;
   files: Pick<FilesService, "searchTranscripts">;
   documents: Pick<DocumentsService, "searchDocuments">;
+  practice: Pick<PracticeService, "searchQuestions">;
+  concepts: Pick<ConceptsService, "searchConcepts">;
 }
 
 export interface SearchRequest {
@@ -25,12 +29,19 @@ const DEFAULT_LIMIT = 50;
  * How the kinds compete. Each domain ranks its own hits (FTS5 rank), and those scores
  * cannot be compared across tables, so the lists are merged by reciprocal rank:
  * a hit at position `r` of its kind scores `weight / (K + r)`. A name match outranks
- * a block (curated study material), which outranks a raw transcript page; within a
- * kind the domain's own order is kept. Ties go to the earlier kind in `ORDER`.
+ * a concept (a thing she studies, found by name), which outranks a block (curated study
+ * material), a question, and a raw transcript page, in that order; within a kind the
+ * domain's own order is kept. Ties go to the earlier kind in `ORDER`.
  */
-const WEIGHT: Record<SearchKind, number> = { node: 1.5, block: 1, page: 0.9 };
+const WEIGHT: Record<SearchKind, number> = {
+  node: 1.5,
+  concept: 1.3,
+  block: 1,
+  question: 0.95,
+  page: 0.9,
+};
 const RANK_OFFSET = 3;
-const ORDER: readonly SearchKind[] = ["node", "block", "page"];
+const ORDER: readonly SearchKind[] = ["node", "concept", "block", "question", "page"];
 
 type Taken = Record<SearchKind, number>;
 
@@ -43,13 +54,20 @@ function invalidCursor(): AppError {
 
 /** The cursor is how many hits of each kind earlier pages already used. */
 function decode(cursor: string | undefined): Taken {
-  if (!cursor) return { node: 0, block: 0, page: 0 };
+  if (!cursor) return { node: 0, concept: 0, block: 0, question: 0, page: 0 };
   try {
     const value = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<
       string,
       unknown
     >;
-    const taken = { node: value.n, block: value.b, page: value.p };
+    // A cursor from before concepts and questions were searched has no `c` or `q`: they start at 0.
+    const taken = {
+      node: value.n,
+      concept: value.c ?? 0,
+      block: value.b,
+      question: value.q ?? 0,
+      page: value.p,
+    };
     if (Object.values(taken).every((n) => Number.isInteger(n) && (n as number) >= 0)) {
       return taken as Taken;
     }
@@ -60,9 +78,15 @@ function decode(cursor: string | undefined): Taken {
 }
 
 function encode(taken: Taken): string {
-  return Buffer.from(JSON.stringify({ n: taken.node, b: taken.block, p: taken.page })).toString(
-    "base64url",
-  );
+  return Buffer.from(
+    JSON.stringify({
+      n: taken.node,
+      c: taken.concept,
+      b: taken.block,
+      q: taken.question,
+      p: taken.page,
+    }),
+  ).toString("base64url");
 }
 
 /**
@@ -82,6 +106,25 @@ export function createSearchService(sources: SearchSources) {
     const lists: Record<SearchKind, SearchHit[]> = {
       node: kinds.has("node")
         ? sources.library.search(userId, { q: request.q, ...ask, offset: skip.node }).items
+        : [],
+      concept: kinds.has("concept")
+        ? sources.concepts
+            .searchConcepts(userId, request.q, { limit: limit + 1, offset: skip.concept })
+            .map(
+              (c): SearchHit => ({
+                kind: "concept",
+                conceptId: c.id,
+                name: c.name,
+                conceptType: c.type,
+                genericName: c.genericName,
+                snippet: c.genericName ? `${c.name} (${c.genericName})` : c.name,
+              }),
+            )
+        : [],
+      question: kinds.has("question")
+        ? sources.practice
+            .searchQuestions(userId, request.q, { ...ask, offset: skip.question })
+            .map((h): SearchHit => ({ kind: "question", ...h }))
         : [],
       block: kinds.has("block")
         ? sources.documents.searchDocuments(userId, request.q, { ...ask, offset: skip.block }).items

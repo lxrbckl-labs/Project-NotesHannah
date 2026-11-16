@@ -138,7 +138,9 @@ export function buildSession(input: BuildSessionInput): PracticeSession {
     const q = p.question;
     if (seen.has(q.id) || !formats.includes(q.type) || !inScope(p, input.scope, missed)) continue;
     seen.add(q.id);
-    byType.set(q.type, [...(byType.get(q.type) ?? []), q]);
+    const list = byType.get(q.type);
+    if (list) list.push(q);
+    else byType.set(q.type, [q]);
   }
 
   // Balanced quotas: hand out one question at a time to each type in turn.
@@ -157,12 +159,20 @@ export function buildSession(input: BuildSessionInput): PracticeSession {
     }
   }
 
+  // Her attempts by question once, so weighing a question does not read the whole history.
+  const attemptsOf = new Map<string, History[number][]>();
+  for (const a of history) {
+    const list = attemptsOf.get(a.questionId);
+    if (list) list.push(a);
+    else attemptsOf.set(a.questionId, [a]);
+  }
+
   // Weighted sampling without replacement (Efraimidis-Spirakis): larger weight, larger key.
   const chosen: Question[] = [];
   for (const t of types) {
     const keyed = (byType.get(t) as Question[]).map((q) => ({
       q,
-      key: rng() ** (1 / questionWeight(q.id, history)),
+      key: rng() ** (1 / questionWeight(q.id, attemptsOf.get(q.id) ?? [])),
     }));
     keyed.sort((a, b) => b.key - a.key || (a.q.id < b.q.id ? -1 : 1));
     chosen.push(...keyed.slice(0, quota.get(t) as number).map((k) => k.q));

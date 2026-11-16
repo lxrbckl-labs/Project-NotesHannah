@@ -11,13 +11,13 @@ import {
   REQUEST_EXAMPLES,
   REQUEST_TRANSITIONS,
   ReopenRequestInput,
-  Request,
   RequestAction,
   RequestCounts,
   RequestKind,
   RequestLink,
   RequestStatus,
   RequestTarget,
+  StudyRequest,
 } from "../src/requests.js";
 
 const doc = newId("document");
@@ -173,12 +173,12 @@ describe("the request object", () => {
   };
 
   it("parses a waiting request", () => {
-    expect(Request.parse(base)).toEqual(base);
+    expect(StudyRequest.parse(base)).toEqual(base);
   });
 
   it("only her can be the creator", () => {
     const agent = { type: "agent", keyId: newId("apiKey") };
-    expect(Request.safeParse({ ...base, createdBy: agent }).success).toBe(false);
+    expect(StudyRequest.safeParse({ ...base, createdBy: agent }).success).toBe(false);
   });
 
   it("carries a claim, a reply with links and reopen history", () => {
@@ -205,7 +205,7 @@ describe("the request object", () => {
         },
       ],
     };
-    expect(Request.safeParse(full).success).toBe(true);
+    expect(StudyRequest.safeParse(full).success).toBe(true);
   });
 
   it("counts include the open total", () => {

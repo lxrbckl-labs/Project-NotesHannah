@@ -1,10 +1,20 @@
 import { z } from "zod";
 import { BlockType } from "./blocks/index.js";
-import { BlockId, DocumentId, FileId, NodeId, PageId, TranscriptId } from "./ids.js";
+import { ConceptType } from "./concepts.js";
+import {
+  BlockId,
+  ConceptId,
+  DocumentId,
+  FileId,
+  NodeId,
+  PageId,
+  QuestionId,
+  TranscriptId,
+} from "./ids.js";
 import { NodeWithLinks } from "./library.js";
 
 /** What a search can find. */
-export const SearchKind = z.enum(["node", "page", "block"]);
+export const SearchKind = z.enum(["node", "page", "block", "question", "concept"]);
 export type SearchKind = z.infer<typeof SearchKind>;
 
 export const SEARCH_KINDS: readonly SearchKind[] = SearchKind.options;
@@ -45,10 +55,35 @@ export const BlockSearchHit = z.object({
 });
 export type BlockSearchHit = z.infer<typeof BlockSearchHit>;
 
+/** A practice question whose prompt text matches. */
+export const QuestionSearchHit = z.object({
+  kind: z.literal("question"),
+  questionId: QuestionId,
+  /** "multiple_choice", "flashcard", ... */
+  questionType: z.string(),
+  /** The lecture, folder or document she finds it under. */
+  nodeId: NodeId.nullable(),
+  snippet: z.string(),
+});
+export type QuestionSearchHit = z.infer<typeof QuestionSearchHit>;
+
+/** A concept whose name or alias (or generic or brand name) matches. */
+export const ConceptSearchHit = z.object({
+  kind: z.literal("concept"),
+  conceptId: ConceptId,
+  name: z.string(),
+  conceptType: ConceptType,
+  genericName: z.string().nullable(),
+  snippet: z.string(),
+});
+export type ConceptSearchHit = z.infer<typeof ConceptSearchHit>;
+
 export const SearchHit = z.discriminatedUnion("kind", [
   NodeSearchHit,
   PageSearchHit,
   BlockSearchHit,
+  QuestionSearchHit,
+  ConceptSearchHit,
 ]);
 export type SearchHit = z.infer<typeof SearchHit>;
 

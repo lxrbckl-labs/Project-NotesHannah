@@ -570,7 +570,7 @@ filed under the covered nodes.
 ## Requests
 
 The request queue (features L1 to L5): she leaves a request, an agent claims it over MCP or
-HTTP, does the work and replies. Types are `Request`, `RequestWithContext`, `RequestTarget`,
+HTTP, does the work and replies. Types are `StudyRequest`, `StudyRequestWithContext`, `RequestTarget`,
 `RequestKind`, `RequestStatus` and `RequestCounts` from `@notes/schema`; the state machine is
 `REQUEST_TRANSITIONS` and `canTransition`.
 
@@ -585,7 +585,7 @@ trash. `kind` is `wrong`, `unclear`, `expand`, `more_like_this`, `make_questions
 | Method and path | Body or query | Returns |
 |---|---|---|
 | `POST /api/requests` | `{ target, kind?, message? }` (hers) | `201 { request }` |
-| `GET /api/requests` | `status` (one or more, comma separated; default: all but `cancelled`), `targetType`, `nodeId`, `documentId`, `blockId`, `fileId`, `questionId`, `order` (`newest` or `oldest`), `cursor`, `limit` | list of `RequestWithContext` |
+| `GET /api/requests` | `status` (one or more, comma separated; default: all but `cancelled`), `targetType`, `nodeId`, `documentId`, `blockId`, `fileId`, `questionId`, `order` (`newest` or `oldest`), `cursor`, `limit` | list of `StudyRequestWithContext` |
 | `GET /api/requests/counts` | | `{ counts: { waiting, in_progress, done, declined, cancelled, open } }`; `open` is waiting plus in progress, for the badge |
 | `GET /api/requests/:id` | | `{ request }` |
 | `PATCH /api/requests/:id` | `{ kind?, message? }` (hers, while `waiting`; the target never changes) | `{ request }` |

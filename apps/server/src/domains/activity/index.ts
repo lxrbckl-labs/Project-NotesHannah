@@ -18,3 +18,10 @@ export {
   parseChangeCursor,
 } from "./changes.js";
 export { activityRoutes } from "./routes.js";
+export {
+  type ChangeRecorder,
+  leaveTrace,
+  plural,
+  type Trace,
+  type TraceEntry,
+} from "./trace.js";

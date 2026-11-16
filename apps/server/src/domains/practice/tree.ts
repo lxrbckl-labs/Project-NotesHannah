@@ -8,6 +8,7 @@ export interface TreeNode {
   name: string;
   section: string | null;
   trashed: boolean;
+  lectureNumber: number | null;
 }
 
 /**
@@ -32,11 +33,14 @@ interface Row {
   name: string;
   section: string | null;
   trashed_at: string | null;
+  lecture_number: number | null;
 }
 
 export function loadTree(db: Db, userId: string): Tree {
   const rows = db
-    .prepare("SELECT id, parent_id, kind, name, section, trashed_at FROM nodes WHERE user_id = ?")
+    .prepare(
+      "SELECT id, parent_id, kind, name, section, trashed_at, lecture_number FROM nodes WHERE user_id = ?",
+    )
     .all(userId) as Row[];
   const nodes = new Map<string, TreeNode>();
   const children = new Map<string, string[]>();
@@ -48,6 +52,7 @@ export function loadTree(db: Db, userId: string): Tree {
       name: r.name,
       section: r.section,
       trashed: r.trashed_at !== null,
+      lectureNumber: r.lecture_number,
     });
     if (r.parent_id !== null) {
       const list = children.get(r.parent_id) ?? [];
@@ -81,4 +86,14 @@ export function loadTree(db: Db, userId: string): Tree {
       .map((n) => nodes.get(n)?.name ?? "")
       .join(" / ");
   return { nodes, chain, subtree, path };
+}
+
+/** "lecture 07 · Beta blockers", "course Pharmacology II": a node in plain words. */
+export function nodeWords(node: TreeNode | undefined): string {
+  if (!node) return "the library";
+  const number =
+    node.kind === "lecture" && node.lectureNumber !== null
+      ? `${String(node.lectureNumber).padStart(2, "0")} · `
+      : "";
+  return `${node.kind} ${number}${node.name}`;
 }
