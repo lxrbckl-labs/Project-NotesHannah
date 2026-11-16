@@ -22,7 +22,9 @@
   font-family: var(--font-sans);
 }
 
+/* Its own layer: the edge-label layer (z 1000) stays below the chrome, popovers and dialogs. */
 .nc-canvas .react-flow {
+  isolation: isolate;
   --xy-background-color: var(--color-bg);
   --xy-edge-stroke: var(--hue-gray-solid);
   --xy-selection-background-color: color-mix(in srgb, var(--color-selection) 8%, transparent);

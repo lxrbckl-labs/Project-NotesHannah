@@ -305,14 +305,30 @@ export function buildSeed(): { document: MemoryDocument; ref: Record<string, str
         { from: "propranolol", to: "hypo", kind: "causes", label: "masks symptoms" },
       ],
       frames: [
-        { ref: "f-mech", title: "Mechanism", members: ["beta1", "mech", "receptors", "effects"] },
+        {
+          ref: "f-mech",
+          title: "Mechanism",
+          members: ["beta1", "mech", "receptors", "effects"],
+          color: "blue",
+        },
         {
           ref: "f-sel",
           title: "Selective vs non-selective",
           members: ["compare", "metoprolol", "propranolol", "selective-tip", "olol"],
+          color: "purple",
         },
-        { ref: "f-adverse", title: "Adverse effects", members: ["adverse", "asthma", "hypo"] },
-        { ref: "f-counsel", title: "Counselling", members: ["counsel", "withdrawal", "questions"] },
+        {
+          ref: "f-adverse",
+          title: "Adverse effects",
+          members: ["adverse", "asthma", "hypo"],
+          color: "red",
+        },
+        {
+          ref: "f-counsel",
+          title: "Counselling",
+          members: ["counsel", "withdrawal", "questions"],
+          color: "green",
+        },
       ],
     },
     { actor: AGENT, now: T, newId: nextId },

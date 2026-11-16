@@ -7,6 +7,11 @@ import { memo } from "react";
  */
 
 const INK = "var(--color-text)";
+/**
+ * The sticker's own yellow, not --hue-yellow-solid: that shade is darkened in light to reach 3:1
+ * as a line, which turns the star and the light bulb mustard. The ink outline carries the contrast.
+ */
+const YELLOW = "#f7c948";
 const PAPER = "var(--color-surface)";
 
 const SHAPES: Record<Sticker, { label: string; body: React.ReactNode }> = {
@@ -25,7 +30,7 @@ const SHAPES: Record<Sticker, { label: string; body: React.ReactNode }> = {
     body: (
       <path
         d="M32 6 L39.5 22.5 L57 24.5 L44 36.5 L47.5 54 L32 45 L16.5 54 L20 36.5 L7 24.5 L24.5 22.5 Z"
-        fill="var(--hue-yellow-solid)"
+        fill={YELLOW}
         stroke={INK}
         strokeWidth="3"
         strokeLinejoin="round"
@@ -49,7 +54,7 @@ const SHAPES: Record<Sticker, { label: string; body: React.ReactNode }> = {
       <>
         <path
           d="M32 7 C19 7 12 17 12 26 C12 34 18 38 21 44 L43 44 C46 38 52 34 52 26 C52 17 45 7 32 7 Z"
-          fill="var(--hue-yellow-solid)"
+          fill={YELLOW}
           stroke={INK}
           strokeWidth="3"
           strokeLinejoin="round"
