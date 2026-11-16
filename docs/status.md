@@ -56,8 +56,6 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 - **Dragging a card into a frame fails in the browser test at tablet and computer sizes** (it passes at phone size). Not yet investigated: it may be the gesture or the test.
 - On the canvas, a block added to a document with pinned cards can land on top of another card (seen on the Beta blockers canvas after her inserted paragraph). Not investigated.
 - Dragging a card out of a frame pins it outside the frame.
-- At tablet width the Practice tab bar is cut off at the right edge.
-- On a phone the "Practise this" button on a document wraps onto its own row.
 - The local copy's sample canvas frames have no colour until it is reseeded (`pnpm local:reset`, then `pnpm local:seed`).
 - Skipped practice questions, missed-question reasons and reply links were added late and have less test depth than the rest.
 - The sample data's transcripts are placeholder text and do not match the sample slides.

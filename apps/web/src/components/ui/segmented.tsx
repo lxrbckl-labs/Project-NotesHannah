@@ -1,5 +1,5 @@
 import { Tabs as RadixTabs, ToggleGroup } from "radix-ui";
-import { createContext, type ReactNode, use } from "react";
+import { createContext, type ReactNode, use, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn";
 
 /**
@@ -11,8 +11,89 @@ export type SegmentLook = "segment" | "pill";
 
 const TRACK: Record<SegmentLook, string> = {
   segment: "inline-flex gap-1 rounded-card border border-border bg-surface-muted p-1",
-  pill: "flex gap-1 overflow-x-auto [scrollbar-width:none]",
+  // A pill row that is too wide scrolls inside ScrollCue, which adds the edge fades.
+  pill: "flex gap-1",
 };
+
+/** The chosen item in any of the row styles here (and in the practice nav's buttons). */
+const CHOSEN =
+  '[aria-current="page"],[aria-selected="true"],[aria-pressed="true"],[data-state="active"],[data-state="on"]';
+const FADE = 28;
+
+/**
+ * A row of choices that may be wider than its space. It scrolls sideways inside itself (the page
+ * never does), fades whichever edge has more behind it so the cut reads as "keep going" and not as
+ * a clipped label, and scrolls the chosen item into view when it changes or first shows.
+ */
+export function ScrollCue({
+  className,
+  scrollerClassName,
+  children,
+}: {
+  className?: string;
+  /** Padding or negative margins that let the row run to the screen edge. */
+  scrollerClassName?: string;
+  children: ReactNode;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ start: false, end: false });
+
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const measure = () => {
+      const start = el.scrollLeft > 1;
+      const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setEdge((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+    };
+    // Move only this row, never the page: scrollIntoView would also scroll the ancestors.
+    const reveal = () => {
+      const on = el.querySelector<HTMLElement>(CHOSEN);
+      if (on) {
+        const a = on.getBoundingClientRect();
+        const b = el.getBoundingClientRect();
+        if (a.left < b.left + FADE || a.right > b.right - FADE) {
+          el.scrollLeft += a.left - b.left - (b.width - a.width) / 2;
+        }
+      }
+      measure();
+    };
+    el.addEventListener("scroll", measure, { passive: true });
+    const frame = requestAnimationFrame(reveal);
+    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    resize?.observe(el);
+    if (el.firstElementChild) resize?.observe(el.firstElementChild);
+    const changes = new MutationObserver(reveal);
+    changes.observe(el, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["aria-current", "aria-selected", "aria-pressed", "data-state"],
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", measure);
+      resize?.disconnect();
+      changes.disconnect();
+    };
+  }, []);
+
+  const mask = `linear-gradient(to right, ${edge.start ? "transparent 0" : "#000 0"}, #000 ${FADE}px, #000 calc(100% - ${FADE}px), ${edge.end ? "transparent 100%" : "#000 100%"})`;
+  return (
+    <div className={cn("min-w-0 max-w-full", className)}>
+      <div
+        ref={scroller}
+        data-scroll-cue
+        data-more-start={edge.start}
+        data-more-end={edge.end}
+        className={cn("overflow-x-auto [scrollbar-width:none]", scrollerClassName)}
+        style={edge.start || edge.end ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 /** Classes for one item. Exported for link-based tabs (a Link with role="tab"). */
 export function segmentItemClass(selected: boolean, look: SegmentLook = "segment"): string {
@@ -62,28 +143,30 @@ export function SegmentedControl<T extends string>({
   className?: string;
 }) {
   return (
-    <ToggleGroup.Root
-      type="single"
-      aria-label={label}
-      value={value}
-      onValueChange={(next) => {
-        if (next) onValueChange(next as T);
-      }}
-      className={cn(TRACK[look], fill && "flex w-full", className)}
-    >
-      {items.map((item) => (
-        <ToggleGroup.Item
-          key={item.value}
-          value={item.value}
-          disabled={item.disabled}
-          aria-label={item.iconOnly ? item.label : undefined}
-          className={cn(segmentItemClass(item.value === value, look), fill && "flex-1")}
-        >
-          {item.icon ? <span aria-hidden>{item.icon}</span> : null}
-          {item.iconOnly ? null : item.label}
-        </ToggleGroup.Item>
-      ))}
-    </ToggleGroup.Root>
+    <ScrollCue className={fill ? "w-full" : undefined}>
+      <ToggleGroup.Root
+        type="single"
+        aria-label={label}
+        value={value}
+        onValueChange={(next) => {
+          if (next) onValueChange(next as T);
+        }}
+        className={cn(TRACK[look], fill && "flex w-full", className)}
+      >
+        {items.map((item) => (
+          <ToggleGroup.Item
+            key={item.value}
+            value={item.value}
+            disabled={item.disabled}
+            aria-label={item.iconOnly ? item.label : undefined}
+            className={cn(segmentItemClass(item.value === value, look), fill && "flex-1")}
+          >
+            {item.icon ? <span aria-hidden>{item.icon}</span> : null}
+            {item.iconOnly ? null : item.label}
+          </ToggleGroup.Item>
+        ))}
+      </ToggleGroup.Root>
+    </ScrollCue>
   );
 }
 
@@ -132,12 +215,14 @@ export function TabList({
 }) {
   const look = use(LookContext);
   return (
-    <RadixTabs.List
-      aria-label={label}
-      className={cn(TRACK[look], fill && "flex w-full", className)}
-    >
-      {children}
-    </RadixTabs.List>
+    <ScrollCue className={fill ? "w-full" : undefined}>
+      <RadixTabs.List
+        aria-label={label}
+        className={cn(TRACK[look], fill && "flex w-full", className)}
+      >
+        {children}
+      </RadixTabs.List>
+    </ScrollCue>
   );
 }
 

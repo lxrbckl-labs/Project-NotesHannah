@@ -80,11 +80,19 @@ test("she marks a block reviewed, and it is hers on the server", async ({ page }
   await signInReal(page);
   test.skip(!(await converterOnline(page)), "Docker is not running: no study guide.");
   await openLecture(page);
+  // The count other tests and the other two projects leave behind is not fixed (one database, run
+  // in turn), so read it here and compare against that.
+  const saved = page.getByTestId("save-status");
+  await expect(saved).toHaveAttribute("data-status", "saved");
   const before = Number(await page.getByTestId("unverified-number").textContent());
   await page.getByTestId("mark-reviewed").first().click();
+  // The page shows the new count at once, before the server has it. A reload at that moment would
+  // cancel the write and bring the old count back (the flake: 8 where 7 was expected), so wait
+  // for the save to land first.
   await expect(page.getByTestId("unverified-number")).toHaveText(String(before - 1), {
     timeout: 15_000,
   });
+  await expect(saved).toHaveAttribute("data-status", "saved");
   await page.reload();
   await expect(page.getByTestId("unverified-number")).toHaveText(String(before - 1));
 });

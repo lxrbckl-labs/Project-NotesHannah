@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Notice } from "../../components/ui/notice";
-import { segmentItemClass } from "../../components/ui/segmented";
+import { ScrollCue, segmentItemClass } from "../../components/ui/segmented";
 import { ExamPlanner, UpcomingExamsCard } from "../exams";
 import type { PickNodes } from "../exams/types";
 import "./practice.css";
@@ -154,29 +154,31 @@ export function PracticeApp({
       data-testid="practice-app"
     >
       {!results && (
-        <nav
-          aria-label="Practice sections"
-          className="-mx-4 mb-7 overflow-x-auto px-4 md:mx-0 md:px-0"
-        >
-          {/* The shared segmented look; the items are buttons so each keeps its test id. */}
-          <ul className="grid grid-cols-[repeat(5,auto)] gap-1 rounded-card border border-border bg-surface-muted p-1 sm:inline-grid">
-            {NAV.map((n) => (
-              <li key={n.view}>
-                <button
-                  type="button"
-                  aria-current={view === n.view ? "page" : undefined}
-                  data-testid={`nav-${n.view}`}
-                  onClick={() => {
-                    setProblem(null);
-                    setView(n.view);
-                  }}
-                  className={`w-full whitespace-nowrap max-sm:px-2 max-sm:text-label ${segmentItemClass(view === n.view, "segment")}`}
-                >
-                  {n.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <nav aria-label="Practice sections" className="mb-7">
+          {/* The shared segmented look; the items are buttons so each keeps its test id. ScrollCue
+              scrolls the row (fade at the cut edge, chosen tab kept in view) when it is too wide;
+              inline-grid makes the grey track as wide as its five tabs, so it never ends before
+              "Exams". */}
+          <ScrollCue scrollerClassName="-mx-4 px-4 md:mx-0 md:px-0">
+            <ul className="inline-grid grid-cols-[repeat(5,auto)] gap-1 rounded-card border border-border bg-surface-muted p-1">
+              {NAV.map((n) => (
+                <li key={n.view}>
+                  <button
+                    type="button"
+                    aria-current={view === n.view ? "page" : undefined}
+                    data-testid={`nav-${n.view}`}
+                    onClick={() => {
+                      setProblem(null);
+                      setView(n.view);
+                    }}
+                    className={`w-full whitespace-nowrap max-sm:px-2 max-sm:text-label ${segmentItemClass(view === n.view, "segment")}`}
+                  >
+                    {n.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </ScrollCue>
         </nav>
       )}
       {problem && (

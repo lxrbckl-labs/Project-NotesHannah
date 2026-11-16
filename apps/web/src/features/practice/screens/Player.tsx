@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, IconButton } from "../../../components/ui/button";
 import { ConfirmDialog } from "../../../components/ui/dialog";
 import { Notice } from "../../../components/ui/notice";
@@ -451,7 +452,10 @@ function Shell({
   rootRef: React.RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
 }) {
-  return (
+  // Rendered on the body, not where the screen is mounted: on a phone the app shell wraps each page in
+  // an element with a view-transition-name, which holds `fixed` children inside it and under the tab
+  // bar, so "Check answer" sat behind the tab bar and could not be tapped.
+  return createPortal(
     <div
       ref={rootRef}
       className="pr-root fixed inset-x-0 z-(--z-dock) flex flex-col bg-bg"
@@ -459,7 +463,8 @@ function Shell({
       data-testid="player-shell"
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
