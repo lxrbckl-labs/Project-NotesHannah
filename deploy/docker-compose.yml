@@ -1,37 +1,193 @@
-# Run from the repository root:  docker compose -f deploy/docker-compose.yml up --build
+# Production stack for the study-notes app: the web app and the file converter.
+#
+# Run it through scripts/up.sh (or `docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d`).
+# Every setting comes from deploy/.env (copy deploy/.env.example; scripts/setup.sh does it with generated secrets).
+#
+# Where the data lives
+#   notes-db (named volume, inside Docker's VM)  the live SQLite database. Not a bind mount on purpose: SQLite's
+#                                                locking and WAL files are unreliable on Docker Desktop bind mounts.
+#                                                A Docker reset wipes it, so scripts/backup.sh copies it out often.
+#   ${DATA_DIR} (bind mount, the external drive) originals/, pages/, queue/, tmp/, backups/ and the .notes-storage marker.
+#
+# The drive-not-mounted case: the bind uses create_host_path: false, so if ${DATA_DIR} is missing Docker refuses to
+# create the container (it would otherwise create an empty directory on the internal disk). If the directory exists
+# but is an empty mount point, the app refuses to start because the .notes-storage marker is absent.
+#
+# File ownership: the app and the converter run as the same uid:gid (NOTES_UID:NOTES_GID, default 10001:10001), so
+# each reads what the other writes whatever the permission bits say. The converter still cannot touch originals: that
+# mount is read-only. See docs/deploy.md ("File ownership").
+
+name: notes
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
+  # Gives the app's uid ownership of the (named) database volume. Runs once per `up`, then exits.
+  db-init:
+    image: "${APP_IMAGE:-notes-app}"
+    pull_policy: never
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c", 'chown "$$NOTES_UID:$$NOTES_GID" /db']
+    environment:
+      NOTES_UID: "${NOTES_UID:-10001}"
+      NOTES_GID: "${NOTES_GID:-10001}"
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+    volumes:
+      - type: volume
+        source: notes-db
+        target: /db
+    logging: *logging
+
   app:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
-    image: notes-app
+    image: "${APP_IMAGE:-notes-app}"
+    pull_policy: never
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    init: true
     restart: unless-stopped
+    stop_grace_period: 30s
+    user: "${NOTES_UID:-10001}:${NOTES_GID:-10001}"
+    # Caddy runs on the host, so publish on the loopback interface only: nothing else can reach the app directly.
     ports:
-      - "${PORT:-3000}:3000"
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       PORT: "3000"
       DATA_DIR: /data
       DB_PATH: /db/notes.db
-      APP_ORIGIN: "${APP_ORIGIN:?set APP_ORIGIN, e.g. https://notes.hannahporras.app}"
+      APP_ORIGIN: "${APP_ORIGIN:?set APP_ORIGIN in the env file, e.g. https://notes.hannahporras.app}"
       TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
     volumes:
-      # Live database on a named volume (SQLite on bind mounts is risky).
-      - notes-db:/db
-      # Originals and page images on the host (external drive in production).
-      - "${DATA_DIR:-./data}:/data"
+      - type: volume
+        source: notes-db
+        target: /db
+      - type: bind
+        source: "${DATA_DIR:?set DATA_DIR in the env file to the storage directory on the external drive}"
+        target: /data
+        bind:
+          create_host_path: false
+    # Hardening
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: "${APP_MEM_LIMIT:-1g}"
+    pids_limit: 512
     healthcheck:
       test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://localhost:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    logging: *logging
+
+  # The conversion worker. No network; it talks to the app only through files in queue/ (docs/converter.md).
+  converter:
+    build:
+      context: ..
+      dockerfile: deploy/converter.Dockerfile
+    image: "${CONVERTER_IMAGE:-notes-converter}"
+    pull_policy: never
+    # Start only after the app is healthy: that proves the drive is mounted and the marker is there.
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+
+    # Lockdown
+    network_mode: none # no interfaces but loopback; nothing to reach, nothing reaches it
+    read_only: true # root filesystem is immutable
+    user: "${NOTES_UID:-10001}:${NOTES_GID:-10001}" # same as the app: see the ownership note at the top
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    ipc: none
+    tmpfs:
+      # Scratch for conversions. Counts against the memory limit; noexec so nothing dropped there can run.
+      - /tmp:rw,noexec,nosuid,nodev,size=1g,mode=1777
+
+    # Resource limits (one conversion at a time)
+    mem_limit: 3g
+    memswap_limit: 3g # no swap
+    cpus: 2
+    pids_limit: 256
+    ulimits:
+      nofile: { soft: 1024, hard: 1024 }
+      core: 0
+      fsize: 2147483648
+
+    environment:
+      DATA_DIR: /data
+      # Optional overrides, empty means the built-in default (see docs/converter.md).
+      MAX_INPUT_BYTES: "${MAX_INPUT_BYTES:-}"
+      MAX_PAGES: "${MAX_PAGES:-}"
+      WALL_CLOCK_MS: "${WALL_CLOCK_MS:-}"
+      CHILD_RSS_MB: "${CHILD_RSS_MB:-}"
+      POLL_MS: "${POLL_MS:-}"
+      HEARTBEAT_MS: "${HEARTBEAT_MS:-}"
+
+    # Three separate mounts: originals can only be read, pages and queue can be written, nothing else is visible
+    # (not the database, not backups/, not tmp/).
+    volumes:
+      - type: bind
+        source: "${DATA_DIR}/originals"
+        target: /data/originals
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${DATA_DIR}/pages"
+        target: /data/pages
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${DATA_DIR}/queue"
+        target: /data/queue
+        bind:
+          create_host_path: false
+
+    healthcheck:
+      # Healthy while the heartbeat file has been touched in the last 30 seconds.
+      test:
+        - CMD
+        - /usr/local/bin/node
+        - -e
+        - "const s=require('fs').statSync('/data/queue/heartbeat');process.exit(Date.now()-s.mtimeMs<30000?0:1)"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging: *logging
+
+# A fixed subnet makes the app's view of the host proxy predictable: connections to the published loopback port
+# reach the app from the network's gateway address (10.77.88.1 here; measured on Docker Desktop for Mac), so
+# TRUSTED_PROXIES can name it exactly. Change NOTES_SUBNET only if it collides with a network you already use.
+networks:
+  default:
+    name: "${COMPOSE_PROJECT_NAME:-notes}-net"
+    ipam:
+      config:
+        - subnet: "${NOTES_SUBNET:-10.77.88.0/24}"
 
 volumes:
   notes-db:
+    name: "${COMPOSE_PROJECT_NAME:-notes}-db"

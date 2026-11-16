@@ -27,12 +27,14 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --from=build /out/ ./
 COPY --from=build /repo/apps/web/dist ./web
-RUN mkdir -p /data /db && chown -R node:node /data /db /app
-USER node
+# Operations tools (database snapshot, restore verification). They run inside this image so they
+# use the same SQLite build as the server; see docs/backups.md.
+COPY deploy/tools/ ./tools/
+# Uid 10001 matches the converter image. Compose overrides it with NOTES_UID:NOTES_GID when the
+# host needs another owner; the named volume is re-owned by the db-init service in that case.
+RUN mkdir -p /data /db && chown 10001:10001 /data /db
+USER 10001:10001
 EXPOSE 3000
 # /data must be the storage drive carrying .notes-storage, or the server refuses to start.
-# First run (the server will not start yet, so use a one-off container):
-#   docker compose -f deploy/docker-compose.yml run --rm app node dist/cli/admin.js init-storage
-# Admin, while it runs:
-#   docker compose -f deploy/docker-compose.yml exec app node dist/cli/admin.js create-user <name> [--generate]
+# Run it through deploy/docker-compose.yml and scripts/setup.sh (see docs/deploy.md).
 CMD ["node", "dist/index.js"]

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>app.notes.start</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>@REPO_DIR@/scripts/start-when-ready.sh</string>
+    <string>45</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>@REPO_DIR@</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NOTES_ENV_FILE</key>
+    <string>@ENV_FILE@</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>@LOG_DIR@/start.log</string>
+  <key>StandardErrorPath</key>
+  <string>@LOG_DIR@/start.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>
