@@ -24,20 +24,25 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   metadata: { dataDir: DATA_DIR },
-  webServer: {
-    command: `rm -rf "${DATA_DIR}" && node tools/dev/local.mjs`,
-    cwd: "../..",
-    env: {
-      NOTES_LOCAL_DIR: DATA_DIR,
-      NOTES_SERVER_PORT: String(SERVER_PORT),
-      NOTES_WEB_PORT: String(WEB_PORT),
-    },
-    url: `http://localhost:${WEB_PORT}/login`,
-    reuseExistingServer: false,
-    // The first run builds the converter image.
-    timeout: 900_000,
-    gracefulShutdown: { signal: "SIGTERM", timeout: 60_000 },
-  },
+  webServer: process.env.E2E_REAL_REUSE
+    ? undefined
+    : {
+        command: `rm -rf "${DATA_DIR}" && node tools/dev/local.mjs`,
+        cwd: "../..",
+        env: {
+          NOTES_LOCAL_DIR: DATA_DIR,
+          NOTES_SERVER_PORT: String(SERVER_PORT),
+          NOTES_WEB_PORT: String(WEB_PORT),
+          // the product journeys read a seeded library (a cited guide, questions and an exam)
+          NOTES_LOCAL_SEED: "1",
+        },
+        // wait for the seed too: "Ready" is printed after it
+        wait: { stdout: /Ready\. Open/ },
+        reuseExistingServer: false,
+        // The first run builds the converter image.
+        timeout: 900_000,
+        gracefulShutdown: { signal: "SIGTERM", timeout: 60_000 },
+      },
   projects: [
     { name: "real-phone", use: { viewport: { width: 390, height: 844 }, hasTouch: true } },
     { name: "real-tablet", use: { viewport: { width: 834, height: 1194 }, hasTouch: true } },
