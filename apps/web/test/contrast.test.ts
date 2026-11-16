@@ -80,7 +80,6 @@ const PAIRS: Array<[string, string]> = [
   ["color-accent", "color-surface"],
   ["color-accent", "color-accent-soft"],
   ["color-accent-contrast", "color-accent"],
-  ["color-accent-contrast", "color-danger"],
   // Tooltips: the page colour on the text colour.
   ["color-bg", "color-text"],
 ];
@@ -88,6 +87,8 @@ const PAIRS: Array<[string, string]> = [
 // Semantic colours: on their soft background and on every base background.
 for (const role of ["danger", "success", "warning", "info"]) {
   PAIRS.push([`color-${role}`, `color-${role}-soft`]);
+  // A filled button in this colour carries the accent-contrast text, like danger.
+  PAIRS.push(["color-accent-contrast", `color-${role}`]);
   for (const bg of BACKGROUNDS) PAIRS.push([`color-${role}`, bg]);
 }
 
