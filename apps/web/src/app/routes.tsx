@@ -56,6 +56,10 @@ const screens = {
     import("../features/settings/SettingsPage").then((m) => ({ Component: m.SettingsPage })),
   activity: () =>
     import("../features/activity/ActivityPage").then((m) => ({ Component: m.ActivityPage })),
+  references: () =>
+    import("../features/references/ReferencesPage").then((m) => ({
+      Component: m.ReferencesPage,
+    })),
   help: () => import("../features/help/GuidePage").then((m) => ({ Component: m.GuidePage })),
   designBits: () =>
     import("../features/design-bits/DesignBitsPage").then((m) => ({
@@ -113,6 +117,7 @@ export const routes: RouteObject[] = [
           { path: "trash", lazy: screens.trash, HydrateFallback: Loading },
           { path: "settings", lazy: screens.settings, HydrateFallback: Loading },
           { path: "help", lazy: screens.help, HydrateFallback: Loading },
+          { path: "references", lazy: screens.references, HydrateFallback: Loading },
           { path: "activity", lazy: screens.activity, HydrateFallback: Loading },
           { path: "design/bits", lazy: screens.designBits, HydrateFallback: Loading },
           {

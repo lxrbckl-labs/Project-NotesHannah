@@ -1,4 +1,5 @@
 import {
+  BookMarked,
   Bot,
   ChevronRight,
   LifeBuoy,
@@ -86,6 +87,9 @@ export function SettingsPage() {
           <div className="grid gap-2">
             <LinkRow to="/help" icon={<LifeBuoy size={18} />}>
               Guide
+            </LinkRow>
+            <LinkRow to="/references" icon={<BookMarked size={18} />}>
+              References
             </LinkRow>
             <LinkRow to="/requests" icon={<MessageSquarePlus size={18} />}>
               Requests

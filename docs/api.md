@@ -615,6 +615,33 @@ exams; a covered node deleted for good drops out of the list.
 An exam is also a session scope (`{ kind: "exam", examId }`, or `examId` on `missed` and `due`
 scopes, and a filter on the question list and the due deck): the questions in scope are those
 filed under the covered nodes.
+## References
+
+Her saved outside references (docs/references.md). Code: `apps/server/src/domains/references/`.
+Reads need any signed-in caller; create and change a session or a write key; delete her session.
+At most 500 per person, 20 places per reference; addresses are http or https only, without a
+user name or password.
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `GET /api/references` | `q` (words in title, note, address), `kind`, `nodeId` with `within` (default true: also anything inside it), `courseId`, `favourite`, `cursor`, `limit` (100, at most 500) | `{ items: SavedReference[], nextCursor }`, pinned first, then newest |
+| `POST /api/references` | `{ title, url, note?, kind?, nodeIds?, favourite? }` | `201 { reference }` |
+| `GET /api/references/:id` | none | `{ reference }` |
+| `GET /api/references/:id/used-in` | none | `{ items: [{ documentId, documentTitle, nodeId, blockId }] }`: blocks whose `references` name it (by id or address) |
+| `PATCH /api/references/:id` | any of the create fields | `{ reference }` |
+| `DELETE /api/references/:id` | none | `204`. *Session.* |
+
+`SavedReference` is `{ id, title, url, note, kind, source ("pharmguides" by host, or null),
+favourite, places: [{ nodeId, name, kind, path, courseId, courseName, trashed }], createdBy,
+createdAt, updatedAt }`. Places are courses, folders, lectures or documents. A place in the trash
+keeps its tie (marked `trashed`, left out of `nodeId` and `courseId` filters) and it returns with the
+place; deleting the place for good removes the tie and keeps the reference; duplicating a place ties
+the copy too. Search (`GET /api/search`) has the hit kind `reference`.
+
+A block may carry `references: [{ title, url, referenceId? }]` (at most 5): outside references it
+draws on, shown as their own chips apart from its citations. A generated block with references
+satisfies the citation rule.
+
 ## Requests
 
 The request queue (features L1 to L5): she leaves a request, an agent claims it over MCP or

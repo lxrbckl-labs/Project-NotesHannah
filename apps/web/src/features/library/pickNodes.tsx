@@ -17,11 +17,29 @@ export function usePickNodes(): PickNodes {
   return value;
 }
 
-/** Choosable: lectures and folders (a folder covers everything inside it). */
-const pickable = (n: NodeWithLinks) => n.kind === "lecture" || n.kind === "folder";
+type PickMode = "coverage" | "places";
+
+/**
+ * Choosable for exam coverage: lectures and folders (a folder covers everything inside it). For
+ * the places a reference belongs with: courses, folders, lectures and documents.
+ */
+const pickable = (n: NodeWithLinks, mode: PickMode) =>
+  mode === "places"
+    ? ["course", "folder", "lecture", "document"].includes(n.kind)
+    : n.kind === "lecture" || n.kind === "folder";
+
+const DESCRIPTION: Record<PickMode, string> = {
+  coverage: "A folder covers everything inside it.",
+  places: "Choose the courses, folders, lectures or documents it belongs with.",
+};
 
 export function PickNodesProvider({ children }: { children: ReactNode }) {
-  const [request, setRequest] = useState<{ selected: string[]; title: string } | null>(null);
+  const [request, setRequest] = useState<{
+    selected: string[];
+    title: string;
+    mode: PickMode;
+    allowNone: boolean;
+  } | null>(null);
   const resolver = useRef<((value: PickedNode[] | null) => void) | null>(null);
 
   const pick = useCallback<PickNodes>(
@@ -32,6 +50,8 @@ export function PickNodesProvider({ children }: { children: ReactNode }) {
         setRequest({
           selected: [...options.selected],
           title: options.title ?? "Choose lectures and folders",
+          mode: options.pick ?? "coverage",
+          allowNone: options.allowNone ?? false,
         });
       }),
     [],
@@ -51,10 +71,16 @@ export function PickNodesProvider({ children }: { children: ReactNode }) {
         onOpenChange={(open) => !open && finish(null)}
         sheet="touch"
         title={request?.title ?? "Choose"}
-        description="A folder covers everything inside it."
+        description={DESCRIPTION[request?.mode ?? "coverage"]}
       >
         {request ? (
-          <PickerBody key={request.title} initial={request.selected} onDone={finish} />
+          <PickerBody
+            key={request.title}
+            initial={request.selected}
+            mode={request.mode}
+            allowNone={request.allowNone}
+            onDone={finish}
+          />
         ) : null}
       </Modal>
     </Context>
@@ -63,9 +89,13 @@ export function PickNodesProvider({ children }: { children: ReactNode }) {
 
 function PickerBody({
   initial,
+  mode,
+  allowNone,
   onDone,
 }: {
   initial: string[];
+  mode: PickMode;
+  allowNone: boolean;
   onDone: (value: PickedNode[] | null) => void;
 }) {
   const [chosen, setChosen] = useState<Map<string, PickedNode>>(
@@ -82,7 +112,7 @@ function PickerBody({
     <div className="flex flex-col gap-4">
       <fieldset className="m-0 grid min-w-0 gap-0.5 border-0 p-0">
         <legend className="sr-only">Library</legend>
-        <Branch parentId={null} depth={0} chosen={chosen} onToggle={toggle} />
+        <Branch parentId={null} depth={0} chosen={chosen} mode={mode} onToggle={toggle} />
       </fieldset>
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
         <p className="text-sm text-text-muted">{chosen.size} chosen</p>
@@ -90,7 +120,7 @@ function PickerBody({
           <Button onClick={() => onDone(null)}>Cancel</Button>
           <Button
             variant="primary"
-            disabled={chosen.size === 0}
+            disabled={chosen.size === 0 && !allowNone}
             onClick={() => onDone([...chosen.values()])}
           >
             Use these
@@ -105,35 +135,42 @@ function Branch({
   parentId,
   depth,
   chosen,
+  mode,
   onToggle,
 }: {
   parentId: string | null;
   depth: number;
   chosen: Map<string, PickedNode>;
+  mode: PickMode;
   onToggle: (n: NodeWithLinks) => void;
 }) {
   const kids = useChildren(parentId);
   if (kids.isPending) return <p className="px-3 py-2 text-sm text-text-muted">Loading</p>;
   if (kids.isError) return <p className="px-3 py-2 text-sm text-danger">Could not load.</p>;
   return kids.data
-    .filter((n) => (n.kind !== "document" && n.kind !== "section" ? true : n.kind === "section"))
-    .map((n) => <Row key={n.id} node={n} depth={depth} chosen={chosen} onToggle={onToggle} />);
+    .filter((n) => mode === "places" || n.kind !== "document")
+    .map((n) => (
+      <Row key={n.id} node={n} depth={depth} chosen={chosen} mode={mode} onToggle={onToggle} />
+    ));
 }
 
 function Row({
   node,
   depth,
   chosen,
+  mode,
   onToggle,
 }: {
   node: NodeWithLinks;
   depth: number;
   chosen: Map<string, PickedNode>;
+  mode: PickMode;
   onToggle: (n: NodeWithLinks) => void;
 }) {
   const [open, setOpen] = useState(depth < 3);
-  const expandable = node.childCount > 0 && node.kind !== "lecture";
-  const can = pickable(node);
+  // A lecture's documents are places a reference can belong with, so it opens for "places".
+  const expandable = node.childCount > 0 && (node.kind !== "lecture" || mode === "places");
+  const can = pickable(node, mode);
   const on = chosen.has(node.id);
   return (
     <div>
@@ -173,7 +210,13 @@ function Row({
         </button>
       </div>
       {open && expandable ? (
-        <Branch parentId={node.id} depth={depth + 1} chosen={chosen} onToggle={onToggle} />
+        <Branch
+          parentId={node.id}
+          depth={depth + 1}
+          chosen={chosen}
+          mode={mode}
+          onToggle={onToggle}
+        />
       ) : null}
     </div>
   );

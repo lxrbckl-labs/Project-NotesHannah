@@ -1,4 +1,5 @@
 import {
+  BookMarked,
   BookOpen,
   Bot,
   GraduationCap,
@@ -220,6 +221,9 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <NavLink to="/concepts" className={linkClass}>
           <Lightbulb size={18} aria-hidden /> Concepts
           <NavBadge count={badges.review} label="concepts to review" tone="warning" />
+        </NavLink>
+        <NavLink to="/references" className={linkClass}>
+          <BookMarked size={18} aria-hidden /> References
         </NavLink>
         <NavLink to="/requests" className={linkClass}>
           <MessageSquarePlus size={18} aria-hidden /> Requests

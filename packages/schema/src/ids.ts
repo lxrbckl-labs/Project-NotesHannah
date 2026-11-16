@@ -28,6 +28,7 @@ export const ID_PREFIX = {
   card: "crd",
   edge: "edg",
   frame: "frm",
+  reference: "ref",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIX;
@@ -108,3 +109,4 @@ export const ExamId = idSchema("exam");
 export const CardId = idSchema("card");
 export const EdgeId = idSchema("edge");
 export const FrameId = idSchema("frame");
+export const ReferenceId = idSchema("reference");

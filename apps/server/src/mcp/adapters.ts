@@ -98,6 +98,7 @@ export function backendFromServices(services: Services): McpBackend {
     requests: services.requests,
     concepts: services.concepts,
     canvas: services.canvasPort,
+    references: services.references,
     search: { search: (userId, request) => search.search(userId, request) },
     files: filesPort,
     documents: documentsPort,

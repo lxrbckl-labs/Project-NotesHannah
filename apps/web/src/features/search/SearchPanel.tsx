@@ -1,5 +1,5 @@
 import type { SearchHit } from "@notes/schema";
-import { FileText, HelpCircle, Pill, Search, TextQuote } from "lucide-react";
+import { BookMarked, FileText, Globe, HelpCircle, Pill, Search, TextQuote } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { inputClass } from "../../components/ui/field";
@@ -11,15 +11,17 @@ import { NodeIcon } from "../library/NodeIcon";
 import { nodeTitle } from "../library/NodeRow";
 import { useSearch } from "../library/queries";
 import { nodeHref } from "../library/rules";
+import { ExternalLink } from "../references/ExternalLink";
+import { PHARMGUIDES, pharmGuidesSearch } from "../references/registry";
 
+// One group per kind: a kind listed twice would show its hits twice, under the same React key.
 const GROUPS: Array<{ kind: SearchHit["kind"]; title: string }> = [
   { kind: "node", title: "In your library" },
-  { kind: "concept", title: "Concepts" },
-  { kind: "block", title: "In your study material" },
-  { kind: "question", title: "Practice questions" },
-  { kind: "page", title: "In your transcripts" },
-  { kind: "question", title: "In your practice questions" },
   { kind: "concept", title: "Drugs and concepts" },
+  { kind: "reference", title: "Your saved references" },
+  { kind: "block", title: "In your study material" },
+  { kind: "question", title: "In your practice questions" },
+  { kind: "page", title: "In your transcripts" },
 ];
 
 function hitKey(hit: SearchHit): string {
@@ -34,11 +36,13 @@ function hitKey(hit: SearchHit): string {
       return hit.questionId;
     case "concept":
       return hit.conceptId;
+    case "reference":
+      return hit.referenceId;
   }
 }
 
 /** Where a hit opens: a library item, a page of a source file (with the match marked), a block of a document. */
-export function hitHref(hit: SearchHit, q: string): string {
+export function hitHref(hit: Exclude<SearchHit, { kind: "reference" }>, q: string): string {
   if (hit.kind === "node") return nodeHref(hit.node);
   if (hit.kind === "page") {
     return `/files/${hit.fileId}?page=${hit.pageId}&quote=${encodeURIComponent(q)}`;
@@ -56,6 +60,60 @@ function HitLink({
   onPick,
 }: {
   hit: SearchHit;
+  q: string;
+  onPick: (() => void) | undefined;
+}) {
+  if (hit.kind === "reference") return <ReferenceHit hit={hit} onPick={onPick} />;
+  return <AppHitLink hit={hit} q={q} onPick={onPick} />;
+}
+
+const rowClass =
+  "flex min-h-14 items-center gap-3 rounded-card border border-transparent px-2.5 py-2 hover:border-border hover:bg-surface-muted focus-visible:bg-surface-muted";
+
+/** A saved reference opens its page outside the app, in a new tab. */
+function ReferenceHit({
+  hit,
+  onPick,
+}: {
+  hit: Extract<SearchHit, { kind: "reference" }>;
+  onPick: (() => void) | undefined;
+}) {
+  return (
+    <ExternalLink href={hit.url} icon={false} onClick={onPick} data-hue="teal" className={rowClass}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
+        <BookMarked size={18} aria-hidden />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate font-medium">{hit.title}</span>
+        <span className="block truncate text-ui text-text-muted">{hit.snippet}</span>
+      </span>
+    </ExternalLink>
+  );
+}
+
+/** Below every result list: the same words on PharmGuides, in a new tab. */
+function OutsideSearch({ q, onPick }: { q: string; onPick: (() => void) | undefined }) {
+  return (
+    <ExternalLink
+      href={pharmGuidesSearch(q)}
+      onClick={onPick}
+      data-testid="search-pharmguides"
+      className="mt-3 flex min-h-11 items-center gap-2.5 rounded-card border border-border bg-surface px-3 py-2 text-ui hover:bg-surface-muted"
+    >
+      <Globe size={16} aria-hidden className="shrink-0 text-text-muted" />
+      <span className="min-w-0 flex-1 truncate">
+        Search {PHARMGUIDES.name} for “{q}”
+      </span>
+    </ExternalLink>
+  );
+}
+
+function AppHitLink({
+  hit,
+  q,
+  onPick,
+}: {
+  hit: Exclude<SearchHit, { kind: "reference" }>;
   q: string;
   onPick: (() => void) | undefined;
 }) {
@@ -77,12 +135,7 @@ function HitLink({
             ? "Practice question"
             : hit.name;
   return (
-    <Link
-      to={hitHref(hit, q)}
-      onClick={onPick}
-      data-hue={hue ?? "accent"}
-      className="flex min-h-14 items-center gap-3 rounded-card border border-transparent px-2.5 py-2 hover:border-border hover:bg-surface-muted focus-visible:bg-surface-muted"
-    >
+    <Link to={hitHref(hit, q)} onClick={onPick} data-hue={hue ?? "accent"} className={rowClass}>
       <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
         {hit.kind === "node" ? (
           <NodeIcon kind={hit.node.kind} section={hit.node.section} size={18} />
@@ -189,7 +242,11 @@ export function SearchPanel({
         ) : query.isError ? (
           <ErrorState error={query.error} onRetry={() => query.refetch()} />
         ) : query.data.length === 0 ? (
-          <p className="px-1 text-ui text-text-muted">Nothing matches “{debounced}”.</p>
+          // biome-ignore lint/a11y/noStaticElementInteractions: arrow keys move between the result links
+          <div ref={list} onKeyDown={onListKey}>
+            <p className="px-1 text-ui text-text-muted">Nothing matches “{debounced}”.</p>
+            <OutsideSearch q={debounced} onPick={onPick} />
+          </div>
         ) : (
           // biome-ignore lint/a11y/noStaticElementInteractions: arrow keys move between the result links
           <div ref={list} onKeyDown={onListKey} className="grid gap-4">
@@ -211,6 +268,7 @@ export function SearchPanel({
                 </section>
               );
             })}
+            <OutsideSearch q={debounced} onPick={onPick} />
           </div>
         )}
       </div>

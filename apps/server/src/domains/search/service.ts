@@ -5,6 +5,7 @@ import type { DocumentsService } from "../documents/index.js";
 import type { FilesService } from "../files/index.js";
 import type { LibraryService } from "../library/index.js";
 import type { PracticeService } from "../practice/index.js";
+import type { ReferencesService } from "../references/index.js";
 
 /** What the search needs from each domain: its own ranked, user-scoped, paged text search. */
 export interface SearchSources {
@@ -13,6 +14,8 @@ export interface SearchSources {
   documents: Pick<DocumentsService, "searchDocuments">;
   practice: Pick<PracticeService, "searchQuestions">;
   concepts: Pick<ConceptsService, "searchConcepts">;
+  /** Optional so a search over the library alone (tests) still works. */
+  references?: Pick<ReferencesService, "searchReferences"> | undefined;
 }
 
 export interface SearchRequest {
@@ -36,12 +39,14 @@ const DEFAULT_LIMIT = 50;
 const WEIGHT: Record<SearchKind, number> = {
   node: 1.5,
   concept: 1.3,
+  // Her saved references are things she chose to keep, found by their title: near a concept.
+  reference: 1.2,
   block: 1,
   question: 0.95,
   page: 0.9,
 };
 const RANK_OFFSET = 3;
-const ORDER: readonly SearchKind[] = ["node", "concept", "block", "question", "page"];
+const ORDER: readonly SearchKind[] = ["node", "concept", "reference", "block", "question", "page"];
 
 type Taken = Record<SearchKind, number>;
 
@@ -54,16 +59,17 @@ function invalidCursor(): AppError {
 
 /** The cursor is how many hits of each kind earlier pages already used. */
 function decode(cursor: string | undefined): Taken {
-  if (!cursor) return { node: 0, concept: 0, block: 0, question: 0, page: 0 };
+  if (!cursor) return { node: 0, concept: 0, reference: 0, block: 0, question: 0, page: 0 };
   try {
     const value = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<
       string,
       unknown
     >;
-    // A cursor from before concepts and questions were searched has no `c` or `q`: they start at 0.
+    // A cursor from before concepts, questions and references were searched lacks `c`, `q` or `r`: they start at 0.
     const taken = {
       node: value.n,
       concept: value.c ?? 0,
+      reference: value.r ?? 0,
       block: value.b,
       question: value.q ?? 0,
       page: value.p,
@@ -82,6 +88,7 @@ function encode(taken: Taken): string {
     JSON.stringify({
       n: taken.node,
       c: taken.concept,
+      r: taken.reference,
       b: taken.block,
       q: taken.question,
       p: taken.page,
@@ -121,6 +128,12 @@ export function createSearchService(sources: SearchSources) {
               }),
             )
         : [],
+      reference:
+        kinds.has("reference") && sources.references
+          ? sources.references
+              .searchReferences(userId, request.q, { limit: limit + 1, offset: skip.reference })
+              .map((h): SearchHit => ({ kind: "reference", ...h }))
+          : [],
       question: kinds.has("question")
         ? sources.practice
             .searchQuestions(userId, request.q, { ...ask, offset: skip.question })

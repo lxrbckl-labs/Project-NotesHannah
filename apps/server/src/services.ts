@@ -44,6 +44,7 @@ import {
   type PracticePort,
   type PracticeService,
 } from "./domains/practice/index.js";
+import { createReferencesService, type ReferencesService } from "./domains/references/index.js";
 import {
   createDbTargetLookup,
   createRequestsService,
@@ -82,6 +83,8 @@ export interface Services {
   exams: ExamsService;
   requests: RequestsService;
   concepts: ConceptsService;
+  /** Her saved outside references (docs/references.md). */
+  references: ReferencesService;
   /** The second view of a document: cards, connectors and frames, pins of hers (docs/canvas.md). */
   canvas: CanvasService;
   /** "What changed since" (H9). Every domain's changes land here. */
@@ -154,6 +157,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     requests?: RequestsService;
     concepts?: ConceptsService;
     canvas?: CanvasService;
+    references?: ReferencesService;
   } = {};
   const need = <K extends keyof typeof later>(key: K): NonNullable<(typeof later)[K]> =>
     later[key] as NonNullable<(typeof later)[K]>;
@@ -179,6 +183,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
       need("practice").onNodeDeleted(userId, nodeIds);
       need("exams").onNodeDeleted(userId, nodeIds);
       need("requests").onNodeDeleted(userId, nodeIds);
+      need("references").onNodeDeleted(userId, nodeIds);
     },
     duplicated: ({ userId, pairs, actor }) => {
       const nodeMap = Object.fromEntries(pairs.map((p) => [p.fromId, p.toId]));
@@ -188,6 +193,10 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
         need("exams").onNodeDuplicated(userId, fromId, toId, nodeMap);
       }
       need("practice").onNodesDuplicated(
+        userId,
+        pairs.map((p) => [p.fromId, p.toId] as const),
+      );
+      need("references").onNodesDuplicated(
         userId,
         pairs.map((p) => [p.fromId, p.toId] as const),
       );
@@ -281,8 +290,17 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
 
   later.concepts = concepts;
   later.canvas = canvas;
+  const references = createReferencesService({ db, now }, trace);
+  later.references = references;
 
-  const search = createSearchService({ library, files, documents, practice, concepts });
+  const search = createSearchService({
+    library,
+    files,
+    documents,
+    practice,
+    concepts,
+    references,
+  });
 
   return {
     library,
@@ -293,6 +311,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     requests,
     concepts,
     canvas,
+    references,
     changes,
     activity,
     search,

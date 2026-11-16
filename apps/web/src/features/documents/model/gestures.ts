@@ -388,6 +388,7 @@ export function turnInto(
     generalKnowledge: input.generalKnowledge,
     flags: input.flags,
   };
+  if (input.references?.length) next.references = input.references;
   if (input.style) next.style = input.style;
   if (type === "heading" || type === "divider") {
     // Headings and dividers hold no citation markers; keep the sources on the block.

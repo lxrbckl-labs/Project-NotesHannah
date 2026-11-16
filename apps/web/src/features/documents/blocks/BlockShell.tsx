@@ -12,6 +12,7 @@ import {
 import {
   ArrowDown,
   ArrowUp,
+  BookMarked,
   Check,
   ChevronRight,
   CircleCheck,
@@ -33,6 +34,7 @@ import { IconButton } from "../../../components/ui/button";
 import { menuContentClass, menuItemClass, menuSeparatorClass } from "../../../components/ui/menu";
 import { Popover } from "../../../components/ui/popover";
 import { cn } from "../../../lib/cn";
+import { AddReferenceDialog } from "../../references/AddReferenceDialog";
 import { useActions, useSignal, useView } from "../context";
 import {
   deleteBlocks,
@@ -46,6 +48,7 @@ import { looseFlags } from "../model/references";
 import type { RequestKind } from "../store/types";
 import { formatWhen } from "../ui/hooks";
 import { FlagIndicator, GeneralKnowledgeTag } from "./cited";
+import { OutsideRefsRow } from "./outside";
 import { CiteChip } from "./RichText";
 import { BlockBoundary, BlockContent } from "./registry";
 import { CALLOUT_META } from "./text";
@@ -216,224 +219,266 @@ function BlockMenu({
   const colorable = COLOURABLE.includes(block.type);
   const order = actions.docRef.current?.blockIds ?? [];
   const { isTouch } = useView();
+  const [addingRef, setAddingRef] = useState(false);
+  const outside = block.references ?? [];
+  const setReferences = (references: NonNullable<Block["references"]>, label: string) =>
+    perform(
+      [
+        {
+          call: {
+            operation: "update_block",
+            input: { mode: "patch", documentId, blockId: block.id, patch: { references } },
+          },
+        },
+      ],
+      label,
+    );
   return (
-    <DropdownMenu.Root
-      modal={false}
-      {...(open !== undefined ? { open } : {})}
-      {...(onOpenChange ? { onOpenChange } : {})}
-    >
-      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="start"
-          sideOffset={6}
-          collisionPadding={12}
-          aria-label="Block actions"
-          className={cn(menuContentClass, "min-w-56")}
-        >
-          {targets.length > 0 && (
-            <Section touch={isTouch} label="Turn into" icon={<Repeat2 />}>
-              {targets.map((type) => (
-                <MenuItem
-                  key={type}
-                  onSelect={() => perform(turnInto(documentId, block, type), "Turn into")}
-                >
-                  {BLOCK_REGISTRY[type].label}
-                </MenuItem>
-              ))}
-            </Section>
-          )}
-          {block.type === "callout" && (
-            <Section
-              touch={isTouch}
-              label="Callout kind"
-              icon={CALLOUT_META[block.content.kind].icon}
-            >
-              {CALLOUT_KINDS.map((kind) => (
-                <MenuItem
-                  key={kind}
-                  icon={block.content.kind === kind ? <Check /> : CALLOUT_META[kind].icon}
-                  onSelect={() =>
-                    perform(
-                      [
-                        {
-                          call: {
-                            operation: "update_block",
-                            input: {
-                              mode: "patch",
-                              documentId,
-                              blockId: block.id,
-                              patch: { content: { kind } },
+    <>
+      <AddReferenceDialog
+        open={addingRef}
+        onOpenChange={setAddingRef}
+        onPick={(picked) => {
+          setAddingRef(false);
+          setReferences(
+            [...outside.filter((r) => r.url !== picked.url), picked].slice(-5),
+            "Add a reference",
+          );
+        }}
+      />
+      <DropdownMenu.Root
+        modal={false}
+        {...(open !== undefined ? { open } : {})}
+        {...(onOpenChange ? { onOpenChange } : {})}
+      >
+        <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            align="start"
+            sideOffset={6}
+            collisionPadding={12}
+            aria-label="Block actions"
+            className={cn(menuContentClass, "min-w-56")}
+          >
+            {targets.length > 0 && (
+              <Section touch={isTouch} label="Turn into" icon={<Repeat2 />}>
+                {targets.map((type) => (
+                  <MenuItem
+                    key={type}
+                    onSelect={() => perform(turnInto(documentId, block, type), "Turn into")}
+                  >
+                    {BLOCK_REGISTRY[type].label}
+                  </MenuItem>
+                ))}
+              </Section>
+            )}
+            {block.type === "callout" && (
+              <Section
+                touch={isTouch}
+                label="Callout kind"
+                icon={CALLOUT_META[block.content.kind].icon}
+              >
+                {CALLOUT_KINDS.map((kind) => (
+                  <MenuItem
+                    key={kind}
+                    icon={block.content.kind === kind ? <Check /> : CALLOUT_META[kind].icon}
+                    onSelect={() =>
+                      perform(
+                        [
+                          {
+                            call: {
+                              operation: "update_block",
+                              input: {
+                                mode: "patch",
+                                documentId,
+                                blockId: block.id,
+                                patch: { content: { kind } },
+                              },
                             },
                           },
-                        },
-                      ],
-                      "Callout kind",
-                    )
-                  }
-                >
-                  {CALLOUT_META[kind].label}
-                </MenuItem>
-              ))}
-            </Section>
-          )}
-          {colorable && isTouch && (
-            <>
-              <MenuSeparator />
-              <MenuLabel>Colour</MenuLabel>
-              <fieldset className="m-0 grid grid-cols-6 gap-1.5 border-0 px-3 pt-0 pb-2">
-                <legend className="sr-only">Colour</legend>
-                <button
-                  type="button"
-                  aria-label="Default colour"
-                  className="flex size-11 items-center justify-center rounded-control border border-border-strong"
-                  onClick={() => {
-                    perform(setStyle(documentId, block.id, null), "Colour");
-                    onOpenChange?.(false);
-                  }}
-                >
-                  {!block.style && <Check aria-hidden className="size-4" />}
-                </button>
-                {COLOR_TOKENS.map((token) => (
+                        ],
+                        "Callout kind",
+                      )
+                    }
+                  >
+                    {CALLOUT_META[kind].label}
+                  </MenuItem>
+                ))}
+              </Section>
+            )}
+            {colorable && isTouch && (
+              <>
+                <MenuSeparator />
+                <MenuLabel>Colour</MenuLabel>
+                <fieldset className="m-0 grid grid-cols-6 gap-1.5 border-0 px-3 pt-0 pb-2">
+                  <legend className="sr-only">Colour</legend>
                   <button
-                    key={token}
                     type="button"
-                    aria-label={`${token} colour`}
-                    data-hue={token}
-                    className="flex size-11 items-center justify-center rounded-control border border-tone-border bg-tone-solid text-surface"
+                    aria-label="Default colour"
+                    className="flex size-11 items-center justify-center rounded-control border border-border-strong"
                     onClick={() => {
-                      perform(setStyle(documentId, block.id, { color: token }), "Colour");
+                      perform(setStyle(documentId, block.id, null), "Colour");
                       onOpenChange?.(false);
                     }}
                   >
-                    {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                    {!block.style && <Check aria-hidden className="size-4" />}
                   </button>
-                ))}
-              </fieldset>
-            </>
-          )}
-          {colorable && !isTouch && (
-            <MenuSub label="Colour" icon={<Palette />}>
-              <MenuItem
-                icon={
-                  !block.style ? (
-                    <Check />
-                  ) : (
-                    <span className="size-3.5 rounded-pill border border-border-strong" />
-                  )
-                }
-                onSelect={() => perform(setStyle(documentId, block.id, null), "Colour")}
-              >
-                Default
-              </MenuItem>
-              {COLOR_TOKENS.map((token: ColorToken) => (
+                  {COLOR_TOKENS.map((token) => (
+                    <button
+                      key={token}
+                      type="button"
+                      aria-label={`${token} colour`}
+                      data-hue={token}
+                      className="flex size-11 items-center justify-center rounded-control border border-tone-border bg-tone-solid text-surface"
+                      onClick={() => {
+                        perform(setStyle(documentId, block.id, { color: token }), "Colour");
+                        onOpenChange?.(false);
+                      }}
+                    >
+                      {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                    </button>
+                  ))}
+                </fieldset>
+              </>
+            )}
+            {colorable && !isTouch && (
+              <MenuSub label="Colour" icon={<Palette />}>
                 <MenuItem
-                  key={token}
                   icon={
-                    block.style?.color === token ? (
+                    !block.style ? (
                       <Check />
                     ) : (
-                      <span data-hue={token} className="size-3.5 rounded-pill bg-tone-solid" />
+                      <span className="size-3.5 rounded-pill border border-border-strong" />
                     )
                   }
-                  onSelect={() =>
-                    perform(setStyle(documentId, block.id, { color: token }), "Colour")
-                  }
+                  onSelect={() => perform(setStyle(documentId, block.id, null), "Colour")}
                 >
-                  <span className="capitalize">{token}</span>
+                  Default
+                </MenuItem>
+                {COLOR_TOKENS.map((token: ColorToken) => (
+                  <MenuItem
+                    key={token}
+                    icon={
+                      block.style?.color === token ? (
+                        <Check />
+                      ) : (
+                        <span data-hue={token} className="size-3.5 rounded-pill bg-tone-solid" />
+                      )
+                    }
+                    onSelect={() =>
+                      perform(setStyle(documentId, block.id, { color: token }), "Colour")
+                    }
+                  >
+                    <span className="capitalize">{token}</span>
+                  </MenuItem>
+                ))}
+                {block.type === "paragraph" && (
+                  <>
+                    <MenuSeparator />
+                    <MenuLabel>Background</MenuLabel>
+                    {(["yellow", "blue", "green", "purple", "gray"] as const).map((token) => (
+                      <MenuItem
+                        key={token}
+                        icon={
+                          <span
+                            data-hue={token}
+                            className="size-3.5 rounded-inline border border-tone-border bg-tone-soft"
+                          />
+                        }
+                        onSelect={() =>
+                          perform(
+                            setStyle(documentId, block.id, {
+                              ...(block.style ?? {}),
+                              background: token,
+                            }),
+                            "Background",
+                          )
+                        }
+                      >
+                        <span className="capitalize">{token} background</span>
+                      </MenuItem>
+                    ))}
+                  </>
+                )}
+              </MenuSub>
+            )}
+            <MenuItem
+              icon={<Copy />}
+              onSelect={() =>
+                perform(duplicateBlock(documentId, block, newId("block")), "Duplicate")
+              }
+            >
+              Duplicate
+            </MenuItem>
+            <MenuItem
+              icon={<ArrowUp />}
+              disabled={index === 0}
+              onSelect={() => {
+                const calls = moveBy(documentId, order, block.id, -1);
+                if (calls) perform(calls, "Move up");
+              }}
+            >
+              Move up
+            </MenuItem>
+            <MenuItem
+              icon={<ArrowDown />}
+              disabled={index === count - 1}
+              onSelect={() => {
+                const calls = moveBy(documentId, order, block.id, 1);
+                if (calls) perform(calls, "Move down");
+              }}
+            >
+              Move down
+            </MenuItem>
+            <MenuSeparator />
+            {block.type !== "divider" &&
+              (reviewed ? (
+                <MenuItem
+                  icon={<RotateCcw />}
+                  onSelect={() => controller.review("unverified", [block.id])}
+                >
+                  Mark as not reviewed
+                </MenuItem>
+              ) : (
+                <MenuItem
+                  icon={<CircleCheck />}
+                  onSelect={() => controller.review("reviewed", [block.id])}
+                >
+                  Mark as reviewed
                 </MenuItem>
               ))}
-              {block.type === "paragraph" && (
-                <>
-                  <MenuSeparator />
-                  <MenuLabel>Background</MenuLabel>
-                  {(["yellow", "blue", "green", "purple", "gray"] as const).map((token) => (
-                    <MenuItem
-                      key={token}
-                      icon={
-                        <span
-                          data-hue={token}
-                          className="size-3.5 rounded-inline border border-tone-border bg-tone-soft"
-                        />
-                      }
-                      onSelect={() =>
-                        perform(
-                          setStyle(documentId, block.id, {
-                            ...(block.style ?? {}),
-                            background: token,
-                          }),
-                          "Background",
-                        )
-                      }
-                    >
-                      <span className="capitalize">{token} background</span>
-                    </MenuItem>
-                  ))}
-                </>
-              )}
-            </MenuSub>
-          )}
-          <MenuItem
-            icon={<Copy />}
-            onSelect={() => perform(duplicateBlock(documentId, block, newId("block")), "Duplicate")}
-          >
-            Duplicate
-          </MenuItem>
-          <MenuItem
-            icon={<ArrowUp />}
-            disabled={index === 0}
-            onSelect={() => {
-              const calls = moveBy(documentId, order, block.id, -1);
-              if (calls) perform(calls, "Move up");
-            }}
-          >
-            Move up
-          </MenuItem>
-          <MenuItem
-            icon={<ArrowDown />}
-            disabled={index === count - 1}
-            onSelect={() => {
-              const calls = moveBy(documentId, order, block.id, 1);
-              if (calls) perform(calls, "Move down");
-            }}
-          >
-            Move down
-          </MenuItem>
-          <MenuSeparator />
-          {block.type !== "divider" &&
-            (reviewed ? (
-              <MenuItem
-                icon={<RotateCcw />}
-                onSelect={() => controller.review("unverified", [block.id])}
-              >
-                Mark as not reviewed
+            <MenuItem icon={<MessageCircleQuestion />} onSelect={() => actions.askAbout(block.id)}>
+              Ask about this…
+            </MenuItem>
+            {block.type !== "divider" && (
+              <MenuItem icon={<BookMarked />} onSelect={() => setAddingRef(true)}>
+                Add a reference…
               </MenuItem>
-            ) : (
+            )}
+            {outside.length > 0 && (
               <MenuItem
-                icon={<CircleCheck />}
-                onSelect={() => controller.review("reviewed", [block.id])}
+                icon={<BookMarked />}
+                onSelect={() => setReferences([], "Remove references")}
               >
-                Mark as reviewed
+                Remove its references
               </MenuItem>
-            ))}
-          <MenuItem icon={<MessageCircleQuestion />} onSelect={() => actions.askAbout(block.id)}>
-            Ask about this…
-          </MenuItem>
-          <MenuSeparator />
-          <MenuItem
-            icon={<Trash2 />}
-            danger
-            onSelect={() => perform(deleteBlocks(documentId, [block.id]), "Delete block")}
-          >
-            Delete
-          </MenuItem>
-          <MenuSeparator />
-          <div className="px-3 py-2">
-            <Provenance block={block} />
-          </div>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+            )}
+            <MenuSeparator />
+            <MenuItem
+              icon={<Trash2 />}
+              danger
+              onSelect={() => perform(deleteBlocks(documentId, [block.id]), "Delete block")}
+            >
+              Delete
+            </MenuItem>
+            <MenuSeparator />
+            <div className="px-3 py-2">
+              <Provenance block={block} />
+            </div>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </>
   );
 }
 
@@ -479,7 +524,11 @@ export const BlockShell = memo(function BlockShell({
   const style = block.style;
   const textual = block.type === "paragraph" || block.type === "heading";
   const showFooter =
-    block.citations.length > 0 || block.generalKnowledge || loose.length > 0 || unverified;
+    block.citations.length > 0 ||
+    (block.references?.length ?? 0) > 0 ||
+    block.generalKnowledge ||
+    loose.length > 0 ||
+    unverified;
 
   const addAfter = (anchor: DOMRect | null) => actions.openInsertMenu(block.id, false, anchor);
 
@@ -664,6 +713,7 @@ export const BlockShell = memo(function BlockShell({
       {showFooter && (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-label">
           <SourcesRow block={block} />
+          <OutsideRefsRow block={block} />
           {block.generalKnowledge && <GeneralKnowledgeTag />}
           {loose.length > 0 && <FlagIndicator flags={loose} />}
           {unverified && (

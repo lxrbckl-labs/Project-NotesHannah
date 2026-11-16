@@ -59,6 +59,10 @@ export interface PickedNode {
 export type PickNodes = (options: {
   selected: readonly string[];
   title?: string;
+  /** "coverage" (default): lectures and folders. "places": courses, folders, lectures, documents. */
+  pick?: "coverage" | "places";
+  /** Let her confirm with nothing chosen (to clear a choice). */
+  allowNone?: boolean;
 }) => Promise<PickedNode[] | null>;
 
 export interface ExamsApi {

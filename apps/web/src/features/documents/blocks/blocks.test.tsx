@@ -64,6 +64,30 @@ describe("block renderers", () => {
     expect(screen.getByText("Practice question")).toBeInTheDocument();
   });
 
+  it("shows an outside reference as its own chip, apart from her sources, and lists it once", async () => {
+    const input = validateBlockInput(
+      {
+        type: "paragraph",
+        content: { text: "Checked against an emergency dosing chart." },
+        references: [{ title: "DoseDex", url: "https://www.pharmguides.com/dosedex/" }],
+      },
+      { writer: "agent" },
+    );
+    if (!input.ok) throw new Error("invalid");
+    const block = stampNewBlock(input.block, { actor: AGENT, id: mockId("blk", 990) });
+    await show(docOf([block, { ...block, id: mockId("blk", 991) }]));
+    const chips = screen.getAllByTestId("outside-ref");
+    expect(chips[0]).toHaveTextContent("PharmGuides · DoseDex");
+    expect(chips[0]).toHaveAttribute("href", "https://www.pharmguides.com/dosedex/");
+    expect(chips[0]).toHaveAttribute("target", "_blank");
+    expect(chips[0]).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.queryByTestId("cite-chip")).toBeNull();
+    expect(screen.queryByText("Not from your notes")).toBeNull();
+    const group = screen.getByTestId("outside-references");
+    expect(within(group).getAllByTestId("outside-ref")).toHaveLength(1);
+    expect(group).toHaveTextContent("used 2 times");
+  });
+
   it("renders the beta-blocker guide: trust signals, chips, flags and references", async () => {
     const guide = guideDocument();
     await show(docOf(guide.blocks));
