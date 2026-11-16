@@ -11,7 +11,7 @@ function Failure({ error }: { error: unknown }) {
   if (!error) return null;
   const { message, hint } = describeError(error);
   return (
-    <p role="alert" className="text-sm text-danger">
+    <p role="alert" className="text-ui text-danger">
       {message}
       {hint ? ` ${hint}` : ""}
     </p>
@@ -144,7 +144,7 @@ function ReopenInner({
       }
     >
       <div className="grid gap-4">
-        <p className="rounded-2xl bg-surface-muted px-3.5 py-3 text-sm text-text-muted">
+        <p className="rounded-card bg-surface-muted px-3.5 py-3 text-ui text-text-muted">
           You asked: <span className="text-text">{headline(request)}</span>
         </p>
         <MessageBox

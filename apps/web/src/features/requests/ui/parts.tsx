@@ -15,28 +15,14 @@ import {
   TextCursorInput,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "../../../lib/cn";
-import {
-  kindLabel,
-  linkLabel,
-  type OpenAction,
-  openLink,
-  STATUS_LABEL,
-  type StatusTone,
-  statusTone,
-} from "../model/wording";
+import { Badge, Chip } from "../../../components/ui/badge";
+import { REQUEST_STATUS_HUE } from "../../../lib/roles";
+import { kindLabel, linkLabel, type OpenAction, openLink, STATUS_LABEL } from "../model/wording";
 import { useRequestsEnv } from "./context";
-
-const TONE: Record<StatusTone, string> = {
-  neutral: "bg-surface-muted text-text-muted",
-  accent: "bg-accent-soft text-accent",
-  success: "bg-accent text-accent-contrast",
-  danger: "bg-(--rq-amber-bg) text-(--rq-amber-fg)",
-};
 
 const STATUS_ICON: Record<RequestStatus, ReactNode> = {
   waiting: <Clock size={14} aria-hidden />,
-  in_progress: <LoaderCircle size={14} aria-hidden className="rq-spin" />,
+  in_progress: <LoaderCircle size={14} aria-hidden className="anim-spin" />,
   done: <CircleCheck size={14} aria-hidden />,
   declined: <RotateCcw size={14} aria-hidden />,
   cancelled: <Ban size={14} aria-hidden />,
@@ -45,17 +31,10 @@ const STATUS_ICON: Record<RequestStatus, ReactNode> = {
 /** The status in plain words, never colour alone: an icon and the words. */
 export function StatusPill({ status, className }: { status: RequestStatus; className?: string }) {
   return (
-    <span
-      data-testid="status"
-      data-status={status}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium",
-        TONE[statusTone(status)],
-        className,
-      )}
-    >
-      {STATUS_ICON[status]}
-      {STATUS_LABEL[status]}
+    <span data-testid="status" data-status={status} className="inline-flex shrink-0">
+      <Badge hue={REQUEST_STATUS_HUE[status]} icon={STATUS_ICON[status]} className={className}>
+        {STATUS_LABEL[status]}
+      </Badge>
     </span>
   );
 }
@@ -98,35 +77,20 @@ export function LinkChip({ link }: { link: RequestLink }) {
   const { open } = useRequestsEnv();
   const action: OpenAction = openLink(link);
   return (
-    <button
-      type="button"
+    <Chip
+      hue="accent"
       data-testid="reply-link"
       data-type={link.type}
       onClick={() => open(action)}
-      className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-border-strong bg-surface px-3.5 py-1 text-sm font-medium text-accent hover:bg-accent-soft xl:min-h-8"
+      icon={<LinkIcon type={link.type} />}
     >
-      <LinkIcon type={link.type} />
-      <span className="truncate">{linkLabel(link)}</span>
-    </button>
+      {linkLabel(link)}
+    </Chip>
   );
 }
 
 /** The quick action she picked, as a small label. */
 export function KindTag({ kind }: { kind: RequestKind }) {
   if (kind === "other") return null;
-  return (
-    <span className="inline-flex shrink-0 items-center rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-text-muted">
-      {kindLabel(kind)}
-    </span>
-  );
-}
-
-/** A soft note that never alarms. */
-export function Note({ children, icon }: { children: ReactNode; icon: ReactNode }) {
-  return (
-    <p className="flex items-start gap-2.5 rounded-2xl bg-accent-soft px-3.5 py-3 text-sm text-text">
-      <span className="mt-0.5 shrink-0 text-accent">{icon}</span>
-      <span>{children}</span>
-    </p>
-  );
+  return <Badge className="shrink-0">{kindLabel(kind)}</Badge>;
 }

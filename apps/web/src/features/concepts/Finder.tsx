@@ -1,6 +1,7 @@
 import type { ConceptSummary, FilterRow } from "@notes/schema";
 import { SearchX } from "lucide-react";
 import { useState } from "react";
+import { Card as SharedCard } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
 import { FINDER_QUESTIONS, type FinderQuestion } from "./model/finder";
@@ -17,8 +18,8 @@ export function Finder() {
     <div className="grid gap-4">
       <Card className="grid gap-4">
         <div>
-          <h2 className="font-display text-lg font-semibold">Ask your notes a question</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 className="font-display text-title font-semibold">Ask your notes a question</h2>
+          <p className="mt-1 text-ui text-text-muted">
             Answers come from the structured notes your agents filed, across every course, each with
             the pages it rests on.
           </p>
@@ -43,7 +44,7 @@ export function Finder() {
                   setTarget(null);
                 }}
                 className={cn(
-                  "min-h-11 rounded-2xl border px-4 py-2.5 text-left text-sm font-medium transition-colors",
+                  "min-h-11 rounded-card border px-4 py-2.5 text-left text-ui font-medium transition-colors duration-(--duration-instant)",
                   on
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-border bg-bg hover:border-border-strong",
@@ -83,7 +84,7 @@ function Answer({ question, target }: { question: FinderQuestion; target: Concep
   );
   return (
     <section aria-live="polite" aria-label="Answer" data-testid="finder-answer">
-      <h3 className="mb-3 font-display text-lg font-semibold">
+      <h3 className="mb-3 font-display text-title font-semibold">
         {question.lead} {target.name}
       </h3>
       {result.status === "loading" ? (
@@ -96,7 +97,7 @@ function Answer({ question, target }: { question: FinderQuestion; target: Concep
         </EmptyState>
       ) : (
         <>
-          <p className="mb-3 text-sm text-text-muted">
+          <p className="mb-3 text-ui text-text-muted">
             {pluralise(result.data.items.length, "result")}
           </p>
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -105,7 +106,7 @@ function Answer({ question, target }: { question: FinderQuestion; target: Concep
             ))}
           </ul>
           {result.data.truncated ? (
-            <p className="mt-3 text-sm text-text-muted">
+            <p className="mt-3 text-ui text-text-muted">
               There are more than these; the list is cut short.
             </p>
           ) : null}
@@ -117,17 +118,14 @@ function Answer({ question, target }: { question: FinderQuestion; target: Concep
 
 function ResultCard({ row }: { row: FilterRow }) {
   return (
-    <li
-      className="rounded-3xl border border-border bg-surface p-4 shadow-card"
-      data-testid="finder-result"
-    >
+    <SharedCard as="li" data-testid="finder-result">
       <div className="flex flex-wrap items-center gap-2">
-        <ConceptLink id={row.concept.id} className="text-base">
+        <ConceptLink id={row.concept.id} className="text-body">
           {row.concept.name}
         </ConceptLink>
         <TypeBadge type={row.concept.type} />
       </div>
-      <p className="mt-1 text-sm text-text-muted">
+      <p className="mt-1 text-ui text-text-muted">
         {row.via.kind === "class" ? (
           <>
             Through its class, <ConceptLink id={row.via.class.id}>{row.via.class.name}</ConceptLink>
@@ -137,7 +135,7 @@ function ResultCard({ row }: { row: FilterRow }) {
         )}
       </p>
       {row.sharedMechanisms && row.sharedMechanisms.length > 0 ? (
-        <p className="mt-1 text-sm">
+        <p className="mt-1 text-ui">
           Shares{" "}
           {row.sharedMechanisms.map((m, i) => (
             <span key={m.id}>
@@ -151,11 +149,11 @@ function ResultCard({ row }: { row: FilterRow }) {
         {row.citations.length > 0 ? (
           <CiteList citations={row.citations} />
         ) : (
-          <span className="text-xs text-text-muted">
+          <span className="text-caption text-text-muted">
             {row.generalKnowledge ? "Not from your notes" : "No source chip"}
           </span>
         )}
       </div>
-    </li>
+    </SharedCard>
   );
 }

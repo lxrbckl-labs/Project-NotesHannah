@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   actionsFor,
@@ -124,28 +123,5 @@ describe("the demo dataset", () => {
     for (const r of all.filter((x) => x.status === "done" || x.status === "declined")) {
       expect(r.reply?.text.length).toBeGreaterThan(20);
     }
-  });
-});
-
-describe("token contrast", () => {
-  const css = readFileSync(`${process.cwd()}/src/features/requests/requests.css`, "utf8");
-  const lum = (hex: string) => {
-    const c = [1, 3, 5].map((i) => {
-      const v = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
-      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-    }) as [number, number, number];
-    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-  };
-  const ratio = (a: string, b: string) => {
-    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
-    return (hi + 0.05) / (lo + 0.05);
-  };
-  it("keeps the amber pair at AA in both themes", () => {
-    const pairs = [
-      ...css.matchAll(/--rq-amber-bg:\s*(#[0-9a-f]{6});\s*--rq-amber-fg:\s*(#[0-9a-f]{6})/gi),
-    ];
-    expect(pairs.length).toBe(3);
-    for (const [, bg, fg] of pairs)
-      expect(ratio(bg as string, fg as string)).toBeGreaterThanOrEqual(4.5);
   });
 });

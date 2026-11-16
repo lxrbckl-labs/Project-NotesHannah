@@ -1,4 +1,4 @@
-import type { ConceptType, RelationGroup, RelationType } from "@notes/schema";
+import type { RelationGroup, RelationType } from "@notes/schema";
 
 /** One readable section of the concept page: a relation type read in one direction. */
 export interface RelationSection {
@@ -81,22 +81,6 @@ export const RELATION_FILTER_LABEL: Record<RelationType, string> = {
   monitored_by: "Monitoring",
   brand_of: "Brand of",
   related_to: "Related",
-};
-
-export type TypeTone = "green" | "blue" | "violet" | "teal" | "red" | "amber" | "grey";
-
-export const TYPE_TONE: Record<ConceptType, TypeTone> = {
-  drug: "green",
-  drug_class: "blue",
-  mechanism: "violet",
-  target: "violet",
-  indication: "teal",
-  adverse_effect: "red",
-  interaction: "amber",
-  contraindication: "red",
-  monitoring_parameter: "teal",
-  counselling_point: "amber",
-  other: "grey",
 };
 
 export const SEVERITY_LABEL = {

@@ -8,11 +8,14 @@ import type { RequestTarget } from "@notes/schema";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../../../app/styles.css";
+import { SegmentedControl } from "../../../components/ui/segmented";
 import { AskButton } from "../AskButton";
 import { RequestsBadge } from "../RequestsBadge";
 import { RequestsView } from "../RequestsView";
 import { createMockRequestsStore } from "../store/mock";
 import { bid, did, fid, nid, pgid, qid } from "../store/seed";
+
+const THEMES = ["light", "dark", "system"].map((t) => ({ value: t, label: t }));
 
 const params = new URLSearchParams(window.location.search);
 const theme = params.get("theme");
@@ -84,25 +87,19 @@ function Demo() {
     <div className="min-h-dvh bg-bg text-text">
       {params.get("bar") !== "0" && (
         <div
-          className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 text-xs text-text-muted"
+          className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 text-caption text-text-muted"
           data-demo-bar
         >
           <span className="flex items-center gap-2">
             Requests demo (mock data) <RequestsBadge store={store} />
           </span>
-          <span className="flex gap-1">
-            {["light", "dark", "system"].map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={mode === t}
-                onClick={() => setMode(t)}
-                className="min-h-8 rounded-full px-3 aria-pressed:bg-accent aria-pressed:text-accent-contrast"
-              >
-                {t}
-              </button>
-            ))}
-          </span>
+          <SegmentedControl
+            label="Theme"
+            look="pill"
+            value={mode}
+            onValueChange={setMode}
+            items={THEMES}
+          />
         </div>
       )}
       {view === "asks" ? (
@@ -112,11 +109,11 @@ function Demo() {
             {ASKS.map((ask) => (
               <li
                 key={ask.title}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2"
+                className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-2"
               >
                 <span>
-                  <span className="block text-sm font-medium">{ask.label}</span>
-                  <span className="block text-xs text-text-muted">{ask.title}</span>
+                  <span className="block text-ui font-medium">{ask.label}</span>
+                  <span className="block text-caption text-text-muted">{ask.title}</span>
                 </span>
                 <AskButton target={ask.target} targetLabel={ask.label} submit={store.create} />
               </li>
@@ -137,7 +134,7 @@ function Demo() {
         <div
           role="status"
           data-testid="opened"
-          className="fixed inset-x-4 bottom-4 z-[80] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 text-sm shadow-pop"
+          className="fixed inset-x-4 bottom-4 z-(--z-toast) mx-auto flex max-w-md items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 text-ui shadow-pop"
         >
           <span>{note}</span>
           <button

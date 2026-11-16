@@ -2,19 +2,27 @@ import type { GraphResult, RelationType } from "@notes/schema";
 import { Handle, type Node, type NodeProps, Position, ReactFlow } from "@xyflow/react";
 import { List, Network } from "lucide-react";
 import { memo, useMemo, useState } from "react";
+import { Chip } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
+import { segmentItemClass } from "../../components/ui/segmented";
 import { ErrorState, Skeleton } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
+import { CONCEPT_TYPE_HUE } from "../../lib/roles";
 import { useLayout } from "../../lib/useMedia";
 import { filterGraph, neighbours, radialLayout, treeEdges } from "./model/graph";
 import { EDGE_LABEL, RELATION_FILTER_LABEL, sectionTitle } from "./model/relations";
 import { useConcepts } from "./ui/context";
 import { useAsync } from "./ui/hooks";
 import { ConceptLink } from "./ui/parts";
-import { TONE_CLASS, toneOf } from "./ui/tone";
 import "./concepts.css";
 
 /** Most concepts the neighbourhood asks for: more is unreadable on any screen. */
 export const GRAPH_CAP = 30;
+
+/** The track of the shared "segment" look; the items keep aria-pressed buttons for their roles. */
+const SEGMENT_TRACK =
+  "m-0 inline-flex gap-1 rounded-card border border-border bg-surface-muted p-1";
 
 const NODE = { width: 156, height: 48 };
 
@@ -27,13 +35,13 @@ const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<FlowData>
       <Handle type="source" position={Position.Top} style={HIDDEN} isConnectable={false} />
       <button
         type="button"
+        data-hue={CONCEPT_TYPE_HUE[data.type]}
         data-testid="graph-node"
         data-center={data.center ? "true" : undefined}
         aria-label={data.center ? `${data.label} (this concept)` : `Open ${data.label}`}
         className={cn(
-          "flex min-h-11 w-full items-center justify-center rounded-2xl border px-2.5 py-1.5 text-center text-[13px] font-medium leading-tight shadow-card",
-          TONE_CLASS[toneOf(data.type)],
-          data.center ? "border-accent border-2" : "border-transparent",
+          "flex min-h-11 w-full items-center justify-center rounded-card border bg-tone-soft px-2.5 py-1.5 text-center text-label font-medium leading-tight text-tone-text shadow-card",
+          data.center ? "border-accent border-2" : "border-tone-border",
         )}
       >
         {data.label}
@@ -71,28 +79,24 @@ export function Neighbourhood({ conceptId }: { conceptId: string }) {
   }, [result.data, present, hidden]);
 
   return (
-    <section
-      aria-labelledby="cx-hood"
-      className="rounded-3xl border border-border bg-surface p-4 shadow-card md:p-5"
-    >
+    <Card as="section" aria-labelledby="cx-hood">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="cx-hood" className="font-display text-lg font-semibold">
+        <h2 id="cx-hood" className="font-display text-title font-semibold">
           Neighbourhood
         </h2>
-        <button
-          type="button"
+        <Button
+          variant="ghostAccent"
           aria-expanded={open}
           aria-controls="cx-hood-body"
           onClick={() => setOpen(!open)}
-          className="min-h-11 rounded-xl px-3 text-sm font-medium text-accent hover:bg-accent-soft"
         >
           {open ? "Hide" : "Show"}
-        </button>
+        </Button>
       </div>
       {open ? (
         <div id="cx-hood-body" className="mt-3 grid gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <fieldset className="m-0 inline-flex rounded-xl border-0 bg-surface-muted p-1">
+            <fieldset className={SEGMENT_TRACK}>
               <legend className="sr-only">View</legend>
               <Seg
                 active={mode === "list"}
@@ -109,7 +113,7 @@ export function Neighbourhood({ conceptId }: { conceptId: string }) {
                 Graph
               </Seg>
             </fieldset>
-            <fieldset className="m-0 inline-flex rounded-xl border-0 bg-surface-muted p-1">
+            <fieldset className={SEGMENT_TRACK}>
               <legend className="sr-only">Distance</legend>
               <Seg active={hops === 1} onClick={() => setHops(1)}>
                 Direct
@@ -125,25 +129,19 @@ export function Neighbourhood({ conceptId }: { conceptId: string }) {
               {present.map((type) => {
                 const on = !hidden.has(type);
                 return (
-                  <button
+                  <Chip
                     key={type}
-                    type="button"
-                    aria-pressed={on}
+                    pressed={on}
                     onClick={() => {
                       const next = new Set(hidden);
                       if (on) next.add(type);
                       else next.delete(type);
                       setHidden(next);
                     }}
-                    className={cn(
-                      "min-h-9 rounded-full border px-3 text-xs font-medium",
-                      on
-                        ? "border-accent bg-accent-soft text-accent"
-                        : "border-border text-text-muted line-through",
-                    )}
+                    className={cn(!on && "text-text-muted line-through")}
                   >
                     {RELATION_FILTER_LABEL[type]}
-                  </button>
+                  </Chip>
                 );
               })}
             </fieldset>
@@ -153,7 +151,7 @@ export function Neighbourhood({ conceptId }: { conceptId: string }) {
           ) : result.status === "error" ? (
             <ErrorState error={result.error} onRetry={result.reload} />
           ) : shown && shown.nodes.length <= 1 ? (
-            <p className="rounded-2xl bg-surface-muted px-4 py-6 text-center text-sm text-text-muted">
+            <p className="rounded-card bg-surface-muted px-4 py-6 text-center text-ui text-text-muted">
               {hidden.size > 0
                 ? "Nothing is connected with those types."
                 : "Nothing is connected to this yet."}
@@ -162,7 +160,7 @@ export function Neighbourhood({ conceptId }: { conceptId: string }) {
             <>
               {mode === "graph" ? <GraphView graph={shown} /> : <NeighbourList graph={shown} />}
               {result.data?.truncated ? (
-                <p className="text-xs text-text-muted" data-testid="graph-truncated">
+                <p className="text-caption text-text-muted" data-testid="graph-truncated">
                   Showing the nearest {GRAPH_CAP} concepts; there are more.
                 </p>
               ) : null}
@@ -170,7 +168,7 @@ export function Neighbourhood({ conceptId }: { conceptId: string }) {
           ) : null}
         </div>
       ) : null}
-    </section>
+    </Card>
   );
 }
 
@@ -190,10 +188,7 @@ function Seg({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={cn(
-        "inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium",
-        active ? "bg-surface text-text shadow-card" : "text-text-muted",
-      )}
+      className={segmentItemClass(active)}
     >
       {icon}
       {children}
@@ -240,7 +235,7 @@ function GraphView({ graph }: { graph: GraphResult }) {
   const signature = `${graph.center}:${nodes.length}:${edges.length}`;
   return (
     <div
-      className="cx-flow overflow-hidden rounded-2xl border border-border bg-bg"
+      className="cx-flow overflow-hidden rounded-card border border-border bg-bg"
       style={{ height: layout === "phone" ? 420 : layout === "tablet" ? 480 : 500 }}
       data-testid="graph"
     >
@@ -274,13 +269,13 @@ function NeighbourList({ graph }: { graph: GraphResult }) {
     <div className="grid gap-3" data-testid="neighbour-list">
       {groups.map((g) => (
         <div key={g.type}>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <h3 className="mb-1 text-caption font-semibold uppercase tracking-wide text-text-muted">
             {sectionTitle(g.type, "out")}
           </h3>
           <ul className="flex flex-wrap gap-1.5">
             {g.items.map((item) => (
               <li key={item.id}>
-                <span className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-sm">
+                <span className="inline-flex min-h-11 items-center gap-2 rounded-pill border border-border bg-surface px-3.5 text-ui">
                   <ConceptLink id={item.id}>{item.name}</ConceptLink>
                 </span>
               </li>
@@ -289,7 +284,7 @@ function NeighbourList({ graph }: { graph: GraphResult }) {
         </div>
       ))}
       {second > 0 ? (
-        <p className="text-xs text-text-muted">
+        <p className="text-caption text-text-muted">
           {second} more {second === 1 ? "concept is" : "concepts are"} two steps away: switch to the
           graph to see them.
         </p>

@@ -7,11 +7,14 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../../../app/styles.css";
+import { SegmentedControl } from "../../../components/ui/segmented";
 import { ConceptsIndex } from "../ConceptsIndex";
 import { ConceptView } from "../ConceptView";
 import { seededRng } from "../model/drill";
 import { createMockConceptsStore } from "../store/mock";
 import { KEY } from "../store/seed";
+
+const THEMES = ["light", "dark", "system"].map((t) => ({ value: t, label: t }));
 
 const params = new URLSearchParams(window.location.search);
 const theme = params.get("theme");
@@ -81,23 +84,17 @@ function Demo() {
     <div className="min-h-dvh bg-bg text-text">
       {params.get("bar") !== "0" && (
         <div
-          className="flex items-center justify-between gap-2 border-b border-border px-4 py-2 text-xs text-text-muted"
+          className="flex items-center justify-between gap-2 border-b border-border px-4 py-2 text-caption text-text-muted"
           data-demo-bar
         >
           <span>Concepts demo (mock data)</span>
-          <span className="flex gap-1">
-            {["light", "dark", "system"].map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={mode === t}
-                onClick={() => setMode(t)}
-                className="min-h-8 rounded-full px-3 aria-pressed:bg-accent aria-pressed:text-accent-contrast"
-              >
-                {t}
-              </button>
-            ))}
-          </span>
+          <SegmentedControl
+            label="Theme"
+            look="pill"
+            value={mode}
+            onValueChange={setMode}
+            items={THEMES}
+          />
         </div>
       )}
       {view.kind === "index" ? (
@@ -113,12 +110,12 @@ function Demo() {
         <div
           role="status"
           data-testid="source-opened"
-          className="fixed inset-x-4 bottom-4 z-[80] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 text-sm shadow-pop"
+          className="fixed inset-x-4 bottom-4 z-(--z-toast) mx-auto flex max-w-md items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 text-ui shadow-pop"
         >
           <span>{toast}</span>
           <button
             type="button"
-            className="min-h-11 rounded-xl px-3 font-medium text-accent"
+            className="min-h-11 rounded-control px-3 font-medium text-accent"
             onClick={() => setToast(null)}
           >
             Close

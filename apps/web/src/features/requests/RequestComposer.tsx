@@ -2,12 +2,14 @@ import type { RequestKind, RequestTarget, StudyRequest } from "@notes/schema";
 import { CircleCheck, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
-import { Modal } from "../../components/ui/dialog";
+import { Notice } from "../../components/ui/notice";
+import { Sheet } from "../../components/ui/sheet";
 import { describeError } from "../../lib/api";
+import { REQUEST_STATUS_HUE } from "../../lib/roles";
 import { HONEST_NOTE, TARGET_NOUN } from "./model/wording";
 import type { SubmitRequest } from "./types";
 import { Examples, KindPicker, MessageBox } from "./ui/form";
-import { Note, TargetIcon } from "./ui/parts";
+import { TargetIcon } from "./ui/parts";
 
 export interface RequestComposerProps {
   open: boolean;
@@ -80,9 +82,10 @@ export function RequestComposer({
   const failure = error ? describeError(error) : null;
 
   return (
-    <Modal
+    <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      placement="center"
       title={created ? "Request left" : "Ask an agent"}
       description={created ? undefined : `Tell an agent what you would like done about ${name}.`}
       footer={
@@ -119,11 +122,14 @@ export function RequestComposer({
     >
       {created ? (
         <div className="flex flex-col items-center py-4 text-center" data-testid="composer-done">
-          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+          <div
+            data-hue={REQUEST_STATUS_HUE.done}
+            className="mb-4 flex size-14 items-center justify-center rounded-card bg-tone-soft text-tone-text"
+          >
             <CircleCheck size={26} aria-hidden />
           </div>
-          <p className="text-base font-medium">It is waiting for an agent.</p>
-          <p className="mt-1.5 max-w-sm text-sm text-text-muted">{HONEST_NOTE}</p>
+          <p className="text-body font-medium">It is waiting for an agent.</p>
+          <p className="mt-1.5 max-w-sm text-ui text-text-muted">{HONEST_NOTE}</p>
         </div>
       ) : (
         <form
@@ -134,7 +140,7 @@ export function RequestComposer({
           }}
         >
           <div
-            className="flex items-center gap-2.5 rounded-2xl bg-surface-muted px-3.5 py-2.5 text-sm"
+            className="flex items-center gap-2.5 rounded-card bg-surface-muted px-3.5 py-2.5 text-ui"
             data-testid="composer-target"
           >
             <span className="text-text-muted">
@@ -165,15 +171,17 @@ export function RequestComposer({
               setMessage(text);
             }}
           />
-          <Note icon={<Info size={16} aria-hidden />}>{HONEST_NOTE}</Note>
+          <Notice tone="accent" icon={<Info size={18} />}>
+            {HONEST_NOTE}
+          </Notice>
           {failure ? (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="text-ui text-danger">
               {failure.message}
               {failure.hint ? ` ${failure.hint}` : ""}
             </p>
           ) : null}
         </form>
       )}
-    </Modal>
+    </Sheet>
   );
 }
