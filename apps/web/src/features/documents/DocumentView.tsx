@@ -4,6 +4,7 @@ import {
   type CitationStatus,
   citationKey,
   countUnverified,
+  isBlockType,
   newId,
   richTextToPlain,
 } from "@notes/schema";
@@ -100,7 +101,8 @@ export function DocumentView(props: DocumentViewProps) {
 function useStableRefs(blocks: readonly Block[] | undefined): ReferenceIndex {
   const last = useRef<{ signature: string; index: ReferenceIndex } | null>(null);
   return useMemo(() => {
-    const index = buildReferenceIndex(blocks ?? []);
+    // Schema helpers assume known types; a block from a newer app version is left out.
+    const index = buildReferenceIndex((blocks ?? []).filter((b) => isBlockType(b.type)));
     const signature = index.references.map((r) => citationKey(r.citation)).join("\n");
     if (last.current && last.current.signature === signature) return last.current.index;
     last.current = { signature, index };
@@ -855,27 +857,29 @@ function ReviewSummary({
     );
   }
   return (
-    <div
-      className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--doc-yellow-border)] bg-[var(--doc-yellow-bg)] px-4 py-3 sm:flex-row sm:items-center"
-      data-testid="review-summary"
-    >
-      <TriangleAlert
-        aria-hidden
-        className="hidden size-5 shrink-0 text-[var(--doc-yellow-fg)] sm:block"
-      />
-      <p className="m-0 flex-1 text-[14px] leading-snug text-[var(--doc-yellow-fg)]">
-        <strong className="font-semibold">
-          {unverified} block{unverified === 1 ? "" : "s"} to review.
-        </strong>{" "}
-        An agent wrote {unverified === 1 ? "it" : "them"}; check against your sources.
-      </p>
-      <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={onNext}>
-          <ArrowDown aria-hidden className="size-3.5" /> Next
-        </Button>
-        <Button size="sm" variant="outline" onClick={onMarkAll} data-testid="mark-all-reviewed">
-          <Check aria-hidden className="size-3.5" /> Mark all reviewed
-        </Button>
+    <div className="@container mt-5">
+      <div
+        className="flex flex-col gap-3 rounded-2xl border border-[var(--doc-yellow-border)] bg-[var(--doc-yellow-bg)] px-4 py-3 @[34rem]:flex-row @[34rem]:items-center"
+        data-testid="review-summary"
+      >
+        <TriangleAlert
+          aria-hidden
+          className="hidden size-5 shrink-0 text-[var(--doc-yellow-fg)] @[34rem]:block"
+        />
+        <p className="m-0 flex-1 text-[14px] leading-snug text-[var(--doc-yellow-fg)]">
+          <strong className="font-semibold">
+            {unverified} block{unverified === 1 ? "" : "s"} to review.
+          </strong>{" "}
+          An agent wrote {unverified === 1 ? "it" : "them"}; check against your sources.
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={onNext}>
+            <ArrowDown aria-hidden className="size-3.5" /> Next
+          </Button>
+          <Button size="sm" variant="outline" onClick={onMarkAll} data-testid="mark-all-reviewed">
+            <Check aria-hidden className="size-3.5" /> Mark all reviewed
+          </Button>
+        </div>
       </div>
     </div>
   );

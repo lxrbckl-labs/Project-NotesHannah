@@ -401,7 +401,9 @@ export const BlockShell = memo(function BlockShell({
   const active = useSignal(actions.active, (id) => id === block.id);
   const unverified = block.review.status === "unverified" && block.type !== "divider";
   const byAgent = block.provenance.lastEditedBy.type === "agent";
-  const loose = looseFlags(block.flags, [blockPlainText(block)]);
+  const loose = looseFlags(block.flags ?? [], [
+    isBlockType(block.type) ? blockPlainText(block) : "",
+  ]);
   const [menuOpen, setMenuOpen] = useState(false);
   const style = block.style;
   const textual = block.type === "paragraph" || block.type === "heading";

@@ -149,7 +149,7 @@ export function HistoryPanel({
   );
 
   const previewPane = (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
         {compact && (
           <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>

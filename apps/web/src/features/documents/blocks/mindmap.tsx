@@ -129,16 +129,29 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
   const fit = useCallback(() => {
     const el = frame.current;
     if (!el) return;
-    const scale = Math.max(
-      0.45,
-      Math.min(1, el.clientWidth / laid.width, el.clientHeight / laid.height),
-    );
+    if (el.clientWidth === 0 || el.clientHeight === 0) return;
+    // Leave room at the bottom for the zoom controls.
+    const room = el.clientHeight - 44;
+    const scale = Math.max(0.45, Math.min(1, el.clientWidth / laid.width, room / laid.height));
     setView({
       scale,
       x: Math.max(0, (el.clientWidth - laid.width * scale) / 2),
-      y: Math.max(0, (el.clientHeight - laid.height * scale) / 2),
+      y: Math.max(0, (room - laid.height * scale) / 2),
     });
   }, [laid.width, laid.height]);
+
+  // Refit when the frame gets its size (it may start skipped by content-visibility) or
+  // changes size, until she pans or zooms herself.
+  const touched = useRef(false);
+  useEffect(() => {
+    const el = frame.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (!touched.current) fit();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fit]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refit when the tree's size changes
   useEffect(() => {
@@ -172,6 +185,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     if ((e.target as Element).closest("[data-node-toggle], button")) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    touched.current = true;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const pts = [...pointers.current.values()];
     const dist =

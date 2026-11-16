@@ -29,6 +29,8 @@ export interface MockStoreOptions {
   large?: boolean;
   /** Make every write fail (to show rollback). */
   failWrites?: boolean;
+  /** Extra documents to hold (tests). */
+  documents?: DocumentWithBlocks[];
 }
 
 const clone = <T>(value: T): T => structuredClone(value);
@@ -55,6 +57,10 @@ export class MockDocumentStore implements DocumentStore {
     const guide = guideDocument();
     this.docs.set(guide.id, guide);
     this.revisions.set(guide.id, guideRevisions(guide));
+    for (const doc of options.documents ?? []) {
+      this.docs.set(doc.id, doc);
+      this.revisions.set(doc.id, []);
+    }
     if (options.large) {
       const large = largeDocument();
       this.docs.set(large.id, large);
