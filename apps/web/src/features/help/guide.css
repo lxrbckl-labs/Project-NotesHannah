@@ -1,0 +1,132 @@
+/*
+ * Print layout for the guide, used by the browser's Print and by `pnpm guide:pdf`.
+ * The app shell is hidden in AppShell.tsx with Tailwind's print: variant; everything here is about
+ * the guide itself: black on white whatever the theme, and no cut-off tables or lonely headings.
+ */
+@media print {
+  @page {
+    size: Letter;
+    margin: 0.7in 0.7in 0.8in;
+  }
+
+  /* Light colours whatever the theme, only while a guide is on the page. */
+  /* Extra :not() calls only raise the specificity above the dark theme's selectors. */
+  :root:has(.guide-doc):not(.print-light):not(.print-light-2) {
+    color-scheme: light;
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-muted: #f1f0eb;
+    --color-border: #d6d3c8;
+    --color-border-strong: #b5b2a5;
+    --color-text: #000000;
+    --color-text-muted: #3d3b35;
+    --color-accent: #2f6f5e;
+    --color-accent-soft: #eef5f2;
+    --color-accent-border: #b7d5ca;
+    --hue-teal-soft: #e8f5f4;
+    --hue-teal-text: #17696a;
+    --hue-teal-border: #bde0dd;
+    --hue-yellow-soft: #fdf7dc;
+    --hue-yellow-text: #765300;
+    --hue-yellow-border: #eedf9c;
+    --hue-purple-soft: #f4f0fd;
+    --hue-purple-text: #5f37b8;
+    --hue-purple-border: #d8cbf6;
+    --hue-gray-soft: #f2f1ec;
+    --hue-gray-border: #dcdad1;
+  }
+
+  html:has(.guide-doc),
+  html:has(.guide-doc) body {
+    background: #fff;
+    color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .guide-doc {
+    font-size: 10.5pt;
+  }
+  .guide-doc .prose-reading {
+    max-width: none;
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+
+  .guide-doc .guide-toc-narrow,
+  .guide-doc .guide-toc-wide,
+  .guide-doc .guide-noprint {
+    display: none;
+  }
+
+  .guide-print-page > div {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Headings stay with what follows; boxes and rows are not split. */
+  .guide-h2,
+  .guide-h3 {
+    break-after: avoid;
+  }
+  .guide-section {
+    break-inside: auto;
+  }
+  .guide-h2 {
+    margin-top: 0;
+  }
+  .guide-card,
+  .guide-note,
+  .guide-contents,
+  .guide-doc li,
+  .guide-doc tr,
+  .guide-doc thead {
+    break-inside: avoid;
+  }
+  .guide-doc thead {
+    display: table-header-group;
+  }
+
+  /* Tables: the whole table, never a scroll box. */
+  .guide-doc .guide-table-wrap {
+    overflow: visible;
+    break-inside: auto;
+  }
+  .guide-doc table {
+    table-layout: auto;
+  }
+  .guide-doc td,
+  .guide-doc th {
+    overflow-wrap: break-word;
+    hyphens: none;
+  }
+  .guide-doc td:first-child {
+    min-width: 5.5rem;
+  }
+
+  /* Columns, not a grid: Chrome splits a grid across pages badly. */
+  .guide-doc .guide-showcase {
+    display: block;
+    columns: 2;
+    column-gap: 0.75rem;
+  }
+  .guide-showcase > li {
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+  #what-makes-this-different {
+    break-before: page;
+  }
+  .guide-lead {
+    break-after: avoid;
+  }
+  .guide-lead + div > :first-child {
+    break-before: avoid;
+  }
+
+  .guide-doc a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

@@ -3,6 +3,7 @@ import {
   Bot,
   GraduationCap,
   Inbox,
+  LifeBuoy,
   Lightbulb,
   LogOut,
   MessageSquarePlus,
@@ -105,7 +106,7 @@ function Shell() {
   const showPanel = layout === "computer" && panelOpen && inLibrary;
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-bg">
+    <div className="flex h-dvh overflow-hidden bg-bg print:block print:h-auto print:overflow-visible">
       <a
         href="#main"
         className="sr-only z-(--z-skip) rounded-control bg-accent px-4 py-2 text-accent-contrast focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
@@ -114,9 +115,9 @@ function Shell() {
       </a>
       {showSidebar ? <Sidebar onCollapse={() => setSidebarOpen(false)} /> : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col print:block">
         {layout !== "phone" ? (
-          <div className="px-safe flex items-center gap-2 border-b border-border bg-surface/80 px-3 py-2 backdrop-blur">
+          <div className="px-safe flex items-center gap-2 print:hidden border-b border-border bg-surface/80 px-3 py-2 backdrop-blur">
             {!showSidebar ? (
               <IconButton aria-label="Show sidebar" onClick={() => setSidebarOpen(true)}>
                 <PanelLeft size={20} />
@@ -152,7 +153,7 @@ function Shell() {
           id="main"
           tabIndex={-1}
           className={cn(
-            "dot-grid min-h-0 flex-1 overflow-y-auto outline-none",
+            "dot-grid min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
             layout === "phone" && "px-safe pb-24",
           )}
         >
@@ -183,7 +184,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
     <aside
       data-testid="sidebar"
       aria-label="Sidebar"
-      className="pt-safe pb-safe flex w-72 shrink-0 flex-col border-r border-border bg-surface xl:w-64"
+      className="pt-safe pb-safe flex w-72 shrink-0 flex-col border-r border-border bg-surface xl:w-64 print:hidden"
     >
       <div className="flex items-center gap-2.5 px-4 py-3">
         <span className="flex size-9 items-center justify-center rounded-control bg-accent text-accent-contrast">
@@ -240,6 +241,9 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
       </div>
 
       <div className="grid gap-0.5 border-t border-border p-2">
+        <NavLink to="/help" className={linkClass}>
+          <LifeBuoy size={18} aria-hidden /> Guide
+        </NavLink>
         <NavLink to="/settings" className={linkClass}>
           <Settings size={18} aria-hidden /> Settings
         </NavLink>
@@ -258,7 +262,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   );
 }
 
-// Five at most on a phone: the things she opens most. Requests, Activity and Trash live in Settings.
+// Five at most on a phone: the things she opens most. Requests, Activity, Trash and the Guide live in Settings.
 const TABS = [
   { to: "/library", label: "Library", icon: BookOpen },
   { to: "/practice", label: "Practice", icon: GraduationCap },
@@ -274,7 +278,7 @@ function TabBar() {
     <nav
       data-testid="tab-bar"
       aria-label="Primary"
-      className="pb-safe px-safe fixed inset-x-0 bottom-0 z-(--z-nav) border-t border-border bg-surface/95 backdrop-blur"
+      className="pb-safe px-safe fixed inset-x-0 bottom-0 z-(--z-nav) border-t border-border bg-surface/95 backdrop-blur print:hidden"
     >
       <ul className="flex">
         {TABS.map(({ to, label, icon: Icon }) => (

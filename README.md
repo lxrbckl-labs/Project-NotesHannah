@@ -127,6 +127,10 @@ pnpm e2e                # Playwright: the mock suite, then the same journeys aga
 #   SHOTS=curated pnpm --filter @notes/web exec playwright test -c playwright.real.config.ts screenshots
 ```
 
+### The user guide
+
+The in-app guide (`/help`) is written in `apps/web/src/features/help/content.ts`. Its PDF, `apps/web/public/guide/notes-guide.pdf`, is committed. **Regenerate it with `pnpm guide:pdf` whenever the guide's words change** (needs Chromium: `pnpm exec playwright install chromium`). The script starts the web dev server on port 4391 (`GUIDE_PORT` to change it), prints `/help/print` (the guide alone, with no sign-in and no API) to Letter, and stops the server.
+
 Layout: `apps/web` (React, Vite, Tailwind 4), `apps/server` (Hono: API, MCP endpoint, static
 files), `apps/converter` (file conversion worker), `packages/schema` (shared Zod schema),
 `deploy/` (Dockerfile and compose file), `fixtures/` (test material).
