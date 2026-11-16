@@ -109,7 +109,6 @@ export default function CanvasScreen({
           documentId={documentId}
           renderBlock={renderBlock}
           onOpenConcept={(id) => navigate(`/concepts/${id}`)}
-          onSwitchToPage={() => navigate(`/doc/${nodeId}`)}
           onOpenBlock={(blockId) => navigate(`/doc/${nodeId}?block=${blockId}`)}
         />
       </div>
