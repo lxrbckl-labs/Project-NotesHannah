@@ -1,0 +1,41 @@
+import type { TabId } from "@notes/schema";
+import { BookOpen, GraduationCap, Inbox, type LucideIcon, Search, Settings } from "lucide-react";
+
+/**
+ * The phone's bottom tabs, by id. Five at most: the things she opens most. Requests, Activity, Trash and the
+ * Guide live in Settings. The order they show in is hers (Settings, "Tab bar"); the ids are in the schema.
+ */
+export const TAB_DEFS: Record<TabId, { to: string; label: string; icon: LucideIcon }> = {
+  library: { to: "/library", label: "Library", icon: BookOpen },
+  practice: { to: "/practice", label: "Practice", icon: GraduationCap },
+  search: { to: "/search", label: "Search", icon: Search },
+  inbox: { to: "/inbox", label: "Inbox", icon: Inbox },
+  settings: { to: "/settings", label: "Settings", icon: Settings },
+};
+
+/** The paths in the order shown: what the slide direction is measured against. */
+export function tabPaths(order: readonly TabId[]): string[] {
+  return order.map((id) => TAB_DEFS[id].to);
+}
+
+/** The order with one tab taken out and put at `to` (clamped); the others keep their order. */
+export function moveTab(order: readonly TabId[], id: TabId, to: number): TabId[] {
+  const from = order.indexOf(id);
+  if (from < 0) return [...order];
+  const without = order.filter((x) => x !== id);
+  const at = Math.max(0, Math.min(order.length - 1, to));
+  return [...without.slice(0, at), id, ...without.slice(at)];
+}
+
+/**
+ * Which slot a dragged tab is over: its left edge started in `startIndex`, it has moved `dx` pixels, and
+ * every slot is `slotWidth` wide. Clamped to the bar.
+ */
+export function slotAt(startIndex: number, dx: number, slotWidth: number, count: number): number {
+  if (slotWidth <= 0) return startIndex;
+  return Math.max(0, Math.min(count - 1, Math.round(startIndex + dx / slotWidth)));
+}
+
+export function sameOrder(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id, i) => id === b[i]);
+}

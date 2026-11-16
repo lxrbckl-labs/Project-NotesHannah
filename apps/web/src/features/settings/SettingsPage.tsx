@@ -18,6 +18,7 @@ import { PageHeader } from "../../components/ui/page-header";
 import { useMe } from "../auth/useAuth";
 import { ChangePassword, SignOutControls } from "./Account";
 import { ApiKeys } from "./ApiKeys";
+import { TabBarCard } from "./TabBarCard";
 
 function SettingsCard({
   title,
@@ -67,6 +68,8 @@ export function SettingsPage() {
             </LinkRow>
           </div>
         </SettingsCard>
+
+        <TabBarCard />
 
         <SettingsCard
           title="Account"

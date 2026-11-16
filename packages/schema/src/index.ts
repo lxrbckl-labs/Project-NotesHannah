@@ -12,6 +12,7 @@ export * from "./ids.js";
 export * from "./library.js";
 /** Practice questions, grading, sessions and scheduling. Namespaced: its names are generic. */
 export * as practice from "./practice/index.js";
+export * from "./preferences.js";
 export * from "./reference-sites.js";
 export * from "./references.js";
 export * from "./requests.js";

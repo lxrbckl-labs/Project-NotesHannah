@@ -32,6 +32,26 @@ services and is documented separately when it is built.
 | `GET /api/me` | | `{ user: User }` |
 | `POST /api/me/password` | `ChangePasswordInput` | `204`; ends all other sessions |
 
+### Preferences
+
+Per-person settings that follow her to every device: one JSON document per account (table
+`user_preferences`, migration `0900`), validated by `PreferencesPatch` in `packages/schema`. A
+browser session only: an API key gets `403`, and a change needs the same `Origin` as every other
+change. A later preference is a new optional field in the document, not a new table.
+
+| Method and path | Body | Returns |
+|---|---|---|
+| `GET /api/me/preferences` | | `{ preferences: Preferences }`, every field present |
+| `PATCH /api/me/preferences` | `PreferencesPatch` | `{ preferences: Preferences }`. Only the fields sent change. Unknown fields are refused. |
+
+`tabOrder` is the order of the phone's bottom tabs: ids from `library`, `practice`, `search`,
+`inbox`, `settings`. A write must list all five exactly once (a repeat, an unknown id or a missing
+id is `invalid_input`); `null` or `[]` puts the default order back, and nothing is stored for it.
+**Reading resolves the saved order against the tabs that exist now** and never rewrites it: saved
+ids that are still tabs keep her order (first occurrence only), and any tab she has not placed, such
+as one added to the app after she saved, goes at the end in default order. So the response always
+lists all five.
+
 Sign-in is limited per account and per address, with delays that grow on repeated
 failures. A limited attempt returns `rate_limited`.
 

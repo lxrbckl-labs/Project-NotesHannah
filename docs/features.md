@@ -167,6 +167,15 @@ Added 2026-11-15.
 - **I3** Installable to the home screen.
 - **I4** React Bits components, respecting reduced motion.
 - **I5** *Later:* offline reading.
+- **I6** Her own order for the phone's bottom tab bar (per account, so it follows her to every
+  device). Settings, "Tab bar", has a copy of the bar whose icons she drags left and right, the
+  others sliding out of the way, by touch, mouse or pen; the arrow keys and "Move left" and "Move
+  right" buttons do the same. What she arranges is a draft: the real bar changes only when she
+  presses Save (Cancel and "Reset to default" change the draft only, and leaving Settings drops
+  it). The page slide when she taps a tab follows the order shown. Tablet and computer keep the
+  sidebar; the card says so. It is the first of the per-person preferences (`GET` and `PATCH
+  /api/me/preferences`), a small settings document that later choices (which optional tabs show)
+  join without a new table.
 
 ## J. Operations
 

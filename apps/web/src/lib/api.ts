@@ -9,6 +9,8 @@ import {
   type MoveNodeInput,
   NodeWithLinks,
   Page as PageSchema,
+  type PreferencesPatch,
+  PreferencesResponse,
   pageOf,
   SearchHit,
   SourceFile,
@@ -226,6 +228,12 @@ export const api = {
   me: () =>
     request("GET", "/me", { schema: z.object({ user: User }), keepSession: true }).then(
       (r) => r.user,
+    ),
+  preferences: () =>
+    request("GET", "/me/preferences", { schema: PreferencesResponse }).then((r) => r.preferences),
+  updatePreferences: (patch: PreferencesPatch) =>
+    request("PATCH", "/me/preferences", { body: patch, schema: PreferencesResponse }).then(
+      (r) => r.preferences,
     ),
   changePassword: (input: ChangePasswordInput) =>
     request("POST", "/me/password", { body: input, keepSession: true }),
