@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { PracticeApiError, QUESTION_TYPES, TYPE_LABELS } from "../types";
 import { Button, Card, ErrorNote, Spinner } from "../ui/primitives";
+import { StatNumber } from "../ui/StatNumber";
 
 const LENGTHS = [5, 10, 20];
 
@@ -152,8 +153,8 @@ export function Start({
           className="pr-card min-h-20 p-4 text-left transition-colors hover:bg-surface-muted"
         >
           <dt className="text-sm text-text-muted">Cards due today</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums" data-testid="due-today">
-            {data.dueToday}
+          <dd className="mt-1 text-2xl font-semibold tabular-nums">
+            <StatNumber value={data.dueToday} testId="due-today" />
           </dd>
         </button>
         <button
@@ -162,8 +163,8 @@ export function Start({
           className="pr-card min-h-20 p-4 text-left transition-colors hover:bg-surface-muted"
         >
           <dt className="text-sm text-text-muted">In your notebook</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums" data-testid="notebook-size">
-            {data.notebookSize}
+          <dd className="mt-1 text-2xl font-semibold tabular-nums">
+            <StatNumber value={data.notebookSize} testId="notebook-size" />
           </dd>
         </button>
       </dl>

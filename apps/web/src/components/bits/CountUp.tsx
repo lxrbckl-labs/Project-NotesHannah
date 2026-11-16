@@ -5,11 +5,12 @@
  *    reader never hears the in-between numbers (upstream only did this in roll mode).
  *  - Reduced motion: upstream already jumps to the final value; unchanged.
  *  - It has no colours; set them with className (text-text, text-accent).
- *  - Use trigger="load" for numbers on screen at first paint. trigger="view" needs IntersectionObserver.
+ *  - useInView from motion is replaced by a small IntersectionObserver effect that only runs for trigger="view"
+ *    and starts the count at once when IntersectionObserver does not exist (tests, old browsers).
  */
 "use client";
 
-import { animate, cubicBezier, useInView } from "motion/react";
+import { animate, cubicBezier } from "motion/react";
 import {
   type CSSProperties,
   useCallback,
@@ -240,7 +241,24 @@ export default function CountUp({
   const startedRef = useRef(false);
   const runningRef = useRef(false);
   const [play, setPlay] = useState<Play | null>(null);
-  const isInView = useInView(ref, { once: true, margin: "0px" });
+  // Only trigger="view" watches the element. Without IntersectionObserver the number just starts.
+  const [isInView, setInView] = useState(false);
+  useEffect(() => {
+    if (trigger !== "view") return undefined;
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) {
+        setInView(true);
+        observer.disconnect();
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [trigger]);
   const active = trigger === "load" || isInView;
   const compact = format === "compact";
   const places = decimals ?? Math.max(getDecimalPlaces(from), getDecimalPlaces(to));

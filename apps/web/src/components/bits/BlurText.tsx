@@ -242,13 +242,7 @@ const buildRanks = (
 };
 
 const startPhase = (trigger: BlurTextTrigger): Phase =>
-  prefersReducedMotion()
-    ? "rest"
-    : trigger === "load"
-      ? "in"
-      : trigger === "hover" || trigger === "click"
-        ? "rest"
-        : "from";
+  prefersReducedMotion() ? "rest" : trigger === "hover" || trigger === "click" ? "rest" : "from";
 
 const BlurText = ({
   text = "",

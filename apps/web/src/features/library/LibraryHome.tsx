@@ -19,6 +19,7 @@ import { UpcomingExamsCard } from "../exams";
 import { useStores } from "../mounts/services";
 import { UploadButton } from "../uploads/UploadButton";
 import { useLibraryDialogs } from "./dialogs";
+import { GreetingTitle } from "./GreetingTitle";
 import { LibraryTree } from "./LibraryTree";
 import { NodeIcon } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
@@ -132,9 +133,11 @@ export function LibraryHome() {
     <Page>
       <header className="dot-grid mb-6 rounded-3xl border border-border bg-surface px-5 py-5 md:px-8 md:py-7">
         <p className="text-sm text-text-muted">{greeting()}</p>
-        <h1 className="mt-0.5 text-3xl font-semibold">
-          {me.data ? `Hello, ${me.data.displayName}` : "Library"}
-        </h1>
+        {me.data ? (
+          <GreetingTitle text={`Hello, ${me.data.displayName}`} />
+        ) : (
+          <h1 className="mt-0.5 text-3xl font-semibold">Library</h1>
+        )}
         <p className="mt-1.5 text-sm text-text-muted">
           All your terms, courses, lectures and files, in one tree.
         </p>
