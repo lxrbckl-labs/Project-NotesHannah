@@ -7,8 +7,8 @@ import {
 import type { ApiError } from "@notes/schema";
 import { AppError } from "../http/errors.js";
 import { agentFacing, toApiError } from "./errors.js";
-import type { AuditPort, McpPorts } from "./ports.js";
-import type { ToolContext, ToolDef } from "./tool.js";
+import type { McpBackend } from "./ports.js";
+import type { ToolContext, ToolDef, ToolOutput } from "./tool.js";
 import { editBlocks, writeDocument } from "./tools/documents.js";
 import { getPage, requestUploadLinks, saveTranscript, sourceFiles } from "./tools/files.js";
 import { getItem } from "./tools/get-item.js";
@@ -22,48 +22,70 @@ export const SERVER_VERSION = "1.0.0";
 export const MAX_TEXT_CHARS = 60_000;
 
 /**
- * The tools for a set of ports, in the order agents should meet them. A tool
+ * The tools for a backend, in the order agents should meet them. A tool
  * whose port is missing is not registered, so nothing unbacked is advertised.
  */
-export function toolsFor(ports: McpPorts): ToolDef[] {
-  const files = ports.files;
-  const documents = ports.documents;
+export function toolsFor(backend: Omit<McpBackend, "library">): ToolDef[] {
   return [
     startHere,
     browseLibrary,
     getItem,
-    searchTool({
-      transcripts: Boolean(files?.searchTranscripts),
-      documents: Boolean(documents?.searchDocuments),
-    }),
+    searchTool({ unified: Boolean(backend.search) }),
     editLibrary,
-    ...(ports.changes ? [changesTool] : []),
-    ...(files ? [sourceFiles, getPage, saveTranscript, requestUploadLinks] : []),
-    ...(documents ? [writeDocument, editBlocks] : []),
+    ...(backend.changes ? [changesTool] : []),
+    ...(backend.files ? [sourceFiles, getPage, saveTranscript, requestUploadLinks] : []),
+    ...(backend.documents ? [writeDocument, editBlocks] : []),
   ];
 }
 
+/**
+ * A refused call. The text form only: Claude Code shows the text of an error
+ * result and Codex shows text and structured content alike, so one copy.
+ */
 export function errorResult(error: ApiError): CallToolResult {
   const lines = [`Error ${error.code}: ${error.message}`];
   if (error.hint) lines.push(`Hint: ${error.hint}`);
   if (error.example !== undefined) lines.push(`Example: ${JSON.stringify(error.example)}`);
   if (error.retryAfter !== undefined) lines.push(`Retry after ${error.retryAfter} s.`);
-  return {
-    isError: true,
-    content: [{ type: "text", text: lines.join("\n") }],
-    structuredContent: { error },
-  };
+  return { isError: true, content: [{ type: "text", text: lines.join("\n") }] };
 }
 
 export interface CallScope {
   context: ToolContext;
-  agentLabel: string | null;
-  audit: AuditPort;
   /** 0 when allowed, else seconds to wait. */
   rateLimit: () => number;
+  /** Where refused writes are noted (the server log). Successful writes are logged by the domains. */
+  log?: (line: string) => void;
 }
 
-/** Run one tool call: rate limit, parse, scope check, run, audit. Never throws. */
+/**
+ * The success shape (measured with scripts/mcp-live-check.probe.ts, 2026-11-15):
+ * Claude Code shows the model structuredContent (plus images) and drops the
+ * text block when structured content is present; Codex shows both. So the full
+ * result is structuredContent, led by the readable "message", and the text
+ * block carries only its first line: one copy for both agents, and a client
+ * that reads only text still gets a summary.
+ */
+function successResult(output: ToolOutput): CallToolResult {
+  let text = output.text;
+  if (text.length > MAX_TEXT_CHARS) {
+    text = `${text.slice(0, MAX_TEXT_CHARS)}\n… (cut at ${MAX_TEXT_CHARS} characters; ask for less with limit, offset or cursor)`;
+  }
+  const headline = text.split("\n", 1)[0] ?? "";
+  return {
+    content: [
+      { type: "text", text: headline },
+      ...(output.images ?? []).map((img) => ({
+        type: "image" as const,
+        data: img.data,
+        mimeType: img.mimeType,
+      })),
+    ],
+    structuredContent: { message: text, ...output.structured },
+  };
+}
+
+/** Run one tool call: rate limit, parse, scope check, run. Never throws. */
 export async function callTool(
   tools: ToolDef[],
   name: string,
@@ -84,28 +106,14 @@ export async function callTool(
     return errorResult({
       code: "rate_limited",
       message: "Too many calls with this API key in a short time.",
-      hint: `Wait ${wait} second(s), then continue. Batch work where a tool allows it (several blocks per write, several upload links per call).`,
+      hint: `Wait ${wait} second(s), then continue. Batch work where a tool allows it (several blocks per write, several pages per get_item, several upload links per call).`,
       retryAfter: wait,
     });
   }
-  let input: unknown;
   let writes = false;
   let action: string | null = null;
-  const audit = (outcome: string, targets: string[]) => {
-    if (!writes) return;
-    scope.audit.record({
-      userId: ctx.userId,
-      keyId: ctx.keyId,
-      agentLabel: scope.agentLabel,
-      tool: tool.name,
-      action,
-      targetIds: [...new Set(targets)],
-      outcome,
-      at: new Date(ctx.now()).toISOString(),
-    });
-  };
   try {
-    input = tool.parse(args);
+    const input = tool.parse(args);
     writes = tool.writes(input);
     action = tool.action(input);
     if (writes && ctx.scope !== "write") {
@@ -117,30 +125,15 @@ export async function callTool(
         },
       );
     }
-    const output = await tool.run(ctx, input);
-    audit("ok", output.targets ?? []);
-    let text = output.text;
-    if (text.length > MAX_TEXT_CHARS) {
-      text = `${text.slice(0, MAX_TEXT_CHARS)}\n… (cut at ${MAX_TEXT_CHARS} characters; ask for less with limit, offset or cursor)`;
-    }
-    return {
-      content: [
-        { type: "text", text },
-        ...(output.images ?? []).map((img) => ({
-          type: "image" as const,
-          data: img.data,
-          mimeType: img.mimeType,
-        })),
-      ],
-      // Claude Code shows the model only structuredContent when it is present
-      // (seen in the live check), Codex shows both. So the readable text leads
-      // the structured result as "message"; bulk text lives only there.
-      structuredContent: { message: text, ...output.structured },
-    };
+    return successResult(await tool.run(ctx, input));
   } catch (error) {
     if (!(error instanceof AppError)) console.error(`mcp tool ${tool.name} failed`, error);
     const apiError = toApiError(agentFacing(error));
-    audit(apiError.code, []);
+    if (writes || apiError.code === "read_only_key") {
+      scope.log?.(
+        `mcp refused ${tool.name}${action ? ` ${action}` : ""} key=${ctx.keyId} code=${apiError.code}`,
+      );
+    }
     return errorResult(apiError);
   }
 }

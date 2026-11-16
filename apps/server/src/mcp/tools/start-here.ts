@@ -8,13 +8,11 @@ import {
   EXAMPLE_CITATION,
   ID_PREFIX,
   MAX_FOLDER_DEPTH,
-  UPLOAD_LIMITS,
 } from "@notes/schema";
 import { z } from "zod";
 import { listApiKeys } from "../../domains/accounts/keys.js";
 import { findUserById } from "../../domains/accounts/users.js";
 import { json } from "../format.js";
-import type { InboxSummary } from "../ports.js";
 import { describe, jsonOf } from "../schema.js";
 import { defineTool, parseWith, type ToolContext } from "../tool.js";
 
@@ -36,7 +34,13 @@ interface Facts {
   scope: "read" | "write";
   terms: number;
   courses: number;
-  inbox: InboxSummary | null;
+  inbox: {
+    waiting: number;
+    converting: number;
+    ready: number;
+    failed: number;
+    converter: string;
+  } | null;
   tools: string[];
 }
 
@@ -51,8 +55,22 @@ function facts(ctx: ToolContext): Facts {
     scope: ctx.scope,
     terms: terms.length,
     courses: terms.reduce((sum, t) => sum + t.childCount, 0),
-    inbox: ctx.ports.files ? ctx.ports.files.inboxSummary(ctx.userId) : null,
+    inbox: inboxFacts(ctx),
     tools: [...ctx.available],
+  };
+}
+
+function inboxFacts(ctx: ToolContext): Facts["inbox"] {
+  const port = ctx.backend.files;
+  if (!port) return null;
+  const items = port.listFiles(ctx.auth, { inbox: true, limit: 200 }).items;
+  const count = (...statuses: string[]) => items.filter((f) => statuses.includes(f.status)).length;
+  return {
+    waiting: items.length,
+    converting: count("uploaded", "converting"),
+    ready: count("converted", "transcribed"),
+    failed: count("failed"),
+    converter: port.converterStatus().state,
   };
 }
 
@@ -65,17 +83,23 @@ function toolMap(f: Facts): string {
       'this guide; topics: "library", "inbox", "blocks", "citations", "transcription"',
     ],
     ["browse_library", "list one level of the tree (or the trash, favourites, recents)"],
-    ["get_item", "open anything by ID, with links to its parent, children, sources"],
-    ["search_notes", "find by words"],
+    [
+      "get_item",
+      'open anything by ID with links to its neighbours; on a file with "text": true, every page\'s text at once',
+    ],
+    ["search_notes", "find by words: library names, transcribed pages, document text"],
     ["edit_library", "create, update (rename), move, duplicate, trash, restore library items"],
     ["changes", "what changed since your last session"],
     [
       "source_files",
-      "uploaded files: list the inbox, claim, release, file, and move between lectures or folders (or back to the inbox)",
+      "uploaded files: list the inbox with status and transcription progress, wait for conversion, claim, release, file, move (or back to the inbox), retry",
     ],
-    ["get_page", "a page image (inline) with its native text and transcript status"],
+    [
+      "get_page",
+      "a page image (inline, or a download link) with its native text and current transcript",
+    ],
     ["save_transcript", "save a page's verbatim transcript with flags"],
-    ["request_upload_links", "upload files from your machine"],
+    ["request_upload_links", "upload files from your machine with curl"],
     ["write_document", "create a document of cited study material"],
     ["edit_blocks", "insert, change, move, delete or regenerate blocks"],
   ];
@@ -94,7 +118,7 @@ function libraryRules(f: Facts): string {
     `- Course > exactly five fixed sections, created automatically: ${sections}. They cannot be created, renamed, moved or trashed.`,
     `- Section or folder > folders, lectures, documents. Folders nest at most ${MAX_FOLDER_DEPTH} deep below a section.`,
     '- Lecture > documents. Lectures have a number and a date and are shown as "07 · Beta blockers · Oct 14"; they sort in teaching order. Put lectures in the course\'s Lectures section.',
-    "- Where things go: uploads are filed under their lecture (in Lectures) or a folder in Sources; a lecture's merged note is the lecture's own document; study guides go in Study guides; question sets and flashcards in Practice; exams in Exams.",
+    "- Where things go: uploads are filed under their lecture (in Lectures), a folder, or the course's Sources section; a lecture's merged note is the lecture's own document (write_document with nodeId = the lecture); study guides go in Study guides (write_document with parentId = that section); question sets and flashcards in Practice; exams in Exams.",
     "- Trash keeps everything restorable. Only she can delete permanently, in the browser.",
     "Moving things (you can do every move she can do in the app; the same rules apply):",
     '- Library items (folders, lectures, documents, courses, terms): edit_library {"action":"move","id":"<id>","parentId":"<new parent>","afterId":"<sibling or null>"}. parentId is the new place (it must be allowed to hold that kind); afterId places it after a sibling (null: first; omit: last). Sections never move.',
@@ -113,25 +137,29 @@ function inboxWorkflow(f: Facts): string {
   if (!has(f, "source_files")) {
     return "Uploads and the inbox are not available on this server yet; you can organise the library meanwhile.";
   }
-  return [
-    "Processing the inbox (do one file at a time):",
-    '1. source_files {"action":"list"}: files waiting. Work on status "converted" (pages ready); "converting" ones are not ready; "failed" ones need her (tell her the error).',
-    '2. source_files {"action":"claim","fileId":"fil_…"} so no other agent takes it.',
-    '3. get_item {"id":"fil_…"} lists its pages; get_page {"pageId":"pag_…"} shows each page image.',
-    '4. save_transcript for every page (rules in topic "transcription").',
-    "5. Find or create its term, course and lecture with browse_library / edit_library.",
-    '6. source_files {"action":"file","fileId":"fil_…","nodeId":"<lecture id>"}: files it and ends your claim.',
-    has(f, "write_document")
-      ? '7. Build material from it: the lecture\'s merged note (write_document with nodeId = the lecture, kind "lecture_note"), study guides and practice, all cited.'
-      : "7. Study material tools are not available on this server yet.",
-    "If you stop midway, release the claim.",
-    'A file filed in the wrong place: source_files {"action":"move","fileId":"fil_…","nodeId":"<other lecture or folder id>"}; nodeId null puts it back in the inbox.',
+  const steps = [
+    "From files to cited study material, end to end:",
     has(f, "request_upload_links")
-      ? `Uploading from your machine: request_upload_links, then curl -X PUT each file (single-use links, ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes, up to ${UPLOAD_LIMITS.maxBatch} files per call). Codex needs network access in its sandbox for curl.`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+      ? '1. Get the files in. Files on your machine: request_upload_links {"files":[{"name","bytes"}]} (bytes from `wc -c < file`), then curl -sS -X PUT --data-binary @<path> "<url>" for each; each PUT answers with the new file\'s JSON (its "id" is the fil_ ID). Files she uploaded are already in the inbox: source_files {"action":"list"}.'
+      : '1. Files she uploaded wait in the inbox: source_files {"action":"list"}.',
+    '2. Wait for conversion: source_files {"action":"wait","fileIds":["fil_…"]} waits up to 25 s and reports each file\'s status; call it again while any is still converting (a deck takes from seconds to a couple of minutes). Do not loop on list. "failed" shows the reason: retry once with source_files {"action":"retry"}, otherwise tell her (an encrypted or damaged file needs her). If the converter is not "online", nothing converts: tell her.',
+    '3. Claim each converted file: source_files {"action":"claim","fileId":"fil_…"} so no other agent works on it.',
+    '4. Read every page: get_item {"id":"fil_…"} lists the pages; get_page {"pageId":"pag_…"} shows the image with the file\'s own text. For many pages, get_page with "image":"link" and curl the links, then read the downloaded images.',
+    '5. Transcribe every page with save_transcript, verbatim, flagging every dose, unit and decimal (topic "transcription"). The result says how many pages of the file are still missing.',
+    "6. Place it: find or create the term, course and lecture (browse_library, edit_library; lectures go in the course's Lectures section with their number and date).",
+    '7. File it: source_files {"action":"file","fileId":"fil_…","nodeId":"<lecture id>"}. Filing with pages still untranscribed is allowed but warns, listing them.',
+  ];
+  if (has(f, "write_document")) {
+    steps.push(
+      '8. Write the material: collect exact quotes with get_item {"id":"fil_…","text":true} (every page\'s transcript at once), then write_document with headings, callouts, tables and so on. Every content block cites the page it came from with a quote copied character for character from that page\'s transcript or native text; quotes that are not found are refused with the path of the block. Check the result with get_item on the document (its references list).',
+    );
+  }
+  steps.push(
+    `${steps.length}. Release each claim: source_files {"action":"release","fileId":"fil_…"}. If you stop midway, release too.`,
+    'A file filed in the wrong place: source_files {"action":"move","fileId":"fil_…","nodeId":"<other lecture or folder id>"}; nodeId null puts it back in the inbox.',
+    "Codex: uploads and downloads use curl, so its sandbox needs network access (see /agents.txt).",
+  );
+  return steps.join("\n");
 }
 
 function transcriptionRules(): string {
@@ -184,7 +212,7 @@ function overview(f: Facts): string {
       ? "Your key is read-write: you can read and change everything except permanent deletion."
       : "Your key is READ-ONLY: you can look at everything, but every change is refused with read_only_key. Ask her for a read-write key (Settings, API keys) if you need to change things.";
   const inbox = f.inbox
-    ? `Inbox: ${f.inbox.pending} file(s) waiting. Converter: ${f.inbox.converter}${f.inbox.converterNote ? ` (${f.inbox.converterNote})` : ""}.`
+    ? `Inbox: ${f.inbox.waiting} file(s) not filed (${f.inbox.converting} converting, ${f.inbox.ready} ready to transcribe or file, ${f.inbox.failed} failed). Converter: ${f.inbox.converter}.`
     : "Inbox: uploads are not available on this server yet.";
   return [
     "# Study notes: start here",

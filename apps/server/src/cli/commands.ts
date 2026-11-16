@@ -1,6 +1,7 @@
-import { Password } from "@notes/schema";
+import { ApiKeyScope, CreateApiKeyInput, Password } from "@notes/schema";
 import { type Config, ConfigError, loadConfig } from "../config.js";
 import { type Db, migrate, openDatabase } from "../db/client.js";
+import { createApiKey } from "../domains/accounts/keys.js";
 import { PasswordHasher } from "../domains/accounts/passwords.js";
 import { resetPassword } from "../domains/accounts/service.js";
 import {
@@ -27,6 +28,9 @@ Commands:
   list-users                              List accounts
   disable-user <username>                 Block sign-in; ends sessions, keys stop working
   enable-user <username>                  Undo disable-user
+  create-key <username> --name "Name" --scope read|write
+                                          Create an API key for an agent; prints the
+                                          secret once (it is stored only as a hash)
 
 Environment: DATA_DIR, DB_PATH (see .env.example).`;
 
@@ -48,7 +52,7 @@ interface Parsed {
   flags: Map<string, string | true>;
 }
 
-const VALUE_FLAGS = new Set(["--name"]);
+const VALUE_FLAGS = new Set(["--name", "--scope"]);
 
 export function parseArgs(argv: string[]): Parsed {
   const [command, ...rest] = argv;
@@ -164,6 +168,25 @@ export async function runAdmin(argv: string[], io: CliIo): Promise<number> {
         );
         io.out(`Password reset for ${user.username}; all of their sessions have ended.`);
         if (generated) io.out(`Password (shown once): ${password}`);
+        return 0;
+      }
+      case "create-key": {
+        const ctx = context(io);
+        db = ctx.db;
+        const user = requireUser(db, positional[0]);
+        const scope = ApiKeyScope.safeParse(flags.get("--scope"));
+        if (!scope.success) {
+          throw new AppError("invalid_input", "Give --scope read or --scope write.");
+        }
+        const input = CreateApiKeyInput.safeParse({ name: flags.get("--name"), scope: scope.data });
+        if (!input.success) {
+          throw new AppError("invalid_input", 'Give --name "Name" (1 to 80 characters).');
+        }
+        const created = createApiKey(db, user.id, input.data, ctx.now());
+        io.out(
+          `Created ${created.key.scope} key "${created.key.name}" (${created.key.id}) for ${user.username}.`,
+        );
+        io.out(`Secret (shown once): ${created.secret}`);
         return 0;
       }
       case "list-users": {

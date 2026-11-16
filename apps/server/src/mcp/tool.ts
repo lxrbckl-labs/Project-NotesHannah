@@ -2,20 +2,23 @@ import type { Actor, ApiKeyScope } from "@notes/schema";
 import type { z } from "zod";
 import type { Db } from "../db/client.js";
 import type { LibraryService } from "../domains/library/index.js";
+import type { AuthContext } from "../http/auth-context.js";
 import { AppError } from "../http/errors.js";
 import { invalidInput } from "./errors.js";
-import type { McpPorts } from "./ports.js";
+import type { McpBackend } from "./ports.js";
 import type { JsonSchema } from "./schema.js";
 
 /** Everything a tool handler may use. Built per request from the key. */
 export interface ToolContext {
+  /** The caller, passed to the domain services as is (they check scope and log as this actor). */
+  auth: AuthContext;
   userId: string;
   keyId: string;
   scope: ApiKeyScope;
   actor: Actor;
   db: Db;
   library: LibraryService;
-  ports: McpPorts;
+  backend: McpBackend;
   /** Names of the tools registered for this server, so text can point only at real tools. */
   available: ReadonlySet<string>;
   now: () => number;
@@ -27,8 +30,6 @@ export interface ToolOutput {
   /** The same facts as JSON. */
   structured: Record<string, unknown>;
   images?: Array<{ data: string; mimeType: string }>;
-  /** IDs this call changed or created, for the audit log. */
-  targets?: string[];
 }
 
 export interface ToolAnnotations {

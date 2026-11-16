@@ -4,6 +4,7 @@ import {
   NodeId,
   type NodeWithLinks,
   PageRequest,
+  type SearchHit,
   UpdateNodeInput,
 } from "@notes/schema";
 import { z } from "zod";
@@ -223,26 +224,30 @@ export const editLibrary = defineTool({
     try {
       switch (action) {
         case "create":
-          node = ctx.library.create(ctx.userId, value as z.output<typeof EDIT_BRANCHES.create>);
+          node = ctx.library.create(
+            ctx.userId,
+            value as z.output<typeof EDIT_BRANCHES.create>,
+            ctx.actor,
+          );
           break;
         case "update": {
           const { id: _id, ...changes } = value as z.output<typeof EDIT_BRANCHES.update>;
-          node = ctx.library.update(ctx.userId, id as string, changes);
+          node = ctx.library.update(ctx.userId, id as string, changes, ctx.actor);
           break;
         }
         case "move": {
           const { id: _id, ...to } = value as z.output<typeof EDIT_BRANCHES.move>;
-          node = ctx.library.move(ctx.userId, id as string, to);
+          node = ctx.library.move(ctx.userId, id as string, to, ctx.actor);
           break;
         }
         case "duplicate":
-          node = ctx.library.duplicate(ctx.userId, id as string);
+          node = ctx.library.duplicate(ctx.userId, id as string, ctx.actor);
           break;
         case "trash":
-          node = ctx.library.trash(ctx.userId, id as string);
+          node = ctx.library.trash(ctx.userId, id as string, ctx.actor);
           break;
         case "restore":
-          node = ctx.library.restore(ctx.userId, id as string);
+          node = ctx.library.restore(ctx.userId, id as string, ctx.actor);
           break;
       }
     } catch (error) {
@@ -270,7 +275,6 @@ export const editLibrary = defineTool({
     return {
       text,
       structured: { action, node: item, ...(sections.length ? { sections } : {}) },
-      targets: [node.id, ...(id && id !== node.id ? [id] : [])],
     };
   },
 });
@@ -279,32 +283,46 @@ export const editLibrary = defineTool({
 // search_notes
 // ---------------------------------------------------------------------------
 
-export function searchTool(ctx: {
-  transcripts: boolean;
-  documents: boolean;
-}): ReturnType<typeof defineTool> {
-  const scopes = [
-    "library",
-    ...(ctx.transcripts ? ["transcripts"] : []),
-    ...(ctx.documents ? ["documents"] : []),
-  ] as [string, ...string[]];
+const SEARCH_KIND_OPTIONS = ["node", "page", "block"] as const;
+
+function hitLine(hit: SearchHit): string {
+  switch (hit.kind) {
+    case "node":
+      return `${nodeLine(nodeItem(hit.node))} at "${hit.node.path}"`;
+    case "page":
+      return `- page ${hit.pageId} (page ${hit.pageIndex} of "${hit.fileName}", file ${hit.fileId}): ${hit.snippet}`;
+    default:
+      return `- block ${hit.blockId} (${hit.blockType}) in "${hit.documentTitle}" (document ${hit.documentId}): ${hit.snippet}`;
+  }
+}
+
+function hitItem(hit: SearchHit): Record<string, unknown> {
+  return hit.kind === "node"
+    ? { kind: "node", node: nodeItem(hit.node), snippet: hit.snippet }
+    : { ...hit };
+}
+
+/**
+ * search_notes. With the unified search service (production) it finds library
+ * names, transcribed pages and document blocks in one ranked list; without it
+ * (unit tests over the library alone) only names.
+ */
+export function searchTool(options: { unified: boolean }): ReturnType<typeof defineTool> {
   const SearchInput = z.strictObject({
     query: z.string().trim().min(1).max(200),
-    scope: z.enum(scopes).default("library"),
+    ...(options.unified
+      ? { kinds: z.array(z.enum(SEARCH_KIND_OPTIONS)).min(1).max(3).optional() }
+      : {}),
     cursor: Cursor,
     limit: limit(50, 20),
   });
-  const scopeText = [
-    '"library" (default): names of terms, courses, folders, lectures and documents',
-    ctx.transcripts ? '"transcripts": the text of transcribed pages' : null,
-    ctx.documents ? '"documents": the text of study material' : null,
-  ]
-    .filter(Boolean)
-    .join("; ");
+  const what = options.unified
+    ? "names of library items (terms, courses, folders, lectures, documents), the transcripts of source pages, and the text of document blocks, in one ranked list"
+    : "names of library items (terms, courses, folders, lectures, documents)";
   return defineTool({
     name: "search_notes",
     title: "Search her notes",
-    description: `Find things by words. Scopes: ${scopeText}. Each hit has the ID to open with get_item and a short snippet. Matching is by word prefix ("beta" finds "Beta blockers"). Paged with cursor.`,
+    description: `Find things by words: ${what}. Each hit has the ID to open (get_item for nodes, documents and blocks; get_page for pages) and a short snippet. Matching is by word prefix ("beta" finds "Beta blockers"). Paged with cursor.`,
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -313,48 +331,53 @@ export function searchTool(ctx: {
     },
     inputSchema: describe(jsonOf(SearchInput), {
       query: 'Words to look for, e.g. "beta blockers". 1 to 200 characters.',
-      scope: `Where to search: ${scopeText}.`,
+      ...(options.unified
+        ? {
+            kinds:
+              'Only these kinds of hit: "node" (library names), "page" (transcribed source pages), "block" (document text). Default: all three.',
+          }
+        : {}),
       cursor: CURSOR_TEXT,
       limit: "Hits per page, 1 to 50 (default 20).",
     }),
     parse: (raw) =>
-      parseWith("search_notes", SearchInput, raw, { query: "beta blockers" }) as z.output<
-        typeof SearchInput
-      >,
+      parseWith("search_notes", SearchInput, raw, { query: "beta blockers" }) as {
+        query: string;
+        kinds?: Array<(typeof SEARCH_KIND_OPTIONS)[number]>;
+        cursor?: string;
+        limit: number;
+      },
     writes: () => false,
-    action: (input) => input.scope,
+    action: () => null,
     run(c, input) {
-      const opts = { cursor: input.cursor, limit: input.limit };
-      let hits: Array<Record<string, unknown>>;
+      let hits: SearchHit[];
       let nextCursor: string | null;
-      let lines: string[];
-      if (input.scope === "transcripts" && c.ports.files?.searchTranscripts) {
-        const page = c.ports.files.searchTranscripts(c.userId, input.query, opts);
-        hits = page.items.map((h) => ({ ...h }));
+      if (c.backend.search) {
+        const page = c.backend.search.search(c.userId, {
+          q: input.query,
+          ...(input.kinds ? { kinds: input.kinds } : {}),
+          cursor: input.cursor,
+          limit: input.limit,
+        });
+        hits = page.items;
         nextCursor = page.nextCursor;
-        lines = page.items.map(
-          (h) =>
-            `- page ${h.pageId} (p.${h.pageIndex} of "${h.fileName}", transcript ${h.transcriptId}): ${h.snippet}`,
-        );
-      } else if (input.scope === "documents" && c.ports.documents?.searchDocuments) {
-        const page = c.ports.documents.searchDocuments(c.userId, input.query, opts);
-        hits = page.items.map((h) => ({ ...h }));
-        nextCursor = page.nextCursor;
-        lines = page.items.map(
-          (h) =>
-            `- ${h.blockId ?? h.documentId} in "${h.title}" (document ${h.documentId}): ${h.snippet}`,
-        );
       } else {
-        const page = c.library.search(c.userId, { q: input.query, ...opts });
-        hits = page.items.map((h) => ({ ...nodeItem(h.node), snippet: h.snippet }));
+        const page = c.library.search(c.userId, {
+          q: input.query,
+          cursor: input.cursor,
+          limit: input.limit,
+        });
+        hits = page.items;
         nextCursor = page.nextCursor;
-        lines = page.items.map((h) => `${nodeLine(nodeItem(h.node))} at "${h.node.path}"`);
       }
-      const head = `${hits.length} hit${hits.length === 1 ? "" : "s"} for "${input.query}" in ${input.scope}.`;
+      const lines = [
+        `${hits.length} hit${hits.length === 1 ? "" : "s"} for "${input.query}".`,
+        ...hits.map(hitLine),
+      ];
       if (nextCursor) lines.push(`More: call search_notes again with cursor "${nextCursor}".`);
       return {
-        text: [head, ...lines].join("\n"),
-        structured: { scope: input.scope, query: input.query, hits, nextCursor },
+        text: lines.join("\n"),
+        structured: { query: input.query, hits: hits.map(hitItem), nextCursor },
       };
     },
   });
@@ -365,8 +388,8 @@ export function searchTool(ctx: {
 // ---------------------------------------------------------------------------
 
 const ChangesInput = z.strictObject({
-  cursor: z.string().max(400).optional(),
-  since: z.iso.datetime().optional(),
+  cursor: z.string().max(40).optional(),
+  from: z.enum(["start", "now"]).default("start"),
   limit: limit(200, 100),
 });
 
@@ -374,7 +397,7 @@ export const changesTool = defineTool({
   name: "changes",
   title: "What changed since",
   description:
-    "The change feed: what was created, changed, moved, trashed or restored since your last call (pass the returned cursor) or since a time. Oldest first. Use it at the start of a session to see what she did since the last agent session.",
+    'The change feed: what was created, changed, moved, filed, transcribed, trashed or restored, by her or by agents, oldest first. Pass the cursor from your last call to get only what is new; it never goes backwards. At the start of a session, call it with your saved cursor to see what she did since; with no cursor it starts from the beginning, or use from "now" to get a cursor without history.',
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,
@@ -382,26 +405,34 @@ export const changesTool = defineTool({
     openWorldHint: false,
   },
   inputSchema: describe(jsonOf(ChangesInput), {
-    cursor: "The cursor returned by the previous changes call; omit on the first call.",
-    since:
-      'On the first call: report changes after this time (ISO 8601, e.g. "2026-11-15T09:00:00Z"). Default: the last 24 hours.',
+    cursor: 'The cursor returned by the previous changes call (a number as a string, e.g. "42").',
+    from: 'Without a cursor: "start" (default) lists from the beginning; "now" returns the current cursor and no entries.',
     limit: "Most changes to return, 1 to 200 (default 100).",
   }),
   parse: (raw) =>
-    parseWith("changes", ChangesInput, raw, { since: "2026-11-15T09:00:00Z" }) as z.output<
-      typeof ChangesInput
-    >,
+    parseWith("changes", ChangesInput, raw, { cursor: "42" }) as z.output<typeof ChangesInput>,
   writes: () => false,
   action: () => null,
   run(ctx, input) {
-    const port = ctx.ports.changes;
+    const port = ctx.backend.changes;
     if (!port) throw new AppError("internal", "The change feed is not available.");
-    const result = port.changesSince(ctx.userId, input);
-    const lines = result.items.map(
-      (c) => `- ${c.at} ${c.change} ${c.kind} ${c.id}${c.name ? ` "${c.name}"` : ""}`,
+    if (!input.cursor && input.from === "now") {
+      const cursor = port.latestCursor(ctx.userId);
+      return {
+        text: `No entries; the feed is at cursor "${cursor}". Pass it next time to see what changes after now.`,
+        structured: { items: [], cursor, more: false },
+      };
+    }
+    const page = port.changesSince(ctx.userId, input.cursor, input.limit);
+    const lines = page.items.map(
+      (c) =>
+        `- ${c.at} ${c.action} by ${c.actor.type === "agent" ? "an agent" : "her"}: ${c.summary} [${c.objectIds.slice(0, 3).join(", ")}]`,
     );
-    lines.unshift(`${result.items.length} change(s). Next time pass cursor "${result.cursor}".`);
-    if (result.more) lines.push("More changes waiting: call changes again with that cursor now.");
-    return { text: lines.join("\n"), structured: { ...result } };
+    lines.unshift(`${page.items.length} change(s). Next time pass cursor "${page.nextCursor}".`);
+    if (page.hasMore) lines.push("More waiting: call changes again with that cursor now.");
+    return {
+      text: lines.join("\n"),
+      structured: { items: page.items, cursor: page.nextCursor, more: page.hasMore },
+    };
   },
 });
