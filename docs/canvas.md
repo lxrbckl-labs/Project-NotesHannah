@@ -320,6 +320,40 @@ tab bar while the canvas is open, or leave 64 px below for it).
 
 ## For the server: storage, API and MCP
 
+**Built** (`apps/server/src/domains/canvas`, migration `0550_canvas.sql`, tests `apps/server/test/canvas*.test.ts`,
+routes in [api.md](api.md#canvas)). What differs from the proposal, and why:
+
+- **Storage** is as proposed: `canvases(document_id PK → documents ON DELETE CASCADE, user_id, revision,
+  data JSON, created_at, updated_at)`, validated with `Canvas` on every write, plus
+  `canvas_layout_cache(document_id, variant, positions, updated_at)`. Trashing the document hides the
+  canvas through the join with `documents.trashed_at` (no second flag to keep in step); deleting
+  it removes the rows by cascade. No per-revision snapshot history (not needed yet).
+- **Layout runs only in the browser** (ELK in the worker). The server stores no coordinates for
+  unpinned cards: `position`/`dimensions` are set only by her `place_cards`, and the layout cache
+  drops pinned and unknown cards on save and read. "Auto-arrange" is `POST .../canvas/arrange`:
+  it clears the cache (and with `releasePins` her pins) and wakes every open view.
+- **Hooks.** Documents take one new port, `onBlocksChanged`, called inside `commit` (after the blocks
+  are saved, same transaction); the composition root wires it to the canvas, documents never import
+  the canvas. A document without a canvas is ignored until first read. `open()` also merges on
+  every read as a safety net, silently. Duplicate: `onNodeDuplicated` in the library listener.
+- **Pin rule.** `requestId` lifts protection only when `requestsPort.verifyForEdit` confirms it for the
+  document and the calling key (a request on one block does not count); otherwise it is dropped and
+  the refusal says why (`$.requestId`).
+- **Concurrency.** Ops and structure honour `expectedRevision` (409); placements ignore it by
+  design (absolute, per card, idempotent, last write wins; vanished cards are `ignored`).
+- **Routes** are as proposed, plus `POST .../arrange` and `PUT` layout-cache refused to agents.
+  Errors: `{ error: { code, message, hint, example, problems }, problems, message }`: the docs ask
+  for the shared `ApiError` shape with `problems`; the web store reads `problems` and `message` at
+  the top, so both are sent.
+- **Placements** return `{ canvas, placed, ignored }` (the store ignores the body).
+- **Events** are SSE as proposed (see api.md), with full-state messages and a heartbeat.
+- **MCP.** `CanvasPort` (`createCanvasPort`, `services.canvasPort`): `get` (frames with card previews,
+  connectors as "A -[label]-> B", `pinned`/`byHer` flags, no coordinates; `include: "full"` adds the
+  structure), `setStructure`, `change`; the writes return `{ ok: false, kind, problems }` instead of
+  throwing. The MCP tools themselves are not written yet.
+
+**Proposed originally**, kept for reference:
+
 **Storage.** One row per canvas: `canvases(document_id PK, revision, data JSON, updated_at)`
 where `data` holds `cards`, `connectors`, `frames`, `syncedBlockIds`, `allowSelfLinks`
 (validated with `Canvas` on write). A canvas is small (300 cards ≈ 100 KB), always read
@@ -359,8 +393,9 @@ rule applies.
 
 ## What is not done
 
-- Server storage, routes, SSE and MCP actions (proposed above); the HTTP store is written
-  against them but untested against a real server.
+- The MCP tools (`canvas_get`, `canvas_set_structure`, `canvas_change`) over `CanvasPort`; the
+  server side is built and tested (routes, SSE, storage), the web HTTP store is not yet run
+  against it in a browser.
 - Real block renderers (the documents feature's `renderBlock`); images are placeholders.
 - Card resize handles: `PinnedSize` and `place_cards` with `width`/`height` exist, the
   view has no resize gesture yet.

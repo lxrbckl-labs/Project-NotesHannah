@@ -742,3 +742,60 @@ See [concepts.md](concepts.md) for the model.
   working as a redirect.
 - Errors follow the conventions above. Read-only keys read everything, including the query,
   compare and path routes, and are refused every change.
+
+## Canvas
+
+The canvas is the second view of a document (see [canvas.md](canvas.md)): its blocks as cards,
+joined by connectors and grouped in frames. One canvas per document, found by the document ID,
+created from the document's headings and blocks on the first read. Types are `Canvas`, `Card`,
+`Connector`, `Frame`, `CanvasOp` and `SetCanvasStructureInput` from `@notes/schema`.
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `GET /api/documents/:id/canvas` | | `{ canvas, blocks, documentTitle }` (the document's blocks in reading order; the canvas shows a subset). Derives the canvas on first read. |
+| `POST /api/documents/:id/canvas/ops` | `{ ops, expectedRevision?, requestId? }` (`documentId` may be repeated inside; a different one is refused) | `{ canvas, report }`. Ops in order, all or nothing: `add_card`, `update_card`, `remove_card`, `add_connector`, `update_connector`, `remove_connector`, `add_frame`, `update_frame`, `remove_frame`, `add_to_frame`, `remove_from_frame`; hers alone: `place_cards`, `release_pins`, `insert_items`. |
+| `PUT /api/documents/:id/canvas/structure` | `SetCanvasStructureInput` without coordinates: `cards`, `connectors?`, `frames?`, `allowSelfLinks?`, `expectedRevision?`, `requestId?` | `{ canvas, report }`. `report` has `added`, `updated`, `removed`, `skipped` (what she made, edited or pinned, with the reason) and `refs` (your short names to the new IDs). Sending the same body twice changes nothing. |
+| `PUT /api/documents/:id/canvas/placements` | `{ placements: [{ id, x, y, width?, height? }] }` | `{ canvas, placed, ignored }`. Her drags become pins. **Browser session only** in practice: an agent key gets `forbidden`. |
+| `POST /api/documents/:id/canvas/arrange` | `{ releasePins? }` (optional body) | `{ canvas, report }`. Forgets the cached layout, and with `releasePins` her pins; every open view lays the map out again. Hers alone. |
+| `GET /api/documents/:id/canvas/layout-cache/:variant` | `variant` is `wide` or `tall` | `{ positions }` (card ID to `{ x, y }`), `204` when none |
+| `PUT /api/documents/:id/canvas/layout-cache/:variant` | `{ positions }` | `{ saved }`. Positions of unknown or pinned cards are dropped. Not a structure change: no revision, no feed entry. Hers alone. |
+| `GET /api/documents/:id/canvas/events` | | Server-Sent Events, below |
+
+Reads need any signed-in caller; every changing route needs a write key or a session
+(`read_only_key` otherwise). Another user's document, and a document in the trash, is
+`not_found` on every route, events included.
+
+- **What an agent sends.** Structure only: cards, connectors, frames, never coordinates. The
+  app lays the canvas out (in the browser; the server stores no layout, only the cache above)
+  and anything she drags stays where she put it.
+- **The pin rule.** An agent never moves, resizes or deletes a card she created, edited or
+  pinned, and never changes or deletes her connectors and frames, unless it passes a
+  `requestId` the requests domain confirms: a request of hers that this very key has claimed,
+  still in progress, and about **this document** (a request on a single block does not cover
+  canvas items). Refused ops give `403 forbidden` naming the rule; a `requestId` that does not
+  count adds a problem at `$.requestId` saying why. `PUT .../structure` does not fail on
+  protected items: it keeps them and lists them in `report.skipped`.
+- **Concurrency.** `expectedRevision` on ops and structure: a mismatch is `409 conflict` whose
+  first problem names the current revision. Without it the last write wins. Placements never
+  conflict: they are absolute and idempotent per card, ignore revisions (a debounced drag from a
+  stale tab is not lost), repeat harmlessly (an unchanged pin writes nothing), and a card that
+  is gone is listed in `ignored` instead of failing the batch.
+- **Invalid input** is `400 invalid_input`. The body is the shared `{ error }` with the
+  problems the validators found: `error.problems` is a list of `{ path, message, example }`
+  (paths like `$.ops[1].id`); the same list is also at the top level as `problems` (and the first
+  message as `message`), which is where the web store reads it.
+- **Following the document.** A document write (insert, delete, move, regenerate, restore) updates
+  the canvas in the same transaction: new blocks become unpinned cards (new headings frames),
+  deleted blocks' cards and their connectors go, pins stay. Duplicating the library node copies
+  the canvas with fresh IDs; deleting it for good deletes it; trashing hides it until restore.
+- **Change feed** (`GET /api/changes`): objects of type `canvas`, actions `canvas.structure_set`,
+  `canvas.changed`, `canvas.placed`, `canvas.arranged`, `canvas.merged` (the document changed),
+  with the canvas revision. **Activity log**: agent canvas writes in plain words ("Arranged the
+  study map for Beta blockers into 4 frames").
+- **Events.** `event: canvas`, `id: <revision>`, `data: ` the whole `{ canvas, blocks,
+  documentTitle }`, after every change to the canvas or to the document's blocks (messages for a
+  burst of writes are coalesced). Every message is the full state, so a missed one costs nothing
+  and the browser's automatic reconnect needs no replay (`retry: 3000`). A `: ping` comment every
+  25 seconds keeps an idle stream open through the reverse proxy; the response sets
+  `Cache-Control: no-cache, no-transform` and `X-Accel-Buffering: no`. The stream ends when the
+  document leaves for the trash or is deleted.
