@@ -26,7 +26,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 | Accounts | A1 to A6 | No sign-up page; accounts by admin command. Lockout with a trusted-device bypass. |
 | Upload and inbox | B1 to B7 | Type detected from content. Converter is a locked-down container with no network. |
 | Library | C1 to C6, C8 | The library home is the whole tree on one page, with her files as leaves. |
-| Documents and blocks | D1 to D13 | 16 block types, editor (Tiptap), outline, revision history. |
+| Documents and blocks | D1 to D13 | 16 block types, editor (Tiptap), outline, revision history. Typing shortcuts at the start of a paragraph (`# `, `- `, `1. `, `[] `, `> `, `!! `, `?? `, `---`). A lecture page lists the notes she started under it, and a new document opens ready to type. |
 | Citations | K1 to K7 | Tap a source chip to see the page with the passage highlighted. |
 | Canvas | E1 to E6 | React Flow, automatic layout in the browser, her pins survive agent changes. |
 | Concepts | F1 to F5 | F4 (drug-name check against RxNorm) is built and **off by default**. |
@@ -49,6 +49,8 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 ## Known gaps and rough edges
 
 - **Scheduled backups on the mini fail**: the 5-minute snapshot and the nightly backup cannot read the external drives until Alex grants `/bin/bash` access to removable volumes at the mini's keyboard. A manual `scripts/backup.sh` works. Failed runs leave unverified snapshot files behind.
+- Wide tables are cut off at the right edge of the page column (seen in her cram sheet at about 800 px wide); not yet checked whether they scroll sideways on touch.
+- No way to build a cumulative study guide from several lectures: a block cannot be reused in another document, and nothing assembles one from an exam's coverage.
 - Concepts cannot be filtered by course (the server does not record a concept's course).
 - The "to review" count in the navigation covers unverified concepts only, not unverified blocks in documents (the server has no listing for those).
 - **Dragging a card into a frame fails in the browser test at tablet and computer sizes** (it passes at phone size). Not yet investigated: it may be the gesture or the test.
