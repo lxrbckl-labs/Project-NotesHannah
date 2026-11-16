@@ -13,6 +13,8 @@ services:
       PORT: "3000"
       DATA_DIR: /data
       DB_PATH: /db/notes.db
+      APP_ORIGIN: "${APP_ORIGIN:?set APP_ORIGIN, e.g. https://notes.hannahporras.app}"
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
     volumes:
       # Live database on a named volume (SQLite on bind mounts is risky).
       - notes-db:/db
