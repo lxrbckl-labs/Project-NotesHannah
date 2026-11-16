@@ -72,9 +72,10 @@ export function libraryRoutes(db: Db): Hono<AppEnv> {
   });
 
   app.get("/api/nodes/:id", requireAuth, (c) => {
-    const { userId } = getAuth(c);
+    const { userId, via } = getAuth(c);
     const node = library.get(userId, c.req.param("id"));
-    library.markOpened(userId, node.id);
+    // Recents reflect what she opened, not what an agent walked through.
+    if (via === "session") library.markOpened(userId, node.id);
     return c.json({ node });
   });
 
