@@ -82,6 +82,8 @@ export interface DocumentViewProps {
   onAskAboutBlock?: ((target: { blockId: string; kind: RequestKind }) => void) | undefined;
   /** Scroll to this block and flash it once the document has loaded (a search hit, a link). */
   focusBlockId?: string | undefined;
+  /** An empty document gets one empty paragraph with the caret in it, ready to type (once). */
+  startWriting?: boolean;
   className?: string;
 }
 
@@ -122,6 +124,7 @@ function DocumentScreen({
   initialMode,
   focusBlockId,
   onAskAboutBlock,
+  startWriting,
   className,
 }: DocumentViewProps) {
   const controller = useMemo(() => new DocumentController(store, documentId), [store, documentId]);
@@ -387,6 +390,25 @@ function DocumentScreen({
       }),
     [signals],
   );
+
+  // A new, empty document starts ready to type. Once per mount: if she deletes the paragraph
+  // again, the view must not put it back under her.
+  const started = useRef(false);
+  const isEmpty = doc ? doc.blocks.length === 0 : null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the document turns out empty; actions are stable
+  useEffect(() => {
+    if (!startWriting || isEmpty !== true || started.current) return;
+    started.current = true;
+    const clientId = newId("block");
+    setEditing(true);
+    if (
+      controller.perform(
+        insertBlock(documentId, null, newBlockInput("paragraph"), clientId),
+        "Insert block",
+      )
+    )
+      actions.requestFocus(clientId, "start");
+  }, [startWriting, isEmpty]);
 
   const view: DocView = useMemo(
     () => ({ editing, isTouch, layout, refs, status, activeCitation: citation }),

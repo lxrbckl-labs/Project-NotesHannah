@@ -23,6 +23,7 @@ import {
   turnInto,
 } from "../model/gestures";
 import { richTextSize } from "../model/richtext";
+import { applyShortcut, dividerAfter, isDividerText, shortcutFor } from "../model/shortcuts";
 import { PlainInput, useBlockEdit } from "./common";
 
 /** Move the caret to the neighbouring editable block. */
@@ -49,8 +50,29 @@ export function focusNeighbour(
 /** Enter, Backspace, arrows and "/" for a block whose main content is one piece of text. */
 export function useTextKeys(block: Block): EditorKeys {
   const actions = useActions();
+  /** Run a shortcut's calls and put the caret where it belongs. */
+  const run = (result: ReturnType<typeof applyShortcut>, label: string) => {
+    if (!result) return false;
+    const ok = actions.perform(result.calls, label);
+    if (ok) actions.requestFocus(result.focusId, "start");
+    return ok;
+  };
   return {
+    // Only a paragraph converts by typing; a heading, quote or list line leaves its prefix alone.
+    ...(block.type === "paragraph"
+      ? {
+          onShortcut: (trigger: string, rest: RichText) => {
+            const shortcut = shortcutFor(trigger);
+            return shortcut
+              ? run(applyShortcut(actions.documentId, block, shortcut, rest), "Typing shortcut")
+              : false;
+          },
+        }
+      : {}),
     onEnter: (before, after) => {
+      // "---" and Enter: a divider, with an empty paragraph after it.
+      if (block.type === "paragraph" && isDividerText(before) && after.length === 0)
+        return run(dividerAfter(actions.documentId, block, after), "Divider");
       const clientId = newId("block");
       const ok = actions.perform(
         splitTextBlock(actions.documentId, block, before, after, clientId),
@@ -100,6 +122,9 @@ function useTextCommit(block: Block) {
   return (text: RichText) => patch({ text }, "Edit text");
 }
 
+/** Says what the typing shortcuts are for: "/" opens the menu, the rest are in the docs. */
+const PARAGRAPH_HINT = 'Type your notes, or "/" for blocks';
+
 export function ParagraphBlock({ block }: { block: BlockOf<"paragraph"> }) {
   const keys = useTextKeys(block);
   const commit = useTextCommit(block);
@@ -116,7 +141,7 @@ export function ParagraphBlock({ block }: { block: BlockOf<"paragraph"> }) {
         flags={block.flags}
         keys={keys}
         label="Paragraph"
-        placeholder="Type, or press / for blocks"
+        placeholder={PARAGRAPH_HINT}
         className={cn("min-h-[1.7em]", color && "text-tone-text")}
         as="p"
       />
