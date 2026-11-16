@@ -465,7 +465,12 @@ export const saveTranscript = defineTool({
     const progress = progressOf(port.listPages(ctx.auth, page.fileId));
     const left =
       progress.missing.length === 0
-        ? "Every page of this file is transcribed."
+        ? (() => {
+            const file = port.getFile(ctx.auth, page.fileId);
+            return file.nodeId
+              ? "Every page of this file is transcribed."
+              : `Every page of this file is transcribed. Next: file it under its lecture, source_files {"action":"file","fileId":"${file.id}","nodeId":"<lecture id>"}.`;
+          })()
         : `${progress.missing.length} page(s) of this file still need a transcript: ${progress.missing.slice(0, 5).join(", ")}${progress.missing.length > 5 ? ", …" : ""}.`;
     return {
       text: `Saved transcript ${t.id} for page ${t.pageId}: revision ${t.revision}, ${t.text.length} characters, ${t.flags.length} flag(s), ${t.reviewStatus} until she reviews it. ${left}`,

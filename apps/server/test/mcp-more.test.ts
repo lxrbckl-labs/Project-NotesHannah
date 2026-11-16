@@ -136,7 +136,7 @@ describe("requests over MCP", () => {
       operation: "update_block",
       documentId: w.documentId,
       blockId: w.blockId,
-      mode: "patch",
+      // no mode: inferred from "patch"
       patch: {
         content: { text: "Metoprolol 25 mg twice daily." },
         citations: w.cite(0, "Metoprolol 25 mg twice daily."),

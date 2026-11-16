@@ -209,7 +209,7 @@ export const editBlocks = defineTool({
         blocks: "insert_blocks: 1 to 100 blocks; replace_generated: the new blocks, up to 300.",
         position:
           'Where: "start", "end" (default for inserts), {"after":"blk_…"}, {"before":"blk_…"} or {"index":0}.',
-        mode: 'update_block: "replace" (send block) or "patch" (send patch).',
+        mode: 'update_block: "replace" (send block) or "patch" (send patch); inferred from which of the two you send.',
         blockId: `update_block: the block to change, e.g. "${exampleId("block")}".`,
         block:
           'update_block mode replace: the whole new block, shaped like an item of "blocks" ({"type", "content", "citations", ...}).',
@@ -247,6 +247,11 @@ export const editBlocks = defineTool({
       );
     }
     const { operation: _op, ...rest } = body;
+    // update_block: the mode follows from what was sent (block: replace, patch: patch), as the HTTP route does.
+    if (operation === "update_block" && rest.mode === undefined) {
+      if (rest.block !== undefined && rest.patch === undefined) rest.mode = "replace";
+      else if (rest.patch !== undefined && rest.block === undefined) rest.mode = "patch";
+    }
     const result = validateOperation(operation as DocumentEditOperation, rest, {
       writer: "agent",
     });

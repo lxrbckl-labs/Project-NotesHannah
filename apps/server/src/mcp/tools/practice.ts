@@ -202,7 +202,7 @@ export const practiceQuestions = defineTool({
         partial: v.partial,
       });
       const lines = [
-        `Stored ${r.stored} question(s) under ${v.nodeIds.join(", ")}; they stay "unverified" until she reviews them.`,
+        `Stored ${r.stored} question(s) under ${v.nodeIds.join(", ")} (${countByType(r.created)}); they stay "unverified" until she reviews them.`,
         ...r.created.map(questionLine),
         ...(r.problems.length ? ["Refused:", ...problemLines(r.problems)] : []),
       ];
@@ -245,6 +245,12 @@ export const practiceQuestions = defineTool({
     };
   },
 });
+
+function countByType(list: readonly QuestionSummary[]): string {
+  const counts = new Map<string, number>();
+  for (const q of list) counts.set(q.type, (counts.get(q.type) ?? 0) + 1);
+  return [...counts].map(([t, n]) => `${n} ${t}`).join(", ") || "none";
+}
 
 function problemLines(
   problems: ReadonlyArray<{ index: number; problems: practice.Problem[] }>,
