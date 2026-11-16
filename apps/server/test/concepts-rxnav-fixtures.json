@@ -1,0 +1,125 @@
+{
+  "_note": "Responses recorded once from https://rxnav.nlm.nih.gov/REST on 2026-11-15; only drug names were sent. Tests never call the network.",
+  "responses": {
+    "/REST/rxcui.json?name=metoprolol&search=1": {
+      "idGroup": {
+        "rxnormId": ["221124", "6918"]
+      }
+    },
+    "/REST/rxcui.json?name=atenolol&search=1": {
+      "idGroup": {
+        "rxnormId": ["1202"]
+      }
+    },
+    "/REST/rxcui.json?name=lopressor&search=1": {
+      "idGroup": {
+        "rxnormId": ["203344"]
+      }
+    },
+    "/REST/rxcui.json?name=metoprolo&search=1": {
+      "idGroup": {}
+    },
+    "/REST/rxcui.json?name=zzzqqxx&search=1": {
+      "idGroup": {}
+    },
+    "/REST/approximateTerm.json?term=metoprolo&maxEntries=4": {
+      "approximateGroup": {
+        "inputTerm": null,
+        "candidate": [
+          {
+            "rxcui": "6918",
+            "rxaui": "10325216",
+            "score": "7.851587772369385",
+            "rank": "1",
+            "source": "GS"
+          },
+          {
+            "rxcui": "6918",
+            "rxaui": "12253919",
+            "score": "7.851587772369385",
+            "rank": "1",
+            "name": "metoprolol",
+            "source": "RXNORM"
+          },
+          {
+            "rxcui": "6918",
+            "rxaui": "2072351",
+            "score": "7.851587772369385",
+            "rank": "1",
+            "name": "METOPROLOL",
+            "source": "VANDF"
+          },
+          {
+            "rxcui": "6918",
+            "rxaui": "3619840",
+            "score": "7.851587772369385",
+            "rank": "1",
+            "source": "NDDF"
+          },
+          {
+            "rxcui": "6918",
+            "rxaui": "5481187",
+            "score": "7.851587772369385",
+            "rank": "1",
+            "name": "metoprolol",
+            "source": "ATC"
+          },
+          {
+            "rxcui": "6918",
+            "rxaui": "8449842",
+            "score": "7.851587772369385",
+            "rank": "1",
+            "name": "Metoprolol",
+            "source": "DRUGBANK"
+          }
+        ]
+      }
+    },
+    "/REST/approximateTerm.json?term=zzzqqxx&maxEntries=4": {
+      "approximateGroup": {
+        "inputTerm": null
+      }
+    },
+    "/REST/spellingsuggestions.json?name=metoprolo": {
+      "suggestionGroup": {
+        "name": null,
+        "suggestionList": {
+          "suggestion": ["metoprolol"]
+        }
+      }
+    },
+    "/REST/rxcui/6918/properties.json": {
+      "properties": {
+        "rxcui": "6918",
+        "name": "metoprolol",
+        "synonym": "",
+        "tty": "IN",
+        "language": "ENG",
+        "suppress": "N",
+        "umlscui": ""
+      }
+    },
+    "/REST/rxcui/221124/properties.json": {
+      "properties": {
+        "rxcui": "221124",
+        "name": "metoprolol succinate",
+        "synonym": "",
+        "tty": "PIN",
+        "language": "ENG",
+        "suppress": "N",
+        "umlscui": ""
+      }
+    },
+    "/REST/rxcui/1202/properties.json": {
+      "properties": {
+        "rxcui": "1202",
+        "name": "atenolol",
+        "synonym": "",
+        "tty": "IN",
+        "language": "ENG",
+        "suppress": "N",
+        "umlscui": ""
+      }
+    }
+  }
+}
