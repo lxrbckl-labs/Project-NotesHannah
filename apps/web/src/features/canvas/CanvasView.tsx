@@ -25,7 +25,15 @@ import {
   ReactFlowProvider,
   SelectionMode,
 } from "@xyflow/react";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../../components/ui/button";
 import { ConfirmDialog } from "../../components/ui/dialog";
 import { Spinner } from "../../components/ui/states";
@@ -213,8 +221,10 @@ function CanvasInner({
   viewRef.current = viewState;
 
   // Selection lives in the node state, so it is read through refs: depending on it here would loop.
+  // A layout effect, so new positions reach React Flow in the same commit as the layout: a card
+  // that grew and the cards it pushed down are drawn moved together, never one frame apart.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the view fields listed are what rebuilds nodes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!canvas || !layout || dragging.current) return;
     const prev = new Map(nodesRef.current.map((n) => [n.id, n]));
     setNodes(
@@ -431,8 +441,8 @@ function CanvasInner({
   }, [fitAll, phone]);
 
   // ---- Actions for nodes and edges (stable) ------------------------------
-  const live = useRef({ canvas, commit, renderBlock, coarse });
-  live.current = { canvas, commit, renderBlock, coarse };
+  const live = useRef({ canvas, commit, renderBlock, coarse, measured: model.measured });
+  live.current = { canvas, commit, renderBlock, coarse, measured: model.measured };
   const actions = useMemo<CanvasActions>(
     () => ({
       renderBlock: (block) =>
@@ -460,28 +470,22 @@ function CanvasInner({
         void live.current.commit([{ op: "update_frame", id: frameId, patch: { title } }]);
       },
       isCoarse: () => live.current.coarse,
+      measureCard: (cardId, size) => live.current.measured(new Map([[cardId, size]])),
     }),
     [],
   );
 
   // ---- React Flow handlers ----------------------------------------------
-  const onNodesChange = useCallback(
-    (changes: NodeChange<CanvasNode>[]) => {
-      const sizes = new Map<string, { width: number; height: number }>();
-      const kept: NodeChange<CanvasNode>[] = [];
-      for (const ch of changes) {
-        if (ch.type === "remove") continue; // deletes go through the model (with undo)
-        if (ch.type === "dimensions" && ch.dimensions) {
-          const node = nodesRef.current.find((n) => n.id === ch.id);
-          if (node?.type === "card") sizes.set(ch.id, ch.dimensions);
-        }
-        kept.push(ch);
-      }
-      if (kept.length) setNodes((ns) => applyNodeChanges(kept, ns));
-      if (sizes.size) model.measured(sizes);
-    },
-    [model],
-  );
+  // Card sizes do not come from React Flow's measuring: a card is drawn in the box the layout gave
+  // it (see CardNode), so React Flow measures the box. The card reports what its content needs.
+  const onNodesChange = useCallback((changes: NodeChange<CanvasNode>[]) => {
+    const kept = changes.filter((ch) => ch.type !== "remove"); // deletes go through the model (with undo)
+    if (kept.length === 0) return;
+    // Kept current at once: a layout that lands before React renders this change builds its nodes
+    // from the ref and must not drop React Flow's measurements (a node without them is hidden).
+    nodesRef.current = applyNodeChanges(kept, nodesRef.current);
+    setNodes((ns) => applyNodeChanges(kept, ns));
+  }, []);
 
   const onEdgesChange = useCallback((changes: EdgeChange<ConnectorEdgeType>[]) => {
     setSelectedEdges((prev) => {
@@ -709,24 +713,42 @@ function CanvasInner({
     zoomToSelection,
   ]);
 
-  // Fit once the first layout lands (unless a frame is focused).
+  // Fit once the first measured layout lands (unless a frame is focused): fitting the estimated one
+  // would frame a map that is about to change shape.
   const fitted = useRef(false);
+  // The map is shown once it is laid out with measured sizes and framed.
+  const [framed, setFramed] = useState(false);
   useEffect(() => {
-    if (fitted.current || !layout || nodes.length === 0 || activeFrame) return;
+    if (fitted.current || !layout || !model.settled || nodes.length === 0) return;
+    if (activeFrame) {
+      // A focused frame (phone, step-through) frames itself; the whole map is fitted when she
+      // first leaves it, as before.
+      setFramed(true);
+      return;
+    }
     fitted.current = true;
+    // Framing never keeps the map hidden for long, even if a fit never reports back.
+    setTimeout(() => setFramed(true), 500);
     requestAnimationFrame(() => {
       const flow = flowRef.current;
-      if (!flow) return;
+      if (!flow) {
+        setFramed(true);
+        return;
+      }
       // A whole map that would be drawn too small to read (a portrait tablet) opens on its first
       // frame instead, or as large as is readable; "Whole map" shows all of it.
-      void flow.fitView({ padding }).then(() => {
-        if (phone || flow.getZoom() >= READABLE_ZOOM) return;
-        const first = frames[0];
-        if (first) void flow.fitView({ nodes: [{ id: first.id }], padding, maxZoom: 1.2 });
-        else void flow.fitView({ padding, minZoom: READABLE_ZOOM });
-      });
+      void flow
+        .fitView({ padding })
+        .then(async () => {
+          if (phone || flow.getZoom() >= READABLE_ZOOM) return;
+          const first = frames[0];
+          if (first) await flow.fitView({ nodes: [{ id: first.id }], padding, maxZoom: 1.2 });
+          else await flow.fitView({ padding, minZoom: READABLE_ZOOM });
+        })
+        .finally(() => setFramed(true));
     });
-  }, [activeFrame, frames, layout, nodes.length, padding, phone]);
+  }, [activeFrame, frames, layout, model.settled, nodes.length, padding, phone]);
+  const shown = model.settled && framed;
 
   // ---- Render ------------------------------------------------------------------
   if (model.status === "error")
@@ -747,6 +769,7 @@ function CanvasInner({
     "nc-canvas",
     coarse ? "nc-coarse" : "nc-fine",
     connectMode ? "nc-connecting" : "",
+    shown ? "" : "nc-unsettled",
   ].join(" ");
 
   const stepBar = activeFrame ? (
@@ -780,14 +803,12 @@ function CanvasInner({
       className={rootClass}
       data-testid="canvas-view"
       data-device={device.device}
-      data-ready={model.status === "ready" && layout ? "true" : "false"}
+      data-ready={model.status === "ready" && layout && shown ? "true" : "false"}
       data-layout-ms={model.layoutMs !== null ? Math.round(model.layoutMs) : undefined}
     >
       <PortalContext.Provider value={portal}>
         <CanvasActionsContext.Provider value={actions}>
-          {model.status === "loading" && !layout && (
-            <div className="nc-loading">Opening the canvas…</div>
-          )}
+          {!shown && <div className="nc-loading">Opening the canvas…</div>}
           <ReactFlow<CanvasNode, ConnectorEdgeType>
             nodes={nodes}
             edges={edges}

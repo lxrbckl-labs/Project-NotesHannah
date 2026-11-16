@@ -48,7 +48,9 @@ export const CARD_MAX_HEIGHT: Record<Exclude<CardSize, "auto">, number> = {
 };
 
 export const STICKER_SIZE: Size = { width: 88, height: 88 };
-export const CONCEPT_CARD_HEIGHT = 64;
+/** A concept card with a one-line label; each further line of the label adds `CONCEPT_LINE`. */
+export const CONCEPT_CARD_HEIGHT = 54;
+const CONCEPT_LINE = 14;
 export const CARD_MIN_HEIGHT = 56;
 
 /** Space around and between things, in canvas units. */
@@ -65,24 +67,47 @@ export const LAYOUT_SPACING = {
 export const FRAME_PADDING = { top: 56, side: 24, bottom: 24 } as const;
 export const EMPTY_FRAME_SIZE: Size = { width: 260, height: 140 };
 
-/** Typography the card renderer uses, so estimates match what is drawn. */
+/**
+ * Typography of the cards as the app draws them, so estimates match what is drawn. Measured in the
+ * app (Chromium, 1280x800) on the pharmacy demo canvases: cards draw their blocks with the documents'
+ * own renderers, whose study-guide text is 17 px with 1.7 line height (`--text-reading`), and notes
+ * with the 16 px body text. Estimates err on the tall side: a card drawn shorter than its box leaves
+ * a gap, one drawn taller covers its neighbour until the browser has measured it.
+ */
 export const CARD_TEXT = {
+  /** Side padding of the card body, each side. */
   padding: 14,
+  /** The card's border, each side. */
+  border: 1,
+  /** Top plus bottom padding of the card body. */
+  paddingY: 24,
+  /** Interface text (lists, tables, labels): 14 px on 20 px lines. */
   lineHeight: 20,
-  /** Average advance of a 14px UI font character. */
   charWidth: 7.1,
-  titleHeight: 24,
+  /** Study-guide text (paragraphs, quotes, callouts): 17 px on 29 px lines. */
+  readingLineHeight: 29,
+  readingCharWidth: 9,
+  /** Note text: 16 px on 24 px lines. */
+  noteLineHeight: 24,
+  noteCharWidth: 8.6,
+  /** The title band above the body of a card with a title. */
+  titleHeight: 30,
   blockGap: 10,
 } as const;
 
 type AnyBlock = { type: string; content?: unknown };
 
-function linesFor(text: string, width: number): number {
+function linesFor(text: string, width: number, charWidth: number = CARD_TEXT.charWidth): number {
   if (!text) return 0;
-  const perLine = Math.max(8, Math.floor(width / CARD_TEXT.charWidth));
+  const perLine = Math.max(8, Math.floor(width / charWidth));
   return text
     .split("\n")
     .reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / perLine)), 0);
+}
+
+/** Lines of study-guide text at `width`. */
+function readingLines(text: string, width: number): number {
+  return linesFor(text, width, CARD_TEXT.readingCharWidth);
 }
 
 function plain(value: unknown): string {
@@ -96,12 +121,13 @@ function plain(value: unknown): string {
 /** Estimated height of one block rendered at `width` (content box, no card padding). */
 export function estimateBlockHeight(block: AnyBlock, width: number): number {
   const L = CARD_TEXT.lineHeight;
+  const R = CARD_TEXT.readingLineHeight;
   const c = (block.content ?? {}) as Record<string, unknown>;
   switch (block.type) {
     case "heading":
-      return Math.max(1, linesFor(plain(c.text), width * 0.8)) * 26;
+      return Math.max(1, readingLines(plain(c.text), width * 0.8)) * 32;
     case "paragraph":
-      return linesFor(plain(c.text), width) * L;
+      return readingLines(plain(c.text), width) * R;
     case "bulleted_list":
     case "numbered_list":
     case "checklist": {
@@ -112,34 +138,52 @@ export function estimateBlockHeight(block: AnyBlock, width: number): number {
       );
     }
     case "quote":
-      return linesFor(plain(c.text), width - 16) * L + (c.attribution ? 18 : 0);
+      return readingLines(plain(c.text), width - 16) * R + (c.attribution ? 22 : 0);
     case "callout":
-      return (c.title ? 22 : 0) + linesFor(plain(c.text), width - 34) * L + 20;
+      // A tinted panel: border and padding around an icon column and the text.
+      return (c.title ? 28 : 0) + readingLines(plain(c.text), width - 70) * R + 28;
     case "table": {
       const rows = (c.rows as unknown[][] | undefined) ?? [];
       const cols = Math.max(1, rows[0]?.length ?? 1);
       return rows.reduce<number>((sum, row) => {
         const tallest = Math.max(1, ...row.map((cell) => linesFor(plain(cell), width / cols - 12)));
-        return sum + tallest * 18 + 10;
+        return sum + tallest * L + 16;
       }, 0);
     }
     case "comparison_table": {
       const rows = (c.rows as unknown[] | undefined) ?? [];
-      return (c.title ? 24 : 0) + (rows.length + 1) * 30;
+      return (c.title ? 28 : 0) + (rows.length + 1) * 36;
     }
     case "drug_card": {
+      // Every section the renderer shows: a labelled heading, then one line per item. Drawn, the
+      // demo's carvedilol card is 913 px tall and metoprolol's 1065 (both clip at the maximum).
       const list = (key: string) => ((c[key] as unknown[] | undefined) ?? []).length;
-      let h = 28; // name
-      if (c.drugClass) h += 20;
-      if (c.mechanism) h += Math.min(3, linesFor(plain(c.mechanism), width)) * 18 + 6;
-      for (const key of ["indications", "adverseEffects", "counselling"]) {
-        if (list(key) > 0) h += 18 + Math.ceil(Math.min(list(key), 6) / 2) * 26;
+      let h = 48; // name and brand names
+      if (c.drugClass) h += 24 + linesFor(plain(c.drugClass), width) * L;
+      if (c.mechanism) h += 24 + linesFor(plain(c.mechanism), width) * L;
+      for (const key of [
+        "indications",
+        "adverseEffects",
+        "contraindications",
+        "interactions",
+        "monitoring",
+        "counselling",
+        "dosingNotes",
+      ]) {
+        if (list(key) > 0) h += 40 + list(key) * 48;
       }
       return h;
     }
     case "mnemonic": {
-      const parts = (c.parts as unknown[] | undefined) ?? [];
-      return 34 + parts.length * 22 + (c.note ? 20 : 0);
+      // A raised panel: the device and topic, then each part's key over its meaning.
+      const parts = (c.parts as Array<{ meaning?: unknown }> | undefined) ?? [];
+      const W = CARD_TEXT.noteLineHeight;
+      const at = (text: unknown) => linesFor(plain(text), width - 32, CARD_TEXT.noteCharWidth) * W;
+      return (
+        64 +
+        parts.reduce<number>((sum, part) => sum + 26 + at(part.meaning), 0) +
+        (c.note ? 12 + at(c.note) : 0)
+      );
     }
     case "image":
     case "labelled_image":
@@ -219,12 +263,20 @@ export function estimateCardSize(card: Card, blocks: ReadonlyMap<string, AnyBloc
   if (content.kind === "sticker") return { ...STICKER_SIZE };
   const cls = cardSizeClass(card, blocks);
   const width = CARD_WIDTHS[cls];
-  const inner = width - 2 * CARD_TEXT.padding;
-  let height = 2 * CARD_TEXT.padding + (card.title ? CARD_TEXT.titleHeight : 0);
-  if (content.kind === "concept")
-    return { width, height: CONCEPT_CARD_HEIGHT + (card.title ? CARD_TEXT.titleHeight : 0) };
+  const border = 2 * CARD_TEXT.border;
+  const inner = width - 2 * CARD_TEXT.padding - border;
+  const title = card.title ? CARD_TEXT.titleHeight : 0;
+  if (content.kind === "concept") {
+    const label = content.label ?? "Concept";
+    // The label sits beside a 30 px icon column.
+    const lines = Math.max(1, linesFor(label, inner - 30, CARD_TEXT.readingCharWidth));
+    return { width, height: CONCEPT_CARD_HEIGHT + (lines - 1) * CONCEPT_LINE + title };
+  }
+  let height = border + CARD_TEXT.paddingY + title;
   if (content.kind === "note") {
-    height += Math.max(1, linesFor(richTextToPlain(content.text), inner)) * CARD_TEXT.lineHeight;
+    height +=
+      Math.max(1, linesFor(richTextToPlain(content.text), inner, CARD_TEXT.noteCharWidth)) *
+      CARD_TEXT.noteLineHeight;
   } else {
     content.blockIds.forEach((id, i) => {
       const block = blocks.get(id);
@@ -233,8 +285,16 @@ export function estimateCardSize(card: Card, blocks: ReadonlyMap<string, AnyBloc
   }
   return {
     width,
-    height: Math.round(Math.min(CARD_MAX_HEIGHT[cls], Math.max(CARD_MIN_HEIGHT, height))),
+    height: Math.round(Math.min(cardMaxHeight(cls), Math.max(CARD_MIN_HEIGHT, height))),
   };
+}
+
+/**
+ * The tallest a card of this class is drawn: its clipped body plus the border. A title takes its
+ * band from the body, so a card with a title is no taller (the view subtracts `titleHeight`).
+ */
+export function cardMaxHeight(cls: Exclude<CardSize, "auto">): number {
+  return CARD_MAX_HEIGHT[cls] + 2 * CARD_TEXT.border;
 }
 
 // ---------------------------------------------------------------------------

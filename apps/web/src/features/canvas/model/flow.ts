@@ -205,8 +205,14 @@ export function buildNodes(
     const sizeClass = cardSizeClass(card, blocks);
     const width = cardWidth(card, blocks);
     const style: Record<string, number> = { width };
+    const open = view.readingId === card.id || view.editingId === card.id;
     if (card.dimensions) style.height = card.dimensions.height;
     else if (card.content.kind === "sticker") style.height = STICKER_SIZE.height;
+    // Every other card is drawn in the box the layout made for it, however tall its content
+    // turns out to be: the layout keeps boxes apart, so a card drawn in its box can never cover
+    // another. Content that needs more room is clipped until the card reports it and the layout
+    // makes the room. A card open to read or edit grows over its neighbours instead, on top.
+    else if (r && !open) style.height = r.height;
     const shown =
       card.content.kind === "block"
         ? card.content.blockIds.map((id) => blocks.get(id)).filter((b): b is Block => !!b)
@@ -218,7 +224,7 @@ export function buildNodes(
         type: "card",
         position: { x: at.x, y: at.y },
         style,
-        zIndex: 0,
+        zIndex: open ? 10 : 0,
         selected: view.selected.has(card.id),
         dragHandle:
           view.readingId === card.id || view.editingId === card.id ? ".nc-card-grip" : undefined,

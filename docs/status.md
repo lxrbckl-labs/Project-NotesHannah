@@ -54,8 +54,6 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 - No way to build a cumulative study guide from several lectures: a block cannot be reused in another document, and nothing assembles one from an exam's coverage.
 - Concepts cannot be filtered by course (the server does not record a concept's course).
 - The "to review" count in the navigation covers unverified concepts only, not unverified blocks in documents (the server has no listing for those).
-- **Dragging a card into a frame fails in the browser test at tablet and computer sizes** (it passes at phone size). Not yet investigated: it may be the gesture or the test.
-- On the canvas, a block added to a document with pinned cards can land on top of another card (seen on the Beta blockers canvas after her inserted paragraph). Not investigated.
 - Dragging a card out of a frame pins it outside the frame.
 - The local copy's sample canvas frames have no colour until it is reseeded (`pnpm local:reset`, then `pnpm local:seed`).
 - Skipped practice questions, missed-question reasons and reply links were added late and have less test depth than the rest.
