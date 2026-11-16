@@ -140,7 +140,7 @@ function inboxWorkflow(f: Facts): string {
   const steps = [
     "From files to cited study material, end to end:",
     has(f, "request_upload_links")
-      ? '1. Get the files in. Files on your machine: request_upload_links {"files":[{"name","bytes"}]} (bytes from `wc -c < file`), then curl -sS -X PUT --data-binary @<path> "<url>" for each; each PUT answers with the new file\'s JSON (its "id" is the fil_ ID). Files she uploaded are already in the inbox: source_files {"action":"list"}.'
+      ? '1. Get the files in. Files on your machine: request_upload_links {"files":[{"name":"lecture-07.pdf"}]} (add "bytes" if you can measure the file), then one bare curl per file with its absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture-07.pdf" "<url>" (no cd or &&); each PUT answers with the new file\'s JSON (its "id" is the fil_ ID). Files she uploaded are already in the inbox: source_files {"action":"list"}.'
       : '1. Files she uploaded wait in the inbox: source_files {"action":"list"}.',
     '2. Wait for conversion: source_files {"action":"wait","fileIds":["fil_…"]} waits up to 25 s and reports each file\'s status; call it again while any is still converting (a deck takes from seconds to a couple of minutes). Do not loop on list. "failed" shows the reason: retry once with source_files {"action":"retry"}, otherwise tell her (an encrypted or damaged file needs her). If the converter is not "online", nothing converts: tell her.',
     '3. Claim each converted file: source_files {"action":"claim","fileId":"fil_…"} so no other agent works on it.',

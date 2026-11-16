@@ -25,8 +25,9 @@ Getting a key
 The person who owns the notes creates one in the web app: Settings, API keys,
 New key. Choose "read-write" to let the agent work (or "read-only" to only
 look). The key is shown once; it starts with nh_write_ or nh_read_. It can be
-revoked at any time on the same page. Keep it in an environment variable, never
-in a file you commit:
+revoked at any time on the same page. (The operator can also make one on the
+server: admin create-key <username> --name "Claude Code" --scope write.)
+Keep it in an environment variable, never in a file you commit:
 
   export NOTES_MCP_KEY='nh_write_...'
 
@@ -71,15 +72,26 @@ Codex does not show the server's instructions to the model, so tell it to call
 start_here first if it does not.
 
 Uploading files and downloading page images use curl. Codex's default sandbox
-blocks network access; allow it for those runs:
+blocks network access; allow it for those runs, and give it read access to the
+folder with the files:
 
-  -s workspace-write -c 'sandbox_workspace_write.network_access=true'
+  -s workspace-write -c 'sandbox_workspace_write.network_access=true' --add-dir <folder>
+
+The activity log in the app names each agent: Claude Code and Codex are
+recognised by their User-Agent; any other client can send an X-Agent-Label
+header (for example "X-Agent-Label: My script").
 
 First call
 ----------
-Call the tool start_here. It explains the library, the inbox workflow, the
+Call the tool start_here. It explains the library, the whole workflow, the
 transcription and citation rules, the block types and what your key may do, and
 reports live facts such as how many files are waiting in the inbox.
+
+The workflow in short: request_upload_links and curl -X PUT each local file (or
+take what is already in the inbox), source_files wait until converted, claim,
+read every page (get_page), save_transcript for each, create the term, course and
+lecture (edit_library), source_files file, collect quotes (get_item on the file
+with "text": true), write_document with every block citing its page, release.
 
 Rules in one breath
 -------------------

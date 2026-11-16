@@ -447,13 +447,25 @@ export const saveTranscript = defineTool({
 // request_upload_links
 // ---------------------------------------------------------------------------
 
-const UploadInput = z.strictObject(RequestUploadsInput.shape);
+/**
+ * The shared input, with each file's size optional: an agent that cannot
+ * measure a file (no shell) may leave it out and gets the largest size
+ * allowed, which is what the link then accepts.
+ */
+const UploadFile = RequestUploadsInput.shape.files.element;
+const UploadInput = z.strictObject({
+  ...RequestUploadsInput.shape,
+  files: z
+    .array(z.strictObject({ ...UploadFile.shape, bytes: UploadFile.shape.bytes.optional() }))
+    .min(1)
+    .max(UPLOAD_LIMITS.maxBatch),
+});
 const UPLOAD_EXAMPLE = { files: [{ name: "lecture-07.pdf", bytes: 2400000 }], nodeId: NODE };
 
 export const requestUploadLinks = defineTool({
   name: "request_upload_links",
   title: "Get upload links for local files",
-  description: `Upload files from your machine into her inbox: ask for one link per file (name and exact size in bytes), then send each file with an HTTP PUT of the raw bytes: curl -sS -X PUT --data-binary @"/path/lecture-07.pdf" "<url>". Links are single use, expire after ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key. Accepted: PDF, PPTX, JPEG, PNG, HEIC, up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB and ${UPLOAD_LIMITS.maxPages} pages each, ${UPLOAD_LIMITS.maxBatch} files per call. Each upload is then converted to page images; wait for that with source_files {"action":"wait"}.`,
+  description: `Upload files from your machine into her inbox: ask for one link per file (its name; its size in bytes if you know it), then send each file with an HTTP PUT of the raw bytes, one bare curl per file with the absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture-07.pdf" "<url>". Links are single use, expire after ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key. Accepted: PDF, PPTX, JPEG, PNG, HEIC, up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB and ${UPLOAD_LIMITS.maxPages} pages each, ${UPLOAD_LIMITS.maxBatch} files per call. Each upload is then converted to page images; wait for that with source_files {"action":"wait"}.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -474,12 +486,15 @@ export const requestUploadLinks = defineTool({
   writes: () => true,
   action: () => null,
   run(ctx, input) {
-    const tickets = files(ctx).requestUploads(ctx.auth, input);
+    const tickets = files(ctx).requestUploads(ctx.auth, {
+      ...input,
+      files: input.files.map((f) => ({ name: f.name, bytes: f.bytes ?? UPLOAD_LIMITS.maxBytes })),
+    });
     const lines = [
-      `${tickets.length} upload link(s). Send each file with curl; no key is needed. The response of each PUT is JSON with the new file's id.`,
+      `${tickets.length} upload link(s). Send each file with one plain curl command per file, giving the file's absolute path after the @ (no cd, no &&: agent permission rules often allow only a bare curl). No key is needed. Each PUT answers with JSON whose file.id is the new file's ID.`,
       ...tickets.map(
         (t) =>
-          `- ${t.name} (expires ${t.expiresAt}): curl -sS -X PUT --data-binary @${json(t.name)} "${t.url}"`,
+          `- ${t.name} (expires ${t.expiresAt}): curl -sS -X PUT --data-binary @${json(`/absolute/path/to/${t.name}`)} "${t.url}"`,
       ),
       'Then wait for conversion: source_files {"action":"wait","fileIds":[<the ids from the PUT responses>]}, or source_files {"action":"list"}.',
     ];

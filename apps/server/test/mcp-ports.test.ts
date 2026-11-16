@@ -248,8 +248,12 @@ describe("source files, pages and transcripts (fakes)", () => {
     const r = await a.ok("request_upload_links", {
       files: [{ name: "lecture 07.pdf", bytes: 2_400_000 }],
     });
-    expect(r.text).toContain('curl -sS -X PUT --data-binary @"lecture 07.pdf"');
+    expect(r.text).toContain('curl -sS -X PUT --data-binary @"/absolute/path/to/lecture 07.pdf"');
     expect(r.text).toContain('source_files {"action":"wait"');
+    const unmeasured = await a.ok("request_upload_links", { files: [{ name: "notes.pdf" }] });
+    expect((unmeasured.structured.tickets as Array<{ maxBytes: number }>)[0]?.maxBytes).toBe(
+      200 * 1024 * 1024,
+    );
     const tooBig = await a.fail("request_upload_links", {
       files: [{ name: "x.pdf", bytes: 10 ** 10 }],
     });
