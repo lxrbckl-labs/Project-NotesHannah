@@ -53,6 +53,10 @@ services:
       dockerfile: deploy/Dockerfile
     image: "${APP_IMAGE:-notes-app}"
     pull_policy: never
+    # Lets Watchtower replace this container when a newer image is published (docs/deploy.md, "Rolling out").
+    # It only has an effect when the image name points at a registry; a locally built image is never replaced.
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -106,6 +110,10 @@ services:
       dockerfile: deploy/converter.Dockerfile
     image: "${CONVERTER_IMAGE:-notes-converter}"
     pull_policy: never
+    # Lets Watchtower replace this container when a newer image is published (docs/deploy.md, "Rolling out").
+    # It only has an effect when the image name points at a registry; a locally built image is never replaced.
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     # Start only after the app is healthy: that proves the drive is mounted and the marker is there.
     depends_on:
       app:

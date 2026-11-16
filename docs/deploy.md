@@ -211,3 +211,25 @@ what they delete. The 5-minute snapshots exist for that day, and so does `restor
 
 `scripts/stack-test.sh` (about 2.5 minutes with warm image caches; the first build is longer) and `scripts/restore-test.sh` (about 2 minutes) use temporary
 paths and private Docker projects (`notes-st`, `notes-rt`) and clean up after themselves. They need Docker, Node and restic.
+
+## Rolling out a change (Watchtower)
+
+The mini runs Watchtower, which replaces a container when its image gets a newer version in the registry. The stack
+uses that instead of rebuilding on the mini.
+
+1. On the MacBook, on a clean `main` that passed `pnpm gate`: `scripts/publish.sh`. It builds both images for arm64 and
+   pushes `ghcr.io/lxrbckl-labs/notes-app` and `ghcr.io/lxrbckl-labs/notes-converter`, tagged `latest` and the commit.
+   The login used by `docker login ghcr.io` must be allowed to write packages.
+2. Watchtower on the mini sees the new `latest` on its next poll and recreates `app` and `converter` with it.
+
+One-time switch on the mini: set `APP_IMAGE=ghcr.io/lxrbckl-labs/notes-app:latest` and
+`CONVERTER_IMAGE=ghcr.io/lxrbckl-labs/notes-converter:latest` in `deploy/.env`, `docker pull` both, then
+`scripts/up.sh`. Compose itself never pulls (`pull_policy: never`); only Watchtower and a manual `docker pull` do.
+
+Notes:
+
+- The images are private. The mini's Docker login must be able to read them.
+- No GitHub pipeline is involved. Publishing is a deliberate act on the MacBook, not a side effect of a push.
+- Watchtower does not take a database snapshot first. Run `scripts/backup.sh` on the mini before publishing a change
+  that alters the database.
+- To go back, publish the earlier commit again, or point the two image names at an earlier `:<commit>` tag.
