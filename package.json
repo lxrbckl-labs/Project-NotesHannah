@@ -16,7 +16,10 @@
     "typecheck": "pnpm build:schema && pnpm -r typecheck",
     "build:schema": "pnpm --filter @notes/schema build",
     "e2e": "pnpm --filter @notes/web e2e",
-    "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "local": "node tools/dev/local.mjs",
+    "local:reset": "node tools/dev/reset.mjs",
+    "local:seed": "node tools/dev/seed.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
