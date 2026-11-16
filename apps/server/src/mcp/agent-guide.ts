@@ -92,18 +92,23 @@ Call the tool start_here. It explains the library, the whole workflow, the
 transcription and citation rules, the block types and what your key may do, and
 reports live facts such as how many files are waiting in the inbox.
 
-The workflow in short: request_upload_links and curl -X PUT each local file (or
-take what is already in the inbox), source_files wait until converted, claim,
-read every page (get_page), save_transcript for each, create the term, course and
-lecture (edit_library), source_files file, collect quotes (get_item on the file
-with "text": true), write_document with every block citing its page, release.
+The workflow in short: first her requests (requests list, claim, do it,
+complete with a reply). Then the inbox: source_files upload_links and one bare
+curl -X PUT per local file (or take what is already there), source_files wait
+until converted, claim, read every page (get_page), save_transcript for each,
+create the term, course and lecture (edit_library), source_files file. Then claim
+the lecture for writing (edit_library claim), collect quotes (get_item on the file
+with "text": true), write the lecture note (write_document), record concepts and
+relations (concepts upsert), author practice questions (practice_questions
+create), and release every claim.
 
 Rules in one breath
 -------------------
 Transcribe verbatim and flag every dose, unit and decimal. Every generated
 block cites a page (with a quote copied exactly from its transcript) or is
 marked general knowledge. Never overwrite what she wrote or reviewed unless she
-asked. Nothing is ever permanently deleted by an agent; trash is restorable.
+asked: her request, claimed by you, is what lifts that protection (pass its
+requestId). Nothing is ever permanently deleted by an agent; trash is restorable.
 Errors explain the rule and include a valid example: read them and retry.
 `;
 

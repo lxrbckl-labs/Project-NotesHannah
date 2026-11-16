@@ -7,6 +7,7 @@ import { AppError } from "../http/errors.js";
 import { invalidInput } from "./errors.js";
 import type { McpBackend } from "./ports.js";
 import type { JsonSchema } from "./schema.js";
+import type { WriteClaims } from "./write-claims.js";
 
 /** Everything a tool handler may use. Built per request from the key. */
 export interface ToolContext {
@@ -19,6 +20,8 @@ export interface ToolContext {
   db: Db;
   library: LibraryService;
   backend: McpBackend;
+  /** Advisory claims on library nodes for writing (see write-claims.ts). */
+  claims: WriteClaims;
   /** Names of the tools registered for this server, so text can point only at real tools. */
   available: ReadonlySet<string>;
   now: () => number;

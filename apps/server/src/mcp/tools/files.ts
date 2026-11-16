@@ -44,7 +44,38 @@ function converterLine(port: FilesPort): string {
 /** Longest single wait, under the 60-second tool timeout some agents use. */
 export const MAX_WAIT_SECONDS = 25;
 
+/**
+ * The shared input, with each file's size optional: an agent that cannot
+ * measure a file (no shell) may leave it out and gets the largest size
+ * allowed, which is what the link then accepts.
+ */
+const UploadFile = RequestUploadsInput.shape.files.element;
+const UploadInput = z.strictObject({
+  ...RequestUploadsInput.shape,
+  files: z
+    .array(z.strictObject({ ...UploadFile.shape, bytes: UploadFile.shape.bytes.optional() }))
+    .min(1)
+    .max(UPLOAD_LIMITS.maxBatch),
+});
+/** Upload links for local files (source_files "upload_links"). */
+function uploadLinks(ctx: ToolContext, input: z.output<typeof UploadInput>) {
+  const tickets = files(ctx).requestUploads(ctx.auth, {
+    ...input,
+    files: input.files.map((f) => ({ name: f.name, bytes: f.bytes ?? UPLOAD_LIMITS.maxBytes })),
+  });
+  const lines = [
+    `${tickets.length} upload link(s). Send each file with one plain curl command per file, giving the file's absolute path after the @ (no cd, no &&: agent permission rules often allow only a bare curl). No key is needed. Each PUT answers with JSON whose file.id is the new file's ID.`,
+    ...tickets.map(
+      (t) =>
+        `- ${t.name} (expires ${t.expiresAt}): curl -sS -X PUT --data-binary @${json(`/absolute/path/to/${t.name}`)} "${t.url}"`,
+    ),
+    'Then wait for conversion: source_files {"action":"wait","fileIds":[<the ids from the PUT responses>]}, or source_files {"action":"list"}.',
+  ];
+  return { text: lines.join("\n"), structured: { tickets } };
+}
+
 const FILE_BRANCHES = {
+  upload_links: UploadInput,
   list: z.strictObject({
     nodeId: NodeId.optional(),
     status: FileStatus.optional(),
@@ -71,6 +102,7 @@ const FILE_EXAMPLES: Record<FileAction, Record<string, unknown>> = {
   file: { action: "file", fileId: FILE, nodeId: NODE },
   move: { action: "move", fileId: FILE, nodeId: NODE },
   retry: { action: "retry", fileId: FILE },
+  upload_links: { action: "upload_links", files: [{ name: "lecture-07.pdf" }] },
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -79,7 +111,7 @@ const pending = (f: SourceFile) => f.status === "converting" || f.status === "up
 export const sourceFiles = defineTool({
   name: "source_files",
   title: "Uploaded files: inbox, conversion, filing and moving",
-  description: `Her uploaded source files (slides, PDFs, photos of handwritten notes). Each upload is converted to page images (status converting, then converted; or failed), then transcribed (transcribed), then filed under a lecture, folder or Sources section (filed). Actions: "list" the inbox with each file's status and how many pages are transcribed (with nodeId: the files filed there); "wait" until files finish converting (waits up to ${MAX_WAIT_SECONDS} s per call, call again if still converting); "claim" a file before transcribing it so no other agent works on it (claims expire after a while; claim again to renew); "release" it when done or if you stop; "file" it under the right lecture (allowed before every page is transcribed, with a warning); "move" a filed file to another place, or back to the inbox with nodeId null; "retry" a failed conversion. Library items (folders, lectures, documents) move with edit_library instead.`,
+  description: `Her uploaded source files (slides, PDFs, photos of handwritten notes). To upload files from your machine: "upload_links" (one per file; size optional), then one bare curl per file with its absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture.pdf" "<url>" (links are single use, last ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key; PDF, PPTX, JPEG, PNG, HEIC up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB). Each upload is converted to page images (status converting, then converted; or failed), then transcribed (transcribed), then filed under a lecture, folder or Sources section (filed). Actions: "list" the inbox with each file's status and how many pages are transcribed (with nodeId: the files filed there); "wait" until files finish converting (waits up to ${MAX_WAIT_SECONDS} s per call, call again if still converting); "claim" a file before transcribing it so no other agent works on it (claims expire after a while; claim again to renew); "release" it when done or if you stop; "file" it under the right lecture (allowed before every page is transcribed, with a warning); "move" a filed file to another place, or back to the inbox with nodeId null; "retry" a failed conversion. Library items (folders, lectures, documents) move with edit_library instead.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -90,7 +122,7 @@ export const sourceFiles = defineTool({
     flattenActions(
       "action",
       Object.fromEntries(Object.entries(FILE_BRANCHES).map(([k, v]) => [k, jsonOf(v)])),
-      '"list" the inbox (or the files under a node); "wait" for conversion; "claim" a file to work on; "release" a claim; "file" a file under a lecture, folder or Sources section; "move" it elsewhere or back to the inbox (nodeId null); "retry" a failed conversion.',
+      '"upload_links" for local files; "list" the inbox (or the files under a node); "wait" for conversion; "claim" a file to work on; "release" a claim; "file" a file under a lecture, folder or Sources section; "move" it elsewhere or back to the inbox (nodeId null); "retry" a failed conversion.',
     ),
     {
       status: 'list: only files with this status, e.g. "converted" for files ready to transcribe.',
@@ -99,7 +131,11 @@ export const sourceFiles = defineTool({
       fileIds: `wait: the files to wait for, e.g. ["${FILE}"].`,
       timeoutSeconds: `wait: how long to wait at most, 1 to ${MAX_WAIT_SECONDS} seconds (default 20).`,
       fileId: `The file, e.g. "${FILE}".`,
-      nodeId: `file and move: the lecture, folder or Sources section to put it under, e.g. "${NODE}"; for move, null returns it to the inbox. list: show the files filed under this node instead of the inbox.`,
+      files: `upload_links: one entry per file, 1 to ${UPLOAD_LIMITS.maxBatch}.`,
+      "files[].name": 'upload_links: the file name, e.g. "lecture-07.pdf".',
+      "files[].bytes":
+        "upload_links, optional: the size in bytes or an upper bound (the link accepts up to this many); leave it out if you cannot measure the file.",
+      nodeId: `upload_links: optionally file the uploads here once converted. file and move: the lecture, folder or Sources section to put it under, e.g. "${NODE}"; for move, null returns it to the inbox. list: show the files filed under this node instead of the inbox.`,
     },
   ),
   parse: (raw) => parseAction("source_files", "action", FILE_BRANCHES, FILE_EXAMPLES, raw),
@@ -141,6 +177,9 @@ export const sourceFiles = defineTool({
         },
       };
     }
+    if (action === "upload_links") {
+      return uploadLinks(ctx, value as unknown as z.output<typeof UploadInput>);
+    }
     if (action === "wait") {
       const v = value as unknown as z.output<typeof FILE_BRANCHES.wait>;
       // Real time, not the injected clock: this waits for the converter.
@@ -181,7 +220,7 @@ export const sourceFiles = defineTool({
             : port.fileUnder(ctx.auth, v.fileId, v.nodeId ?? null);
     const progress = progressOf(pagesIfAny(port, ctx.auth, file));
     const warning = untranscribedWarning(progress);
-    const said: Record<Exclude<FileAction, "list" | "wait">, string> = {
+    const said: Record<Exclude<FileAction, "list" | "wait" | "upload_links">, string> = {
       claim: `Claimed (a claim expires after a while; claim again to renew it on long work):\n${fileLine(file, progress)}\nNext: get_item {"id":"${file.id}"} lists its pages; get_page shows each one.`,
       release: `Released:\n${fileLine(file, progress)}`,
       retry: `Queued for conversion again:\n${fileLine(file, progress)}\nWait with source_files {"action":"wait","fileIds":["${file.id}"]}.`,
@@ -440,64 +479,5 @@ export const saveTranscript = defineTool({
         },
       },
     };
-  },
-});
-
-// ---------------------------------------------------------------------------
-// request_upload_links
-// ---------------------------------------------------------------------------
-
-/**
- * The shared input, with each file's size optional: an agent that cannot
- * measure a file (no shell) may leave it out and gets the largest size
- * allowed, which is what the link then accepts.
- */
-const UploadFile = RequestUploadsInput.shape.files.element;
-const UploadInput = z.strictObject({
-  ...RequestUploadsInput.shape,
-  files: z
-    .array(z.strictObject({ ...UploadFile.shape, bytes: UploadFile.shape.bytes.optional() }))
-    .min(1)
-    .max(UPLOAD_LIMITS.maxBatch),
-});
-const UPLOAD_EXAMPLE = { files: [{ name: "lecture-07.pdf", bytes: 2400000 }], nodeId: NODE };
-
-export const requestUploadLinks = defineTool({
-  name: "request_upload_links",
-  title: "Get upload links for local files",
-  description: `Upload files from your machine into her inbox: ask for one link per file (its name; its size in bytes if you know it), then send each file with an HTTP PUT of the raw bytes, one bare curl per file with the absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture-07.pdf" "<url>". Links are single use, expire after ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key. Accepted: PDF, PPTX, JPEG, PNG, HEIC, up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB and ${UPLOAD_LIMITS.maxPages} pages each, ${UPLOAD_LIMITS.maxBatch} files per call. Each upload is then converted to page images; wait for that with source_files {"action":"wait"}.`,
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: false,
-    idempotentHint: false,
-    openWorldHint: false,
-  },
-  inputSchema: describe(jsonOf(UploadInput), {
-    files: `One entry per file, 1 to ${UPLOAD_LIMITS.maxBatch}.`,
-    "files[].name": 'The file name, e.g. "lecture-07.pdf".',
-    "files[].bytes":
-      "The exact file size in bytes (e.g. from `wc -c < file`); the upload may not exceed it.",
-    nodeId: `Optional: file the uploads under this lecture, folder or Sources section once converted, e.g. "${NODE}". Omit to leave them in the inbox.`,
-  }),
-  parse: (raw) =>
-    parseWith("request_upload_links", UploadInput, raw, UPLOAD_EXAMPLE) as z.output<
-      typeof UploadInput
-    >,
-  writes: () => true,
-  action: () => null,
-  run(ctx, input) {
-    const tickets = files(ctx).requestUploads(ctx.auth, {
-      ...input,
-      files: input.files.map((f) => ({ name: f.name, bytes: f.bytes ?? UPLOAD_LIMITS.maxBytes })),
-    });
-    const lines = [
-      `${tickets.length} upload link(s). Send each file with one plain curl command per file, giving the file's absolute path after the @ (no cd, no &&: agent permission rules often allow only a bare curl). No key is needed. Each PUT answers with JSON whose file.id is the new file's ID.`,
-      ...tickets.map(
-        (t) =>
-          `- ${t.name} (expires ${t.expiresAt}): curl -sS -X PUT --data-binary @${json(`/absolute/path/to/${t.name}`)} "${t.url}"`,
-      ),
-      'Then wait for conversion: source_files {"action":"wait","fileIds":[<the ids from the PUT responses>]}, or source_files {"action":"list"}.',
-    ];
-    return { text: lines.join("\n"), structured: { tickets } };
   },
 });

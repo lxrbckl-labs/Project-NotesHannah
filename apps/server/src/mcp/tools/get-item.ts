@@ -20,6 +20,11 @@ import { childKindsOf, clip, nodeItem, nodeLine, placementRule } from "../format
 import { describe, jsonOf } from "../schema.js";
 import { fileItem, fileLine, pagesIfAny, progressOf } from "../sources.js";
 import { defineTool, parseWith, type ToolContext, type ToolOutput } from "../tool.js";
+import { holderName } from "../write-claims.js";
+import { conceptPage } from "./concepts.js";
+import { getExam } from "./exams.js";
+import { getQuestion } from "./practice.js";
+import { getRequest } from "./requests.js";
 
 /** Most characters of page text returned by one call (all pages together). */
 export const TEXT_WINDOW = 40_000;
@@ -41,6 +46,10 @@ function readableKinds(ctx: ToolContext): IdKind[] {
     "node",
     ...(ctx.backend.files ? (["file", "page"] as const) : []),
     ...(ctx.backend.documents ? (["document", "block"] as const) : []),
+    ...(ctx.backend.requests ? (["request"] as const) : []),
+    ...(ctx.backend.practice ? (["question"] as const) : []),
+    ...(ctx.backend.concepts ? (["concept"] as const) : []),
+    ...(ctx.backend.exams ? (["exam"] as const) : []),
   ];
 }
 
@@ -90,12 +99,21 @@ function getNode(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
     lines.push(`More children: get_item with cursor "${children.nextCursor}", or browse_library.`);
   }
   lines.push(placementRule(node.kind));
+  const writing = ctx.claims.covering(ctx.userId, id);
+  if (writing) {
+    lines.push(
+      writing.keyId === ctx.keyId
+        ? `You hold the writing claim on ${writing.nodeId} until ${writing.expiresAt}.`
+        : `Being written for by ${holderName(writing)} until ${writing.expiresAt}${writing.note ? ` ("${writing.note}")` : ""}: pick other work; writes here by you are refused until then.`,
+    );
+  }
   const links: Record<string, unknown> = {
     parent: node.parentId,
     ancestors,
     children: childItems,
     childrenNextCursor: children.nextCursor,
     canCreateHere: childKindsOf(node.kind),
+    writingClaim: writing,
   };
   if (ctx.backend.documents && (node.kind === "lecture" || node.kind === "document")) {
     const doc = ctx.backend.documents.documentForNode(ctx.auth, id);
@@ -305,7 +323,7 @@ function getBlock(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
 export const getItem = defineTool({
   name: "get_item",
   title: "Open any item by ID",
-  description: `Open one item by its ID with links to its neighbours. The prefix says the kind: nod_ library node (children, its document, the source files filed there with transcription progress), fil_ uploaded file (status and pages; with "text": true every page's transcript or native text in one call, which is how to collect exact quotes for citations), pag_ page (its transcript; use get_page for the image), doc_ document (blocks with full JSON, and its references list), blk_ block (also give documentId). Long content comes in windows: offset and limit for a file's pages or a document's blocks, cursor for a node's children.`,
+  description: `Open one item by its ID with links to its neighbours. The prefix says the kind: nod_ library node (children, its document, the source files filed there with transcription progress), fil_ uploaded file (status and pages; with "text": true every page's transcript or native text in one call, which is how to collect exact quotes for citations), pag_ page (its transcript; use get_page for the image), doc_ document (blocks with full JSON, and its references list), blk_ block (also give documentId), req_ her request, qst_ practice question, con_ concept (its page), exm_ exam. A lecture or document shows which agent is writing for it, if any. Long content comes in windows: offset and limit for a file's pages or a document's blocks, cursor for a node's children.`,
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,
@@ -360,6 +378,14 @@ export const getItem = defineTool({
         return getPageSummary(ctx, input.id);
       case "document":
         return getDocument(ctx, input.id, input);
+      case "request":
+        return getRequest(ctx, input.id);
+      case "question":
+        return getQuestion(ctx, input.id);
+      case "concept":
+        return conceptPage(ctx, input.id);
+      case "exam":
+        return getExam(ctx, input.id);
       default:
         return getBlock(ctx, input.id, input);
     }

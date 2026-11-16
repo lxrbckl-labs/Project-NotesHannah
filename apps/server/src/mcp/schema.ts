@@ -90,9 +90,12 @@ export function flattenActions(
  */
 export function describe(schema: JsonSchema, descriptions: Record<string, string>): JsonSchema {
   for (const [path, text] of Object.entries(descriptions)) {
-    const node = nodeAt(schema, path);
-    if (!node) throw new Error(`describe: no property at ${path}`);
-    node.description = node.description ? `${text} ${node.description}` : text;
+    const nodes = nodesAt([schema], path);
+    if (nodes.length === 0) throw new Error(`describe: no property at ${path}`);
+    // Every branch of a union that has the field gets the description.
+    for (const node of nodes) {
+      node.description = node.description ? `${text} ${node.description}` : text;
+    }
   }
   return schema;
 }
@@ -107,26 +110,29 @@ function objectBranches(node: JsonSchema): JsonSchema[] {
   return out;
 }
 
-function nodeAt(schema: JsonSchema, path: string): JsonSchema | undefined {
-  let current: JsonSchema | undefined = schema;
+function nodesAt(roots: JsonSchema[], path: string): JsonSchema[] {
+  let current = roots;
   for (const raw of path.split(".")) {
-    if (!current) return undefined;
     const isArray = raw.endsWith("[]");
     const key = isArray ? raw.slice(0, -2) : raw;
-    let next: JsonSchema | undefined;
-    for (const branch of objectBranches(current)) {
-      next = branch.properties?.[key];
-      if (next) break;
+    const next: JsonSchema[] = [];
+    for (const node of current) {
+      for (const branch of objectBranches(node)) {
+        const prop = branch.properties?.[key];
+        if (!prop) continue;
+        if (!isArray) {
+          next.push(prop);
+          continue;
+        }
+        const items =
+          prop.items ??
+          ((prop.anyOf as JsonSchema[] | undefined)?.find((b) => b.items)?.items as
+            | JsonSchema
+            | undefined);
+        if (items) next.push(items);
+      }
     }
-    if (next && isArray) {
-      const items: JsonSchema | undefined =
-        next.items ??
-        ((next.anyOf as JsonSchema[] | undefined)?.find((b) => b.items)?.items as
-          | JsonSchema
-          | undefined);
-      next = items;
-    }
-    current = next;
+    current = [...new Set(next)];
   }
   return current;
 }

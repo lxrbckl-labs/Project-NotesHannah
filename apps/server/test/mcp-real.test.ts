@@ -14,14 +14,17 @@ const NOTES = "Start metoprolol 25 mg PO BID\nHold if HR < 55";
 
 type Agent = Awaited<ReturnType<Awaited<ReturnType<typeof realSetup>>["agent"]>>;
 
-/** Upload through request_upload_links and a PUT, the way an agent does with curl. */
+/** Upload through source_files upload_links and a PUT, the way an agent does with curl. */
 async function uploadViaTicket(
   s: Awaited<ReturnType<typeof realSetup>>,
   a: Agent,
   name: string,
   data: Buffer,
 ): Promise<string> {
-  const links = await a.ok("request_upload_links", { files: [{ name, bytes: data.length }] });
+  const links = await a.ok("source_files", {
+    action: "upload_links",
+    files: [{ name, bytes: data.length }],
+  });
   const [ticket] = links.structured.tickets as Array<{ url: string }>;
   const url = new URL(ticket?.url ?? "");
   const res = await s.app.request(url.pathname, { method: "PUT", body: data });
@@ -37,8 +40,8 @@ describe("MCP over the real services", () => {
     const userId = a.user.id;
 
     // ---- orientation and the true workflow
-    const start = await a.ok("start_here", { topic: "inbox" });
-    expect(start.text).toContain('source_files {"action":"wait"');
+    const start = await a.ok("start_here", { topic: "workflow" });
+    expect(start.text).toContain('"wait" until converted');
     expect(start.text).toContain('get_item {"id":"fil_…","text":true}');
 
     // ---- get two files in through upload links; they wait for the converter
@@ -166,8 +169,11 @@ describe("MCP over the real services", () => {
       ],
     });
     expect(badQuote.error.message).toContain("$.blocks[0].citations[0]");
-    expect(badQuote.error.message).toContain("does not occur, character for character");
-    expect(badQuote.error.message).toContain(`get_page {"pageId":"${deckPages[0]}"}`);
+    // Refused before the domain, with the closest passage on the page to copy.
+    expect(badQuote.error.message).toContain(`is not on page ${deckPages[0]}`);
+    expect(badQuote.error.message).toContain(
+      'the closest passage there is "Atenolol and metoprolol are cardioselective (β1)."',
+    );
     const written = await a.ok("write_document", {
       parentId: guidesId,
       kind: "study_guide",

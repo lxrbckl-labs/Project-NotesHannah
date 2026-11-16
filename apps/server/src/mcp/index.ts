@@ -10,6 +10,7 @@ import { agentGuide } from "./agent-guide.js";
 import type { McpBackend } from "./ports.js";
 import { createRateLimiter, DEFAULT_RATE_LIMIT, type RateLimitOptions } from "./rate-limit.js";
 import { buildMcpServer, toolsFor } from "./server.js";
+import { createWriteClaims } from "./write-claims.js";
 
 export type { McpBackend } from "./ports.js";
 
@@ -59,6 +60,7 @@ export function mcpRoutes(
   const limiter = createRateLimiter(options.rateLimit ?? DEFAULT_RATE_LIMIT, deps.now);
   const log = options.log ?? ((line: string) => console.log(line));
   const tools = toolsFor(backend);
+  const claims = createWriteClaims(deps.db, backend.library, deps.now);
   const available = new Set(tools.map((t) => t.name));
   const app = new Hono<AppEnv>();
 
@@ -114,6 +116,7 @@ export function mcpRoutes(
         db: deps.db,
         library: backend.library,
         backend,
+        claims,
         available,
         now: deps.now,
       },

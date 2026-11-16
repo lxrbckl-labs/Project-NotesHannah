@@ -55,7 +55,7 @@ describe("start_here", () => {
     expect(r.text).toContain("Your key is read-write");
     expect(r.text).toContain("Library: 1 term(s), 1 course(s)");
     expect(r.text).toContain(
-      "Inbox: 0 file(s) not filed (0 converting, 0 ready to transcribe or file, 0 failed). Converter: online.",
+      "Inbox: 0 file(s) not filed (0 converting, 0 ready, 0 failed); converter online.",
     );
     for (const word of [
       "Sources, Lectures, Study guides, Practice, Exams",
@@ -67,11 +67,22 @@ describe("start_here", () => {
       expect(r.text).toContain(word);
     }
     expect(r.structured.key).toEqual({ name: "agent", scope: "write" });
-    // Both kinds of move are explained.
-    expect(r.text).toContain("Moving things");
-    expect(r.text).toContain('edit_library {"action":"move"');
-    expect(r.text).toContain('source_files {"action":"move"');
-    for (const topic of ["overview", "library", "inbox", "blocks", "citations", "transcription"]) {
+    // Both kinds of move are explained (topic library).
+    const library = await a.ok("start_here", { topic: "library" });
+    expect(library.text).toContain("Moving things");
+    expect(library.text).toContain('edit_library {"action":"move"');
+    expect(library.text).toContain('source_files {"action":"move"');
+    for (const topic of [
+      "overview",
+      "workflow",
+      "library",
+      "transcription",
+      "citations",
+      "blocks",
+      "practice",
+      "concepts",
+      "requests",
+    ]) {
       const t = await a.ok("start_here", { topic });
       expect(t.text.length, topic).toBeLessThan(START_HERE_MAX_CHARS);
       expect(t.text.length, topic).toBeGreaterThan(200);
@@ -84,10 +95,11 @@ describe("start_here", () => {
     const { agent } = await mcpSetup();
     const a = await agent("hannah");
     const r = await a.ok("start_here");
-    expect(r.text).toContain("Inbox: uploads are not available on this server yet.");
+    expect(r.text).not.toContain("Inbox:");
     expect(r.text).not.toMatch(/- write_document:/);
     expect(r.text).not.toMatch(/- source_files:/);
-    expect(r.text).toContain("Uploaded files cannot be moved over MCP on this server yet.");
+    const library = await a.ok("start_here", { topic: "library" });
+    expect(library.text).toContain("Uploaded files cannot be moved over MCP on this server yet.");
     expect(r.structured.tools).toEqual([
       "start_here",
       "browse_library",

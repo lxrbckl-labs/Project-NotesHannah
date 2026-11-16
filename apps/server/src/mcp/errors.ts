@@ -146,10 +146,30 @@ export function checkIdShape(id: string, allowed: IdKind[]): IdKind {
   return kind;
 }
 
-const NODE_ROUTE = /(POST|GET|DELETE|PATCH) (\/api\/[^\s,.]+(?:\?[^\s,]+)?)/g;
+const NODE_ROUTE = /(POST|GET|DELETE|PATCH) (\/api\/[^\s,.)]+(?:\?[^\s,)]+)?)/g;
 
 function translateRoute(method: string, path: string): string {
   if (method === "DELETE") return "a permanent delete, which only she can do in the browser";
+  const rq = /^\/api\/requests\/([^/\s]+)\/(claim|release|complete|decline)$/.exec(path);
+  if (rq) {
+    const id = rq[1]?.startsWith(":") ? "req_…" : rq[1];
+    return `requests {"action":"${rq[2]}","requestId":"${id}"}`;
+  }
+  if (path.startsWith("/api/requests")) return 'requests {"action":"list"}';
+  const pq = /^\/api\/practice\/questions\/([^/\s]+)\/(trash|restore)$/.exec(path);
+  if (pq) return `practice_questions {"action":"${pq[2]}","questionId":"${pq[1]}"}`;
+  if (path.startsWith("/api/practice/questions")) return 'practice_questions {"action":"list"}';
+  if (path.startsWith("/api/practice")) return 'study_progress {"action":"sessions"}';
+  if (path.startsWith("/api/exams")) return 'exams {"action":"list"}';
+  if (/^\/api\/concepts\/[^/\s]+\/merge$/.test(path)) return 'concepts {"action":"merge",...}';
+  if (/^\/api\/concepts\/[^/\s]+\/page$/.test(path))
+    return 'concepts {"action":"page","conceptId":"con_…"}';
+  if (path.startsWith("/api/concepts/search")) return 'concepts {"action":"search","query":"…"}';
+  if (path.startsWith("/api/concepts") || path.startsWith("/api/relations")) {
+    return method === "GET"
+      ? 'concepts {"action":"search","query":"…"}'
+      : 'concepts {"action":"upsert",...}';
+  }
   const m = /^\/api\/nodes\/([^/\s]+)\/(restore|trash|duplicate|move)$/.exec(path);
   if (m) return `edit_library {"action":"${m[2]}","id":"${m[1]}"}`;
   const f = /^\/api\/files\/([^/\s]+)\/file$/.exec(path);

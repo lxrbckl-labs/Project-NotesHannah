@@ -19,6 +19,7 @@ import { z } from "zod";
 import { AppError } from "../../http/errors.js";
 import { exampleId } from "../errors.js";
 import type { WriteSummary } from "../ports.js";
+import { checkQuotes } from "../quotes.js";
 
 type DocumentEditOperation = Exclude<WriterOperation, "create_document">;
 
@@ -152,6 +153,13 @@ export const writeDocument = defineTool({
   writes: () => true,
   action: () => "create_document",
   run(ctx, input) {
+    const body = input as { nodeId?: string; parentId?: string };
+    ctx.claims.assertFree(
+      ctx.userId,
+      [body.nodeId, body.parentId].filter((x): x is string => typeof x === "string"),
+      ctx.keyId,
+    );
+    checkQuotes(ctx, input);
     const r = docs(ctx).write(ctx.auth, "create_document", input);
     return { text: resultText("Created", r), structured: { ...r } };
   },
@@ -182,7 +190,7 @@ const OPERATIONS = Object.keys(PUBLISHED_OPERATIONS) as DocumentEditOperation[];
 export const editBlocks = defineTool({
   name: "edit_blocks",
   title: "Change the blocks of a document",
-  description: `Change an existing document with one "operation": insert_blocks (add blocks at a position), update_block (mode "replace" with a whole new block, or mode "patch" with only the fields to change), move_blocks (reorder, or move to another document), delete_blocks (removed blocks stay in revision history), replace_generated (regenerate: removes your earlier unreviewed blocks, keeps hers and reports them as skipped), restore_revision. Protection: you may only overwrite blocks an agent wrote that she has not edited or reviewed, unless you pass the requestId of her request asking for it. Pass expectedRevision (from get_item) so a write is refused instead of overwriting her newer changes. Positions: "start", "end", {"after":"blk_…"}, {"before":"blk_…"}, {"index":0}.`,
+  description: `Change an existing document with one "operation": insert_blocks (add blocks at a position), update_block (mode "replace" with a whole new block, or mode "patch" with only the fields to change), move_blocks (reorder, or move to another document), delete_blocks (removed blocks stay in revision history), replace_generated (regenerate: removes your earlier unreviewed blocks, keeps hers and reports them as skipped), restore_revision. Protection: you may only overwrite blocks an agent wrote that she has not edited or reviewed, unless you pass the requestId of her request about that document or block, claimed by you (requests tool). Pass expectedRevision (from get_item) so a write is refused instead of overwriting her newer changes. Positions: "start", "end", {"after":"blk_…"}, {"before":"blk_…"}, {"index":0}.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,
@@ -259,7 +267,17 @@ export const editBlocks = defineTool({
       operation: DocumentEditOperation;
       value: never;
     };
-    const r = docs(ctx).write(ctx.auth, operation, value);
+    const port = docs(ctx);
+    const target = (value as { documentId: string }).documentId;
+    try {
+      const { document } = port.getDocument(ctx.auth, target, { offset: 0, limit: 1 });
+      ctx.claims.assertFree(ctx.userId, [document.nodeId], ctx.keyId);
+    } catch (error) {
+      if (error instanceof AppError && error.code === "conflict") throw error;
+      // a missing document is the domain's error to report
+    }
+    checkQuotes(ctx, value);
+    const r = port.write(ctx.auth, operation, value);
     return { text: resultText(`Applied ${operation} to`, r), structured: { operation, ...r } };
   },
 });

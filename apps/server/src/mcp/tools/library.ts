@@ -131,6 +131,8 @@ const EDIT_BRANCHES = {
   duplicate: IdOnly,
   trash: IdOnly,
   restore: IdOnly,
+  claim: z.strictObject({ id: NodeId, note: z.string().trim().max(200).optional() }),
+  release: IdOnly,
 };
 type EditAction = keyof typeof EDIT_BRANCHES;
 
@@ -147,13 +149,15 @@ export const EDIT_EXAMPLES: Record<EditAction, Record<string, unknown>> = {
   duplicate: { action: "duplicate", id: NODE },
   trash: { action: "trash", id: NODE },
   restore: { action: "restore", id: NODE },
+  claim: { action: "claim", id: NODE, note: "Writing the lecture note and study guide" },
+  release: { action: "release", id: NODE },
 };
 
 const editSchema = describe(
   flattenActions(
     "action",
     Object.fromEntries(Object.entries(EDIT_BRANCHES).map(([k, v]) => [k, jsonOf(v)])),
-    'What to do: "create" a node; "update" its name or details (rename); "move" it to another parent or position; "duplicate" it with everything inside; "trash" it with everything inside (restorable); "restore" it from the trash.',
+    'What to do: "create" a node; "update" its name or details (rename); "move" it to another parent or position; "duplicate" it with everything inside; "trash" it with everything inside (restorable); "restore" it from the trash; "claim" a lecture, folder or document you are about to write material for (writes there by other agents are refused for 30 minutes, renewed by your writes); "release" it when done.',
   ),
   {
     id: `The node to change, e.g. "${NODE}".`,
@@ -184,7 +188,7 @@ function describeCreated(node: NodeItem, sections: NodeItem[]): string {
 export const editLibrary = defineTool({
   name: "edit_library",
   title: "Create, rename, move, duplicate, trash or restore library items",
-  description: `Change the library tree with one "action": create, update (rename or change details), move, duplicate, trash, restore. Placement rules: top level holds terms; a term holds courses; a course holds exactly its five fixed sections (Sources, Lectures, Study guides, Practice, Exams), created automatically and never changed by hand; a section or folder holds folders, lectures and documents; a lecture holds documents. Lectures carry a number and date and sort in teaching order. Trash is restorable; permanent deletion is only possible for her, in the browser. A refused change returns the rule and a valid example. Needs a read-write key.`,
+  description: `Change the library tree with one "action": create, update (rename or change details), move, duplicate, trash, restore. Placement rules: top level holds terms; a term holds courses; a course holds exactly its five fixed sections (Sources, Lectures, Study guides, Practice, Exams), created automatically and never changed by hand; a section or folder holds folders, lectures and documents; a lecture holds documents. Lectures carry a number and date and sort in teaching order. Trash is restorable; permanent deletion is only possible for her, in the browser. Before writing a lecture note, study guide or questions for a lecture, "claim" it so another agent does not write the same thing (advisory, 30 minutes, renewed by your writes; get_item shows who holds a claim). A refused change returns the rule and a valid example. Needs a read-write key.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,
@@ -220,6 +224,29 @@ export const editLibrary = defineTool({
       value: Record<string, unknown>;
     };
     const id = typeof value.id === "string" ? value.id : undefined;
+    if (action === "claim" || action === "release") {
+      const target = ctx.library.get(ctx.userId, id as string);
+      if (action === "release") {
+        const released = ctx.claims.release(ctx.userId, target.id, ctx.keyId);
+        return {
+          text: released
+            ? `Released your writing claim on ${target.kind} "${target.path}" (${target.id}).`
+            : `There was no writing claim on ${target.id}.`,
+          structured: { action, nodeId: target.id, released },
+        };
+      }
+      const label = ctx.actor.type === "agent" ? (ctx.actor.label ?? null) : null;
+      const claim = ctx.claims.claim(
+        ctx.userId,
+        target.id,
+        { keyId: ctx.keyId, label },
+        (value.note as string | undefined) ?? null,
+      );
+      return {
+        text: `You hold the writing claim on ${target.kind} "${target.path}" (${target.id}) until ${claim.expiresAt}; your writes under it renew it. Other agents' writes there are refused meanwhile. Release it when done: edit_library {"action":"release","id":"${target.id}"}.`,
+        structured: { action, claim },
+      };
+    }
     let node: NodeWithLinks;
     try {
       switch (action) {
@@ -246,7 +273,7 @@ export const editLibrary = defineTool({
         case "trash":
           node = ctx.library.trash(ctx.userId, id as string, ctx.actor);
           break;
-        case "restore":
+        default:
           node = ctx.library.restore(ctx.userId, id as string, ctx.actor);
           break;
       }
@@ -258,7 +285,7 @@ export const editLibrary = defineTool({
     if (action === "create" && node.kind === "course") {
       sections = ctx.library.list(ctx.userId, { parentId: node.id, limit: 10 }).items.map(nodeItem);
     }
-    const verbs: Record<EditAction, string> = {
+    const verbs: Record<Exclude<EditAction, "claim" | "release">, string> = {
       create: "",
       update: "Updated",
       move: "Moved",

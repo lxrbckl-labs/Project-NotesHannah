@@ -15,7 +15,7 @@ import type { RateLimitOptions } from "../src/mcp/rate-limit.js";
 import { createServices } from "../src/services.js";
 import { initStorage } from "../src/storage/storage.js";
 import { FakeConverter } from "./files.support.js";
-import { makeTestApp } from "./helpers.js";
+import { makeTestApp, ORIGIN } from "./helpers.js";
 
 export interface CallResult {
   text: string;
@@ -121,7 +121,7 @@ export async function realSetup() {
   const dir = mkdtempSync(join(tmpdir(), "notes-mcp-real-"));
   const { storage } = initStorage(dir);
   const t = makeTestApp({
-    env: { DATA_DIR: dir, APP_ORIGIN: "http://localhost" },
+    env: { DATA_DIR: dir, APP_ORIGIN: ORIGIN },
     services: (deps) =>
       createServices(deps, {
         files: { storage, signingSecret: "mcp-secret", partialGraceMs: 0, log: () => {} },

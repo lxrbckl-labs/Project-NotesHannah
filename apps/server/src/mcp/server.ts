@@ -9,10 +9,14 @@ import { AppError } from "../http/errors.js";
 import { agentFacing, toApiError } from "./errors.js";
 import type { McpBackend } from "./ports.js";
 import type { ToolContext, ToolDef, ToolOutput } from "./tool.js";
+import { conceptsTool } from "./tools/concepts.js";
 import { editBlocks, writeDocument } from "./tools/documents.js";
-import { getPage, requestUploadLinks, saveTranscript, sourceFiles } from "./tools/files.js";
+import { examsTool } from "./tools/exams.js";
+import { getPage, saveTranscript, sourceFiles } from "./tools/files.js";
 import { getItem } from "./tools/get-item.js";
 import { browseLibrary, changesTool, editLibrary, searchTool } from "./tools/library.js";
+import { practiceQuestions, studyProgress } from "./tools/practice.js";
+import { requestsTool } from "./tools/requests.js";
 import { SERVER_INSTRUCTIONS, startHere } from "./tools/start-here.js";
 
 export const SERVER_NAME = "notes";
@@ -33,8 +37,12 @@ export function toolsFor(backend: Omit<McpBackend, "library">): ToolDef[] {
     searchTool({ unified: Boolean(backend.search) }),
     editLibrary,
     ...(backend.changes ? [changesTool] : []),
-    ...(backend.files ? [sourceFiles, getPage, saveTranscript, requestUploadLinks] : []),
+    ...(backend.requests ? [requestsTool] : []),
+    ...(backend.files ? [sourceFiles, getPage, saveTranscript] : []),
     ...(backend.documents ? [writeDocument, editBlocks] : []),
+    ...(backend.concepts ? [conceptsTool] : []),
+    ...(backend.practice ? [practiceQuestions, studyProgress] : []),
+    ...(backend.exams ? [examsTool] : []),
   ];
 }
 
