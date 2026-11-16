@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { ConfigError, loadConfig } from "./config.js";
 import { migrate, openDatabase } from "./db/client.js";
+import { startQueueWatcher, stopQueueWatcher } from "./domains/files/index.js";
 import { AppError } from "./http/errors.js";
 import { bindStorage } from "./storage/binding.js";
 import { openStorage } from "./storage/storage.js";
@@ -15,11 +16,14 @@ try {
   if (applied.length > 0) console.log(`applied migrations: ${applied.join(", ")}`);
   bindStorage(db, storage);
   const app = createApp(config, { db });
+  // Ingest the converter's result files (queue/done, queue/failed) and fail stuck jobs.
+  const queueWatcher = startQueueWatcher({ config, db, now: Date.now });
   const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
     console.log(`notes server listening on :${info.port} (${config.NODE_ENV})`);
     console.log(`storage ${storage.root} (id ${storage.marker.storageId})`);
   });
   const shutdown = () => {
+    stopQueueWatcher(queueWatcher);
     server.close(() => {
       db.close();
       process.exit(0);
