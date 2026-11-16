@@ -1,4 +1,4 @@
-import { richTextToPlain } from "@notes/schema";
+import { CARD_TEXT, richTextToPlain } from "@notes/schema";
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 import { useCanvasActions } from "../model/actions";
@@ -102,10 +102,30 @@ function NoteEditor({
   );
 }
 
+/**
+ * The height a card's content needs, whatever box it is drawn in: the border, the title band, and
+ * the body at its natural height up to its maximum (taller content clips with a fade).
+ */
+function naturalHeight(cardEl: HTMLElement): number {
+  let height = cardEl.offsetHeight - cardEl.clientHeight; // the border
+  for (const child of cardEl.children) {
+    const el = child as HTMLElement;
+    const style = getComputedStyle(el);
+    if (style.position === "absolute" || style.display === "none") continue; // badge, handles
+    if (el.classList.contains("nc-card-body")) {
+      const max = Number.parseFloat(style.maxHeight);
+      height += Number.isFinite(max) ? Math.min(el.scrollHeight, max) : el.scrollHeight;
+    } else height += el.offsetHeight;
+  }
+  return Math.ceil(height);
+}
+
 function CardNodeView({ id, data }: NodeProps<CardNodeType>) {
   const actions = useCanvasActions();
   const { card, blocks, reading, editing, pinned, connectSource, dim, maxHeight } = data;
+  const root = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
   const [clipped, setClipped] = useState(false);
   const press = useLongPress(() => actions.longPress(id), actions.isCoarse());
 
@@ -114,6 +134,28 @@ function CardNodeView({ id, data }: NodeProps<CardNodeType>) {
     const el = body.current;
     if (el) setClipped(!reading && el.scrollHeight > el.clientHeight + 2);
   }, [blocks, card, reading, maxHeight]);
+
+  // Tell the layout what the content needs, now and whenever it changes size (a renderer that
+  // loads late, a font, an edit). Not while open to read or edit: that state is drawn on top of
+  // the map and must not push other cards around. Not while a renderer still shows its loading
+  // placeholder: that is not the card's size.
+  const measurable = !reading && !editing && !card.dimensions && card.content.kind !== "sticker";
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!measurable || !el || typeof ResizeObserver === "undefined") return;
+    const report = () => {
+      if (el.querySelector(".skeleton")) return;
+      const size = { width: el.offsetWidth, height: naturalHeight(el) };
+      if (size.width > 0 && size.height > 0) actions.measureCard(id, size);
+      const b = body.current;
+      if (b) setClipped(b.scrollHeight > b.clientHeight + 2);
+    };
+    const observer = new ResizeObserver(report);
+    observer.observe(el);
+    for (const child of el.children) observer.observe(child);
+    if (inner.current) observer.observe(inner.current);
+    return () => observer.disconnect();
+  }, [actions, id, measurable]);
 
   const content = card.content;
   if (content.kind === "sticker") {
@@ -138,12 +180,14 @@ function CardNodeView({ id, data }: NodeProps<CardNodeType>) {
   return (
     <div
       {...press}
+      ref={root}
       className={classes.join(" ")}
       data-hue={tint}
       data-testid="canvas-card"
       data-card-id={id}
       data-pinned={pinned ? "true" : undefined}
-      style={{ height: card.dimensions ? "100%" : undefined }}
+      // Fills the box the layout gave the node (see buildNodes); open to read or edit, it grows.
+      style={{ height: reading || editing ? undefined : "100%" }}
     >
       {pinned && (
         <span className="nc-pin-badge" title="Placed by you" role="img" aria-label="Placed by you">
@@ -170,23 +214,28 @@ function CardNodeView({ id, data }: NodeProps<CardNodeType>) {
           ref={body}
           className={`nc-card-body${clipped ? " nc-clipped" : ""}${reading || editing ? " nodrag nopan nowheel" : ""}${content.kind === "note" ? " nc-card-note" : ""}`}
           style={{
-            ["--card-max" as string]: `${maxHeight - (card.title ? 24 : 0)}px`,
+            // The title band takes its height from the body, so a card is never taller than the
+            // layout's maximum for its class (`cardMaxHeight`).
+            ["--card-max" as string]: `${maxHeight - (card.title ? CARD_TEXT.titleHeight : 0)}px`,
             pointerEvents: editing || reading ? "auto" : undefined,
           }}
         >
-          {content.kind === "note" ? (
-            editing ? (
-              <NoteEditor
-                initial={richTextToPlain(content.text)}
-                onSave={(text) => actions.saveNote(id, text)}
-                onDone={actions.stopEditing}
-              />
+          {/* Its own height is the content's, clipped or not: watched to re-measure the card. */}
+          <div ref={inner}>
+            {content.kind === "note" ? (
+              editing ? (
+                <NoteEditor
+                  initial={richTextToPlain(content.text)}
+                  onSave={(text) => actions.saveNote(id, text)}
+                  onDone={actions.stopEditing}
+                />
+              ) : (
+                <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{richTextToPlain(content.text)}</p>
+              )
             ) : (
-              <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{richTextToPlain(content.text)}</p>
-            )
-          ) : (
-            blocks.map((block) => <div key={block.id}>{actions.renderBlock(block)}</div>)
-          )}
+              blocks.map((block) => <div key={block.id}>{actions.renderBlock(block)}</div>)
+            )}
+          </div>
         </div>
       )}
       <Handles />

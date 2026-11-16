@@ -1,20 +1,26 @@
 import { expect, test } from "@playwright/test";
 import {
   card,
+  cardOverlaps,
   center,
   demoCanvas,
   dragBy,
   dragTo,
   emptyPoint,
+  expectOnScreen,
   flowPosition,
+  insertParagraph,
   isPhone,
   isTouch,
+  largerCardText,
   openDemo,
+  overlapsSeen,
   pinch,
   reloadDemo,
   tap,
   touchDrag,
   viewport,
+  watchOverlaps,
   wholeMap,
 } from "./canvas-helpers";
 
@@ -149,8 +155,12 @@ test.describe("canvas", () => {
       width: number;
       height: number;
     };
-    // Drop on the lower part of the frame, inside its border.
-    await dragTo(page, info, a, { x: box.x + box.width / 2, y: box.y + box.height - 20 });
+    // Drop on the lower part of the frame, inside its border. Both ends must be on screen: a
+    // pointer outside the window reaches nothing, so the drag would not happen at all.
+    const drop = { x: box.x + box.width / 2, y: box.y + box.height - 20 };
+    expectOnScreen(page, a, "the card");
+    expectOnScreen(page, drop, "the drop point");
+    await dragTo(page, info, a, drop);
     await expect(page.getByTestId("toast")).toContainText("Moved into “Counselling”");
     const after = (await demoCanvas(page)).canvas.frames.find((f) => f.title === "Counselling");
     expect(after?.members).toContain(introId);
@@ -192,6 +202,38 @@ test.describe("canvas", () => {
     await expect(page.locator("html")).toHaveAttribute("data-theme", /dark|light/);
     const dark = await canvasView.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(dark).not.toBe(light);
+  });
+
+  test("a block added to the document never lands on another card", async ({ page }) => {
+    // The demo draws its cards with smaller text than the app; larger text makes every estimate too
+    // small, as the study-guide renderer did on her Beta blockers canvas.
+    await largerCardText(page);
+    await watchOverlaps(page);
+    // The seed's arrangement has a card she pinned.
+    await openDemo(page);
+    expect(await overlapsSeen(page), "while opening").toEqual([]);
+    // Her paragraph, added to the document while the canvas is open.
+    await insertParagraph(
+      page,
+      "Blocking β1 receptors",
+      "My version: β1 = heart (one heart), β2 = lungs (two lungs). Block β1 and the heart slows and " +
+        "squeezes less, and the kidney lets out less renin, so BP comes down from two sides. Hit β2 " +
+        "too (non-selective, or a selective one at a high dose) and the airways tighten.",
+    );
+    await expect(card(page, "My version")).toBeVisible();
+    await page.waitForTimeout(1200);
+    expect(await overlapsSeen(page), "after the insert, in any frame").toEqual([]);
+    expect(await cardOverlaps(page)).toEqual([]);
+    // The canvas opened afresh after the change (no remembered layout), as on her instance, where
+    // the seeder added the paragraph before the canvas was ever opened.
+    await page.evaluate(() => {
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith("notes-canvas-demo:layout:")) localStorage.removeItem(key);
+    });
+    await reloadDemo(page);
+    await page.waitForTimeout(600);
+    expect(await overlapsSeen(page), "opening afresh, in any frame").toEqual([]);
+    expect(await cardOverlaps(page)).toEqual([]);
   });
 
   test("guards the screen edges against the back swipe", async ({ page }, info) => {

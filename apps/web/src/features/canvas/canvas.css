@@ -34,9 +34,22 @@
   --xy-handle-border-color: var(--color-selection);
 }
 
+/* Until the cards are laid out at the sizes they are drawn, the map is kept out of sight: a layout
+   from estimated heights can put one card on another. Opacity, not visibility, because React Flow
+   sets visibility on every node and a child's "visible" would show through. */
+.nc-unsettled .react-flow__viewport,
+.nc-unsettled .react-flow__minimap {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---- Cards ---- */
 .nc-card {
   position: relative;
+  /* A column, so in a box shorter than its content the body gives way (and clips) rather than
+     the card spilling over the card below. */
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -64,6 +77,8 @@
   box-shadow: var(--shadow-raised);
 }
 .nc-card-body {
+  flex: 0 1 auto;
+  min-height: 0;
   padding: 12px 14px;
   overflow: hidden;
   max-height: var(--card-max, 340px);
@@ -84,6 +99,7 @@
   cursor: text;
 }
 .nc-card-title {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -125,6 +141,7 @@
   font: inherit;
 }
 .nc-card-concept {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -706,4 +723,11 @@ fieldset.nc-editor-row {
   place-items: center;
   height: 100%;
   color: var(--color-text-muted);
+}
+/* Over the (hidden) map while it is laid out, so the map keeps its full size and can be measured. */
+.nc-canvas > .nc-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
 }

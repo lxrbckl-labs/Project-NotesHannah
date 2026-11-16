@@ -15,6 +15,8 @@ export interface CanvasActions {
   editConnector(edgeId: string): void;
   renameFrame(frameId: string, title: string): void;
   isCoarse(): boolean;
+  /** The size a card's content needs (not the box it is drawn in), for the layout. */
+  measureCard(cardId: string, size: { width: number; height: number }): void;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);

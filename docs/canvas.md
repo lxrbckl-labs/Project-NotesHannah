@@ -169,8 +169,11 @@ The layout runs in two halves:
 1. **Sizes** (`canvas-layout.ts`). Width from the size class (220, 280, 360, 520; stickers
    88×88); height estimated per content type (text lines at the renderer's metrics, table
    rows, drug-card sections, list items), clamped per class (cards taller than that clip
-   with a fade and open to read). A pinned size wins. After the first render the browser
-   measures every card and the layout runs again with **measured** sizes.
+   with a fade and open to read). A pinned size wins. The metrics (`CARD_TEXT`) are the
+   app's: cards draw blocks with the documents' renderers, whose study-guide text is 17 px
+   on 29 px lines, and estimates err on the tall side; `canvas-layout.test.ts` checks them
+   against heights measured in the app. After the first render each card reports the
+   height its content needs and the layout runs again with **measured** sizes.
 2. **Graph layout** (`features/canvas/layout/elk-layout.ts`, elkjs 0.12): ELK `layered`
    over the **free** cards only (not pinned, not anchored), frames as compound nodes,
    left to right on tablets and computers, top to bottom on phones. Each frame is laid out
@@ -192,6 +195,26 @@ The layout runs in two halves:
 The layout runs in a dedicated worker (`layout.worker.ts`); above 40 free cards an
 "Arranging…" chip shows while it runs. `layoutProblems(input, result)` states the
 invariants and the tests check them.
+
+**No card is ever drawn over another** (`useCanvasModel`, `CardNode`, `buildNodes`). The
+layout keeps boxes apart, so the view makes sure what is drawn is the box:
+
+- A card is drawn in the box the layout gave it (`style.height`), never taller. Content
+  that needs more room is clipped with the fade until the layout has made the room.
+- Each card measures what its content needs itself (a `ResizeObserver` on its content:
+  border, title band, body up to its maximum) and reports it (`measureCard`). React
+  Flow's own measuring only sees the box. A card still showing a renderer's loading
+  placeholder reports nothing: on 2026-11-16 a layout made from those placeholders
+  (66 px a card) put her new paragraph 98 units below the top of the card above it, and
+  that card's real 228 px reached 130 units under it until the next pass.
+- On opening, the map stays out of sight ("Opening the canvas…") until a layout made
+  with every card's measured size has landed (`settled`; at most 2 s), then it is fitted
+  and shown. Nothing jumps after it appears.
+- Afterwards, when a card needs another size (a document change, a late font, an edit),
+  only the constraint pass runs (every card already has a place): pinned cards stay,
+  unpinned cards it would cover move down, nothing moves sideways or up.
+- A card open to read or to edit grows over its neighbours, on top, and is not measured
+  meanwhile, so reading a card never rearranges the map.
 
 **Measured** (fixtures of 10, 100 and 300 cards with nested frames, connectors inside and
 across frames, some pinned; `layout/elk-layout.test.ts`):
@@ -251,6 +274,10 @@ below it, the lower frame moves down as a whole; nothing reshuffles.
 | Step-through | ▶, ←/→, Esc | ▶, buttons | none |
 
 Shortcuts: V select, H hand, N note, C connect, F frame, ⇧1 fit, ⇧2 zoom to selection.
+
+A card is moved into the frame under its centre when dropped. Dropped outside every frame,
+it leaves its frame and stays pinned where it was dropped: like every drag, it stays where
+she put it (by design, not a gap; releasing the pin hands it back to the layout).
 
 **Touch on iPad and iPhone Safari**: one-finger pan on empty canvas; pinch zooms the
 canvas, never the page (Safari's `gesturestart`/`gesturechange` are cancelled, the demo

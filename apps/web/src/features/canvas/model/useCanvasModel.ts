@@ -24,9 +24,14 @@ import { diffOps } from "./diff";
  * up to date. Layout policy:
  * - first open: anchored on the saved layout cache, or a full ELK layout;
  * - first measurement: re-layout with measured sizes (full when nothing was
- *   cached, anchored otherwise);
- * - later structure or size changes: anchored (existing cards stay put,
- *   new ones are placed by ELK);
+ *   cached, anchored otherwise); the view shows the map only once that has
+ *   landed (`settled`), so a layout built on estimated heights is never drawn;
+ * - later structure changes: anchored (existing cards stay put, new ones are
+ *   placed by ELK);
+ * - later size changes (a card's content needs more or less room than its
+ *   box): the constraint pass alone, at once. A card is always drawn in its
+ *   layout box (clipped meanwhile), so it never covers another, not even for
+ *   a frame;
  * - "auto-arrange": full layout of the unpinned cards; pins never move.
  */
 
@@ -39,6 +44,11 @@ export interface CanvasModel {
   blocks: Map<string, Block>;
   documentTitle: string;
   layout: LayoutResult | null;
+  /**
+   * The layout on screen was made with the sizes the browser measured (or measuring took too
+   * long). Until then the view keeps the map hidden: estimated heights can be far off.
+   */
+  settled: boolean;
   arranging: boolean;
   layoutMs: number | null;
   canUndo: boolean;
@@ -57,6 +67,10 @@ export interface CanvasModel {
 }
 
 const UNDO_LIMIT = 60;
+/** Show the map anyway after this long, so a card that never reports its size cannot keep it hidden. */
+const SETTLE_TIMEOUT_MS = 2000;
+/** A measured size this close to the one the layout used needs no new layout. */
+const SIZE_TOLERANCE = 4;
 
 /** A canvas to return to, with where its unpinned cards were drawn. */
 interface HistoryEntry {
@@ -80,6 +94,8 @@ export function useCanvasModel(
   const [blockList, setBlockList] = useState<Block[]>([]);
   const [documentTitle, setTitle] = useState("");
   const [layout, setLayout] = useState<LayoutResult | null>(null);
+  const [settled, setSettledState] = useState(false);
+  const settledRef = useRef(false);
   const [arranging, setArranging] = useState(false);
   const [layoutMs, setLayoutMs] = useState<number | null>(null);
   const [message, setMessage] = useState<CanvasModel["message"]>(null);
@@ -112,15 +128,21 @@ export function useCanvasModel(
     [],
   );
 
+  const setSettled = useCallback((value: boolean) => {
+    settledRef.current = value;
+    setSettledState(value);
+  }, []);
+
   const sizeOf = useCallback((card: Card): Size => {
     if (card.dimensions) return { width: card.dimensions.width, height: card.dimensions.height };
     return measuredRef.current.get(card.id) ?? estimateCardSize(card, blocksRef.current);
   }, []);
 
+  /** Lay the canvas out; resolves true when this layout is the one now shown. */
   const relayout = useCallback(
-    async (mode: LayoutMode, start?: Record<string, Point> | null) => {
+    async (mode: LayoutMode, start?: Record<string, Point> | null): Promise<boolean> => {
       const current = canvasRef.current;
-      if (!current) return;
+      if (!current) return false;
       const seq = ++layoutSeq.current;
       let previous: Record<string, Point> | undefined;
       if (mode === "anchored") {
@@ -148,7 +170,7 @@ export function useCanvasModel(
           if (big && seq === layoutSeq.current) setArranging(false);
         }
       }
-      if (seq !== layoutSeq.current) return; // a newer layout is on its way
+      if (seq !== layoutSeq.current) return false; // a newer layout is on its way
       setLayoutMs(performance.now() - t0);
       layoutRef.current = result;
       setLayout(result);
@@ -159,6 +181,7 @@ export function useCanvasModel(
           if (r) positions[card.id] = { x: r.x, y: r.y };
         }
       store.saveLayoutCache(documentId, variant, positions);
+      return true;
     },
     [documentId, runner, shape, sizeOf, store, variant],
   );
@@ -176,7 +199,9 @@ export function useCanvasModel(
   // Load, then subscribe to changes made elsewhere.
   useEffect(() => {
     let cancelled = false;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
     setStatus("loading");
+    setSettled(false);
     measuredOnce.current = false;
     (async () => {
       try {
@@ -188,7 +213,11 @@ export function useCanvasModel(
         adopt(loaded);
         cachedStart.current = !!cache && Object.keys(cache).length > 0;
         await relayout(cachedStart.current ? "anchored" : "full", cache);
-        if (!cancelled) setStatus("ready");
+        if (cancelled) return;
+        setStatus("ready");
+        settleTimer = setTimeout(() => {
+          if (!cancelled && !settledRef.current) setSettled(true);
+        }, SETTLE_TIMEOUT_MS);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : String(e));
@@ -203,10 +232,11 @@ export function useCanvasModel(
     });
     return () => {
       cancelled = true;
+      if (settleTimer) clearTimeout(settleTimer);
       unsubscribe();
       void store.flush();
     };
-  }, [adopt, documentId, relayout, store, variant]);
+  }, [adopt, documentId, relayout, setSettled, store, variant]);
 
   const snapshot = useCallback((canvas: Canvas): HistoryEntry => {
     const positions: Record<string, Point> = {};
@@ -293,6 +323,23 @@ export function useCanvasModel(
   );
 
   const measuredTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const passQueued = useRef(false);
+  /** Every card has a measured size (or a size she set), and the layout on screen used it. */
+  const layoutFitsMeasured = useCallback(() => {
+    const current = canvasRef.current;
+    if (!current) return false;
+    return current.cards.every((card) => {
+      if (card.dimensions) return true;
+      const size = measuredRef.current.get(card.id);
+      const used = usedSizes.current.get(card.id);
+      return (
+        !!size &&
+        !!used &&
+        Math.abs(used.height - size.height) <= SIZE_TOLERANCE &&
+        Math.abs(used.width - size.width) <= SIZE_TOLERANCE
+      );
+    });
+  }, []);
   const measured = useCallback<CanvasModel["measured"]>(
     (sizes) => {
       let changed = false;
@@ -303,20 +350,41 @@ export function useCanvasModel(
         measuredRef.current.set(id, size);
         if (
           !used ||
-          Math.abs(used.height - size.height) > 4 ||
-          Math.abs(used.width - size.width) > 4
+          Math.abs(used.height - size.height) > SIZE_TOLERANCE ||
+          Math.abs(used.width - size.width) > SIZE_TOLERANCE
         )
           changed = true;
       }
-      if (!changed) return;
-      if (measuredTimer.current) clearTimeout(measuredTimer.current);
-      measuredTimer.current = setTimeout(() => {
-        const first = !measuredOnce.current;
-        measuredOnce.current = true;
-        void relayout(first && !cachedStart.current ? "full" : "anchored");
-      }, 120);
+      if (!settledRef.current) {
+        // The map is still hidden: gather the sizes as they come in (the first ones arrive over a
+        // few frames) and lay out once with all of them; show the map when that layout fits them.
+        if (!changed) {
+          if (layoutFitsMeasured()) setSettled(true);
+          return;
+        }
+        if (measuredTimer.current) clearTimeout(measuredTimer.current);
+        measuredTimer.current = setTimeout(() => {
+          const first = !measuredOnce.current;
+          measuredOnce.current = true;
+          void relayout(first && !cachedStart.current ? "full" : "anchored").then((shown) => {
+            if (shown && layoutFitsMeasured()) setSettled(true);
+          });
+        }, 120);
+        return;
+      }
+      if (!changed || passQueued.current) return;
+      // The map is showing and a card's content needs another size than its box. The card stays
+      // in its box (clipped) until this lands, so nothing is drawn over a neighbour meanwhile.
+      // Every card already has a place, so this is the constraint pass alone (no ELK): cards she
+      // pinned stay, cards it would cover move down, nothing else moves. One pass per turn
+      // however many cards reported.
+      passQueued.current = true;
+      queueMicrotask(() => {
+        passQueued.current = false;
+        void relayout("anchored");
+      });
     },
-    [relayout],
+    [layoutFitsMeasured, relayout, setSettled],
   );
 
   const autoArrange = useCallback(async () => {
@@ -364,6 +432,7 @@ export function useCanvasModel(
     blocks,
     documentTitle,
     layout,
+    settled,
     arranging,
     layoutMs,
     canUndo: history.undo > 0,

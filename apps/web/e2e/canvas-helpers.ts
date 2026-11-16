@@ -135,11 +135,163 @@ export async function tap(page: Page, info: TestInfo, locator: Locator) {
   } else await locator.click();
 }
 
-/** On a phone the canvas opens on one frame; show the whole map first. */
+/**
+ * Show the whole map. A phone opens on one frame; a tablet or computer opens on its first frame too
+ * when the whole map would be drawn too small to read (the demo's map is, at both sizes).
+ */
 export async function wholeMap(page: Page, info: TestInfo) {
-  if (!isPhone(info)) return;
-  await page.getByRole("button", { name: "Whole map" }).first().click();
+  if (isPhone(info)) await page.getByRole("button", { name: "Whole map" }).first().click();
+  else await page.getByRole("button", { name: /Whole map/ }).click();
   await page.waitForTimeout(500);
+}
+
+/** Fail early, with a reason, when a gesture would start or end outside the window. */
+export function expectOnScreen(page: Page, point: Pt, what: string) {
+  const size = page.viewportSize() as { width: number; height: number };
+  expect(
+    point.x >= 0 && point.y >= 0 && point.x <= size.width && point.y <= size.height,
+    `${what} at ${Math.round(point.x)},${Math.round(point.y)} is outside the ${size.width}x${size.height} window`,
+  ).toBe(true);
+}
+
+/**
+ * Watch every drawn frame for cards whose boxes intersect (in canvas units), from before the page
+ * loads. A layout that is right only after a later pass still shows its overlap for a frame or more,
+ * which is what she sees, so the check runs per frame rather than once at the end.
+ */
+export async function watchOverlaps(page: Page) {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __overlaps: string[] }).__overlaps = seen;
+    const tick = () => {
+      // A map kept out of sight (opacity 0 while it is laid out) is not drawn.
+      const map = document.querySelector(".react-flow__viewport");
+      const drawn = !!map && getComputedStyle(map).opacity !== "0";
+      const boxes = [...document.querySelectorAll<HTMLElement>(".react-flow__node-card")]
+        .filter(() => drawn)
+        .filter((el) => getComputedStyle(el).visibility !== "hidden")
+        .map((el) => {
+          const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+          return {
+            text: (el.textContent ?? "").slice(0, 24),
+            x: m.e,
+            y: m.f,
+            w: el.offsetWidth,
+            h: el.offsetHeight,
+          };
+        });
+      for (let i = 0; i < boxes.length; i++)
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i] as (typeof boxes)[number];
+          const b = boxes[j] as (typeof boxes)[number];
+          const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+          const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+          if (ox > 1 && oy > 1) {
+            const line = `"${a.text}" and "${b.text}" overlap by ${Math.round(ox)}x${Math.round(oy)}`;
+            if (!seen.includes(line) && seen.length < 50) seen.push(line);
+          }
+        }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+export async function overlapsSeen(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as { __overlaps: string[] }).__overlaps);
+}
+
+/**
+ * Card text drawn larger than the demo's own renderer draws it, as the app's study-guide renderer
+ * does (17 px reading text): the size estimate is then too small, as it was on her canvas.
+ */
+export async function largerCardText(page: Page) {
+  await page.addInitScript(() => {
+    const style = document.createElement("style");
+    style.textContent =
+      ".nc-card-body p, .nc-card-body li { font-size: 19px !important; line-height: 32px !important; }";
+    document.addEventListener("DOMContentLoaded", () => document.head.append(style));
+  });
+}
+
+/** Insert a paragraph into the demo document after the block whose text starts with `after`. */
+export async function insertParagraph(page: Page, after: string, text: string) {
+  await page.evaluate(
+    ({ after, text }) => {
+      const demo = (
+        window as unknown as {
+          __canvasDemo: {
+            store: {
+              current(id: string): {
+                blocks: Array<{ id: string; type: string; content: unknown }>;
+              };
+              setBlocks(id: string, blocks: unknown[]): void;
+            };
+            documentId: string;
+          };
+        }
+      ).__canvasDemo;
+      const plain = (value: unknown): string =>
+        typeof value === "string"
+          ? value
+          : Array.isArray(value)
+            ? value.map((r) => (r as { text?: string }).text ?? "").join("")
+            : "";
+      const blocks = demo.store.current(demo.documentId).blocks;
+      const index = blocks.findIndex(
+        (b) =>
+          b.type === "paragraph" && plain((b.content as { text?: unknown }).text).startsWith(after),
+      );
+      if (index < 0) throw new Error(`no paragraph starting "${after}"`);
+      const source = blocks[index] as { content: { text: unknown } };
+      const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+      let id = "blk_01J";
+      for (let i = 0; i < 23; i++) id += alphabet[Math.floor(Math.random() * 32)];
+      const block = {
+        ...source,
+        id,
+        citations: [],
+        content: {
+          ...source.content,
+          text: typeof source.content.text === "string" ? text : [{ text }],
+        },
+      };
+      demo.store.setBlocks(demo.documentId, [
+        ...blocks.slice(0, index + 1),
+        block,
+        ...blocks.slice(index + 1),
+      ]);
+    },
+    { after, text },
+  );
+}
+
+/** Every pair of card boxes (canvas units) that intersect now. */
+export async function cardOverlaps(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const boxes = [...document.querySelectorAll<HTMLElement>(".react-flow__node-card")].map(
+      (el) => {
+        const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        return {
+          text: (el.textContent ?? "").slice(0, 24),
+          x: m.e,
+          y: m.f,
+          w: el.offsetWidth,
+          h: el.offsetHeight,
+        };
+      },
+    );
+    const out: string[] = [];
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i] as (typeof boxes)[number];
+        const b = boxes[j] as (typeof boxes)[number];
+        const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        if (ox > 1 && oy > 1) out.push(`"${a.text}" and "${b.text}"`);
+      }
+    return out;
+  });
 }
 
 export async function demoCanvas(page: Page) {
