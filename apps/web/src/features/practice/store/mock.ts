@@ -294,8 +294,8 @@ export function createMockStore(options: MockOptions = {}): MockPracticeStore {
   // ------------------------------------------------------------- sessions
   const stateOf = (r: SessionRec): SessionState => {
     const items = r.session.items;
-    let cursor = r.status.findIndex((s) => s === "pending");
-    if (cursor < 0) cursor = r.status.findIndex((s) => s === "skipped");
+    let cursor = r.status.indexOf("pending");
+    if (cursor < 0) cursor = r.status.indexOf("skipped");
     const pendingLeft = r.status.some((s) => s === "pending");
     const skippedLeft = r.status.some((s) => s === "skipped");
     const item = items[cursor];

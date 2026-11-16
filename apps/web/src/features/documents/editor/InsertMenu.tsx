@@ -153,7 +153,7 @@ export function InsertMenu({
     const left = Math.max(12, Math.min(anchor.left, window.innerWidth - width - 12));
     const top = placeBelow ? anchor.bottom + 6 : anchor.top - 6 - maxHeight;
     setPos({ top, left, maxHeight });
-  }, [state.anchor, state.blockId, sheet]);
+  }, [state.anchor, state.blockId, state.source, sheet]);
 
   useEffect(() => {
     panel.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({ block: "nearest" });

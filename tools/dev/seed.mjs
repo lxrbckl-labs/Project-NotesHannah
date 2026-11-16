@@ -282,8 +282,20 @@ if (!converted) {
   const [, bBeta, bList, , bTitrate, , bNonSel] = guide.blockIds;
   const concepts = await asAgent("POST", "/concepts/bulk", {
     concepts: [
-      { type: "drug_class", name: "beta blockers", citations: [c1], summary: "Drugs that block beta-adrenergic receptors, lowering heart rate and blood pressure." },
-      { type: "drug", name: "metoprolol", drug: { brandNames: ["Lopressor"] }, citations: [c2], summary: "A cardioselective beta-1 blocker, started at 50 mg twice a day." },
+      {
+        type: "drug_class",
+        name: "beta blockers",
+        citations: [c1],
+        summary:
+          "Drugs that block beta-adrenergic receptors, lowering heart rate and blood pressure.",
+      },
+      {
+        type: "drug",
+        name: "metoprolol",
+        drug: { brandNames: ["Lopressor"] },
+        citations: [c2],
+        summary: "A cardioselective beta-1 blocker, started at 50 mg twice a day.",
+      },
       { type: "drug", name: "atenolol", drug: { brandNames: ["Tenormin"] }, citations: [c2] },
       { type: "drug", name: "propranolol", drug: { brandNames: ["Inderal"] }, citations: [c2] },
       { type: "drug", name: "verapamil", generalKnowledge: true },
@@ -294,19 +306,67 @@ if (!converted) {
       { type: "monitoring_parameter", name: "heart rate", citations: [c1] },
     ],
     relations: [
-      { from: { type: "drug", name: "metoprolol" }, to: { type: "drug_class", name: "beta blockers" }, type: "belongs_to_class", citations: [c2] },
-      { from: { type: "drug", name: "atenolol" }, to: { type: "drug_class", name: "beta blockers" }, type: "belongs_to_class", citations: [c2] },
-      { from: { type: "drug", name: "propranolol" }, to: { type: "drug_class", name: "beta blockers" }, type: "belongs_to_class", citations: [c2] },
-      { from: { type: "drug", name: "metoprolol" }, to: { type: "mechanism", name: "beta-1 receptor blockade" }, type: "has_mechanism", citations: [c2] },
-      { from: { type: "drug", name: "metoprolol" }, to: { type: "adverse_effect", name: "bradycardia" }, type: "causes_adverse_effect", generalKnowledge: true },
-      { from: { type: "drug", name: "propranolol" }, to: { type: "adverse_effect", name: "bronchoconstriction" }, type: "causes_adverse_effect", citations: [c2] },
-      { from: { type: "drug", name: "metoprolol" }, to: { type: "indication", name: "hypertension" }, type: "treats", generalKnowledge: true },
-      { from: { type: "drug", name: "metoprolol" }, to: { type: "drug", name: "verapamil" }, type: "interacts_with", interaction: { severity: "major", effect: "additive bradycardia and AV block" }, generalKnowledge: true },
-      { from: { type: "drug", name: "metoprolol" }, to: { type: "monitoring_parameter", name: "heart rate" }, type: "monitored_by", citations: [c1] },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "drug_class", name: "beta blockers" },
+        type: "belongs_to_class",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "atenolol" },
+        to: { type: "drug_class", name: "beta blockers" },
+        type: "belongs_to_class",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "propranolol" },
+        to: { type: "drug_class", name: "beta blockers" },
+        type: "belongs_to_class",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "mechanism", name: "beta-1 receptor blockade" },
+        type: "has_mechanism",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "adverse_effect", name: "bradycardia" },
+        type: "causes_adverse_effect",
+        generalKnowledge: true,
+      },
+      {
+        from: { type: "drug", name: "propranolol" },
+        to: { type: "adverse_effect", name: "bronchoconstriction" },
+        type: "causes_adverse_effect",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "indication", name: "hypertension" },
+        type: "treats",
+        generalKnowledge: true,
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "drug", name: "verapamil" },
+        type: "interacts_with",
+        interaction: { severity: "major", effect: "additive bradycardia and AV block" },
+        generalKnowledge: true,
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "monitoring_parameter", name: "heart rate" },
+        type: "monitored_by",
+        citations: [c1],
+      },
     ],
     partial: true,
   });
-  console.log(`  ${concepts.concepts?.length ?? 0} concepts and their relations written by an agent`);
+  console.log(
+    `  ${concepts.concepts?.length ?? 0} concepts and their relations written by an agent`,
+  );
   const metoprolol = concepts.concepts?.find((x) => x.name === "metoprolol");
 
   // One request still waiting, and one an agent answered with links she can follow.
@@ -323,9 +383,12 @@ if (!converted) {
     })
   ).request;
   await asAgent("POST", `/requests/${done.id}/claim`, {});
-  const links = [{ type: "block", documentId: guideId, blockId: bBeta, label: "The beta blockers paragraph" }];
+  const links = [
+    { type: "block", documentId: guideId, blockId: bBeta, label: "The beta blockers paragraph" },
+  ];
   const firstQuestion = (await call("GET", "/practice/questions?limit=1")).items?.[0];
-  if (firstQuestion) links.push({ type: "question", questionId: firstQuestion.id, label: "A practice question" });
+  if (firstQuestion)
+    links.push({ type: "question", questionId: firstQuestion.id, label: "A practice question" });
   await asAgent("POST", `/requests/${done.id}/complete`, {
     reply: "Added the usual starting dose (50 mg twice a day) and a question to check it.",
     links,
@@ -340,7 +403,12 @@ if (!converted) {
     { ref: "nonsel", content: { kind: "block", blockIds: [bNonSel] } },
     { ref: "tip", content: { kind: "note", text: "Think: -olol = beta blocker" }, color: "yellow" },
     ...(metoprolol
-      ? [{ ref: "metoprolol", content: { kind: "concept", conceptId: metoprolol.id, label: "metoprolol" } }]
+      ? [
+          {
+            ref: "metoprolol",
+            content: { kind: "concept", conceptId: metoprolol.id, label: "metoprolol" },
+          },
+        ]
       : []),
   ];
   await asAgent("PUT", `/documents/${guideId}/canvas/structure`, {

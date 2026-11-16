@@ -360,7 +360,17 @@ function DocumentScreen({
       docRef,
       notify: (message, tone = "info") => toast.show(message, { tone }),
     }),
-    [controller, store, documentId, onOpenConcept, onOpenQuestion, toast, signals, startDrag],
+    [
+      controller,
+      store,
+      documentId,
+      onOpenConcept,
+      onOpenQuestion,
+      toast,
+      signals,
+      startDrag,
+      onAskAboutBlock,
+    ],
   );
 
   // The slash menu follows the editor: its query updates as she types, and it closes with the "/".

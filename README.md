@@ -54,7 +54,7 @@ One command, no mock. On the first run it:
 Ctrl-C stops the server, the web app and the converter container. `NOTES_LOCAL_SEED=1 pnpm local` seeds once it is up.
 
 ```sh
-pnpm local:seed     # a small library, the fixture files, and (needs the converter) a cited study guide, four questions and an exam
+pnpm local:seed     # a small library, the fixture files, and (needs the converter) a cited study guide, four questions, an exam, a small concept set with relations, one waiting and one answered request, and a canvas with frames and labelled connectors
 pnpm local:reset    # wipes ./data/local after you type "reset": database, uploads and users
 ```
 
@@ -89,6 +89,9 @@ pnpm format             # apply Biome formatting and safe fixes
 pnpm exec playwright install chromium   # once, for the end-to-end layout check
 pnpm e2e                # Playwright: the mock suite, then the same journeys against the real server
                         # (E2E_PORT / E2E_REAL_* variables: see apps/web/playwright.real.config.ts)
+# Screenshots go to apps/web/screenshots-out/ (git-ignored). The committed set in apps/web/screenshots/
+# (16 states, three sizes, both themes, JPEG) is refreshed on purpose:
+#   SHOTS=curated pnpm --filter @notes/web exec playwright test -c playwright.real.config.ts screenshots
 ```
 
 Layout: `apps/web` (React, Vite, Tailwind 4), `apps/server` (Hono: API, MCP endpoint, static

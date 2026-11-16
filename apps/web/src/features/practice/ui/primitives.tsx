@@ -1,33 +1,27 @@
 import { AlertDialog, Collapsible, Progress as RadixProgress } from "radix-ui";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { type ButtonProps, Button as ShellButton } from "../../../components/ui/button";
 
 type Variant = "primary" | "secondary" | "ghost" | "quiet";
 
-const VARIANTS: Record<Variant, string> = {
-  primary:
-    "bg-accent text-accent-contrast hover:brightness-110 active:brightness-95 disabled:opacity-45",
-  secondary:
-    "border border-border bg-surface text-text hover:bg-surface-muted active:bg-surface-muted disabled:opacity-45",
-  ghost: "text-text hover:bg-surface-muted active:bg-surface-muted disabled:opacity-45",
-  quiet: "text-text-muted hover:bg-surface-muted hover:text-text disabled:opacity-45",
-};
+const MAP = { primary: "primary", secondary: "secondary", ghost: "ghost", quiet: "ghost" } as const;
 
+/** The shell's button, with the practice module's sizes (and a quieter ghost). */
 export function Button({
   variant = "secondary",
   size = "md",
   className = "",
-  type = "button",
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: "md" | "lg" | "sm" }) {
+}: Omit<ButtonProps, "variant"> & { variant?: Variant; size?: "md" | "lg" | "sm" }) {
   const sizes = {
-    sm: "min-h-11 px-3 text-sm",
-    md: "min-h-11 px-4 text-[0.95rem]",
-    lg: "min-h-13 px-6 text-base",
+    sm: "px-3",
+    md: "px-4",
+    lg: "min-h-13 px-6 text-base xl:min-h-13",
   } as const;
   return (
-    <button
-      type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed ${sizes[size]} ${VARIANTS[variant]} ${className}`}
+    <ShellButton
+      variant={MAP[variant]}
+      className={`${sizes[size]} ${variant === "quiet" ? "text-text-muted hover:text-text" : ""} ${className}`}
       {...rest}
     />
   );

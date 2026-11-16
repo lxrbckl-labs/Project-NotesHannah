@@ -257,7 +257,7 @@ function TypeFilter({
 
 function ConceptRows({ items }: { items: ConceptSummary[] }) {
   return (
-    <ul className="grid gap-1.5 md:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid gap-1.5 xl:grid-cols-3">
       {items.map((c) => (
         <li
           key={c.id}

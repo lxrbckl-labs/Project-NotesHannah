@@ -606,10 +606,15 @@ function TreeItem({
         <span id={titleId} className="ml-1.5 flex min-w-0 flex-1 items-baseline gap-2">
           {node.kind === "lecture" ? (
             <>
-              <MiddleTruncate text={lectureParts(node).text} />
-              {lectureParts(node).date ? (
-                <span className="shrink-0 text-xs text-text-muted">{lectureParts(node).date}</span>
-              ) : null}
+              <span className="sr-only">{nodeTitle(node)}</span>
+              <span aria-hidden className="flex min-w-0 flex-1 items-baseline gap-2">
+                <MiddleTruncate text={lectureParts(node).text} />
+                {lectureParts(node).date ? (
+                  <span className="shrink-0 text-xs text-text-muted">
+                    {lectureParts(node).date}
+                  </span>
+                ) : null}
+              </span>
             </>
           ) : (
             <span className="line-clamp-2 min-w-0 break-words md:truncate">{nodeTitle(node)}</span>

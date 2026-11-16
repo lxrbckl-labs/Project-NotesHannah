@@ -18,7 +18,8 @@ export function MiddleTruncate({
   }
   const head = text.slice(0, text.length - tail);
   return (
-    <span className={cn("flex min-w-0", className)} role="text" aria-label={text}>
+    <span className={cn("flex min-w-0", className)}>
+      <span className="sr-only">{text}</span>
       <span aria-hidden className="min-w-0 truncate">
         {head}
       </span>

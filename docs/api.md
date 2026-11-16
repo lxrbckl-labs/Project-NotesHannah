@@ -570,7 +570,7 @@ session (`shortfall` says by how much); an empty one is `invalid_input` with a h
 
 | Method and path | Query | Returns |
 |---|---|---|
-| `GET /api/practice/notebook` | `nodeId`, `type` | `{ items: [{ questionId, type, timesMissed, firstMissedAt, lastMissedAt, correctRun, stillNeeds, question: QuestionSummary }], counts: { total, byType } }`, newest miss first |
+| `GET /api/practice/notebook` | `nodeId`, `type` | `{ items: [{ questionId, type, timesMissed, firstMissedAt, lastMissedAt, correctRun, stillNeeds, question: QuestionSummary, reason }], counts: { total, byType } }`, newest miss first |
 | `GET /api/practice/weak-areas` | `nodeId`, `minAttempts` (5), `minQuestions` (3), `weakBelow` (0.7) | `{ byTag, byConcept, byNode, unmatchedAttempts, thresholds }`; each area is `{ key, attempts, correct, accuracy, meanScore, questions, status, label }` with `status` `weak`, `ok` or `insufficient_data`; `label` is the readable path of a library area |
 | `GET /api/practice/due` | `nodeId`, `examId`, `type`, `limit`, `utcOffsetMinutes` | `{ items: [{ question, card, overdueDays, intervals }], counts: { due, new, total, byDay: [{ date, count }] } }` |
 

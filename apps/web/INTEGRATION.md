@@ -10,10 +10,12 @@ folders under `src/features/`. This file is what is true today; the code is in
 | Route | Module | Mounted by | Against |
 |---|---|---|---|
 | `/doc/:nodeId` | `documents` (`DocumentView`) | `mounts/DocScreen.tsx` | the real server, via `HttpDocumentStore` |
-| `/doc/:nodeId/canvas` | `canvas` (`CanvasView`) | `mounts/CanvasScreen.tsx` | the real document, interim store (below) |
+| `/doc/:nodeId/canvas` | `canvas` (`CanvasView`) | `mounts/CanvasScreen.tsx` | the real canvas routes, via `HttpCanvasStore` (live over SSE) |
 | `/practice`, `/practice/session/:id` | `practice` (`PracticeApp`) | `mounts/PracticeScreen.tsx` | the real server, via `mounts/practiceStore.ts` |
 | `/exams` | `exams` (`ExamPlanner`, inside `PracticeApp`) | `mounts/PracticeScreen.tsx` | the same store |
-| `/requests`, `/concepts/:id` | `requests`, `concepts` | `mounts/Mount.tsx` | "Coming soon" until the modules land |
+| `/requests` | `requests` (`RequestsView`) | `mounts/Mount.tsx` | the real `/requests` routes |
+| `/concepts`, `/concepts/:id` | `concepts` (`ConceptsIndex`, `ConceptView`) | `mounts/Mount.tsx` | the real concept routes |
+| `/question/:id` | (shell) | `mounts/QuestionRedirect.tsx` | opens the lecture a practice question belongs to |
 
 Lectures and documents open as `/doc/:nodeId` from the tree, lists, breadcrumbs, search and
 activity (`nodeHref` in `features/library/rules.ts`); the library page of a lecture
@@ -50,11 +52,11 @@ and ELK with the canvas, and practice. The first load does not include them.
 | `GET /practice/overview` | none | start-screen scopes assembled from the question list, exams, notebook, due deck and active sessions |
 | question with `lefts`/`rights`, `blanks`, `unitChoices`, `rubricSize` | `left`/`right`, `blankCount`, `needsUnit` | mapped; `unitChoices` is a fixed list (any valid unit spelling grades) |
 | `POST .../answers {index}` | `POST .../answer {position}` | mapped; the key (`reveal`, citations) becomes the outcome's explanation |
-| `POST .../skip` | none | skipping is kept in the browser per session; the server's "first unanswered" is overridden |
+| `POST .../skip` | `POST /practice/sessions/:id/skip { position }` (added in the final pass) | the skip lives on the server, so a session resumes the same on another device; skipped questions come back after the ones not yet seen |
 | `POST .../reveal` returning intervals | `{ reveal }` with `back`, `modelAnswer`, `rubric` | mapped; intervals use the default 0/1/3/7 days |
 | "cards due" scope flag | scope `{ kind: "due" }` | `dueOnly` becomes the due scope |
 | `GET /practice/cards/due` | `GET /practice/due` with `counts.byDay` | mapped |
-| notebook rows with a "reason" | none | the reason is not shown |
+| notebook rows with a "reason" | `reason` on each notebook item (the grader's first plain line from the last wrong attempt) | shown as is |
 | exams with a free-text course | exams belong to a course node (`courseId`) | found from the covered lectures' ancestors |
 | session results with questions | results carry text and her answer only | the questions she saw are cached in the browser; after a reload the review shows the prompt text |
 | `retry one question` (`questionIds`) | not supported | ignored: the session starts on the scope |
@@ -67,17 +69,39 @@ The exam planner's node picker (`pickNodes`) is the shell's own sheet (`library/
 
 ## Canvas
 
-The canvas server does not exist yet. `CanvasScreen` asks `GET /api/documents/:id/canvas`: when it
-answers, `HttpCanvasStore` takes over with no other change; until then it builds a canvas from the
-real document's blocks (`deriveCanvas`, through `MemoryCanvasStore`) and keeps pins in this browser
-(`localStorage`, prefix `notes-canvas`). Cards use the canvas module's own compact block renderer: the
-documents module's block renderers need the page editor's context and were not wired through
-`renderBlock`.
+`CanvasScreen` asks `GET /api/documents/:id/canvas`. When it answers (every current server) the
+`HttpCanvasStore` is used: structure, her pins (`PUT .../placements`, debounced), the layout cache and
+live updates over `GET .../events`, so a canvas an agent changes through the API or `study_map`
+updates in the open view. Only an older server without the route falls back to a canvas derived from
+the document's blocks, with pins kept in this browser (`notes-canvas`).
 
-## What a module that lands later must export
+Cards draw their blocks with the documents module's own read-only renderers
+(`mounts/CanvasBlocks.tsx`), passed as `renderBlock` and loaded with `React.lazy`, so the canvas
+chunk does not carry the editor until a card is drawn. The canvas opens on its first frame when the
+whole map would be smaller than a readable zoom (a portrait tablet); "Whole map" (Shift+1) shows it
+all. React Flow's attribution stays visible: its MIT licence does not mention it, but its own
+documentation says to remove it only with a Pro subscription.
 
-Requests and concepts (not yet merged) are mounted by folder name, so nothing in the shell changes
-when they appear. From `src/features/<folder>/index.ts(x)`:
+## Requests, concepts and "ask"
+
+One app-wide composer (`mounts/ask.tsx`, `AskProvider` inside the shell) serves every entry point:
+a library item's menu and the detail panel, the document header, each block's "Ask about this",
+a source page, a practice question's feedback and the concept page. The documents module's own
+request call is replaced through `DocumentView`'s `onAskAboutBlock`; its quick actions are kept.
+
+Links in replies and concepts carry document and question ids, not library nodes:
+`mounts/navigation.ts` resolves them through `GET /documents/:id` and `GET /practice/questions/:id`
+(then `nodeHref`), with a fallback to the library. The module's "New answer" tag treats answers that
+exist on a device's first look as seen (`setFirstLoadCountsAsSeen`). A reply that states figures its
+sources do not contain shows "Contains figures not found in your notes".
+
+Not done: a course filter on concepts (citations name pages, not nodes: it needs a file to node to
+course join on every concept route and a new summary field) and an unverified-content count for the
+nav (no aggregate route exists).
+
+## What a module must export
+
+Modules are mounted by folder name, so nothing in the shell changes when one is added. From `src/features/<folder>/index.ts(x)`:
 
 - requests: `RequestsView` and `createHttpRequestsStore(http)`;
 - concepts: `ConceptView` and `createHttpConceptsStore(http)`.

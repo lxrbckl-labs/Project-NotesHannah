@@ -162,6 +162,14 @@ describe("RequestsView", () => {
     await waitFor(() => expect(screen.getAllByTestId("request-card")).toHaveLength(1));
   });
 
+  it("says calmly when a reply has figures that are not in her notes", async () => {
+    render(<RequestsView {...props(make())} />);
+    await screen.findAllByTestId("request-card");
+    const note = screen.getByTestId("unsourced-figures");
+    expect(note).toHaveTextContent("Contains figures not found in your notes: 40 mg daily");
+    expect(screen.getAllByTestId("reply").length).toBeGreaterThan(1);
+  });
+
   it("opens the target and the links in a reply", async () => {
     const user = userEvent.setup();
     const p = props(make());

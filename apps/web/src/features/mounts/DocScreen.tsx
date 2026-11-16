@@ -1,5 +1,5 @@
 import { type DocumentKind, lectureLabel } from "@notes/schema";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   BookOpen,
@@ -13,7 +13,6 @@ import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
-import { useToast } from "../../components/ui/toast";
 import { appHttp, isApiError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { DocumentView } from "../documents";
@@ -41,9 +40,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   const [search] = useSearchParams();
   const node = useNode(nodeId);
   const stores = useStores();
-  const client = useQueryClient();
   const navigate = useNavigate();
-  const toast = useToast();
   const ask = useAsk();
   const [writing, setWriting] = useState(false);
 
@@ -159,10 +156,11 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             </div>
             <Link
               to={`/library/${n.id}`}
-              className="flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted"
+              aria-label="Sources"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm text-text-muted hover:bg-surface-muted sm:px-3 xl:min-h-9"
             >
               <Paperclip size={15} aria-hidden />
-              Sources
+              <span className="hidden sm:inline">Sources</span>
             </Link>
             <AskButton
               target={{ type: "document", documentId }}
