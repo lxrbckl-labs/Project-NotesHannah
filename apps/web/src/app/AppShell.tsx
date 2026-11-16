@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Bot,
   Inbox,
   LogOut,
   NotebookPen,
@@ -18,6 +19,8 @@ import { LibraryTree } from "../features/library/LibraryTree";
 import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
 import { QuickFind } from "../features/search/QuickFind";
+import { UploadProvider } from "../features/uploads/UploadProvider";
+import { UploadTray } from "../features/uploads/UploadTray";
 import { cn } from "../lib/cn";
 import { readFlag, writeFlag } from "../lib/storage";
 import { useLayout } from "../lib/useMedia";
@@ -36,9 +39,12 @@ export function AppShell() {
   const me = useMe();
   return (
     <TreeStateProvider userId={me.data?.id ?? "unknown"}>
-      <LibraryDialogs>
-        <Shell />
-      </LibraryDialogs>
+      <UploadProvider>
+        <LibraryDialogs>
+          <Shell />
+          <UploadTray />
+        </LibraryDialogs>
+      </UploadProvider>
     </TreeStateProvider>
   );
 }
@@ -179,6 +185,9 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         </NavLink>
         <NavLink to="/inbox" className={linkClass}>
           <Inbox size={18} aria-hidden /> Inbox
+        </NavLink>
+        <NavLink to="/activity" className={linkClass}>
+          <Bot size={18} aria-hidden /> Activity
         </NavLink>
         <NavLink to="/trash" className={linkClass}>
           <Trash2 size={18} aria-hidden /> Trash

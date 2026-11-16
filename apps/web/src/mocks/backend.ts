@@ -6,6 +6,7 @@ import {
   CreateApiKeyInput,
   CreateNodeInput,
   canContain,
+  type FileType,
   isFixed,
   type LibraryNode,
   LoginInput,
@@ -13,15 +14,28 @@ import {
   MoveNodeInput,
   type NodeWithLinks,
   newId,
+  type Page,
   type SourceFile,
+  type Transcript,
   UpdateNodeInput,
   type User,
 } from "@notes/schema";
-import { MOCK_PASSWORD, MOCK_USERNAME, seedLibrary } from "./seed";
+import {
+  MOCK_PASSWORD,
+  MOCK_USERNAME,
+  makePages,
+  type SeedActivity,
+  type SeedBlock,
+  seedLibrary,
+} from "./seed";
 
 export interface MockSnapshot {
   nodes: LibraryNode[];
   files: SourceFile[];
+  pages: Page[];
+  transcripts: Transcript[];
+  blocks: SeedBlock[];
+  activity: SeedActivity[];
   recents: string[];
   keys: Array<{ key: ApiKey; secret: string }>;
   signedIn: boolean;
@@ -36,6 +50,8 @@ export interface MockOptions {
   snapshot?: MockSnapshot;
   /** Clock, for tests. */
   now?: () => number;
+  /** How long a new upload stays "converting" before it is converted (0: at once). */
+  convertMs?: number;
 }
 
 const STATUS: Record<string, number> = {
@@ -103,6 +119,11 @@ export function createMockBackend(options: MockOptions = {}) {
 
   let nodes: LibraryNode[];
   let files: SourceFile[];
+  let pages: Page[];
+  let transcripts: Transcript[];
+  let blocks: SeedBlock[];
+  let activity: SeedActivity[];
+  const convertMs = options.convertMs ?? 0;
   let recents: string[];
   let keys: Array<{ key: ApiKey; secret: string }>;
   let signedIn = false;
@@ -114,6 +135,10 @@ export function createMockBackend(options: MockOptions = {}) {
     if (snapshot) {
       nodes = snapshot.nodes;
       files = snapshot.files ?? [];
+      pages = snapshot.pages ?? [];
+      transcripts = snapshot.transcripts ?? [];
+      blocks = snapshot.blocks ?? [];
+      activity = snapshot.activity ?? [];
       recents = snapshot.recents;
       keys = snapshot.keys;
       signedIn = snapshot.signedIn;
@@ -125,6 +150,10 @@ export function createMockBackend(options: MockOptions = {}) {
     const seed = seedLibrary(user.id);
     nodes = seed.nodes;
     files = seed.files;
+    pages = seed.pages;
+    transcripts = seed.transcripts;
+    blocks = seed.blocks;
+    activity = seed.activity;
     recents = seed.recents;
     signedIn = false;
     password = MOCK_PASSWORD;
@@ -307,6 +336,291 @@ export function createMockBackend(options: MockOptions = {}) {
     return result.data;
   }
 
+  // ---- source files -----------------------------------------------------------------------
+
+  const fileById = (id: string) => files.find((f) => f.id === id);
+  function needFile(id: string): SourceFile {
+    const f = fileById(id);
+    if (!f) fail("not_found", "That file does not exist.");
+    return f;
+  }
+  function needLiveFile(id: string, action: string): SourceFile {
+    const f = needFile(id);
+    if (f.trashedAt)
+      fail(
+        "conflict",
+        `This file is in the trash, so it cannot be ${action}.`,
+        "Restore it first.",
+      );
+    return f;
+  }
+  const pagesOfFile = (id: string) =>
+    pages.filter((p) => p.fileId === id).sort((a, b) => a.index - b.index);
+  const currentTranscript = (pageId: string) =>
+    transcripts.filter((t) => t.pageId === pageId).sort((a, b) => b.revision - a.revision)[0] ??
+    null;
+
+  /** The state machine's derived part: converted / transcribed / filed follow the facts. */
+  function recompute(f: SourceFile) {
+    if (!["converted", "transcribed", "filed"].includes(f.status)) return;
+    const ps = pagesOfFile(f.id);
+    const done = ps.length > 0 && ps.every((p) => currentTranscript(p.id));
+    f.status = !done ? "converted" : f.nodeId ? "filed" : "transcribed";
+  }
+
+  /** Move converting files along: after convertMs they are converted (or fail on tell-tale names). */
+  function tick() {
+    for (const f of files) {
+      if (f.status !== "converting" || now() - Date.parse(f.createdAt) < convertMs) continue;
+      const name = f.originalName.toLowerCase();
+      if (name.includes("corrupt") || name.includes("encrypted") || name.includes("pages")) {
+        f.status = "failed";
+        f.errorCode = name.includes("encrypted")
+          ? "encrypted_file"
+          : name.includes("pages")
+            ? "too_many_pages"
+            : "corrupt_file";
+        f.errorMessage =
+          f.errorCode === "encrypted_file"
+            ? "This file is password protected."
+            : f.errorCode === "too_many_pages"
+              ? "This file has more than 500 pages."
+              : "This file could not be read; it looks damaged.";
+      } else {
+        f.status = "converted";
+        f.pageCount = f.type === "jpeg" || f.type === "png" || f.type === "heic" ? 1 : 6;
+        pages.push(...makePages(f));
+        recompute(f);
+      }
+      f.updatedAt = iso();
+    }
+  }
+
+  function checkFilePlace(nodeId: string): LibraryNode {
+    const node = needNode(nodeId);
+    const fine =
+      !node.trashedAt &&
+      (node.kind === "lecture" ||
+        node.kind === "folder" ||
+        (node.kind === "section" && node.section === "sources"));
+    if (!fine) {
+      fail(
+        "invalid_input",
+        node.trashedAt
+          ? "That library item is in the trash."
+          : `A source file cannot be filed under a ${node.kind}.`,
+        "File it under a lecture, a folder, or the Sources section of a course.",
+        { nodeId: "nod_..." },
+      );
+    }
+    return node;
+  }
+
+  const TYPES: Array<[RegExp, FileType]> = [
+    [/\.pdf$/i, "pdf"],
+    [/\.pptx$/i, "pptx"],
+    [/\.jpe?g$/i, "jpeg"],
+    [/\.png$/i, "png"],
+    [/\.hei[cf]$/i, "heic"],
+  ];
+
+  /** The multipart upload, or (tests, where jsdom files cannot cross into fetch) `{ name, size, nodeId }` as JSON. */
+  async function upload(form: { get(name: string): unknown }): Promise<Result> {
+    const entry = form.get("file") as { name: string; size: number } | string | null;
+    if (entry === null || typeof entry === "string")
+      fail("invalid_input", 'Send exactly one file in the field "file".');
+    const nodeId = form.get("nodeId");
+    if (typeof nodeId === "string" && nodeId) checkFilePlace(nodeId);
+    if (entry.size > 200 * 1024 * 1024) {
+      fail(
+        "too_large",
+        "That file is larger than 200 MB.",
+        "Split it, or export a smaller version.",
+      );
+    }
+    const type = TYPES.find(([re]) => re.test(entry.name))?.[1];
+    if (!type) {
+      fail(
+        "unsupported_type",
+        "That is not a PDF, PowerPoint (.pptx), JPEG, PNG or HEIC file.",
+        "Export the document as a PDF and upload that.",
+      );
+    }
+    const at = iso();
+    const f: SourceFile = {
+      id: newId("file"),
+      userId: user.id,
+      nodeId: typeof nodeId === "string" && nodeId ? nodeId : null,
+      originalName: entry.name.replace(/[/\\:*?"<>|]/g, "_"),
+      sha256: Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
+        b.toString(16).padStart(2, "0"),
+      ).join(""),
+      bytes: Math.max(1, entry.size),
+      type,
+      status: "converting",
+      errorCode: null,
+      errorMessage: null,
+      pageCount: null,
+      uploadedBy: { type: "user", userId: user.id },
+      claimedBy: null,
+      claimedAt: null,
+      createdAt: at,
+      updatedAt: at,
+      trashedAt: null,
+    };
+    files.unshift(f);
+    tick();
+    return ok({ file: f }, 201);
+  }
+
+  function filesRoute(
+    method: string,
+    path: string,
+    query: URLSearchParams,
+    payload: unknown,
+  ): Result | undefined {
+    if (path === "/files" && method === "GET") {
+      tick();
+      const nodeId = query.get("nodeId");
+      if (nodeId) needNode(nodeId);
+      const inbox = query.get("inbox") === "true";
+      const trashed = query.get("trashed") === "true";
+      const status = query.get("status");
+      const items = files.filter(
+        (f) =>
+          (trashed ? !!f.trashedAt : !f.trashedAt) &&
+          (inbox
+            ? f.nodeId === null && f.status !== "filed"
+            : nodeId
+              ? f.nodeId === nodeId
+              : true) &&
+          (!status || f.status === status),
+      );
+      return ok({ items, nextCursor: null });
+    }
+    if (path === "/converter/status" && method === "GET") {
+      return ok({
+        converter: {
+          state: "online",
+          lastSeenAt: iso(),
+          ageSeconds: 2,
+          queued: 0,
+          processing: files.filter((f) => f.status === "converting").length,
+          heartbeat: null,
+        },
+      });
+    }
+    const m = path.match(/^\/files\/([^/]+)(?:\/(retry|file|trash|restore|pages|original))?$/);
+    if (m) {
+      tick();
+      const f = needFile(m[1] as string);
+      const action = m[2];
+      if (!action && method === "GET") return ok({ file: f });
+      if (!action && method === "PATCH") {
+        needLiveFile(f.id, "renamed");
+        const name = (payload as { originalName?: string } | undefined)?.originalName?.trim();
+        if (!name)
+          fail("invalid_input", "originalName: give the new name.", "Send { originalName }.", {
+            originalName: "Lecture 7 slides.pptx",
+          });
+        f.originalName = name.replace(/[/\\:*?"<>|]/g, "_");
+        f.updatedAt = iso();
+        return ok({ file: f });
+      }
+      if (!action && method === "DELETE") {
+        if (!f.trashedAt)
+          fail(
+            "conflict",
+            "Only a file in the trash can be deleted for good.",
+            "Move it to the trash first.",
+          );
+        files = files.filter((x) => x.id !== f.id);
+        const gone = new Set(pagesOfFile(f.id).map((p) => p.id));
+        pages = pages.filter((p) => p.fileId !== f.id);
+        transcripts = transcripts.filter((t) => !gone.has(t.pageId));
+        return noContent();
+      }
+      if (action === "pages" && method === "GET") return ok({ items: pagesOfFile(f.id) });
+      if (action === "retry" && method === "POST") {
+        needLiveFile(f.id, "retried");
+        if (f.status !== "failed" && f.status !== "uploaded") {
+          fail("conflict", `Only a failed file can be retried; this one is ${f.status}.`);
+        }
+        f.status = "converting";
+        f.errorCode = null;
+        f.errorMessage = null;
+        f.createdAt = iso();
+        f.updatedAt = iso();
+        // a retried file converts for real this time, whatever its name says
+        f.originalName = f.originalName.replace(/corrupt|encrypted|pages/gi, "retried");
+        tick();
+        return ok({ file: f });
+      }
+      if (action === "file" && method === "POST") {
+        needLiveFile(f.id, "filed");
+        const nodeId = (payload as { nodeId?: string | null } | undefined)?.nodeId ?? null;
+        if (nodeId !== null) checkFilePlace(nodeId);
+        f.nodeId = nodeId;
+        recompute(f);
+        f.updatedAt = iso();
+        return ok({ file: f });
+      }
+      if (action === "trash" && method === "POST") {
+        f.trashedAt ??= iso();
+        return ok({ file: f });
+      }
+      if (action === "restore" && method === "POST") {
+        f.trashedAt = null;
+        return ok({ file: f });
+      }
+    }
+    const pm = path.match(
+      /^\/pages\/([^/]+)\/transcript(?:\/(review|revisions)(?:\/(\d+)\/restore)?)?$/,
+    );
+    if (pm) {
+      const page = pages.find((p) => p.id === pm[1]);
+      if (!page) fail("not_found", "That page does not exist.");
+      const history = transcripts
+        .filter((t) => t.pageId === page.id)
+        .sort((a, b) => b.revision - a.revision);
+      if (!pm[2] && method === "GET") return ok({ transcript: history[0] ?? null });
+      if (pm[2] === "revisions" && !pm[3] && method === "GET")
+        return ok({ items: history, nextCursor: null });
+      if (pm[2] === "review" && method === "POST") {
+        const t = history[0];
+        if (!t) fail("not_found", "This page has no transcript yet.");
+        const reviewed = (payload as { reviewed?: boolean } | undefined)?.reviewed ?? true;
+        t.reviewStatus = reviewed ? "reviewed" : "unverified";
+        t.reviewedAt = reviewed ? iso() : null;
+        return ok({ transcript: t });
+      }
+      if (pm[2] === "revisions" && pm[3] && method === "POST") {
+        const from = history.find((t) => t.revision === Number(pm[3]));
+        if (!from) fail("not_found", "That revision does not exist.");
+        if (history[0]?.revision === from.revision)
+          fail("conflict", "That is already the current revision.");
+        const next: Transcript = {
+          ...structuredClone(from),
+          id: newId("transcript"),
+          revision: (history[0]?.revision ?? 0) + 1,
+          author: { type: "user", userId: user.id },
+          reviewStatus: "unverified",
+          reviewedAt: null,
+          createdAt: iso(),
+        };
+        transcripts.push(next);
+        page.transcriptId = next.id;
+        const f = fileById(page.fileId);
+        if (f) recompute(f);
+        return ok({ transcript: next }, 201);
+      }
+    }
+    if (path === "/activity" && method === "GET") {
+      return ok({ items: [...activity].sort((a, b) => b.id - a.id), nextCursor: null });
+    }
+    return undefined;
+  }
+
   type Json = unknown;
   type Result = { status: number; json?: Json; headers?: Record<string, string> };
   const ok = (json: Json, status = 200): Result => ({ status, json });
@@ -365,6 +679,11 @@ export function createMockBackend(options: MockOptions = {}) {
       }
       password = input.newPassword;
       return noContent();
+    }
+
+    {
+      const handled = filesRoute(method, path, query, payload);
+      if (handled) return handled;
     }
 
     if (path === "/keys") {
@@ -486,14 +805,51 @@ export function createMockBackend(options: MockOptions = {}) {
         fail("invalid_input", "Type something to search for.", "Pass a non-empty q parameter.", {
           q: "beta",
         });
-      const hits = nodes
-        .filter((n) => !n.trashedAt && n.name.toLowerCase().includes(q))
-        .slice(0, Number(query.get("limit") ?? 20))
-        .map((n) => {
+      const kindsParam = query.get("kinds");
+      const kinds = new Set(kindsParam ? kindsParam.split(",") : ["node", "page", "block"]);
+      const limit = Number(query.get("limit") ?? 50);
+      const items: Array<Record<string, unknown>> = [];
+      if (kinds.has("node")) {
+        for (const n of nodes) {
+          if (n.trashedAt || n.kind === "section" || !n.name.toLowerCase().includes(q)) continue;
           const node = withLinks(n);
-          return { kind: "node" as const, node, snippet: node.path };
-        });
-      return ok({ items: hits, nextCursor: null });
+          items.push({ kind: "node", node, snippet: node.path });
+        }
+      }
+      if (kinds.has("block")) {
+        for (const b of blocks) {
+          const owner = byId(b.nodeId);
+          if (!owner || owner.trashedAt || !b.text.toLowerCase().includes(q)) continue;
+          items.push({
+            kind: "block",
+            documentId: b.documentId,
+            nodeId: b.nodeId,
+            documentTitle: b.documentTitle,
+            blockId: b.blockId,
+            blockType: "paragraph",
+            snippet: b.text,
+          });
+        }
+      }
+      if (kinds.has("page")) {
+        for (const p of pages) {
+          const f = fileById(p.fileId);
+          const t = currentTranscript(p.id);
+          if (!f || f.trashedAt || !t || !t.text.toLowerCase().includes(q)) continue;
+          const at = t.text.toLowerCase().indexOf(q);
+          items.push({
+            kind: "page",
+            pageId: p.id,
+            pageIndex: p.index,
+            fileId: f.id,
+            fileName: f.originalName,
+            nodeId: f.nodeId,
+            transcriptId: t.id,
+            snippet: t.text.slice(Math.max(0, at - 30), at + 60).replace(/\n/g, " "),
+          });
+        }
+      }
+      return ok({ items: items.slice(0, limit), nextCursor: null });
     }
 
     const nodeMatch = path.match(/^\/nodes\/([^/]+)(?:\/(move|duplicate|trash|restore))?$/);
@@ -604,8 +960,16 @@ export function createMockBackend(options: MockOptions = {}) {
           );
         if (node.trashedAt) return ok({ node: withLinks(node) });
         const at = iso();
-        for (const n of [node, ...descendantsOf(node.id).filter((d) => !d.trashedAt)])
-          n.trashedAt = at;
+        const affected = [node, ...descendantsOf(node.id).filter((d) => !d.trashedAt)];
+        for (const n of affected) n.trashedAt = at;
+        // source files filed here go back to the inbox, never trashed
+        const ids = new Set(affected.map((n) => n.id));
+        for (const f of files) {
+          if (f.nodeId && ids.has(f.nodeId)) {
+            f.nodeId = null;
+            recompute(f);
+          }
+        }
         return ok({ node: withLinks(node) });
       }
       if (action === "restore" && method === "POST") {
@@ -633,6 +997,34 @@ export function createMockBackend(options: MockOptions = {}) {
     if (options.latencyMs) await new Promise((r) => setTimeout(r, options.latencyMs));
     const url = new URL(request.url);
     let payload: unknown;
+    if (request.method === "POST" && url.pathname === "/api/uploads") {
+      try {
+        if (!signedIn) fail("unauthenticated", "Sign in to continue.");
+        let form: { get(name: string): unknown };
+        if ((request.headers.get("content-type") ?? "").includes("json")) {
+          const body = (await request.json()) as { name: string; size: number; nodeId?: string };
+          form = {
+            get: (key) =>
+              key === "file"
+                ? { name: body.name, size: body.size }
+                : key === "nodeId"
+                  ? (body.nodeId ?? null)
+                  : null,
+          };
+        } else {
+          form = await request.formData();
+        }
+        const result = await upload(form);
+        options.onChange?.(snapshot());
+        return new Response(JSON.stringify(result.json), {
+          status: result.status,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        if (error instanceof Fail) return errorResponse(error.error);
+        throw error;
+      }
+    }
     if (request.method !== "GET" && request.method !== "DELETE") {
       const text = await request.text();
       if (text) {
@@ -664,13 +1056,30 @@ export function createMockBackend(options: MockOptions = {}) {
   }
 
   function snapshot(): MockSnapshot {
-    return structuredClone({ nodes, files, recents, keys, signedIn, password });
+    return structuredClone({
+      nodes,
+      files,
+      pages,
+      transcripts,
+      blocks,
+      activity,
+      recents,
+      keys,
+      signedIn,
+      password,
+    });
   }
 
   return {
     handle,
     fetch: (input: RequestInfo | URL, init?: RequestInit) => handle(new Request(input, init)),
     snapshot,
+    pageInfo: (id: string) => {
+      const p = pages.find((x) => x.id === id);
+      return p
+        ? { index: p.index, width: p.width, height: p.height, handwritten: !p.hasTextLayer }
+        : null;
+    },
     reset: () => load(),
   };
 }

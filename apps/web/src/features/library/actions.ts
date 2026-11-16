@@ -128,6 +128,25 @@ export function useNodeActions() {
     [run],
   );
 
+  /** Change name, course code or lecture number and date in one go. */
+  const update = useCallback(
+    (node: NodeWithLinks, input: UpdateNodeInput) =>
+      run(
+        make(
+          (v: { id: string; input: UpdateNodeInput }) => api.updateNode(v.id, v.input),
+          () => (_key, data) =>
+            mapNode(data, node.id, (n) => ({
+              ...n,
+              ...(input.name !== undefined ? { name: input.name } : {}),
+              ...(input.course !== undefined ? { course: input.course } : {}),
+              ...(input.lecture !== undefined ? { lecture: input.lecture } : {}),
+            })),
+        ),
+        { id: node.id, input },
+      ),
+    [run],
+  );
+
   const setFavourite = useCallback(
     (node: NodeWithLinks, favourite: boolean) =>
       run(
@@ -265,7 +284,7 @@ export function useNodeActions() {
     [run],
   );
 
-  return { create, rename, setFavourite, duplicate, move, trash, restore, deleteForever };
+  return { create, update, rename, setFavourite, duplicate, move, trash, restore, deleteForever };
 }
 
 export type NodeActions = ReturnType<typeof useNodeActions>;

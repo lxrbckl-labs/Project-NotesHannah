@@ -12,7 +12,9 @@ export type MenuEntry =
       disabled?: boolean;
       shortcut?: string;
     }
-  | { type: "separator" };
+  | { type: "separator" }
+  /** A non-interactive heading, e.g. the full name of the item the menu is for. */
+  | { type: "label"; text: string };
 
 const contentClass =
   "z-50 min-w-52 rounded-2xl border border-border bg-surface p-1.5 text-text shadow-pop anim-pop";
@@ -28,13 +30,23 @@ function Entries({
   entries,
   Item,
   Separator,
+  Label,
 }: {
   entries: MenuEntry[];
   Item: typeof DropdownMenu.Item | typeof ContextMenu.Item;
   Separator: typeof DropdownMenu.Separator | typeof ContextMenu.Separator;
+  Label: typeof DropdownMenu.Label | typeof ContextMenu.Label;
 }) {
   return entries.map((entry, i) =>
-    entry.type === "separator" ? (
+    entry.type === "label" ? (
+      <Label
+        // biome-ignore lint/suspicious/noArrayIndexKey: static menu structure
+        key={`label-${i}`}
+        className="max-w-72 break-words px-3 py-1.5 text-xs font-medium text-text-muted [overflow-wrap:anywhere]"
+      >
+        {entry.text}
+      </Label>
+    ) : entry.type === "separator" ? (
       // biome-ignore lint/suspicious/noArrayIndexKey: static menu structure
       <Separator key={`sep-${i}`} className={sepClass} />
     ) : (
@@ -73,7 +85,12 @@ export function ActionMenu({
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align={align} sideOffset={6} className={contentClass}>
-          <Entries entries={entries} Item={DropdownMenu.Item} Separator={DropdownMenu.Separator} />
+          <Entries
+            entries={entries}
+            Item={DropdownMenu.Item}
+            Separator={DropdownMenu.Separator}
+            Label={DropdownMenu.Label}
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -93,7 +110,12 @@ export function ContextActions({
       <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
       <ContextMenu.Portal>
         <ContextMenu.Content className={contentClass}>
-          <Entries entries={entries} Item={ContextMenu.Item} Separator={ContextMenu.Separator} />
+          <Entries
+            entries={entries}
+            Item={ContextMenu.Item}
+            Separator={ContextMenu.Separator}
+            Label={ContextMenu.Label}
+          />
         </ContextMenu.Content>
       </ContextMenu.Portal>
     </ContextMenu.Root>

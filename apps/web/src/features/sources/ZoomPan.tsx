@@ -1,0 +1,155 @@
+import { Maximize, Minus, Plus } from "lucide-react";
+import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { IconButton } from "../../components/ui/button";
+
+const MIN = 1;
+const MAX = 6;
+
+/**
+ * A picture you can zoom and pan: wheel or buttons to zoom, drag to pan, pinch on touch,
+ * double-click or double-tap to jump in and out. Children are drawn inside the transform, so
+ * overlays (a highlighted region) move with the page.
+ */
+export function ZoomPan({ children, label }: { children: ReactNode; label: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const last = useRef<{ x: number; y: number; dist: number } | null>(null);
+
+  const clamp = useCallback((scale: number, x: number, y: number) => {
+    const el = box.current;
+    const s = Math.min(MAX, Math.max(MIN, scale));
+    if (!el) return { scale: s, x, y };
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const maxX = (w * (s - 1)) / 2;
+    const maxY = (h * (s - 1)) / 2;
+    return {
+      scale: s,
+      x: Math.min(maxX, Math.max(-maxX, x)),
+      y: Math.min(maxY, Math.max(-maxY, y)),
+    };
+  }, []);
+
+  const zoomTo = useCallback(
+    (next: number, around?: { x: number; y: number }) => {
+      setView((v) => {
+        const el = box.current;
+        if (!el || !around) return clamp(next, v.x, v.y);
+        const rect = el.getBoundingClientRect();
+        const cx = around.x - rect.left - rect.width / 2;
+        const cy = around.y - rect.top - rect.height / 2;
+        const ratio = Math.min(MAX, Math.max(MIN, next)) / v.scale;
+        return clamp(next, cx - (cx - v.x) * ratio, cy - (cy - v.y) * ratio);
+      });
+    },
+    [clamp],
+  );
+
+  // Wheel needs a non-passive listener to stop the page scrolling under the picture.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      zoomTo(view.scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15), {
+        x: event.clientX,
+        y: event.clientY,
+      });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [view.scale, zoomTo]);
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    last.current = null;
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const map = pointers.current;
+    if (!map.has(event.pointerId)) return;
+    map.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const pts = [...map.values()];
+    if (pts.length === 2) {
+      const [a, b] = pts as [{ x: number; y: number }, { x: number; y: number }];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      if (last.current?.dist) zoomTo(view.scale * (dist / last.current.dist), mid);
+      last.current = { ...mid, dist };
+    } else if (pts.length === 1 && view.scale > 1) {
+      const p = pts[0] as { x: number; y: number };
+      if (last.current) {
+        const dx = p.x - last.current.x;
+        const dy = p.y - last.current.y;
+        setView((v) => clamp(v.scale, v.x + dx, v.y + dy));
+      }
+      last.current = { x: p.x, y: p.y, dist: 0 };
+    }
+  }
+
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    pointers.current.delete(event.pointerId);
+    last.current = null;
+  }
+
+  return (
+    <div className="relative">
+      {/* biome-ignore lint/a11y/useSemanticElements: an image viewport, not a form group */}
+      <div
+        ref={box}
+        role="group"
+        aria-label={label}
+        data-testid="zoom-area"
+        data-scale={view.scale.toFixed(2)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onDoubleClick={(event) =>
+          view.scale > 1
+            ? setView({ scale: 1, x: 0, y: 0 })
+            : zoomTo(2.5, { x: event.clientX, y: event.clientY })
+        }
+        className="relative flex min-h-40 touch-none select-none items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-muted"
+        style={{ cursor: view.scale > 1 ? "grab" : "zoom-in" }}
+      >
+        <div
+          className="relative max-h-full max-w-full"
+          style={{
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+            transformOrigin: "center",
+          }}
+        >
+          {children}
+        </div>
+      </div>
+      <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-2xl border border-border bg-surface/95 p-1 shadow-card">
+        <IconButton
+          aria-label="Zoom out"
+          onClick={() => zoomTo(view.scale / 1.4)}
+          disabled={view.scale <= MIN}
+        >
+          <Minus size={18} />
+        </IconButton>
+        <span
+          className="min-w-10 text-center text-xs tabular-nums text-text-muted"
+          aria-live="polite"
+        >
+          {Math.round(view.scale * 100)}%
+        </span>
+        <IconButton
+          aria-label="Zoom in"
+          onClick={() => zoomTo(view.scale * 1.4)}
+          disabled={view.scale >= MAX}
+        >
+          <Plus size={18} />
+        </IconButton>
+        <IconButton aria-label="Fit page" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
+          <Maximize size={18} />
+        </IconButton>
+      </div>
+    </div>
+  );
+}

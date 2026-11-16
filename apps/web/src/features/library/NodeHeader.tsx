@@ -6,12 +6,14 @@ import { Button, IconButton } from "../../components/ui/button";
 import { ActionMenu } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
 import { useBack } from "../../lib/useBack";
+import { UploadButton } from "../uploads/UploadButton";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { useLibraryDialogs } from "./dialogs";
 import { InlineName } from "./InlineName";
 import { NodeIcon } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
+import { canHoldFiles } from "./picker";
 import { creatableIn, KIND_NAME } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
 
@@ -87,7 +89,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
         </div>
       </div>
 
-      {creatable.length > 0 ? (
+      {creatable.length > 0 || canHoldFiles(node) ? (
         <div className="mt-5 flex flex-wrap gap-2">
           {creatable.map((kind, i) => (
             <Button
@@ -99,6 +101,11 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
               New {KIND_NAME[kind].toLowerCase()}
             </Button>
           ))}
+          {canHoldFiles(node) ? (
+            <UploadButton nodeId={node.id} target={node.name}>
+              Upload files
+            </UploadButton>
+          ) : null}
         </div>
       ) : null}
     </header>

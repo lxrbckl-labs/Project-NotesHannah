@@ -1,0 +1,378 @@
+import type { NormalizedBox, Page, SourceFile } from "@notes/schema";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, Download, FileSearch, RotateCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
+import { Button } from "../../components/ui/button";
+import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
+import { api, originalUrl, pageImageUrl } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { formatDate } from "../../lib/format";
+import { failureWords, IN_PROGRESS, STATUS_INFO } from "../../lib/messages";
+import { useLayout } from "../../lib/useMedia";
+import { useFileActions } from "../library/fileActions";
+import { FileStatusBadge, FileTypeIcon } from "../library/LibraryTree";
+import { fileKeys, useNode } from "../library/queries";
+import { TranscriptPanel } from "./TranscriptPanel";
+import { ZoomPan } from "./ZoomPan";
+
+export interface SourceViewerProps {
+  fileId: string;
+  /** Open at this page (a deep link, e.g. from a citation). Defaults to the first page. */
+  pageId?: string | undefined;
+  /** A passage to highlight in the transcript. */
+  highlightQuote?: string | undefined;
+  /** A box on the page image to outline (normalised 0..1, as in citations). */
+  region?: NormalizedBox | undefined;
+  /** Called when she moves to another page, so a route can keep the address in step. */
+  onPageChange?: ((pageId: string) => void) | undefined;
+}
+
+const pagesKey = (fileId: string) => ["files", "pages", fileId] as const;
+
+/**
+ * The source viewer (C6): the page image beside its transcript (tabs on a phone), a strip of
+ * thumbnails, zoom and pan, native text and speaker notes, flags, review and history.
+ * Embeddable: the documents feature opens it from a citation with `pageId` and `highlightQuote`.
+ */
+export function SourceViewer({
+  fileId,
+  pageId,
+  highlightQuote,
+  region,
+  onPageChange,
+}: SourceViewerProps) {
+  const layout = useLayout();
+  const actions = useFileActions();
+  const file = useQuery({
+    queryKey: fileKeys.one(fileId),
+    queryFn: () => api.file(fileId),
+    refetchInterval: (q) => (q.state.data && IN_PROGRESS.has(q.state.data.status) ? 2000 : false),
+  });
+  const pages = useQuery({
+    queryKey: pagesKey(fileId),
+    queryFn: () => api.pagesOf(fileId),
+    enabled: !!file.data && !IN_PROGRESS.has(file.data.status) && file.data.status !== "failed",
+  });
+  const place = useNode(file.data?.nodeId ?? undefined);
+  const [currentId, setCurrentId] = useState<string | undefined>(pageId);
+
+  // A new deep link moves the viewer.
+  useEffect(() => {
+    if (pageId) setCurrentId(pageId);
+  }, [pageId]);
+
+  if (file.isPending) {
+    return (
+      <div role="status" aria-label="Loading file" className="grid gap-4">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-72" />
+      </div>
+    );
+  }
+  if (file.isError) return <ErrorState error={file.error} onRetry={() => file.refetch()} />;
+  const f = file.data;
+
+  const list = pages.data ?? [];
+  const page = list.find((p) => p.id === currentId) ?? list[0];
+  const index = page ? list.indexOf(page) : -1;
+  const go = (next: Page | undefined) => {
+    if (!next) return;
+    setCurrentId(next.id);
+    onPageChange?.(next.id);
+  };
+
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4" data-testid="source-viewer">
+      <ViewerHeader
+        file={f}
+        placePath={place.data?.path}
+        placeId={place.data?.id}
+        onRetry={() => void actions.retry(f)}
+      />
+
+      {f.status === "failed" || f.status === "converting" || f.status === "uploaded" ? (
+        <NotReady file={f} onRetry={() => void actions.retry(f)} />
+      ) : pages.isPending ? (
+        <Skeleton className="h-80" />
+      ) : pages.isError ? (
+        <ErrorState error={pages.error} onRetry={() => pages.refetch()} />
+      ) : !page ? (
+        <EmptyState icon={<FileSearch size={26} />} title="No pages">
+          This file has no pages to show.
+        </EmptyState>
+      ) : (
+        <>
+          <Thumbnails pages={list} currentId={page.id} onPick={go} />
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              aria-label="Previous page"
+              disabled={index <= 0}
+              onClick={() => go(list[index - 1])}
+            >
+              <ChevronLeft size={18} aria-hidden />
+              <span className="hidden sm:inline">Previous</span>
+            </Button>
+            <p className="text-sm text-text-muted" aria-live="polite" data-testid="page-position">
+              Page {page.index} of {list.length}
+            </p>
+            <Button
+              aria-label="Next page"
+              disabled={index >= list.length - 1}
+              onClick={() => go(list[index + 1])}
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight size={18} aria-hidden />
+            </Button>
+          </div>
+          {layout === "phone" ? (
+            <PhonePanes
+              key={page.id}
+              file={f}
+              page={page}
+              highlightQuote={highlightQuote}
+              region={region}
+            />
+          ) : (
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <PageImage page={page} region={region} />
+              <TranscriptPanel file={f} page={page} highlightQuote={highlightQuote} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ViewerHeader({
+  file,
+  placePath,
+  placeId,
+  onRetry,
+}: {
+  file: SourceFile;
+  placePath?: string | undefined;
+  placeId?: string | undefined;
+  onRetry: () => void;
+}) {
+  void onRetry;
+  return (
+    <header className="flex flex-wrap items-start gap-3">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+        <FileTypeIcon type={file.type} size={24} />
+      </span>
+      <div className="min-w-0 flex-1 basis-60">
+        <h1 className="break-words text-2xl font-semibold leading-tight [overflow-wrap:anywhere] md:text-3xl">
+          {file.originalName}
+        </h1>
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+          <span className="uppercase">{file.type}</span>
+          {file.pageCount ? <span>{file.pageCount} pages</span> : null}
+          <FileStatusBadge status={file.status} />
+          <span>Uploaded {formatDate(file.createdAt)}</span>
+        </p>
+        <p className="mt-1.5 text-sm">
+          {file.nodeId && placePath ? (
+            <>
+              Filed under{" "}
+              <Link
+                className="text-accent underline-offset-2 hover:underline"
+                to={`/library/${placeId}`}
+              >
+                {placePath}
+              </Link>
+            </>
+          ) : file.nodeId ? null : (
+            <span className="text-text-muted">In the inbox, not filed yet.</span>
+          )}
+        </p>
+      </div>
+      <a
+        href={originalUrl(file.id, true)}
+        download
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-medium hover:bg-surface-muted xl:min-h-9"
+      >
+        <Download size={16} aria-hidden />
+        Download original
+      </a>
+    </header>
+  );
+}
+
+function NotReady({ file, onRetry }: { file: SourceFile; onRetry: () => void }) {
+  const failed = file.status === "failed";
+  return (
+    <EmptyState
+      icon={failed ? <RotateCw size={26} /> : <FileSearch size={26} />}
+      title={failed ? "This file could not be converted" : STATUS_INFO[file.status].label}
+      action={
+        failed || file.status === "uploaded" ? (
+          <Button variant="primary" onClick={onRetry}>
+            Retry conversion
+          </Button>
+        ) : null
+      }
+    >
+      {failed ? failureWords(file) : STATUS_INFO[file.status].words}
+    </EmptyState>
+  );
+}
+
+function Thumbnails({
+  pages,
+  currentId,
+  onPick,
+}: {
+  pages: Page[];
+  currentId: string;
+  onPick: (page: Page) => void;
+}) {
+  const strip = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    strip.current
+      ?.querySelector('[aria-current="true"]')
+      ?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, []);
+  return (
+    <nav aria-label="Pages">
+      <ul ref={strip} className="flex gap-2 overflow-x-auto pb-1">
+        {pages.map((p) => (
+          <li key={p.id} className="shrink-0">
+            <button
+              type="button"
+              aria-label={`Page ${p.index}`}
+              aria-current={p.id === currentId ? "true" : undefined}
+              data-page-id={p.id}
+              data-testid="thumb"
+              onClick={() => onPick(p)}
+              className={cn(
+                "relative block overflow-hidden rounded-xl border-2 bg-surface-muted",
+                p.id === currentId
+                  ? "border-accent"
+                  : "border-transparent hover:border-border-strong",
+              )}
+            >
+              <img
+                src={pageImageUrl(p.id, "thumb")}
+                alt=""
+                loading="lazy"
+                className="h-20 w-auto min-w-14 max-w-32 object-contain md:h-24"
+              />
+              <span className="absolute bottom-1 left-1 rounded-md bg-surface/90 px-1.5 text-xs font-medium">
+                {p.index}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function PageImage({ page, region }: { page: Page; region?: NormalizedBox | undefined }) {
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset the state for each page
+  useEffect(() => setState("loading"), [page.id]);
+  return (
+    <div>
+      <ZoomPan label={`Page ${page.index} image. Scroll or pinch to zoom, drag to move.`}>
+        {state === "error" ? (
+          <p role="alert" className="p-8 text-sm text-danger">
+            The page image could not load.
+          </p>
+        ) : (
+          <img
+            key={page.id}
+            src={pageImageUrl(page.id)}
+            alt={`Page ${page.index}`}
+            draggable={false}
+            onLoad={() => setState("ready")}
+            onError={() => setState("error")}
+            className="block max-h-[min(62dvh,46rem)] w-full bg-white object-contain"
+          />
+        )}
+        {region && state === "ready" ? (
+          <div
+            data-testid="region"
+            title="Cited area"
+            className="pointer-events-none absolute rounded border-2 border-accent bg-accent/15"
+            style={{
+              left: `${region.x * 100}%`,
+              top: `${region.y * 100}%`,
+              width: `${region.width * 100}%`,
+              height: `${region.height * 100}%`,
+            }}
+          />
+        ) : null}
+      </ZoomPan>
+    </div>
+  );
+}
+
+/** On a phone: the page and the transcript are two panes you swipe between, with tabs on top. */
+function PhonePanes({
+  file,
+  page,
+  highlightQuote,
+  region,
+}: {
+  file: SourceFile;
+  page: Page;
+  highlightQuote?: string | undefined;
+  region?: NormalizedBox | undefined;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const [tab, setTab] = useState(highlightQuote ? 1 : 0);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: jump to the starting tab once
+  useEffect(() => {
+    const el = scroller.current;
+    if (el && tab === 1) el.scrollTo({ left: el.clientWidth });
+  }, []);
+
+  function choose(next: number) {
+    setTab(next);
+    const el = scroller.current;
+    el?.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+  }
+
+  return (
+    <div>
+      <div
+        role="tablist"
+        aria-label="Page or transcript"
+        className="mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-surface-muted p-1"
+      >
+        {["Page", "Transcript"].map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            role="tab"
+            aria-selected={tab === i}
+            onClick={() => choose(i)}
+            className="min-h-11 rounded-xl text-sm font-medium text-text-muted aria-selected:bg-accent aria-selected:text-accent-contrast"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div
+        ref={scroller}
+        data-testid="pane-scroller"
+        onScroll={(event) => {
+          const el = event.currentTarget;
+          setTab(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+        }}
+        className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]"
+      >
+        <div role="tabpanel" aria-label="Page" className="w-full shrink-0 snap-center pr-1">
+          <PageImage page={page} region={region} />
+        </div>
+        <div role="tabpanel" aria-label="Transcript" className="w-full shrink-0 snap-center pl-1">
+          <TranscriptPanel file={file} page={page} highlightQuote={highlightQuote} />
+        </div>
+      </div>
+    </div>
+  );
+}

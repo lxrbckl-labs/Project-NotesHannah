@@ -1,6 +1,16 @@
 import type { NodeWithLinks, SourceFile } from "@notes/schema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, FileText, Image as ImageIcon, Inbox, Presentation } from "lucide-react";
+import {
+  ChevronRight,
+  FileSearch,
+  FileText,
+  FolderInput,
+  Image as ImageIcon,
+  Inbox,
+  Pencil,
+  Presentation,
+  Trash2,
+} from "lucide-react";
 import {
   createContext,
   type KeyboardEvent,
@@ -13,15 +23,20 @@ import {
 } from "react";
 import { useMatch, useNavigate } from "react-router";
 import { Badge } from "../../components/ui/field";
-import { ContextActions } from "../../components/ui/menu";
+import { ContextActions, type MenuEntry } from "../../components/ui/menu";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { IN_PROGRESS } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
+import { useUploadManager } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
-import { useRowDnd } from "./dnd";
+import { useLibraryDialogs } from "./dialogs";
+import { fileLeafDragProps, useInboxDrop, useRowDnd } from "./dnd";
+import { useFileActions } from "./fileActions";
 import { InlineName } from "./InlineName";
 import { NodeIcon } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
+import { canHoldFiles } from "./picker";
 import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
 import { type Destination, isPending, toDestination } from "./rules";
 import { useTreeState } from "./treeState";
@@ -144,6 +159,8 @@ function TreeBranch({ parent, depth }: { parent: NodeWithLinks; depth: number })
     queryKey: fileKeys.of(parent.id),
     queryFn: () => api.filesOf(parent.id),
     enabled: hasFiles,
+    refetchInterval: (query) =>
+      query.state.data?.some((f) => IN_PROGRESS.has(f.status)) ? 3000 : false,
   });
   if (children.isPending) {
     return (
@@ -217,62 +234,143 @@ export function FileStatusBadge({ status }: { status: SourceFile["status"] }) {
   return <Badge tone={tone}>{STATUS_LABEL[status]}</Badge>;
 }
 
-/** A source file as a leaf: opens the file page. Not movable or renamable in this pass. */
+/** A source file as a leaf: opens the source viewer; move, rename and trash like any item. */
 function FileLeaf({ file, depth }: { file: SourceFile; depth: number }) {
   const tree = useTree();
   const nameId = useId();
+  const actions = useFileActions();
+  const dialogs = useLibraryDialogs();
+  const [renaming, setRenaming] = useState(false);
   const pages = file.pageCount
     ? `${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"}`
     : null;
-  return (
-    <li role="none">
-      <div
-        role="treeitem"
-        aria-labelledby={nameId}
-        aria-level={depth + 1}
-        aria-selected={false}
-        tabIndex={tree.tabbableId === file.id ? 0 : -1}
-        data-testid="tree-file"
-        data-type={file.type}
-        title={file.originalName}
-        onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(file.id)}
-        onClick={() => tree.go(`/files/${file.id}`)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            tree.go(`/files/${file.id}`);
-          } else if (e.target === e.currentTarget) {
-            treeArrowKeys(e, depth);
-          }
-        }}
-        className={cn(
-          "flex cursor-pointer items-center gap-2 rounded-xl py-1.5 pr-2 text-text hover:bg-surface-muted",
-          tree.variant === "page" ? "min-h-12 text-[15px]" : "min-h-11 text-sm xl:min-h-8",
-        )}
-        style={{ paddingLeft: `calc(var(--indent) * ${depth} + 40px)` }}
-      >
-        <span className="shrink-0 text-text-muted">
-          <FileTypeIcon type={file.type} />
-        </span>
-        <span className="min-w-0 flex-1">
+  const entries: MenuEntry[] = [
+    { type: "label", text: file.originalName },
+    { type: "separator" },
+    {
+      type: "item",
+      label: "Open",
+      icon: <FileSearch size={16} />,
+      onSelect: () => tree.go(`/files/${file.id}`),
+    },
+    {
+      type: "item",
+      label: "File under…",
+      icon: <FolderInput size={16} />,
+      onSelect: () => dialogs.openMoveFile(file),
+    },
+    ...(file.nodeId
+      ? [
+          {
+            type: "item" as const,
+            label: "Back to inbox",
+            icon: <Inbox size={16} />,
+            onSelect: () => void actions.moveTo(file, null),
+          },
+        ]
+      : []),
+    {
+      type: "item",
+      label: "Rename",
+      icon: <Pencil size={16} />,
+      shortcut: "F2",
+      onSelect: () => setRenaming(true),
+    },
+    { type: "separator" },
+    {
+      type: "item",
+      label: "Move to trash",
+      icon: <Trash2 size={16} />,
+      danger: true,
+      shortcut: "Del",
+      onSelect: () => void actions.trash(file),
+    },
+  ];
+  const row = (
+    <div
+      role="treeitem"
+      aria-labelledby={nameId}
+      aria-level={depth + 1}
+      aria-selected={false}
+      tabIndex={tree.tabbableId === file.id ? 0 : -1}
+      data-testid="tree-file"
+      data-type={file.type}
+      title={file.originalName}
+      onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(file.id)}
+      onClick={() => !renaming && tree.go(`/files/${file.id}`)}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          tree.go(`/files/${file.id}`);
+        } else if (e.key === "F2") {
+          e.preventDefault();
+          setRenaming(true);
+        } else if (e.key === "Delete") {
+          e.preventDefault();
+          void actions.trash(file);
+        } else {
+          treeArrowKeys(e, depth);
+        }
+      }}
+      {...fileLeafDragProps(file, tree.dnd)}
+      className={cn(
+        "flex cursor-pointer items-center gap-2 rounded-xl py-1.5 pr-2 text-text hover:bg-surface-muted",
+        tree.variant === "page" ? "min-h-12 text-[15px]" : "min-h-11 text-sm xl:min-h-8",
+      )}
+      style={{ paddingLeft: `calc(var(--indent) * ${depth} + 40px)` }}
+    >
+      <span className="shrink-0 text-text-muted">
+        <FileTypeIcon type={file.type} />
+      </span>
+      <span className="min-w-0 flex-1">
+        {renaming ? (
+          <InlineName
+            value={file.originalName}
+            label={`Rename ${file.originalName}`}
+            className="min-h-8 py-0 text-sm"
+            onCancel={() => setRenaming(false)}
+            onCommit={(name) => {
+              setRenaming(false);
+              void actions.rename(file, name);
+            }}
+          />
+        ) : (
           <span id={nameId} className="line-clamp-2 block break-words md:truncate">
             {file.originalName}
           </span>
-          {tree.variant === "page" ? (
-            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
-              {pages ? <span>{pages}</span> : null}
-              <FileStatusBadge status={file.status} />
-            </span>
-          ) : null}
-        </span>
-      </div>
+        )}
+        {tree.variant === "page" && !renaming ? (
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+            {pages ? <span>{pages}</span> : null}
+            <FileStatusBadge status={file.status} />
+          </span>
+        ) : null}
+      </span>
+    </div>
+  );
+  return (
+    <li role="none">
+      <ContextActions entries={entries}>{row}</ContextActions>
     </li>
   );
 }
 
 function InboxRow() {
   const tree = useTree();
-  const inbox = useQuery({ queryKey: fileKeys.inbox, queryFn: api.inboxFiles });
+  const uploads = useUploadManager();
+  const actions = useFileActions();
+  const inbox = useQuery({
+    queryKey: fileKeys.inbox,
+    queryFn: api.inboxFiles,
+    refetchInterval: (query) =>
+      query.state.data?.some((f) => IN_PROGRESS.has(f.status)) ? 3000 : false,
+  });
+  const drop = useInboxDrop({
+    enabled: tree.dnd,
+    onUploadFiles: (files) => uploads.enqueue(files, { nodeId: null, label: "the inbox" }),
+    onMoveFile: (file) => void actions.moveTo(file, null),
+  });
   return (
     <li role="none">
       <div
@@ -281,6 +379,8 @@ function InboxRow() {
         aria-selected={false}
         tabIndex={0}
         data-testid="tree-inbox"
+        data-drop={drop.over ? "into" : undefined}
+        {...drop.props}
         onClick={() => tree.go("/inbox")}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -295,7 +395,10 @@ function InboxRow() {
         <span className="size-9 shrink-0" aria-hidden />
         <Inbox size={17} className="shrink-0 opacity-80" aria-hidden />
         <span className="ml-1.5 flex-1 font-medium">Inbox</span>
-        <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+        <span
+          data-testid="inbox-count"
+          className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent"
+        >
           {inbox.isPending ? "…" : inbox.isError ? "!" : inbox.data.length}
         </span>
       </div>
@@ -350,16 +453,25 @@ function TreeItem({
   const [renaming, setRenaming] = useState(false);
   const { entries, trash } = useNodeMenu(node, { onRename: () => setRenaming(true) });
   // Lectures and folders may hold source files, which childCount does not count.
-  const expandable = node.childCount > 0 || node.kind === "lecture" || node.kind === "folder";
+  const expandable = node.childCount > 0 || canHoldFiles(node);
   const open = expandable && open_.expanded.has(node.id);
   const selected = tree.currentId === node.id;
 
   const parentDest: Destination | null = parent
     ? toDestination(parent, folderDepthOf(client, parent))
     : null;
+  const uploads = useUploadManager();
+  const fileActions = useFileActions();
   const { dragProps, dropProps, dropMode } = useRowDnd({
     node,
     enabled: tree.dnd,
+    fileTarget: canHoldFiles(node)
+      ? {
+          nodeId: node.id,
+          onUploadFiles: (files) => uploads.enqueue(files, { nodeId: node.id, label: node.name }),
+          onMoveFile: (file, nodeId) => void fileActions.moveTo(file, nodeId, node.name),
+        }
+      : undefined,
     asDestination: toDestination(node, folderDepthOf(client, node)),
     parentDestination: parentDest,
     previousSiblingId: previousId,

@@ -1,4 +1,5 @@
-import { Search } from "lucide-react";
+import type { SearchHit } from "@notes/schema";
+import { FileText, Search, TextQuote } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { inputClass } from "../../components/ui/field";
@@ -7,6 +8,63 @@ import { cn } from "../../lib/cn";
 import { NodeIcon } from "../library/NodeIcon";
 import { nodeTitle } from "../library/NodeRow";
 import { useSearch } from "../library/queries";
+
+const GROUPS: Array<{ kind: SearchHit["kind"]; title: string }> = [
+  { kind: "node", title: "In your library" },
+  { kind: "block", title: "In your study material" },
+  { kind: "page", title: "In your transcripts" },
+];
+
+function hitKey(hit: SearchHit): string {
+  return hit.kind === "node" ? hit.node.id : hit.kind === "page" ? hit.pageId : hit.blockId;
+}
+
+/** Where a hit opens: a library item, a page of a source file (with the match marked), a block of a document. */
+export function hitHref(hit: SearchHit, q: string): string {
+  if (hit.kind === "node") return `/library/${hit.node.id}`;
+  if (hit.kind === "page") {
+    return `/files/${hit.fileId}?page=${hit.pageId}&quote=${encodeURIComponent(q)}`;
+  }
+  return `/doc/${hit.nodeId}?block=${hit.blockId}`;
+}
+
+function HitLink({
+  hit,
+  q,
+  onPick,
+}: {
+  hit: SearchHit;
+  q: string;
+  onPick: (() => void) | undefined;
+}) {
+  const title =
+    hit.kind === "node"
+      ? nodeTitle(hit.node)
+      : hit.kind === "page"
+        ? `${hit.fileName}, page ${hit.pageIndex}`
+        : hit.documentTitle;
+  return (
+    <Link
+      to={hitHref(hit, q)}
+      onClick={onPick}
+      className="flex min-h-14 items-center gap-3 rounded-2xl border border-transparent px-2.5 py-2 hover:border-border hover:bg-surface-muted focus-visible:bg-surface-muted"
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+        {hit.kind === "node" ? (
+          <NodeIcon kind={hit.node.kind} section={hit.node.section} size={18} />
+        ) : hit.kind === "page" ? (
+          <FileText size={18} aria-hidden />
+        ) : (
+          <TextQuote size={18} aria-hidden />
+        )}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate font-medium">{title}</span>
+        <span className="block truncate text-sm text-text-muted">{hit.snippet}</span>
+      </span>
+    </Link>
+  );
+}
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -32,7 +90,7 @@ export function SearchPanel({
   const [q, setQ] = useState(initialQuery);
   const debounced = useDebounced(q.trim(), 200);
   const query = useSearch(debounced);
-  const list = useRef<HTMLUListElement>(null);
+  const list = useRef<HTMLDivElement>(null);
 
   function onKeyDown(event: KeyboardEvent) {
     const links = list.current?.querySelectorAll<HTMLAnchorElement>("a");
@@ -95,25 +153,27 @@ export function SearchPanel({
         ) : query.data.length === 0 ? (
           <p className="px-1 text-sm text-text-muted">Nothing matches “{debounced}”.</p>
         ) : (
-          <ul ref={list} onKeyDown={onListKey} className="grid gap-1.5" aria-label="Results">
-            {query.data.map(({ node, snippet }) => (
-              <li key={node.id}>
-                <Link
-                  to={`/library/${node.id}`}
-                  onClick={onPick}
-                  className="flex min-h-14 items-center gap-3 rounded-2xl border border-transparent px-2.5 py-2 hover:border-border hover:bg-surface-muted focus-visible:bg-surface-muted"
-                >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-                    <NodeIcon kind={node.kind} section={node.section} size={18} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">{nodeTitle(node)}</span>
-                    <span className="block truncate text-sm text-text-muted">{snippet}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          // biome-ignore lint/a11y/noStaticElementInteractions: arrow keys move between the result links
+          <div ref={list} onKeyDown={onListKey} className="grid gap-4">
+            {GROUPS.map(({ kind, title }) => {
+              const hits = query.data.filter((h) => h.kind === kind);
+              if (hits.length === 0) return null;
+              return (
+                <section key={kind} aria-label={title} data-testid={`results-${kind}`}>
+                  <h3 className="mb-1.5 px-1 font-sans text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    {title}
+                  </h3>
+                  <ul className="grid gap-1.5" aria-label={title}>
+                    {hits.map((hit) => (
+                      <li key={hitKey(hit)}>
+                        <HitLink hit={hit} q={debounced} onPick={onPick} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

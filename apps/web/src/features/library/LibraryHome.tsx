@@ -7,6 +7,7 @@ import { Page, SectionTitle } from "../../components/Page";
 import { Button } from "../../components/ui/button";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { useMe } from "../auth/useAuth";
+import { UploadButton } from "../uploads/UploadButton";
 import { useLibraryDialogs } from "./dialogs";
 import { LibraryTree } from "./LibraryTree";
 import { NodeIcon } from "./NodeIcon";
@@ -140,6 +141,9 @@ export function LibraryHome() {
                 <ChevronsDownUp size={16} aria-hidden />
                 <span className="hidden sm:inline">Collapse all</span>
               </Button>
+              <UploadButton nodeId={null} target="the inbox" variant="secondary">
+                <span className="hidden sm:inline">Upload</span>
+              </UploadButton>
               <Button onClick={() => dialogs.openCreate(null, "term")} aria-label="New term">
                 <Plus size={16} aria-hidden />
                 <span className="hidden sm:inline">New term</span>

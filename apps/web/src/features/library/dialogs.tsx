@@ -1,35 +1,22 @@
-import type { LectureMeta, NodeWithLinks } from "@notes/schema";
+import type { LectureMeta, NodeWithLinks, SourceFile } from "@notes/schema";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronRight, Folder } from "lucide-react";
-import {
-  createContext,
-  type FormEvent,
-  type ReactNode,
-  use,
-  useId,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, type FormEvent, type ReactNode, use, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Modal } from "../../components/ui/dialog";
 import { Field, TextInput } from "../../components/ui/field";
 import { useToast } from "../../components/ui/toast";
-import { cn } from "../../lib/cn";
+import { api } from "../../lib/api";
 import { useNodeActions } from "./actions";
-import { NodeIcon } from "./NodeIcon";
-import { nodeKeys, useChildren } from "./queries";
-import {
-  type CreatableKind,
-  KIND_NAME,
-  moveBlockedReason,
-  NOT_ALLOWED,
-  toDestination,
-} from "./rules";
+import { fileSubject, nodeSubject, TreePicker } from "./picker";
+import { nodeKeys, useNode } from "./queries";
+import { type CreatableKind, KIND_NAME } from "./rules";
 
 interface DialogApi {
   openCreate: (parent: NodeWithLinks | null, kind: CreatableKind) => void;
   openMove: (node: NodeWithLinks) => void;
+  openMoveFile: (file: SourceFile) => void;
+  openEdit: (node: NodeWithLinks) => void;
 }
 
 const DialogContext = createContext<DialogApi | null>(null);
@@ -47,10 +34,14 @@ export function LibraryDialogs({ children }: { children: ReactNode }) {
     kind: CreatableKind;
   } | null>(null);
   const [moving, setMoving] = useState<NodeWithLinks | null>(null);
+  const [movingFile, setMovingFile] = useState<SourceFile | null>(null);
+  const [editing, setEditing] = useState<NodeWithLinks | null>(null);
   const api = useMemo<DialogApi>(
     () => ({
       openCreate: (parent, kind) => setCreate({ parent, kind }),
       openMove: (node) => setMoving(node),
+      openMoveFile: (file) => setMovingFile(file),
+      openEdit: (node) => setEditing(node),
     }),
     [],
   );
@@ -59,6 +50,8 @@ export function LibraryDialogs({ children }: { children: ReactNode }) {
       {children}
       <CreateDialog target={create} onClose={() => setCreate(null)} />
       <MoveSheet node={moving} onClose={() => setMoving(null)} />
+      <MoveFileSheet file={movingFile} onClose={() => setMovingFile(null)} />
+      <EditDialog node={editing} onClose={() => setEditing(null)} />
     </DialogContext>
   );
 }
@@ -228,7 +221,7 @@ function MoveForm({ node, onClose }: { node: NodeWithLinks; onClose: () => void 
 
   return (
     <div className="flex flex-col gap-4">
-      <TreePicker node={node} picked={picked?.id} onPick={setPicked} />
+      <TreePicker subject={nodeSubject(node)} picked={picked?.id} onPick={setPicked} />
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
         <p className="min-w-0 truncate text-sm text-text-muted">
           {picked ? `To: ${picked.name}` : "Pick a destination"}
@@ -244,204 +237,156 @@ function MoveForm({ node, onClose }: { node: NodeWithLinks; onClose: () => void 
   );
 }
 
-/** A lazy tree of places the node could go. Invalid places are shown, disabled, with the reason. */
-export function TreePicker({
-  node,
-  picked,
-  onPick,
-}: {
-  node: NodeWithLinks;
-  picked: string | null | undefined;
-  onPick: (dest: { id: string | null; name: string }) => void;
-}) {
-  const rootReason = moveBlockedReason(node, null);
-  const rootDisabled = rootReason ?? (node.parentId === null ? "Already here." : null);
+function MoveFileSheet({ file, onClose }: { file: SourceFile | null; onClose: () => void }) {
   return (
-    <fieldset className="m-0 grid min-w-0 gap-0.5 border-0 p-0">
-      <legend className="sr-only">{`Where to move ${node.name}`}</legend>
-      <PickerRow
-        label="Top of library"
-        icon={<Folder size={18} aria-hidden />}
-        depth={0}
-        disabled={rootDisabled}
-        selected={picked === null}
-        onSelect={() => onPick({ id: null, name: "Top of library" })}
-      />
-      <PickerBranch
-        node={node}
-        parentId={null}
-        depth={1}
-        folderDepth={0}
-        picked={picked}
-        onPick={onPick}
-      />
-    </fieldset>
-  );
-}
-
-function PickerBranch({
-  node,
-  parentId,
-  depth,
-  folderDepth,
-  picked,
-  onPick,
-}: {
-  node: NodeWithLinks;
-  parentId: string | null;
-  depth: number;
-  folderDepth: number;
-  picked: string | null | undefined;
-  onPick: (dest: { id: string | null; name: string }) => void;
-}) {
-  const children = useChildren(parentId);
-  if (children.isPending)
-    return (
-      <p className="px-3 py-2 text-sm text-text-muted" style={{ paddingLeft: depth * 20 + 12 }}>
-        Loading
-      </p>
-    );
-  if (children.isError)
-    return (
-      <p className="px-3 py-2 text-sm text-danger" style={{ paddingLeft: depth * 20 + 12 }}>
-        Could not load this level.
-      </p>
-    );
-  const items = children.data.filter(
-    (n) =>
-      n.id !== node.id &&
-      n.kind !== "document" &&
-      (n.kind !== "lecture" || node.kind === "document"),
-  );
-  return items.map((child) => (
-    <PickerNode
-      key={child.id}
-      node={node}
-      child={child}
-      depth={depth}
-      folderDepth={child.kind === "folder" ? folderDepth + 1 : folderDepth}
-      picked={picked}
-      onPick={onPick}
-    />
-  ));
-}
-
-function PickerNode({
-  node,
-  child,
-  depth,
-  folderDepth,
-  picked,
-  onPick,
-}: {
-  node: NodeWithLinks;
-  child: NodeWithLinks;
-  depth: number;
-  folderDepth: number;
-  picked: string | null | undefined;
-  onPick: (dest: { id: string | null; name: string }) => void;
-}) {
-  const containsSomething = child.childCount > 0 && child.kind !== "lecture";
-  const [open, setOpen] = useState(() => node.ancestors.includes(child.id));
-  const reason =
-    moveBlockedReason(node, toDestination(child, folderDepth)) ??
-    (child.id === node.parentId ? "Already here." : null);
-  return (
-    <div>
-      <PickerRow
-        label={child.name}
-        icon={<NodeIcon kind={child.kind} section={child.section} size={18} />}
-        depth={depth}
-        disabled={reason}
-        selected={picked === child.id}
-        expandable={containsSomething}
-        expanded={open}
-        onToggle={() => setOpen((v) => !v)}
-        onSelect={() => onPick({ id: child.id, name: child.name })}
-      />
-      {open && containsSomething ? (
-        <div>
-          <PickerBranch
-            node={node}
-            parentId={child.id}
-            depth={depth + 1}
-            folderDepth={folderDepth}
-            picked={picked}
-            onPick={onPick}
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function PickerRow({
-  label,
-  icon,
-  depth,
-  disabled,
-  selected,
-  expandable,
-  expanded,
-  onToggle,
-  onSelect,
-}: {
-  label: string;
-  icon: ReactNode;
-  depth: number;
-  disabled: string | null;
-  selected: boolean;
-  expandable?: boolean;
-  expanded?: boolean;
-  onToggle?: () => void;
-  onSelect: () => void;
-}) {
-  const reasonId = useId();
-  return (
-    <div
-      className={cn(
-        "flex min-h-11 items-center gap-1 rounded-xl pr-2 xl:min-h-9",
-        selected ? "bg-accent-soft text-accent" : "hover:bg-surface-muted",
-      )}
-      style={{ paddingLeft: depth * 18 }}
+    <Modal
+      open={!!file}
+      onOpenChange={(open) => !open && onClose()}
+      sheet="touch"
+      title={file ? `File "${file.originalName}" under…` : "File under"}
+      description="Choose a lecture, a folder or a course's Sources section, or send it back to the inbox."
+      hideDescription
     >
-      {expandable ? (
-        <button
-          type="button"
-          aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}
-          aria-expanded={expanded}
-          onClick={onToggle}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
-        >
-          <ChevronRight size={16} className={cn("transition-transform", expanded && "rotate-90")} />
-        </button>
-      ) : (
-        <span className="size-9 shrink-0" />
-      )}
-      <button
-        type="button"
-        disabled={!!disabled}
-        aria-pressed={selected}
-        aria-describedby={disabled ? reasonId : undefined}
-        onClick={onSelect}
-        className={cn(
-          "flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1.5 text-left text-sm xl:min-h-9",
-          disabled ? "cursor-not-allowed text-text-muted opacity-60" : "",
-        )}
-      >
-        <span className="shrink-0">{icon}</span>
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-        {disabled ? (
-          <span
-            id={reasonId}
-            aria-hidden
-            className={cn("shrink-0 text-xs", disabled === NOT_ALLOWED && "sr-only")}
-          >
-            {disabled}
-          </span>
-        ) : null}
-        {selected ? <Check size={16} aria-hidden /> : null}
-      </button>
+      {file ? <MoveFileForm key={file.id} file={file} onClose={onClose} /> : null}
+    </Modal>
+  );
+}
+
+function MoveFileForm({ file, onClose }: { file: SourceFile; onClose: () => void }) {
+  const client = useQueryClient();
+  const toast = useToast();
+  const place = useNode(file.nodeId ?? undefined);
+  const [picked, setPicked] = useState<{ id: string | null; name: string } | null>(null);
+
+  async function confirm() {
+    if (!picked) return;
+    onClose();
+    try {
+      await api.fileTo(file.id, picked.id);
+      toast.show(`Filed "${file.originalName}" under ${picked.name}`);
+    } catch (error) {
+      toast.error(error);
+    } finally {
+      void client.invalidateQueries({ queryKey: ["files"] });
+      void client.invalidateQueries({ queryKey: nodeKeys.all });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <TreePicker
+        subject={fileSubject(file, place.data?.ancestors ?? [])}
+        picked={picked?.id}
+        onPick={setPicked}
+      />
+      <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+        <p className="min-w-0 truncate text-sm text-text-muted">
+          {picked ? `To: ${picked.name}` : "Pick a destination"}
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" disabled={!picked} onClick={confirm}>
+            File here
+          </Button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** Change a lecture's number and date, or a course's code. */
+function EditDialog({ node, onClose }: { node: NodeWithLinks | null; onClose: () => void }) {
+  return (
+    <Modal
+      open={!!node}
+      onOpenChange={(open) => !open && onClose()}
+      title={node ? `Edit ${node.kind === "course" ? "course" : "lecture"} details` : "Edit"}
+      description={node?.name}
+    >
+      {node ? <EditForm key={node.id} node={node} onClose={onClose} /> : null}
+    </Modal>
+  );
+}
+
+function EditForm({ node, onClose }: { node: NodeWithLinks; onClose: () => void }) {
+  const actions = useNodeActions();
+  const [name, setName] = useState(node.name);
+  const [code, setCode] = useState(node.course?.code ?? "");
+  const [number, setNumber] = useState(
+    node.lecture?.number == null ? "" : String(node.lecture.number),
+  );
+  const [date, setDate] = useState(node.lecture?.date ?? "");
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onClose();
+    void actions.update(node, {
+      name: trimmed,
+      ...(node.kind === "course" ? { course: { code: code.trim() || null } } : {}),
+      ...(node.kind === "lecture"
+        ? { lecture: { number: number === "" ? null : Number(number), date: date || null } }
+        : {}),
+    });
+  }
+
+  return (
+    <form onSubmit={submit} className="grid gap-4">
+      <Field label="Name">
+        {(p) => (
+          <TextInput
+            {...p}
+            value={name}
+            maxLength={200}
+            onChange={(e) => setName(e.target.value)}
+          />
+        )}
+      </Field>
+      {node.kind === "course" ? (
+        <Field label="Course code" hint="Optional, like PHAR 7340.">
+          {(p) => (
+            <TextInput
+              {...p}
+              value={code}
+              maxLength={40}
+              onChange={(e) => setCode(e.target.value)}
+            />
+          )}
+        </Field>
+      ) : (
+        <div className="grid grid-cols-[6rem_1fr] gap-3">
+          <Field label="Number">
+            {(p) => (
+              <TextInput
+                {...p}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={999}
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+              />
+            )}
+          </Field>
+          <Field label="Date taught">
+            {(p) => (
+              <TextInput
+                {...p}
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+      )}
+      <div className="flex justify-end gap-2 pt-1">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button type="submit" variant="primary" disabled={!name.trim()}>
+          Save
+        </Button>
+      </div>
+    </form>
   );
 }

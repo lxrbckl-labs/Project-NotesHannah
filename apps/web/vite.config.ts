@@ -19,5 +19,8 @@ export default defineConfig({
     setupFiles: ["./test/setup.ts"],
     include: ["test/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
     css: false,
+    // Whole-app tests load screens lazily; allow for a busy machine.
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
   },
 });

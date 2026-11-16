@@ -4,7 +4,7 @@ import { RouterProvider } from "react-router";
 import { type Mock, vi } from "vitest";
 import { createQueryClient, Providers } from "../src/app/providers";
 import { createTestRouter } from "../src/app/routes";
-import { api } from "../src/lib/api";
+import { ApiClientError, api, setUploadTransport } from "../src/lib/api";
 import { createMockBackend, type MockBackend } from "../src/mocks/backend";
 import { MOCK_PASSWORD, MOCK_USERNAME } from "../src/mocks/seed";
 
@@ -21,6 +21,22 @@ export async function startBackend(signedIn = true): Promise<Harness> {
     backend.fetch(input, init),
   );
   vi.stubGlobal("fetch", fetchMock);
+  // uploads go through the mock too (the real transport is XMLHttpRequest)
+  setUploadTransport((file, nodeId, onProgress) => {
+    const promise = (async () => {
+      onProgress(0.5);
+      const response = await fetch(new URL("/api/uploads", window.location.origin), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, nodeId }),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new ApiClientError(response.status, json.error);
+      onProgress(1);
+      return json.file;
+    })();
+    return { promise, cancel: () => {} };
+  });
   if (signedIn) await api.login({ username: MOCK_USERNAME, password: MOCK_PASSWORD });
   return { backend, fetch: fetchMock, user: userEvent.setup() };
 }
