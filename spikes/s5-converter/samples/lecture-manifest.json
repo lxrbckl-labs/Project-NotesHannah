@@ -1,0 +1,717 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sha256": "27ba5786aaab0f6712bd058cfd3859e5d4422adb3123d15323cbea7b3a7eaa9f",
+    "bytes": 64765,
+    "detectedType": "pptx",
+    "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  },
+  "pageCount": 12,
+  "pages": [
+    {
+      "page": 1,
+      "image": {
+        "file": "pages/0001.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 16472
+      },
+      "thumb": {
+        "file": "thumbs/0001.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2004
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Beta-Adrenergic Antagonists",
+        "text": "Beta-Adrenergic Antagonists\n\n• Pharmacology 301, Lecture 7\n• Cardiovascular block",
+        "notes": "Welcome. Today: how beta-blockers work, who gets them, and why they are not interchangeable.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Beta-Adrenergic Antagonists"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Pharmacology 301, Lecture 7"
+              },
+              {
+                "level": 0,
+                "text": "• Cardiovascular block"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 2,
+      "image": {
+        "file": "pages/0002.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 28952
+      },
+      "thumb": {
+        "file": "thumbs/0002.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 3270
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Learning objectives",
+        "text": "Learning objectives\n\n• Name the beta receptor subtypes and their tissues\n• Explain the mechanism of beta blockade\n• Classify agents by selectivity\n• List major adverse effects and contraindications",
+        "notes": "Objectives map to the exam blueprint. Spend most time on selectivity.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Learning objectives"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Name the beta receptor subtypes and their tissues"
+              },
+              {
+                "level": 0,
+                "text": "• Explain the mechanism of beta blockade"
+              },
+              {
+                "level": 0,
+                "text": "• Classify agents by selectivity"
+              },
+              {
+                "level": 0,
+                "text": "• List major adverse effects and contraindications"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 3,
+      "image": {
+        "file": "pages/0003.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 26010
+      },
+      "thumb": {
+        "file": "thumbs/0003.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2580
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Receptor subtypes",
+        "text": "Receptor subtypes\n\nReceptor\tMain location\tEffect of stimulation\nbeta-1\tHeart, kidney\tRaises heart rate and contractility\nbeta-2\tBronchi, vascular smooth muscle\tRelaxation, bronchodilation\nbeta-3\tAdipose tissue\tLipolysis",
+        "notes": null,
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Receptor subtypes"
+              }
+            ]
+          },
+          {
+            "kind": "table",
+            "rows": [
+              [
+                "Receptor",
+                "Main location",
+                "Effect of stimulation"
+              ],
+              [
+                "beta-1",
+                "Heart, kidney",
+                "Raises heart rate and contractility"
+              ],
+              [
+                "beta-2",
+                "Bronchi, vascular smooth muscle",
+                "Relaxation, bronchodilation"
+              ],
+              [
+                "beta-3",
+                "Adipose tissue",
+                "Lipolysis"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 4,
+      "image": {
+        "file": "pages/0004.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 34558
+      },
+      "thumb": {
+        "file": "thumbs/0004.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 3960
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Mechanism of action",
+        "text": "Mechanism of action\n\n• Competitive antagonism at beta receptors\n• Lower cAMP in cardiac myocytes\n  – Reduced heart rate and contractility\n  – Reduced renin release\n• Net effect: lower cardiac output and blood pressure",
+        "notes": "Draw the cAMP pathway on the board. Stress that antagonism is competitive, so high catecholamine levels can overcome it.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Mechanism of action"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Competitive antagonism at beta receptors"
+              },
+              {
+                "level": 0,
+                "text": "• Lower cAMP in cardiac myocytes"
+              },
+              {
+                "level": 1,
+                "text": "– Reduced heart rate and contractility"
+              },
+              {
+                "level": 1,
+                "text": "– Reduced renin release"
+              },
+              {
+                "level": 0,
+                "text": "• Net effect: lower cardiac output and blood pressure"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 5,
+      "image": {
+        "file": "pages/0005.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 27838
+      },
+      "thumb": {
+        "file": "thumbs/0005.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2900
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Classification by selectivity",
+        "text": "Classification by selectivity\n\nClass\tExamples\tNote\nNon-selective\tPropranolol, nadolol\tBlock beta-1 and beta-2\nCardioselective\tMetoprolol, atenolol\tSelectivity lost at high doses\nMixed alpha/beta\tCarvedilol, labetalol\tAdd vasodilation",
+        "notes": "Cardioselective does not mean cardiac-only.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Classification by selectivity"
+              }
+            ]
+          },
+          {
+            "kind": "table",
+            "rows": [
+              [
+                "Class",
+                "Examples",
+                "Note"
+              ],
+              [
+                "Non-selective",
+                "Propranolol, nadolol",
+                "Block beta-1 and beta-2"
+              ],
+              [
+                "Cardioselective",
+                "Metoprolol, atenolol",
+                "Selectivity lost at high doses"
+              ],
+              [
+                "Mixed alpha/beta",
+                "Carvedilol, labetalol",
+                "Add vasodilation"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 6,
+      "image": {
+        "file": "pages/0006.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 34938
+      },
+      "thumb": {
+        "file": "thumbs/0006.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 4086
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Pharmacokinetics",
+        "text": "Pharmacokinetics\n\n• Propranolol: extensive first-pass metabolism\n• Atenolol: renal elimination, t½ about 6-7 h\n• Therapeutic range often quoted as 50-100 µg/mL for older assays\n• Lipophilic agents cross the blood-brain barrier",
+        "notes": "Lipophilicity explains the sleep disturbance and vivid dreams reported with propranolol.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Pharmacokinetics"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Propranolol: extensive first-pass metabolism"
+              },
+              {
+                "level": 0,
+                "text": "• Atenolol: renal elimination, t½ about 6-7 h"
+              },
+              {
+                "level": 0,
+                "text": "• Therapeutic range often quoted as 50-100 µg/mL for older assays"
+              },
+              {
+                "level": 0,
+                "text": "• Lipophilic agents cross the blood-brain barrier"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 7,
+      "image": {
+        "file": "pages/0007.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 25778
+      },
+      "thumb": {
+        "file": "thumbs/0007.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2926
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Clinical uses",
+        "text": "Clinical uses\n\n• Hypertension\n• Angina and post-myocardial infarction\n• Heart failure with reduced ejection fraction\n• Arrhythmia rate control\n• Migraine prophylaxis; essential tremor",
+        "notes": null,
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Clinical uses"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Hypertension"
+              },
+              {
+                "level": 0,
+                "text": "• Angina and post-myocardial infarction"
+              },
+              {
+                "level": 0,
+                "text": "• Heart failure with reduced ejection fraction"
+              },
+              {
+                "level": 0,
+                "text": "• Arrhythmia rate control"
+              },
+              {
+                "level": 0,
+                "text": "• Migraine prophylaxis; essential tremor"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 8,
+      "image": {
+        "file": "pages/0008.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 31704
+      },
+      "thumb": {
+        "file": "thumbs/0008.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 3530
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Adverse effects",
+        "text": "Adverse effects\n\n• Bradycardia and AV block\n• Bronchospasm in asthma with non-selective agents\n• Fatigue, cold extremities\n• Masked hypoglycaemia in insulin-treated diabetes\n• Abrupt withdrawal: rebound tachycardia",
+        "notes": "Never stop abruptly. Taper over one to two weeks.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Adverse effects"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Bradycardia and AV block"
+              },
+              {
+                "level": 0,
+                "text": "• Bronchospasm in asthma with non-selective agents"
+              },
+              {
+                "level": 0,
+                "text": "• Fatigue, cold extremities"
+              },
+              {
+                "level": 0,
+                "text": "• Masked hypoglycaemia in insulin-treated diabetes"
+              },
+              {
+                "level": 0,
+                "text": "• Abrupt withdrawal: rebound tachycardia"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 9,
+      "image": {
+        "file": "pages/0009.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 32108
+      },
+      "thumb": {
+        "file": "thumbs/0009.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 3234
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Interactions to know",
+        "text": "Interactions to know\n\n• Verapamil or diltiazem: additive AV block\n• Insulin: masked hypoglycaemia symptoms\n• NSAIDs: blunted antihypertensive effect\n• Clonidine: rebound hypertension on withdrawal",
+        "notes": null,
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Interactions to know"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Verapamil or diltiazem: additive AV block"
+              },
+              {
+                "level": 0,
+                "text": "• Insulin: masked hypoglycaemia symptoms"
+              },
+              {
+                "level": 0,
+                "text": "• NSAIDs: blunted antihypertensive effect"
+              },
+              {
+                "level": 0,
+                "text": "• Clonidine: rebound hypertension on withdrawal"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 10,
+      "image": {
+        "file": "pages/0010.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 24718
+      },
+      "thumb": {
+        "file": "thumbs/0010.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2618
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Dosing at a glance",
+        "text": "Dosing at a glance\n\nDrug\tUsual daily dose\tFrequency\nMetoprolol tartrate\t50-200 mg\tTwice daily\nAtenolol\t25-100 mg\tOnce daily\nPropranolol\t40-320 mg\tDivided doses\nCarvedilol\t6.25-25 mg\tTwice daily with food",
+        "notes": "Doses are teaching figures only, not a prescribing reference.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Dosing at a glance"
+              }
+            ]
+          },
+          {
+            "kind": "table",
+            "rows": [
+              [
+                "Drug",
+                "Usual daily dose",
+                "Frequency"
+              ],
+              [
+                "Metoprolol tartrate",
+                "50-200 mg",
+                "Twice daily"
+              ],
+              [
+                "Atenolol",
+                "25-100 mg",
+                "Once daily"
+              ],
+              [
+                "Propranolol",
+                "40-320 mg",
+                "Divided doses"
+              ],
+              [
+                "Carvedilol",
+                "6.25-25 mg",
+                "Twice daily with food"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 11,
+      "image": {
+        "file": "pages/0011.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 19138
+      },
+      "thumb": {
+        "file": "thumbs/0011.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2332
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Case discussion (hidden)",
+        "text": "Case discussion (hidden)\n\n• 68-year-old with COPD and new hypertension\n• Which beta-blocker, if any, and why?",
+        "notes": "Hidden slide: use only if time allows. Expected answer: cardioselective agent at a low dose, with monitoring.",
+        "hidden": true,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Case discussion (hidden)"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• 68-year-old with COPD and new hypertension"
+              },
+              {
+                "level": 0,
+                "text": "• Which beta-blocker, if any, and why?"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "page": 12,
+      "image": {
+        "file": "pages/0012.webp",
+        "width": 1568,
+        "height": 883,
+        "bytes": 21414
+      },
+      "thumb": {
+        "file": "thumbs/0012.webp",
+        "width": 320,
+        "height": 180,
+        "bytes": 2334
+      },
+      "native": {
+        "kind": "slide",
+        "title": "Summary",
+        "text": "Summary\n\n• Competitive beta antagonists reduce cardiac work\n• Selectivity guides choice, but is dose dependent\n• Taper, never stop abruptly",
+        "notes": "Questions before the quiz.",
+        "hidden": false,
+        "hasUnextractedObjects": false,
+        "blocks": [
+          {
+            "kind": "title",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "Summary"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "paragraphs": [
+              {
+                "level": 0,
+                "text": "• Competitive beta antagonists reduce cardiac work"
+              },
+              {
+                "level": 0,
+                "text": "• Selectivity guides choice, but is dose dependent"
+              },
+              {
+                "level": 0,
+                "text": "• Taper, never stop abruptly"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "tools": {
+    "converter": "0.0.1-spike",
+    "node": "v24.22.3",
+    "sharp": "0.34.5",
+    "libvips": "8.17.3",
+    "libreoffice": "4:25.2.3-2+deb13u9",
+    "poppler": "25.03.0-5+deb13u4",
+    "libheif": "1.23.6-2~deb13u1",
+    "libde265": "1.0.15-1+deb13u2"
+  },
+  "limits": {
+    "maxInputBytes": 104857600,
+    "maxPages": 300,
+    "maxZipUncompressedBytes": 419430400,
+    "maxZipEntries": 10000,
+    "maxXmlEntryBytes": 33554432,
+    "maxPixelsPerImage": 120000000,
+    "wallClockMs": 150000,
+    "pageLongEdge": 1568,
+    "thumbLongEdge": 320,
+    "webpQuality": 80,
+    "renderConcurrency": 2
+  },
+  "timingsMs": {
+    "sha256": 3,
+    "detect": 1,
+    "zipscan-detect": 42,
+    "zipscan": 36,
+    "pptx-text": 37,
+    "libreoffice": 817,
+    "pdfinfo": 11,
+    "render+encode": 1790,
+    "total": 2750
+  },
+  "peakMemoryBytes": 197169152,
+  "warnings": []
+}

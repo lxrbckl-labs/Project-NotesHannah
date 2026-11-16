@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "sha256": "51069e8284d10734a7122fe2a81ccb73e020f8717876e35c30c14a4769bb572a",
+    "bytes": 4198,
+    "detectedType": "pdf",
+    "mime": "application/pdf"
+  },
+  "pageCount": 5,
+  "pages": [
+    {
+      "page": 1,
+      "image": {
+        "file": "pages/0001.webp",
+        "width": 1212,
+        "height": 1568,
+        "bytes": 17926
+      },
+      "thumb": {
+        "file": "thumbs/0001.webp",
+        "width": 247,
+        "height": 320,
+        "bytes": 1444
+      },
+      "native": {
+        "kind": "pdf",
+        "text": "Study notes, page 1\nWarfarin inhibits vitamin K epoxide reductase (page 1). Target INR 2.0-3.0.\nMonitor: INR, bleeding signs. Interactions: antibiotics, amiodarone, St John's wort.",
+        "hasTextLayer": true
+      }
+    },
+    {
+      "page": 2,
+      "image": {
+        "file": "pages/0002.webp",
+        "width": 1212,
+        "height": 1568,
+        "bytes": 18056
+      },
+      "thumb": {
+        "file": "thumbs/0002.webp",
+        "width": 247,
+        "height": 320,
+        "bytes": 1454
+      },
+      "native": {
+        "kind": "pdf",
+        "text": "Study notes, page 2\nWarfarin inhibits vitamin K epoxide reductase (page 2). Target INR 2.0-3.0.\nMonitor: INR, bleeding signs. Interactions: antibiotics, amiodarone, St John's wort.",
+        "hasTextLayer": true
+      }
+    },
+    {
+      "page": 3,
+      "image": {
+        "file": "pages/0003.webp",
+        "width": 1212,
+        "height": 1568,
+        "bytes": 18112
+      },
+      "thumb": {
+        "file": "thumbs/0003.webp",
+        "width": 247,
+        "height": 320,
+        "bytes": 1446
+      },
+      "native": {
+        "kind": "pdf",
+        "text": "Study notes, page 3\nWarfarin inhibits vitamin K epoxide reductase (page 3). Target INR 2.0-3.0.\nMonitor: INR, bleeding signs. Interactions: antibiotics, amiodarone, St John's wort.",
+        "hasTextLayer": true
+      }
+    },
+    {
+      "page": 4,
+      "image": {
+        "file": "pages/0004.webp",
+        "width": 1212,
+        "height": 1568,
+        "bytes": 17982
+      },
+      "thumb": {
+        "file": "thumbs/0004.webp",
+        "width": 247,
+        "height": 320,
+        "bytes": 1446
+      },
+      "native": {
+        "kind": "pdf",
+        "text": "Study notes, page 4\nWarfarin inhibits vitamin K epoxide reductase (page 4). Target INR 2.0-3.0.\nMonitor: INR, bleeding signs. Interactions: antibiotics, amiodarone, St John's wort.",
+        "hasTextLayer": true
+      }
+    },
+    {
+      "page": 5,
+      "image": {
+        "file": "pages/0005.webp",
+        "width": 1212,
+        "height": 1568,
+        "bytes": 18080
+      },
+      "thumb": {
+        "file": "thumbs/0005.webp",
+        "width": 247,
+        "height": 320,
+        "bytes": 1456
+      },
+      "native": {
+        "kind": "pdf",
+        "text": "Study notes, page 5\nWarfarin inhibits vitamin K epoxide reductase (page 5). Target INR 2.0-3.0.\nMonitor: INR, bleeding signs. Interactions: antibiotics, amiodarone, St John's wort.",
+        "hasTextLayer": true
+      }
+    }
+  ],
+  "tools": {
+    "converter": "0.0.1-spike",
+    "node": "v24.22.3",
+    "sharp": "0.34.5",
+    "libvips": "8.17.3",
+    "libreoffice": "4:25.2.3-2+deb13u9",
+    "poppler": "25.03.0-5+deb13u4",
+    "libheif": "1.23.6-2~deb13u1",
+    "libde265": "1.0.15-1+deb13u2"
+  },
+  "limits": {
+    "maxInputBytes": 104857600,
+    "maxPages": 300,
+    "maxZipUncompressedBytes": 419430400,
+    "maxZipEntries": 10000,
+    "maxXmlEntryBytes": 33554432,
+    "maxPixelsPerImage": 120000000,
+    "wallClockMs": 150000,
+    "pageLongEdge": 1568,
+    "thumbLongEdge": 320,
+    "webpQuality": 80,
+    "renderConcurrency": 2
+  },
+  "timingsMs": {
+    "sha256": 3,
+    "detect": 1,
+    "pdfinfo": 13,
+    "pdftotext": 12,
+    "render+encode": 940,
+    "total": 979
+  },
+  "peakMemoryBytes": 90771456,
+  "warnings": []
+}
