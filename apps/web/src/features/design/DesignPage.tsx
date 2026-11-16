@@ -23,6 +23,7 @@ import { Disclosure } from "../../components/ui/disclosure";
 import { Field, TextArea, TextInput } from "../../components/ui/field";
 import { HuePicker } from "../../components/ui/hue-picker";
 import { ActionMenu } from "../../components/ui/menu";
+import { Notice } from "../../components/ui/notice";
 import { PageHeader } from "../../components/ui/page-header";
 import { Popover } from "../../components/ui/popover";
 import { ProgressBar } from "../../components/ui/progress";
@@ -121,6 +122,7 @@ const BASE = [
   "accent-soft",
   "accent-border",
   "dot",
+  "chrome",
   "selection",
 ];
 
@@ -626,6 +628,23 @@ export function DesignPage() {
               <LoadingList rows={2} />
             </Card>
           </div>
+
+          <Card className="grid gap-3">
+            <h3 className="font-semibold">Notices</h3>
+            <Notice tone="info">Agents can read this document.</Notice>
+            <Notice tone="success" title="All caught up">
+              No cards are due until tomorrow.
+            </Notice>
+            <Notice tone="warning" title="Not checked yet">
+              An agent added this concept. Check it against your notes.
+            </Notice>
+            <Notice tone="danger" action={<Button size="sm">Try again</Button>}>
+              The answer could not be saved.
+            </Notice>
+            <Notice tone="accent" icon={<Sparkles size={18} />}>
+              Tip: long-press a card to move it.
+            </Notice>
+          </Card>
 
           <EmptyState
             icon={<BookOpen size={26} />}

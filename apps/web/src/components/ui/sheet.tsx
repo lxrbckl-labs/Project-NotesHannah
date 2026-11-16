@@ -48,6 +48,7 @@ export function Sheet({
   footer,
   container,
   testId,
+  flush = false,
   children,
 }: {
   open: boolean;
@@ -62,6 +63,8 @@ export function Sheet({
   footer?: ReactNode;
   container?: HTMLElement | null;
   testId?: string;
+  /** No padding around the body, for lists that run edge to edge. */
+  flush?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -101,7 +104,12 @@ export function Sheet({
               </IconButton>
             </Dialog.Close>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+          <div
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+              !flush && "px-5 pb-4",
+            )}
+          >
             {children}
           </div>
           {footer ? (

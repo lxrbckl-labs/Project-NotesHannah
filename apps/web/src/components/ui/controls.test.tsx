@@ -7,6 +7,7 @@ import { Badge, Chip } from "./badge";
 import { IconButton } from "./button";
 import { Card } from "./card";
 import { HuePicker } from "./hue-picker";
+import { Notice } from "./notice";
 import { ProgressBar } from "./progress";
 import { SegmentedControl, Tab, TabList, TabPanel, Tabs } from "./segmented";
 import { StatTile } from "./stat";
@@ -197,5 +198,18 @@ describe("StatTile", () => {
     render(<StatTile label="Due today" value={12} hue="blue" />);
     expect(screen.getByText("Due today")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
+  });
+});
+
+describe("Notice", () => {
+  it("announces danger and stays quiet otherwise", () => {
+    render(
+      <>
+        <Notice tone="danger">Not saved</Notice>
+        <Notice tone="success">Saved</Notice>
+      </>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Not saved");
+    expect(screen.getByText("Saved").closest("[data-hue]")).toHaveAttribute("data-hue", "green");
   });
 });

@@ -29,7 +29,8 @@ export function EmptyState({
   compact,
   headingLevel = 2,
 }: {
-  icon: ReactNode;
+  /** An icon in a tinted tile above the title; leave out for a plain empty state. */
+  icon?: ReactNode;
   title: string;
   children?: ReactNode;
   action?: ReactNode;
@@ -47,12 +48,14 @@ export function EmptyState({
         compact ? "px-4 py-8" : "px-6 py-12",
       )}
     >
-      <div
-        data-hue={hue}
-        className="mb-4 flex size-14 items-center justify-center rounded-card bg-tone-soft text-tone-text"
-      >
-        {icon}
-      </div>
+      {icon ? (
+        <div
+          data-hue={hue}
+          className="mb-4 flex size-14 items-center justify-center rounded-card bg-tone-soft text-tone-text"
+        >
+          {icon}
+        </div>
+      ) : null}
       <Heading className="text-title font-semibold">{title}</Heading>
       {children ? <p className="mt-1.5 max-w-sm text-ui text-text-muted">{children}</p> : null}
       {action ? <div className="mt-5">{action}</div> : null}
@@ -80,9 +83,9 @@ export function Spinner({ label = "Loading", inline }: { label?: string; inline?
 }
 
 /** A visually hidden polite live region: say what changed for screen readers. */
-export function LiveRegion({ message }: { message: string }) {
+export function LiveRegion({ message, testId }: { message: string; testId?: string }) {
   return (
-    <div className="sr-only" aria-live="polite" aria-atomic="true">
+    <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid={testId}>
       {message}
     </div>
   );

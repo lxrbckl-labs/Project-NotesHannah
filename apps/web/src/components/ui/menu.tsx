@@ -19,15 +19,16 @@ export type MenuEntry =
   /** A nested menu (dropdown menus only; a context menu shows it the same way). */
   | { type: "sub"; label: string; icon?: ReactNode; entries: MenuEntry[]; disabled?: boolean };
 
-const contentClass =
+/** Classes for composing a Radix menu by hand when entries are not enough (custom item content). */
+export const menuContentClass =
   "z-(--z-popover) max-h-[min(70vh,var(--radix-dropdown-menu-content-available-height,70vh))] min-w-52 overflow-y-auto rounded-card border border-border bg-surface p-1.5 text-text shadow-pop anim-pop";
-const itemClass = (danger?: boolean) =>
+export const menuItemClass = (danger?: boolean) =>
   cn(
     "flex min-h-11 cursor-default select-none items-center gap-3 rounded-control px-3 text-ui outline-none xl:min-h-9",
     "data-[highlighted]:bg-surface-muted data-[state=open]:bg-surface-muted data-[disabled]:opacity-40",
     danger ? "text-danger" : "text-text",
   );
-const sepClass = "my-1 h-px bg-border";
+export const menuSeparatorClass = "my-1 h-px bg-border";
 
 type Parts = {
   Item: typeof DropdownMenu.Item | typeof ContextMenu.Item;
@@ -64,7 +65,7 @@ function Entries({ entries, parts }: { entries: MenuEntry[]; parts: Parts }) {
   return entries.map((entry, i) =>
     entry.type === "sub" ? (
       <Sub key={`sub-${entry.label}`}>
-        <SubTrigger className={itemClass()} disabled={entry.disabled}>
+        <SubTrigger className={menuItemClass()} disabled={entry.disabled}>
           <span className="flex size-5 items-center justify-center text-text-muted">
             {entry.icon}
           </span>
@@ -72,7 +73,7 @@ function Entries({ entries, parts }: { entries: MenuEntry[]; parts: Parts }) {
           <ChevronRight size={16} aria-hidden className="text-text-muted" />
         </SubTrigger>
         <Portal>
-          <SubContent sideOffset={4} collisionPadding={12} className={contentClass}>
+          <SubContent sideOffset={4} collisionPadding={12} className={menuContentClass}>
             <Entries entries={entry.entries} parts={parts} />
           </SubContent>
         </Portal>
@@ -87,11 +88,11 @@ function Entries({ entries, parts }: { entries: MenuEntry[]; parts: Parts }) {
       </Label>
     ) : entry.type === "separator" ? (
       // biome-ignore lint/suspicious/noArrayIndexKey: static menu structure
-      <Separator key={`sep-${i}`} className={sepClass} />
+      <Separator key={`sep-${i}`} className={menuSeparatorClass} />
     ) : (
       <Item
         key={entry.label}
-        className={itemClass(entry.danger)}
+        className={menuItemClass(entry.danger)}
         disabled={entry.disabled}
         onSelect={entry.onSelect}
       >
@@ -131,7 +132,7 @@ export function ActionMenu({
           sideOffset={6}
           collisionPadding={12}
           aria-label={label}
-          className={contentClass}
+          className={menuContentClass}
         >
           <Entries entries={entries} parts={DROPDOWN} />
         </DropdownMenu.Content>
@@ -152,7 +153,7 @@ export function ContextActions({
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content collisionPadding={12} className={contentClass}>
+        <ContextMenu.Content collisionPadding={12} className={menuContentClass}>
           <Entries entries={entries} parts={CONTEXT} />
         </ContextMenu.Content>
       </ContextMenu.Portal>

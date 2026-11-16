@@ -27,6 +27,7 @@
   --color-accent-soft: #e3efea;
   --color-accent-border: #b7d5ca;
   --color-dot: #d3d0c3;
+  --color-chrome: rgb(255 255 255 / 0.92);
   --color-overlay: rgb(31 30 26 / 0.42);
   --shadow-card: 0 1px 2px rgb(31 30 26 / 0.04), 0 4px 14px rgb(31 30 26 / 0.05);
   --shadow-raised: 0 2px 4px rgb(31 30 26 / 0.06), 0 12px 28px rgb(31 30 26 / 0.12);
@@ -100,6 +101,7 @@
     --color-accent-soft: #1f3a32;
     --color-accent-border: #2f5a4d;
     --color-dot: #34322c;
+    --color-chrome: rgb(27 26 24 / 0.94);
     --color-overlay: rgb(0 0 0 / 0.6);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
     --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);
@@ -172,6 +174,7 @@
   --color-accent-soft: #1f3a32;
   --color-accent-border: #2f5a4d;
   --color-dot: #34322c;
+  --color-chrome: rgb(27 26 24 / 0.94);
   --color-overlay: rgb(0 0 0 / 0.6);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);
@@ -425,6 +428,9 @@
   --color-info-border: var(--color-info-border);
   --color-info-solid: var(--color-info-solid);
   --color-selection: var(--color-selection);
+  --color-chrome: var(--color-chrome);
+  --color-dot: var(--color-dot);
+  --color-overlay: var(--color-overlay);
   --color-tone-solid: var(--tone-solid);
   --color-tone-soft: var(--tone-soft);
   --color-tone-text: var(--tone-text);
