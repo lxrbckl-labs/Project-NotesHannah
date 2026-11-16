@@ -8,10 +8,12 @@ import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { activityRoutes } from "./domains/activity/index.js";
+import { conceptsRoutes, nameCheckerFromEnv } from "./domains/concepts/index.js";
 import { documentsRoutes } from "./domains/documents/index.js";
 import { filesRoutes } from "./domains/files/index.js";
 import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
+import { requestsRoutes } from "./domains/requests/index.js";
 import type { AppEnv } from "./http/auth-context.js";
 import { authenticate } from "./http/authenticate.js";
 import type { ServerDeps } from "./http/deps.js";
@@ -66,6 +68,12 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/", filesRoutes(deps));
   app.route("/api", documentsRoutes(deps));
   app.route("/api", activityRoutes(deps));
+  app.route("/api", requestsRoutes(deps));
+  // The drug-name check is off unless RXNORM_CHECK=1 (see docs/concepts.md).
+  app.route(
+    "/api",
+    conceptsRoutes(deps, { nameChecker: nameCheckerFromEnv(db, process.env, deps.now) }),
+  );
 
   // Unknown API-ish paths are ApiError 404s, never the SPA shell.
   for (const prefix of ["/api", "/mcp"]) {

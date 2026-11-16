@@ -332,3 +332,134 @@ per document touched.
 `Beta blockers: Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone`; `links` point at
 the document (with its library `nodeId`), up to 15 of the blocks, and the request when one
 was named. `objectId` filters on any of those IDs.
+
+## Requests
+
+The request queue (features L1 to L5): she leaves a request, an agent claims it over MCP or
+HTTP, does the work and replies. Types are `Request`, `RequestWithContext`, `RequestTarget`,
+`RequestKind`, `RequestStatus` and `RequestCounts` from `@notes/schema`; the state machine is
+`REQUEST_TRANSITIONS` and `canTransition`.
+
+A **target** is one of `{ type: "library" }`, `{ type: "node", nodeId }`, `{ type: "document",
+documentId }`, `{ type: "block", documentId, blockId }`, `{ type: "source", fileId, pageId? }`
+or `{ type: "question", questionId }`. A block target records its document so the request
+survives the block being replaced when the document is regenerated: the request then points at
+the document and says so in `context.note`. The target must exist for her and not be in the
+trash. `kind` is `wrong`, `unclear`, `expand`, `more_like_this`, `make_questions`, `summarise`,
+`quiz_me` or `other`; only `other` needs a `message`.
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `POST /api/requests` | `{ target, kind?, message? }` (hers) | `201 { request }` |
+| `GET /api/requests` | `status` (one or more, comma separated; default: all but `cancelled`), `targetType`, `nodeId`, `documentId`, `blockId`, `fileId`, `questionId`, `order` (`newest` or `oldest`), `cursor`, `limit` | list of `RequestWithContext` |
+| `GET /api/requests/counts` | | `{ counts: { waiting, in_progress, done, declined, cancelled, open } }`; `open` is waiting plus in progress, for the badge |
+| `GET /api/requests/:id` | | `{ request }` |
+| `PATCH /api/requests/:id` | `{ kind?, message? }` (hers, while `waiting`; the target never changes) | `{ request }` |
+| `POST /api/requests/:id/cancel` | none (hers; `waiting` or `in_progress`) | `{ request }` with status `cancelled` |
+| `POST /api/requests/:id/reopen` | `{ note? }` (hers; `done` or `declined`) | `{ request }`, `waiting` again, with a `reopens` entry keeping the earlier reply |
+| `POST /api/requests/:id/claim` | `{ ttlSeconds? }` (agent) | `{ request }`, `in_progress` |
+| `POST /api/requests/:id/release` | none (the agent that holds it) | `{ request }`, `waiting` |
+| `POST /api/requests/:id/complete` | `{ reply, links? }` (the agent that holds it) | `{ request }`, `done` |
+| `POST /api/requests/:id/decline` | `{ reason }` (any agent when `waiting`; the holder when `in_progress`) | `{ request }`, `declined` |
+
+- **Who may do what.** Creating, editing, cancelling and reopening need her browser session:
+  an agent key gets `forbidden` with the rule in the message. Claiming, releasing, completing
+  and declining need an API key with write scope: her session gets `forbidden`. A read-only
+  key reads (including the counts) and is refused every change with `read_only_key`. Reading
+  works for both.
+- **Context for an agent.** Every item of a listing carries `context`: the target's `name`,
+  its library `path`, a short `preview` (the block's, document's, page's or question's first
+  words), the library `nodeId`, and a `note` (a regenerated block, a trashed or deleted target).
+  A listing therefore has what an agent needs to start without further calls.
+- **Claims.** A claim lasts 30 minutes (`ttlSeconds` asks for 60 seconds to 24 hours). After
+  that the request is `waiting` again with no claimant, so a crashed agent never blocks it.
+  Another agent claiming a live claim gets `conflict` with the time it ends. The holder
+  claiming again renews it. Completing after the claim ran out is `conflict` ("claim it
+  again").
+- **Replies.** `reply` has `text`, `links` (up to 50: `node`, `document`, `block`, `question`,
+  `concept` or `source`, each with an optional `label`), `by` and `at`. A decline stores its
+  reason as the reply's text. A request closed by the server (what it was about was deleted
+  for good) is `declined` with `by: { type: "system" }`.
+- **Edit protection.** `RequestsPort.verifyForEdit(userId, requestId, { documentId, blockId?,
+  keyId })` is true only when the request is claimed and unexpired, claimed by that key, and
+  asks about that document (any block) or that block. Whole-document operations (no `blockId`)
+  are not covered by a block request, and requests on the library, a node, a source or a
+  question never lift protection. The integrator calls it before the documents domain accepts
+  a `requestId`.
+- **Trash and delete.** Requests on trashed nodes, documents, blocks or files are hidden from
+  lists, counts and reads until restored; the hooks `onNodeTrashed`, `onNodeRestored`,
+  `onNodeDeleted`, `onFilesTrashed`, `onFilesRestored`, `onFilesDeleted`, `onQuestionsDeleted`
+  and `onDocumentsDeleted` do this. Open requests on things deleted for good are closed
+  (`declined`, system reply); finished ones stay as history.
+- Errors: `not_found` for another user's request or target, `conflict` with a hint listing the
+  moves still possible from the current status, `invalid_input` with an example.
+
+## Concepts
+
+The structured layer (features F1 to F5; the data for G12): typed concepts and relations with
+sources. Types are `Concept`, `Relation`, `ConceptSummary`, `ConceptPage`, `GraphResult`,
+`PathResult`, `FilterResult`, `ComparisonResult`, `BrandGenericPair` and `BulkUpsertResult`.
+See [concepts.md](concepts.md) for the model.
+
+| Method and path | Body or query | Returns |
+|---|---|---|
+| `GET /api/concepts` | `type`, `q`, `cursor`, `limit` | list of `ConceptSummary`, alphabetical (relevance with `q`) |
+| `GET /api/concepts/search` | `q`, `type`, `limit` | `{ items: ConceptSummary[] }`; prefix match on names, aliases, generic and brand names |
+| `GET /api/concepts/types` | | `{ concepts, relations }`: the concept types and the relation rules (the validity table) |
+| `GET /api/concepts/brand-generic` | `classId?`, `limit?` | `{ items: BrandGenericPair[] }` for the drill |
+| `GET /api/concepts/path` | `from`, `to`, `maxHops?` (default 6, at most 8), `relationTypes?` | `PathResult` |
+| `POST /api/concepts/query` | a `ConceptFilter` (read only, so a read key may call it) | `FilterResult` |
+| `POST /api/concepts/compare` | a `ComparisonInput` (read only) | `ComparisonResult` |
+| `POST /api/concepts/bulk` | `{ concepts, relations, partial? }` | `BulkUpsertResult`; atomic refusal is `invalid_input` listing every problem |
+| `POST /api/concepts` | `ConceptInput` | `201 { concept, suggestions }` |
+| `GET /api/concepts/:id` | | `{ concept, redirectedFrom }`; a merged concept's old ID returns the survivor |
+| `GET /api/concepts/:id/page` | | `ConceptPage`: relations grouped by type in both directions, mentions, questions, sources, look-alikes |
+| `GET /api/concepts/:id/graph` | `hops` (1 to 4), `maxNodes` (at most 200, default 60), `relationTypes` | `GraphResult` |
+| `GET /api/concepts/:id/suggestions` | | `{ items }`: look-alikes that might be the same concept |
+| `PATCH /api/concepts/:id` | `UpdateConceptInput` | `{ concept }` |
+| `DELETE /api/concepts/:id` | none; browser session only | `204`; its relations go with it |
+| `POST /api/concepts/:id/merge` | `{ mergeId }` | `{ concept, mergedId, relationsMoved, relationsDropped }` |
+| `POST /api/concepts/:id/review` | `{ status }`; browser session only | `{ concept }` |
+| `POST /api/concepts/:id/name-check` | none | `{ concept }`; `conflict` while the check is off |
+| `POST /api/concepts/name-checks` | `{ limit? }` | `{ checked, remaining }`: unchecked drugs checked now |
+| `GET /api/relations` | `from` or `to` (a concept), `type?` | `{ items: Relation[] }` |
+| `POST /api/relations` | `RelationInput` | `201 { relation }` |
+| `GET`, `PATCH`, `DELETE /api/relations/:id` | `UpdateRelationInput` for PATCH; DELETE is browser session only | `{ relation }` or `204` |
+| `POST /api/relations/:id/review` | `{ status }`; browser session only | `{ relation }` |
+
+- **Citation rule.** A concept or relation an agent adds needs at least one citation or
+  `"generalKnowledge": true` (never both). Her own are exempt. Citations are checked through
+  the source lookup: a page that does not exist, or a quote not in its transcript, is refused
+  with the path and an example. Adding to a concept that already exists needs no new citation.
+- **Identity.** A concept is the pair of type and normalised name (case, accents, punctuation
+  and spacing flattened). `POST /api/concepts` of an existing one is `conflict` naming it; the
+  bulk call matches it and updates. Look-alikes (another salt, an alias, a one-letter slip) are
+  returned as `suggestions` and never merged for you.
+- **Edit protection.** An agent may rewrite a concept's or relation's text only when it is its
+  own work and unreviewed. After she edits or reviews it, `PATCH` by an agent is `forbidden`
+  and a bulk upsert only adds (aliases, brand names, citations) and lists what it left alone in
+  `protectedFields`. Merge by an agent needs both concepts to be unreviewed agent work.
+- **Bulk upsert.** Up to 200 concepts and 500 relations. Relations name their ends by ID or by
+  `{ type, name }`, which may be a concept created earlier in the same call. Atomic by default
+  (any problem: nothing is written, `applied: false`, items that were fine show
+  `not_applied`); `partial: true` writes the valid items and reports `rejected` ones. Each
+  problem has `path`, `message` and `example`. Per item: `created`, `updated`, `unchanged` or
+  `rejected`; `skipped` counts unchanged plus rejected.
+- **Relations** are valid only between certain concept types (`GET /api/concepts/types`);
+  a refusal explains the rule, says if the ends look swapped, lists what does fit and gives an
+  example. `interacts_with` and `related_to` read the same from either end and are stored once;
+  `interacts_with` may carry `{ severity, effect }`.
+- **Filters** (`POST /api/concepts/query`): `with_relation` (every concept with relation `R` to
+  a target, through its class by default, with the supporting citations), `in_class` (drugs in
+  a class and its subclasses) and `sharing_mechanism` (drugs sharing a mechanism with one drug).
+  Every row says whether it matches directly or through a class and carries the citations of
+  the relations it rests on.
+- **Comparison** returns data, not a rendered table: columns, then one row per drug with a
+  cell per attribute (`values` each with citations, and `inheritedFrom` when `includeClass`
+  filled it from a class).
+- **Merge.** The survivor keeps both sets of aliases (the old name becomes an alias), brand
+  names, citations (up to 50) and relations; relations that would become a loop, or repeat one
+  the survivor already has, are dropped after their citations are moved. The old ID keeps
+  working as a redirect.
+- Errors follow the conventions above. Read-only keys read everything, including the query,
+  compare and path routes, and are refused every change.

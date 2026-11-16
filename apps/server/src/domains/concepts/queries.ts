@@ -774,10 +774,15 @@ export function createConceptQueries(deps: QueryDeps) {
             }
           };
           collect(rels, concept, null);
-          if (values.length === 0 && input.includeClass) {
+          if (input.includeClass) {
+            // What its classes have too, marked as inherited. Its own value wins when both say the same thing.
+            const own = new Set(values.map((v) => v.concept?.id));
             for (const above of classes) {
+              const before = values.length;
               collect(classRels.get(above.concept.id) ?? [], above.concept, above.concept);
-              if (values.length > 0) break;
+              const fresh = values.splice(before).filter((v) => !own.has(v.concept?.id));
+              for (const v of fresh) own.add(v.concept?.id);
+              values.push(...fresh);
             }
           }
           values.sort((a, b) => a.text.localeCompare(b.text));

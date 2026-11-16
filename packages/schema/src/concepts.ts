@@ -1179,7 +1179,7 @@ export const COMPARISON_LABELS: Record<ComparisonAttribute, string> = {
 export const ComparisonInput = z.strictObject({
   conceptIds: z.array(ConceptId).min(2).max(CONCEPT_LIMITS.compareConcepts),
   attributes: z.array(ComparisonAttribute).min(1).max(CONCEPT_LIMITS.compareAttributes),
-  /** Fill a gap with the class's value, marked as inherited (default false). */
+  /** Also list what the drug's classes have, marked as inherited (default false). */
   includeClass: z.boolean().default(false),
 });
 export type ComparisonInput = z.infer<typeof ComparisonInput>;
