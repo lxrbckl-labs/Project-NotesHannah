@@ -1,0 +1,1049 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: rules are grouped by component, not by specificity */
+/* Canvas feature styles. Colour tokens are tuned separately for light and
+   dark (not inverted), and every text/background pair meets WCAG AA. */
+@import "@xyflow/react/dist/base.css";
+
+.nc-canvas {
+  /* Surface */
+  --nc-bg: #f6f5f1;
+  --nc-dot: #c9c6bb;
+  --nc-card: #ffffff;
+  --nc-card-border: #dedbd1;
+  --nc-card-shadow: 0 1px 2px rgb(28 27 24 / 0.06), 0 4px 14px rgb(28 27 24 / 0.07);
+  --nc-card-shadow-lift: 0 2px 4px rgb(28 27 24 / 0.08), 0 12px 28px rgb(28 27 24 / 0.14);
+  --nc-text: var(--color-text, #1c1b18);
+  --nc-muted: #5f5d55;
+  --nc-accent: var(--color-accent, #2f6f5e);
+  --nc-accent-contrast: var(--color-accent-contrast, #ffffff);
+  --nc-select: #2f6fdb;
+  --nc-frame-bg: rgb(47 111 94 / 0.035);
+  --nc-frame-border: rgb(28 27 24 / 0.16);
+  --nc-frame-title: #3d3b35;
+  --nc-chrome: rgb(255 255 255 / 0.92);
+  --nc-chrome-border: #dcdad0;
+  --nc-chrome-hover: #efede6;
+  --nc-label-bg: #ffffff;
+
+  /* Card tints: background, border, accent (text-safe on the background). */
+  --tint-gray-bg: #f3f2ee;
+  --tint-gray-border: #d3d0c6;
+  --tint-gray-accent: #57544c;
+  --tint-brown-bg: #f6eee6;
+  --tint-brown-border: #ddc5ae;
+  --tint-brown-accent: #74502f;
+  --tint-red-bg: #fdeeed;
+  --tint-red-border: #efc1be;
+  --tint-red-accent: #a1342f;
+  --tint-orange-bg: #fef0e4;
+  --tint-orange-border: #f1c9a2;
+  --tint-orange-accent: #924a0f;
+  --tint-yellow-bg: #fdf5d3;
+  --tint-yellow-border: #e8d283;
+  --tint-yellow-accent: #735c0b;
+  --tint-green-bg: #eaf5ed;
+  --tint-green-border: #b4d9be;
+  --tint-green-accent: #2a6740;
+  --tint-teal-bg: #e5f3f2;
+  --tint-teal-border: #a8d3cf;
+  --tint-teal-accent: #1b625c;
+  --tint-blue-bg: #eaf1fd;
+  --tint-blue-border: #b5cdf1;
+  --tint-blue-accent: #2a559b;
+  --tint-purple-bg: #f1edfc;
+  --tint-purple-border: #cdbfef;
+  --tint-purple-accent: #573c9e;
+  --tint-pink-bg: #fcecf3;
+  --tint-pink-border: #edbdd4;
+  --tint-pink-accent: #962f5b;
+
+  /* Connector kinds. */
+  --edge-leads_to: #4f4c45;
+  --edge-causes: #c2410c;
+  --edge-treats: #15803d;
+  --edge-contrasts: #7c3aed;
+  --edge-part_of: #1d4ed8;
+  --edge-related: #6b6a66;
+
+  /* Stickers. */
+  --st-yellow: #f7c948;
+  --st-red: #e5534b;
+  --st-blue: #4c8df6;
+  --st-green: #3fb27f;
+  --st-ink: #2a2824;
+  --st-paper: #ffffff;
+  --st-pink: #f17fb0;
+  --st-orange: #f59a3c;
+}
+
+:root[data-theme="dark"] .nc-canvas,
+.nc-canvas.nc-dark {
+  --nc-bg: #121210;
+  --nc-dot: #3a3833;
+  --nc-card: #1e1d1a;
+  --nc-card-border: #3a3832;
+  --nc-card-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.35);
+  --nc-card-shadow-lift: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px rgb(0 0 0 / 0.5);
+  --nc-muted: #a9a79d;
+  --nc-select: #7aa7ff;
+  --nc-frame-bg: rgb(111 193 169 / 0.04);
+  --nc-frame-border: rgb(236 235 228 / 0.16);
+  --nc-frame-title: #d6d4cb;
+  --nc-chrome: rgb(32 31 28 / 0.94);
+  --nc-chrome-border: #3a3832;
+  --nc-chrome-hover: #2c2b27;
+  --nc-label-bg: #1e1d1a;
+
+  --tint-gray-bg: #23221f;
+  --tint-gray-border: #47453f;
+  --tint-gray-accent: #cfccc2;
+  --tint-brown-bg: #282019;
+  --tint-brown-border: #5c4531;
+  --tint-brown-accent: #e3c2a2;
+  --tint-red-bg: #2c1b1a;
+  --tint-red-border: #6e3834;
+  --tint-red-accent: #f4aba6;
+  --tint-orange-bg: #2c2017;
+  --tint-orange-border: #714925;
+  --tint-orange-accent: #f6ba87;
+  --tint-yellow-bg: #29261a;
+  --tint-yellow-border: #685b22;
+  --tint-yellow-accent: #ecd47c;
+  --tint-green-bg: #18251c;
+  --tint-green-border: #345c41;
+  --tint-green-accent: #98d5ab;
+  --tint-teal-bg: #152523;
+  --tint-teal-border: #2e5c57;
+  --tint-teal-accent: #93d5cd;
+  --tint-blue-bg: #18202d;
+  --tint-blue-border: #36527d;
+  --tint-blue-accent: #a8c6f4;
+  --tint-purple-bg: #211b2f;
+  --tint-purple-border: #4d3f7a;
+  --tint-purple-accent: #c6b6f2;
+  --tint-pink-bg: #2a1922;
+  --tint-pink-border: #6b3452;
+  --tint-pink-accent: #f1abcb;
+
+  --edge-leads_to: #bdbab0;
+  --edge-causes: #f6a066;
+  --edge-treats: #71d194;
+  --edge-contrasts: #baa0f8;
+  --edge-part_of: #93b6f8;
+  --edge-related: #a3a29b;
+
+  --st-ink: #f1efe8;
+  --st-paper: #2a2925;
+}
+
+.nc-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--nc-bg);
+  color: var(--nc-text);
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.nc-canvas .react-flow {
+  --xy-background-color: var(--nc-bg);
+  --xy-edge-stroke: var(--edge-related);
+  --xy-selection-background-color: rgb(47 111 219 / 0.08);
+  --xy-selection-border: 1px solid var(--nc-select);
+  --xy-minimap-background-color: var(--nc-chrome);
+  --xy-minimap-mask-background-color: rgb(120 118 110 / 0.18);
+  --xy-handle-background-color: var(--nc-card);
+  --xy-handle-border-color: var(--nc-select);
+}
+
+/* A tint picks its token's colours. */
+[data-tint="gray"] {
+  --tint-bg: var(--tint-gray-bg);
+  --tint-border: var(--tint-gray-border);
+  --tint-accent: var(--tint-gray-accent);
+}
+[data-tint="brown"] {
+  --tint-bg: var(--tint-brown-bg);
+  --tint-border: var(--tint-brown-border);
+  --tint-accent: var(--tint-brown-accent);
+}
+[data-tint="red"] {
+  --tint-bg: var(--tint-red-bg);
+  --tint-border: var(--tint-red-border);
+  --tint-accent: var(--tint-red-accent);
+}
+[data-tint="orange"] {
+  --tint-bg: var(--tint-orange-bg);
+  --tint-border: var(--tint-orange-border);
+  --tint-accent: var(--tint-orange-accent);
+}
+[data-tint="yellow"] {
+  --tint-bg: var(--tint-yellow-bg);
+  --tint-border: var(--tint-yellow-border);
+  --tint-accent: var(--tint-yellow-accent);
+}
+[data-tint="green"] {
+  --tint-bg: var(--tint-green-bg);
+  --tint-border: var(--tint-green-border);
+  --tint-accent: var(--tint-green-accent);
+}
+[data-tint="teal"] {
+  --tint-bg: var(--tint-teal-bg);
+  --tint-border: var(--tint-teal-border);
+  --tint-accent: var(--tint-teal-accent);
+}
+[data-tint="blue"] {
+  --tint-bg: var(--tint-blue-bg);
+  --tint-border: var(--tint-blue-border);
+  --tint-accent: var(--tint-blue-accent);
+}
+[data-tint="purple"] {
+  --tint-bg: var(--tint-purple-bg);
+  --tint-border: var(--tint-purple-border);
+  --tint-accent: var(--tint-purple-accent);
+}
+[data-tint="pink"] {
+  --tint-bg: var(--tint-pink-bg);
+  --tint-border: var(--tint-pink-border);
+  --tint-accent: var(--tint-pink-accent);
+}
+
+/* ---- Cards ---- */
+.nc-card {
+  position: relative;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--card-bg, var(--nc-card));
+  border: 1px solid var(--card-border, var(--nc-card-border));
+  box-shadow: var(--nc-card-shadow);
+  color: var(--nc-text);
+  font-size: 14px;
+  line-height: 20px;
+  transition:
+    box-shadow 0.15s ease,
+    outline-color 0.15s ease;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.react-flow__node.selected > .nc-card,
+.react-flow__node:focus-visible > .nc-card {
+  outline-color: var(--nc-select);
+  box-shadow: var(--nc-card-shadow-lift);
+}
+.react-flow__node.dragging > .nc-card {
+  box-shadow: var(--nc-card-shadow-lift);
+}
+.nc-card[data-tint] {
+  --card-bg: var(--tint-bg);
+  --card-border: var(--tint-border);
+}
+.nc-card-body {
+  padding: 12px 14px;
+  overflow: hidden;
+  max-height: var(--card-max, 340px);
+  pointer-events: none;
+}
+.nc-card-body.nc-clipped {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+}
+.nc-card.nc-reading .nc-card-body {
+  pointer-events: auto;
+  overflow: auto;
+  max-height: min(70vh, 640px);
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-mask-image: none;
+  mask-image: none;
+  cursor: text;
+}
+.nc-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--tint-accent, var(--nc-muted));
+}
+.nc-pin-badge {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--nc-card);
+  border: 1px solid var(--nc-card-border);
+  color: var(--nc-muted);
+}
+.nc-card-note {
+  font-size: 15px;
+  line-height: 22px;
+}
+.nc-card-note textarea {
+  width: 100%;
+  min-height: 88px;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.nc-card-concept {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  font-weight: 600;
+}
+.nc-concept-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--tint-accent, var(--nc-accent));
+  color: var(--tint-bg, #fff);
+  flex: none;
+  font-size: 13px;
+}
+.nc-sticker {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.18));
+  border-radius: 12px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.react-flow__node.selected > .nc-sticker {
+  outline-color: var(--nc-select);
+}
+.nc-card.nc-connect-source {
+  outline-color: var(--edge-part_of);
+  outline-style: dashed;
+}
+.nc-dim {
+  opacity: 0.28;
+  transition: opacity 0.25s ease;
+}
+
+/* ---- Block fallback rendering inside cards ---- */
+.nc-block + .nc-block {
+  margin-top: 10px;
+}
+.nc-block h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 650;
+}
+.nc-block p {
+  margin: 0;
+}
+.nc-block ul,
+.nc-block ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.nc-block li + li {
+  margin-top: 2px;
+}
+.nc-callout {
+  border-radius: 10px;
+  padding: 8px 10px 8px 12px;
+  background: var(--tint-bg);
+  border-left: 3px solid var(--tint-accent);
+}
+.nc-callout-title {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-weight: 650;
+  color: var(--tint-accent);
+  margin-bottom: 2px;
+}
+.nc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 18px;
+}
+.nc-table th,
+.nc-table td {
+  border-bottom: 1px solid var(--nc-card-border);
+  padding: 5px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+.nc-table th {
+  font-weight: 650;
+  color: var(--nc-muted);
+  font-size: 12px;
+}
+.nc-drug-name {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 24px;
+  text-transform: capitalize;
+}
+.nc-drug-class {
+  color: var(--nc-muted);
+  font-size: 13px;
+}
+.nc-drug-section {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nc-muted);
+}
+.nc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.nc-chip {
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 12px;
+  line-height: 20px;
+  background: var(--tint-bg, var(--nc-chrome-hover));
+  color: var(--tint-accent, var(--nc-text));
+  border: 1px solid var(--tint-border, transparent);
+}
+.nc-quote {
+  border-left: 3px solid var(--nc-card-border);
+  padding-left: 10px;
+  font-style: italic;
+}
+.nc-muted {
+  color: var(--nc-muted);
+}
+.nc-mark-highlight {
+  border-radius: 3px;
+  padding: 0 2px;
+  background: var(--tint-bg);
+}
+
+/* ---- Frames ---- */
+.nc-frame {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  background: var(--frame-bg, var(--nc-frame-bg));
+  border: 1.5px solid var(--frame-border, var(--nc-frame-border));
+  transition:
+    opacity 0.25s ease,
+    border-color 0.2s ease;
+}
+.react-flow__node.selected > .nc-frame {
+  border-color: var(--nc-select);
+}
+.nc-frame[data-tint] {
+  --frame-bg: color-mix(in srgb, var(--tint-bg) 55%, transparent);
+  --frame-border: var(--tint-border);
+}
+.nc-frame-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  cursor: grab;
+}
+.nc-frame-title {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--tint-accent, var(--nc-frame-title));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nc-frame-step {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--tint-accent, var(--nc-frame-title));
+  color: var(--tint-bg, var(--nc-bg));
+}
+.nc-frame-active {
+  border-width: 2.5px;
+  border-color: var(--nc-accent);
+}
+.nc-drop-target > .nc-frame {
+  border-style: dashed;
+  border-color: var(--nc-select);
+  background: rgb(47 111 219 / 0.06);
+}
+
+/* ---- Connectors ---- */
+.nc-edge-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.react-flow__edge.selected .nc-edge-path {
+  stroke-width: 3;
+}
+.nc-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+}
+.nc-edge-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: all;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+  background: var(--nc-label-bg);
+  color: var(--edge-color);
+  border: 1.5px solid var(--edge-color);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  cursor: pointer;
+}
+.nc-edge-label.nc-selected {
+  box-shadow: 0 0 0 3px rgb(47 111 219 / 0.3);
+}
+.nc-edge-dim {
+  opacity: 0.2;
+}
+
+/* Handles: visible on hover and selection with a mouse only. */
+.nc-canvas .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.nc-canvas.nc-fine .react-flow__node:hover .react-flow__handle,
+.nc-canvas.nc-fine .react-flow__node.selected .react-flow__handle {
+  opacity: 1;
+}
+.nc-canvas.nc-coarse .react-flow__handle {
+  pointer-events: none;
+}
+
+/* ---- Chrome: toolbars, panels ---- */
+.nc-chrome {
+  background: var(--nc-chrome);
+  border: 1px solid var(--nc-chrome-border);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 0.1);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--nc-text);
+}
+.nc-toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 16px;
+  z-index: 10;
+  max-width: calc(100% - 24px);
+}
+.nc-sep {
+  width: 1px;
+  height: 26px;
+  background: var(--nc-chrome-border);
+  margin: 0 4px;
+  flex: none;
+}
+.nc-btn {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  flex: none;
+}
+.nc-btn:hover {
+  background: var(--nc-chrome-hover);
+}
+.nc-btn:focus-visible {
+  outline: 2px solid var(--nc-select);
+  outline-offset: 1px;
+}
+.nc-btn[aria-pressed="true"] {
+  background: var(--nc-accent);
+  color: var(--nc-accent-contrast);
+}
+.nc-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.nc-btn.nc-danger {
+  color: #b42318;
+}
+:root[data-theme="dark"] .nc-btn.nc-danger,
+.nc-dark .nc-btn.nc-danger {
+  color: #ff9b8f;
+}
+.nc-zoom-label {
+  min-width: 52px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.nc-topbar {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  right: calc(12px + env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+.nc-topbar > * {
+  pointer-events: auto;
+}
+.nc-title-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 14px;
+  border-radius: 14px;
+  min-width: 0;
+}
+.nc-title-text {
+  font-weight: 650;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nc-panel {
+  position: absolute;
+  top: calc(68px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: 300px;
+  max-height: calc(100% - 170px);
+  overflow: auto;
+  border-radius: 16px;
+  padding: 8px;
+  z-index: 11;
+}
+.nc-panel h2 {
+  margin: 6px 8px 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--nc-muted);
+}
+.nc-frame-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 10px;
+}
+.nc-frame-row:hover {
+  background: var(--nc-chrome-hover);
+}
+.nc-frame-row > .nc-frame-jump {
+  flex: 1;
+  justify-content: flex-start;
+  text-align: left;
+  min-width: 0;
+}
+.nc-frame-row .nc-frame-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nc-frame-row input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--nc-select);
+  padding: 0 8px;
+  background: var(--nc-card);
+  color: inherit;
+  font: inherit;
+}
+.nc-count {
+  margin-left: auto;
+  color: var(--nc-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.nc-stepbar {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+  z-index: 12;
+  max-width: calc(100% - 24px);
+}
+.nc-step-title {
+  padding: 0 8px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.nc-step-count {
+  color: var(--nc-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  padding-left: 6px;
+}
+.nc-popover {
+  border-radius: 14px;
+  padding: 10px;
+  z-index: 50;
+  min-width: 220px;
+  font-size: 14px;
+}
+.nc-popover label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nc-muted);
+  margin: 6px 2px 4px;
+}
+.nc-popover input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--nc-chrome-border);
+  padding: 0 10px;
+  background: var(--nc-card);
+  color: inherit;
+  font: inherit;
+}
+.nc-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.nc-seg .nc-btn {
+  height: 36px;
+  min-width: 36px;
+  font-size: 13px;
+  border: 1px solid var(--nc-chrome-border);
+}
+.nc-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid var(--tint-border);
+  background: var(--tint-bg);
+}
+.nc-swatch-none {
+  background: var(--nc-card);
+  border-color: var(--nc-card-border);
+}
+.nc-sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  gap: 6px;
+}
+.nc-sticker-grid .nc-btn {
+  height: 56px;
+}
+.nc-seltools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+}
+.nc-seltools .nc-btn {
+  height: 40px;
+  min-width: 40px;
+}
+.nc-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 14px;
+  border-radius: 14px;
+  z-index: 20;
+  font-size: 14px;
+  max-width: calc(100% - 24px);
+}
+.nc-arranging {
+  position: absolute;
+  top: calc(70px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  z-index: 12;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.nc-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid var(--nc-chrome-border);
+  border-top-color: var(--nc-accent);
+  animation: nc-spin 0.8s linear infinite;
+}
+@keyframes nc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.nc-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.35);
+  z-index: 60;
+}
+.nc-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  border-radius: 18px;
+  padding: 20px;
+  z-index: 61;
+}
+.nc-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.nc-dialog p {
+  margin: 0 0 16px;
+  color: var(--nc-muted);
+  line-height: 1.45;
+}
+.nc-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.nc-dialog-actions .nc-btn {
+  border: 1px solid var(--nc-chrome-border);
+}
+.nc-dialog-actions .nc-primary {
+  background: var(--nc-accent);
+  color: var(--nc-accent-contrast);
+  border-color: transparent;
+}
+.nc-canvas .react-flow__minimap {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--nc-chrome-border);
+  bottom: calc(76px + env(safe-area-inset-bottom));
+}
+.nc-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--nc-muted);
+}
+.nc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nc-canvas *,
+  .nc-canvas *::before,
+  .nc-canvas *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component transition */
+    transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: as above */
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Frames take pointer events only on their title bar: the rest pans and marquee-selects. */
+.nc-canvas .react-flow__nodes .react-flow__node-frame {
+  pointer-events: none;
+}
+.nc-canvas .react-flow__node-frame .nc-frame-head {
+  pointer-events: auto;
+}
+.nc-canvas .react-flow__node-card {
+  cursor: grab;
+}
+.nc-canvas .react-flow__node-card.dragging {
+  cursor: grabbing;
+}
+.nc-hint {
+  position: absolute;
+  top: calc(68px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 14px;
+  border-radius: 14px;
+  z-index: 12;
+  font-size: 14px;
+  max-width: calc(100% - 24px);
+}
+.nc-editor {
+  position: absolute;
+  top: calc(68px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 16px;
+  padding: 10px;
+  z-index: 13;
+  width: min(440px, calc(100% - 24px));
+  box-sizing: border-box;
+}
+.nc-editor-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nc-editor input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid var(--nc-chrome-border);
+  padding: 0 12px;
+  background: var(--nc-card);
+  color: inherit;
+  font: inherit;
+}
+.nc-kind {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--edge-color);
+  color: var(--edge-color);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nc-kind[aria-pressed="true"] {
+  background: var(--edge-color);
+  color: var(--nc-label-bg);
+}
+
+/* Labels stay readable above cards; lines run beneath them. */
+.nc-canvas .react-flow__edgelabel-renderer {
+  z-index: 1000;
+}
+
+.nc-canvas .react-flow__attribution {
+  background: transparent;
+  font-size: 10px;
+  opacity: 0.7;
+}
+.nc-canvas .react-flow__attribution a {
+  color: var(--nc-muted);
+}
+.nc-step-count {
+  white-space: nowrap;
+}
+.nc-stepbar.nc-stepbar-inline {
+  position: static;
+  transform: none;
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.nc-step-text {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+.nc-stepbar-inline .nc-step-text {
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+.nc-stepbar-inline .nc-step-count {
+  padding-left: 0;
+  font-size: 11px;
+}
+.nc-stepbar-inline .nc-step-title {
+  padding: 0;
+  max-width: 100%;
+  font-size: 14px;
+}
+.nc-stepbar-inline .nc-btn {
+  min-width: 40px;
+  padding: 0 6px;
+}
+
+.nc-canvas .react-flow__handle {
+  border-radius: 999px;
+  background: var(--nc-card);
+  border-color: var(--nc-select);
+}
+.nc-canvas.nc-connecting .react-flow__handle {
+  opacity: 0;
+}
+.nc-panel {
+  width: min(380px, calc(100% - 24px));
+  box-sizing: border-box;
+}
+.nc-canvas.nc-fine .nc-frame-row .nc-btn:not(.nc-frame-jump) {
+  min-width: 34px;
+  padding: 0 4px;
+}

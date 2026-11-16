@@ -3,6 +3,7 @@ export const SCHEMA_VERSION = 1;
 
 export * from "./accounts.js";
 export * from "./blocks/index.js";
+export * from "./canvas.js";
 export * from "./citations.js";
 export * from "./common.js";
 export * from "./concepts.js";
