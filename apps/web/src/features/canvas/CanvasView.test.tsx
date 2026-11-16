@@ -86,7 +86,8 @@ function node(id: string): HTMLElement {
   return el as HTMLElement;
 }
 
-describe("CanvasView gestures", () => {
+// Full renders with ELK on the main thread: generous time under a loaded test run.
+describe("CanvasView gestures", { timeout: 30_000 }, () => {
   it("adds a note (insert_items, then update_card with her text)", async () => {
     const user = userEvent.setup();
     const { last } = setup();

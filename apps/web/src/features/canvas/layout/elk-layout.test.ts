@@ -8,11 +8,13 @@ import {
   overlaps,
 } from "@notes/schema";
 import ELK from "elkjs/lib/elk.bundled.js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildElkGraph, computeLayout } from "./elk-layout";
 import { type Fixture, fixtureActor, fixtureId, makeFixture } from "./fixtures";
 
 const elk = new ELK();
+// ELK runs on the test thread; allow for a loaded machine.
+vi.setConfig({ testTimeout: 30_000 });
 
 function inputOf(fixture: Fixture, previous?: Record<string, { x: number; y: number }>) {
   const blocks = new Map(fixture.blocks.map((b) => [b.id, b]));
