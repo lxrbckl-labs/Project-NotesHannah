@@ -41,7 +41,16 @@ of the checks. Then record the port in this file under Task 1 and set the status
 
 ## Task 2: deploy the stack
 
-**Status:** not ready: waiting for the owner's go. Do not start any of this until Alex says the owner approved the deployment.
+**Status:** go given by Alex on 2026-11-16 08:01 CST, from his phone, away from home: "Can you deploy this to the
+domain on the Mac mini so I can access it away?" Task 1 is still open, so do it first.
+
+**For this run (Alex is away from the keyboard):**
+
+- The first account is `alex` (`--username alex`), so he can sign in himself. Do not create an account for Hannah yet.
+- Show the generated account password and the `RESTIC_PASSWORD=` line only in the mini session's own transcript, where
+  Alex reads it on his phone. Do not put either in a message to another session.
+- Skip step 10 (the reboot test). It waits until Alex is home.
+- Stop and report rather than improvise if a drive is not mounted, a port is taken, or another site stops answering.
 
 **Context.** The app and the file converter now deploy as one compose stack with a full backup system
 (`deploy/docker-compose.yml`, `scripts/`). Read `docs/deploy.md` and `docs/backups.md` first. Task 1 (Caddy) must be done:
