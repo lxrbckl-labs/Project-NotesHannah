@@ -11,12 +11,13 @@ Related: [architecture.md](architecture.md) (MCP layer, agent orientation),
 operations), [converter.md](converter.md) (how uploads become pages),
 `spikes/s1-mcp-key-auth/FINDINGS.md` (what the two agents do with images and keys).
 
-## State (2026-11-15)
+## State (2026-11-16)
 
 Everything below is live on the shared services: `createApp` passes the one `Services`
 object to `mcpRoutes(deps, services)`, so MCP and the HTTP API run the same domain code.
-All twelve tools are registered in production. Proved end to end with the real server,
-the real converter container and headless Claude Code and Codex sessions (see Live checks).
+Sixteen tools are registered in production, covering the library, files, documents,
+requests, practice, exams and concepts. Proved end to end with the real server, the real
+converter container and headless Claude Code and Codex sessions (see Live checks).
 
 ## Endpoint
 
@@ -35,41 +36,88 @@ the real converter container and headless Claude Code and Codex sessions (see Li
 
 | Tool | Purpose | Annotations |
 |---|---|---|
-| `start_here` | Orientation, the end-to-end workflow and live facts; optional `topic` | read-only |
+| `start_here` | Orientation, the whole job in order, the rules, content types, live facts (open requests, inbox); `topic` for detail | read-only |
 | `browse_library` | One level of the tree, or trash, favourites, recents; paged | read-only |
-| `get_item` | Any object by ID with links to its neighbours; a file's pages with transcription state, or (`text: true`) every page's text at once | read-only |
-| `search_notes` | Unified search: library names, transcribed pages and document blocks in one ranked list | read-only |
-| `edit_library` | create, update (rename), move, duplicate, trash, restore | destructive |
+| `get_item` | Any object by ID (nod_, fil_, pag_, doc_, blk_, req_, qst_, con_, exm_) with links to its neighbours; a file with `text: true` gives every page's text at once; a lecture shows who is writing for it | read-only |
+| `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts | read-only |
+| `edit_library` | create, update (rename), move, duplicate, trash, restore; claim and release a lecture or document for writing | destructive |
 | `changes` | The change feed since a cursor | read-only |
-| `source_files` | list (inbox with status and transcription progress), wait (for conversion), claim, release, file, move (or back to the inbox), retry | write |
+| `requests` | Her requests: list (waiting first, with target, path, preview), claim, release, complete with a reply and links, decline with a reason | write |
+| `source_files` | upload links, list (status and transcription progress), wait for conversion, claim, release, file, move (or back to the inbox), retry | write |
 | `get_page` | Page image inline (WebP) or a signed link; native text, notes, the current transcript, neighbours, how often it is cited | read-only |
 | `save_transcript` | Verbatim transcript with flags; refuses unflagged doses | write |
-| `request_upload_links` | Single-use PUT links for local files | write |
 | `write_document` | `create_document` with its first blocks | write |
-| `edit_blocks` | insert, update (replace or patch), move, delete, replace_generated, restore_revision | destructive |
+| `edit_blocks` | insert, update (replace or patch), move, delete, replace_generated, restore_revision; `requestId` for her blocks | destructive |
+| `concepts` | upsert concepts and relations in bulk; search, page, neighbourhood, path, filter, compare, look-alike suggestions; merge only with her claimed request | destructive |
+| `practice_questions` | create in bulk (or validate only), list, update, trash, restore | destructive |
+| `study_progress` | Her weak areas, missed-questions notebook, due cards, sessions, a session's results | read-only |
+| `exams` | Upcoming exams with coverage and progress; create, update (never delete) | write |
 
-`openWorldHint` is false everywhere. `destructiveHint` is true for the two tools that can
-remove or overwrite content (`edit_library` trash, `edit_blocks`), though both are
-recoverable.
+Why this list (and not more): each tool is one job an agent recognises by name. Actions
+that share a subject fold into one tool with an `action` (requests, source_files, concepts,
+practice_questions, study_progress, exams), and anything that only reads one object by ID
+is `get_item`, so the four new domains added four tools, not twenty: their `get` lives in
+`get_item`, and upload links moved into `source_files` (an upload is the start of a file's
+life), which keeps the count at sixteen. `study_progress` is separate from
+`practice_questions` because it only reads and has a read-only annotation; `exams` is
+separate because it is about dates and coverage, not questions. Agents can never take a
+practice session or answer for her: those service methods are not in the port.
+
+Decisions:
+
+- **Exams.** Agents may create and update exams unprompted (an exam date in her
+  material, or a request), because the activity log shows it and she can change it; they
+  can never delete one (the domain refuses, and the tool has no such action).
+- **Concept merges** stay hers: `concepts merge` needs the `requestId` of her request,
+  in progress and claimed by the calling key (checked in the MCP layer), and the domain
+  still requires both concepts to be unreviewed agent work. Look-alikes are reported, never
+  merged.
+- **Her edits.** Her blocks, her questions and anything she reviewed are protected. Only a
+  request of hers lifts that, when `requestsPort.verifyForEdit` confirms it is in progress,
+  claimed by this key and about that document or block. The documents domain enforces it;
+  `edit_blocks` passes `requestId` through and the errors say what is missing.
+
+`openWorldHint` is false everywhere. `destructiveHint` is true for the tools that can
+remove or overwrite content (trash, block edits, upserts and merges, question rewrites),
+though all of them are recoverable.
 
 ### The workflow `start_here` teaches
 
-1. Files on the agent's machine: `request_upload_links` (name and size; an upper bound is
-   accepted), then `curl -X PUT --data-binary @file <url>`; the PUT answers with the file.
-   Files she uploaded are already in the inbox (`source_files list`).
-2. `source_files wait` (up to 25 s per call, polled on the server so the agent does not
-   loop or sleep); call again while converting. A failed conversion shows its reason;
-   `retry` once, else tell her. If the converter is not online, nothing converts: tell her.
-3. `claim` each file.
-4. `get_item` on the file lists pages; `get_page` shows each image. For bulk work,
-   `get_page` with `image: "link"` and curl the signed links.
-5. `save_transcript` per page (the result says how many pages are still missing).
-6. Create or find the term, course and lecture.
-7. `source_files file` under the lecture (allowed with untranscribed pages, with a warning
-   listing them).
-8. `get_item` on the file with `text: true` for exact quotes, then `write_document`, every
-   content block citing its page; check with `get_item` on the document (its references).
-9. `release` each claim.
+1. **Requests first**: list, claim, do it, complete with a reply and links (or decline).
+2. **Inbox**: `source_files upload_links` for local files (one bare curl per file),
+   `wait` until converted, `claim` each file.
+3. **Transcribe** every page with `save_transcript`, slides too (native text is a draft).
+4. **Place and file**: term, course, lecture 7 (`edit_library`), then `source_files file`.
+5. **Write**: claim the lecture (`edit_library claim`), collect quotes with `get_item`
+   on the file with `text: true`, write the lecture note with `write_document`.
+6. **Concepts**: `concepts upsert`, each citing its page.
+7. **Practice**: `practice_questions create` under the lecture (validate first), using
+   `study_progress` to target weak areas.
+8. **Finish**: complete the claimed requests; release file and writing claims.
+
+### Duplicate work: writing claims
+
+Two agents could write a study guide for the same lecture. A file claim (source_files) and
+a request claim (requests) cover their own objects, so writing gets the same idea:
+`edit_library {"action":"claim","id":"<lecture>"}` takes an advisory, expiring claim
+(30 minutes) on a lecture, folder or document and everything under it (table
+`mcp_write_claims`, migration 0620, owned by the MCP layer). While another key holds it,
+`write_document`, `edit_blocks` and `practice_questions` writes into that subtree are
+refused with who holds it and until when, and so is a second claim; `get_item` on the
+lecture shows the holder; the holder's own writes renew it; `release` ends it. Her browser
+session is never affected. Limitation: a study guide written into the course's Study
+guides section is outside the lecture's subtree, so the claim only advises there (the
+holder is still shown on the lecture).
+
+### Quotes
+
+The domains refuse a citation whose quote is not, character for character, on its page.
+In the first live run an agent that hit this gave up and marked 11 of 12 questions and all
+its concepts "general knowledge". So every write tool now checks every citation in its
+input first, the same way (whitespace collapsed; transcript, native text and speaker
+notes), and refuses with each failing path and **the closest passage on that page** to
+copy, e.g. `$.questions[0].sources[0].quote "…" is not on page pag_…; the closest passage
+there is "Propranolol is nonselective."`.
 
 ### Results
 
@@ -135,6 +183,21 @@ Example: {"action":"create","parentId":"nod_01HZX3K9Q2V7M4N8P6R5T0W1YB","kind":"
   write attempts are not her business; they go to the server log as
   `mcp refused <tool> <action> key=<id> code=<code>`.
 
+### Activity action names
+
+The MCP layer writes no activity of its own: every agent change is recorded by the domain
+that makes it, the same way for MCP and the HTTP API, and writing claims are deliberately
+not logged (advisory, and they would drown the log). So no MCP-originated names needed
+changing. The names the domains use today, seen in the live runs and the code, are not
+consistent; to fix in the domains (suggested form `<object>.<past participle>`):
+
+| Domain | Today | Suggested |
+|---|---|---|
+| library | `library.created`, `.updated`, `.moved`, `.duplicated`, `.trashed`, `.restored`, `.deleted` (its change feed says `node.*`) | `node.*`, as in the feed |
+| documents | the operation names: `create_document`, `insert_blocks`, `update_block`, `move_blocks`, `delete_blocks`, `replace_generated`, `restore_revision`, `batch` (its change feed says `document.created`, `document.updated`) | `document.created`, `blocks.inserted`, `block.updated`, `blocks.moved`, `blocks.deleted`, `document.regenerated`, `document.restored`, `document.batch` |
+| requests | `request.claim`, `request.release`, `request.complete`, `request.decline` | `request.claimed`, `.released`, `.completed`, `.declined` |
+| files, transcripts, practice, exams, concepts | `file.filed`, `transcript.saved`, `question.created`, `exam.created`, `concept.bulk_upserted`, ... | already consistent |
+
 ## Inputs
 
 Tool input schemas are generated from the shared zod schemas in `@notes/schema` with
@@ -166,6 +229,13 @@ needed domain code):
 | `since` time in the change feed | cursor only (plus latest cursor) | `changes` takes a cursor, or `from: "now"` |
 | library writes as the agent | optional `by` actor | the tool passes the agent (before, MCP library writes were logged as her) |
 
+Practice, exams, requests and concepts need no adapter: their services already take the
+caller's `AuthContext`, so `McpBackend` holds them narrowed by `Pick` to the methods the
+tools call (`PracticeToolPort`, `ExamsToolPort`, `RequestsToolPort`, `ConceptsToolPort` in
+`ports.ts`). The domain's own `PracticePort` lacks update, trash and restore, which her
+"list/get/update/trash" brief needs, so the MCP layer picks them from the service; session
+methods (start, answer, finish) are left out on purpose.
+
 ## Tests
 
 - `test/mcp-auth.test.ts`, `mcp-library.test.ts`, `mcp-ports.test.ts`: the SDK client
@@ -177,16 +247,24 @@ needed domain code):
   are checked against the transcripts, unified search, the change feed, the activity log
   (agent label, same entry as the HTTP API), a failed conversion and retry, read-only keys
   and isolation.
+- `test/mcp-more.test.ts`, over the real composed app: her requests (her block, edited by
+  her session, refused to the agent without a request, refused with the request before the
+  claim, refused to another key holding the same request ID, accepted after the claim;
+  complete, decline, read-only key, another user's request); practice (validate only, an
+  atomic refusal with the problem path and an example of that type, a made-up quote refused
+  with the closest passage, create, get, a calculation graded correct by the shared `grade`,
+  update, trash, restore, study_progress, another user's question); exams (create, list
+  with progress, update, coverage outside the course refused); concepts (bulk upsert with
+  citations, a relation between the wrong types refused with the rule and an example,
+  search, page, neighbourhood, filter through a class, compare, suggestions, merge refused
+  without a request and done with her claimed request, read-only key); writing claims; an
+  array sent as a JSON string; and the whole surface (sixteen tools, every field described,
+  every schema small and valid, start_here within budget).
 - `test/mcp-cli.test.ts`: `admin create-key`.
-
-## Not yet designed into tools
-
-Practice questions, requests, exams and concepts are being built in other lanes; tools
-for them come once their schemas and services exist (inputs are never hand-copied).
 
 ## Live checks
 
-`apps/server/scripts/mcp-live-check.sh [claude|codex|both|smoke]` starts the real server
+`apps/server/scripts/mcp-live-check.sh [claude|codex|both|smoke|measure] [guide|requests]` starts the real server
 (routes, MCP, queue watcher) on a temporary database and storage directory, starts the
 real converter image with the lockdown flags of `deploy/docker-compose.converter.yml`
 (user 10001:10001, no network, read-only root, originals mounted read-only), creates a
@@ -218,11 +296,52 @@ Observed along the way: haiku delegated most steps to sub-agents (the operator's
 Claude Code settings load in `claude -p`); both agents read WebP page images inline; the
 activity log named them "Claude Code" and "Codex" from their User-Agent.
 
+### Requests scenario (2026-11-16)
+
+`scripts/mcp-live-check.sh <agent> requests` seeds, through the HTTP API with her browser
+session (`mcp-live-check.seed.ts`): term, course, lecture 7, a lecture note with a
+paragraph she wrote herself ("Metoprolol tartrate: usual daily dose 500-2000 mg, twice
+daily."), the two fixture files uploaded and left unprocessed, and two requests: "this is
+wrong: fix the dose" on her paragraph and "make me a quiz on beta blockers" on the
+lecture. The prompt: "Check what Hannah has asked for and do it, then finish any
+unprocessed files, then make sure lecture 7 has concepts recorded and a 12-question mixed
+practice set including two dose calculations and four flashcards. Report what you did."
+`mcp-live-check.verify-more.ts` then checks the database: both requests done with replies;
+every agent change to her block carries her block request; both files filed and fully
+transcribed; at least 12 questions under the lecture with at least two calculations and
+four flashcards, each valid (`practice.Question`) and every source quote found on its
+page; every calculation graded correct by `practice.grade` for its own stated answer
+(`correctAnswerOf`, seeds 0 to 2); concepts and relations with citations whose quotes are
+on their pages; agent document blocks' citations; the activity log.
+
+| Run | Outcome (from the database) | Cost |
+|---|---|---|
+| Claude haiku #1 | Requests done, her block changed only through the request. Filed the deck without transcribing it (it had slide text) and, after quote errors, marked 11 of 12 questions and all concepts general knowledge. Led to: the quote pre-check with the closest passage, and stronger wording on transcribing slides and on general knowledge. | $0.47 |
+| Claude haiku #2 | All 12 questions and all concepts cite real pages; requests done. Left the handwriting file transcribed but unfiled; 3 flashcards, not 4; repeatedly omitted `mode` on update_block. Led to: mode inferred, "file it next" after the last transcript, counts by type after create. | $0.54 |
+| Claude haiku #3 | Requests, files, 12 questions (4 flashcards, 2 calculations) all pass; sent the concepts list as a JSON string five times, so no relations. Led to: JSON-string arrays accepted. | $0.67 |
+| Claude haiku #4 | Everything passed except the handwriting PDF, filed without transcribing it (with the warning). Its reply on her dose request cited the slide but stated "50-100 mg twice daily; maximum 400 mg", which is not what the slide says (50-200 mg). | $0.59 |
+| Claude sonnet | Finished (61 turns, 527 s) and reported both requests done, both files transcribed and filed, 36 concepts, 34 relations, 12 questions. **Not verified**: I edited the live script while it ran, bash read the changed file and the verification step failed with a syntax error; the temporary database was removed on exit. | $2.00 |
+| Codex | **All checks passed**: both requests done (dose corrected to the slide's 50-200 mg), both files transcribed and filed, 12 questions (2 calculations, 4 flashcards) all citing real pages and the calculations grading their own answers correct, 33 concepts and 29 relations all cited. 1.31M input tokens (1.17M cached), 7k output. | ChatGPT plan |
+
+### Size
+
+Measured with `scripts/mcp-live-check.sh claude measure` (Claude Code's own usage, read
+by `mcp-live-check.tokens.mjs`): loading every tool schema with ToolSearch added 19,310
+tokens to the context (18 schemas: the 16 notes tools and two others), and the default
+`start_here` result added 2,591 tokens. That listing was measured before the compact
+citation and link schemas; the JSON of the listing then went from 63,816 to 55,637
+characters. Codex's reported input did not grow when the server was attached, so it could
+not be used for this. `start_here` stays short by keeping detail in topics (largest:
+blocks 7.3k and practice 6.0k characters).
+
 ## Open questions
 
-- Two agents on one library at once: claims stop double transcription, but nothing stops
-  both writing a study guide for the same lecture.
-- Activity action codes are not uniform across domains (`file.filed`, `library.created`,
-  but `create_document` from the documents domain).
+- The handwriting PDF was twice filed untranscribed by haiku: filing is allowed with a
+  warning by decision; refusing it (or making the warning an error) would stop that.
+- Agents can state facts in a request reply that the cited page does not say (haiku #4's
+  dose range); nothing checks a reply's text.
+- Writing claims cover a lecture's subtree; a study guide filed in the course's Study
+  guides section is outside it, so the claim only advises there.
+- The domains' activity names are inconsistent (table above).
 - The check for unflagged doses and decimals is a pattern; tune it on her real notes.
 - Rate limiting is in memory, which fits the single container.

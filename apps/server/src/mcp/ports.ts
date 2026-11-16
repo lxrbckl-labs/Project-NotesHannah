@@ -12,7 +12,11 @@ import type {
   UploadTicket,
   WriterOperation,
 } from "@notes/schema";
+import type { ConceptsService } from "../domains/concepts/index.js";
+import type { ExamsService } from "../domains/exams/index.js";
 import type { LibraryService } from "../domains/library/index.js";
+import type { PracticeService } from "../domains/practice/index.js";
+import type { RequestsService } from "../domains/requests/index.js";
 import type { AuthContext } from "../http/auth-context.js";
 
 /**
@@ -153,6 +157,49 @@ export interface SearchPort {
   ): SearchPage;
 }
 
+/**
+ * Practice, exams, requests and concepts are used through the domain services
+ * themselves, narrowed to the methods the tools call (they already take the
+ * caller's AuthContext, so no adapter is needed). Session-taking and answering
+ * are deliberately absent: an agent can never sit a practice session for her.
+ */
+export type PracticeToolPort = Pick<
+  PracticeService,
+  | "createQuestions"
+  | "validateQuestions"
+  | "getQuestion"
+  | "listQuestions"
+  | "updateQuestion"
+  | "trashQuestion"
+  | "restoreQuestion"
+  | "listSessions"
+  | "results"
+  | "weakAreas"
+  | "notebook"
+  | "dueList"
+>;
+export type ExamsToolPort = Pick<
+  ExamsService,
+  "createExam" | "updateExam" | "getExam" | "listExams" | "upcoming"
+>;
+export type RequestsToolPort = Pick<
+  RequestsService,
+  "list" | "get" | "counts" | "claim" | "release" | "complete" | "decline"
+>;
+export type ConceptsToolPort = Pick<
+  ConceptsService,
+  | "bulkUpsert"
+  | "getConcept"
+  | "page"
+  | "search"
+  | "neighbourhood"
+  | "path"
+  | "filter"
+  | "compare"
+  | "merge"
+  | "suggestionsFor"
+>;
+
 /** Everything the MCP layer runs on. Only `library` is required. */
 export interface McpBackend {
   library: LibraryService;
@@ -160,4 +207,8 @@ export interface McpBackend {
   files?: FilesPort | undefined;
   documents?: DocumentsPort | undefined;
   changes?: ChangesPort | undefined;
+  practice?: PracticeToolPort | undefined;
+  exams?: ExamsToolPort | undefined;
+  requests?: RequestsToolPort | undefined;
+  concepts?: ConceptsToolPort | undefined;
 }

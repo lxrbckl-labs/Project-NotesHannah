@@ -46,7 +46,6 @@ const ALL = [
   "source_files",
   "get_page",
   "save_transcript",
-  "request_upload_links",
   "write_document",
   "edit_blocks",
 ];
@@ -242,19 +241,24 @@ describe("source files, pages and transcripts (fakes)", () => {
     expect(lab.text).toContain("revision 1");
   });
 
-  test("request_upload_links returns curl-ready links", async () => {
+  test("source_files upload_links returns curl-ready links", async () => {
     const { agent } = await mcpSetup({ ports: allPorts().ports });
     const a = await agent();
-    const r = await a.ok("request_upload_links", {
+    const r = await a.ok("source_files", {
+      action: "upload_links",
       files: [{ name: "lecture 07.pdf", bytes: 2_400_000 }],
     });
     expect(r.text).toContain('curl -sS -X PUT --data-binary @"/absolute/path/to/lecture 07.pdf"');
     expect(r.text).toContain('source_files {"action":"wait"');
-    const unmeasured = await a.ok("request_upload_links", { files: [{ name: "notes.pdf" }] });
+    const unmeasured = await a.ok("source_files", {
+      action: "upload_links",
+      files: [{ name: "notes.pdf" }],
+    });
     expect((unmeasured.structured.tickets as Array<{ maxBytes: number }>)[0]?.maxBytes).toBe(
       200 * 1024 * 1024,
     );
-    const tooBig = await a.fail("request_upload_links", {
+    const tooBig = await a.fail("source_files", {
+      action: "upload_links",
       files: [{ name: "x.pdf", bytes: 10 ** 10 }],
     });
     expect(tooBig.error.message).toContain("files[0].bytes");

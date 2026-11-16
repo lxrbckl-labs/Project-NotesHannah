@@ -17,8 +17,10 @@ import {
 } from "@notes/schema";
 import { z } from "zod";
 import { AppError } from "../../http/errors.js";
+import { CITATION_TEXT, PublishedCitation } from "../citation.js";
 import { exampleId } from "../errors.js";
 import type { WriteSummary } from "../ports.js";
+import { checkQuotes } from "../quotes.js";
 
 type DocumentEditOperation = Exclude<WriterOperation, "create_document">;
 
@@ -36,7 +38,7 @@ const PublishedBlock = z.object({
   type: BlockType,
   content: z.record(z.string(), z.unknown()).optional(),
   style: BlockStyle.optional(),
-  citations: z.array(Citation).max(20).optional(),
+  citations: z.array(PublishedCitation).max(20).optional(),
   generalKnowledge: z.boolean().optional(),
   flags: z.array(BlockFlag).max(20).optional(),
 });
@@ -47,21 +49,12 @@ const BLOCK_DESCRIPTIONS: Record<string, string> = {
   content:
     'The type-specific fields, e.g. for a paragraph {"text": "…"}; for a heading {"level": 2, "text": "…"}. Text accepts a plain string or rich-text runs.',
   style: 'Optional colours as tokens, e.g. {"background": "yellow"}.',
-  citations:
-    "Where it came from: at least one citation for generated text blocks, unless generalKnowledge is true.",
+  citations: `${CITATION_TEXT} At least one for generated text blocks, unless generalKnowledge is true.`,
   "citations[].fileId": `The source file, e.g. "${exampleId("file")}".`,
   "citations[].pageId": `The source page, e.g. "${exampleId("page")}".`,
   "citations[].quote":
     "The supporting passage, copied character for character from that page's transcript (1 to 1000 characters).",
-  "citations[].transcriptId": "Optional: the transcript the quote was taken from.",
-  "citations[].transcriptRevision": "Optional: that transcript's revision (needs transcriptId).",
-  "citations[].region":
-    'Optional: where on the page, as fractions of the page (0,0 top-left), e.g. {"x":0.1,"y":0.2,"width":0.5,"height":0.1}.',
   "citations[].label": 'Optional short chip label, e.g. "Slide 12".',
-  "citations[].region.x": "Left edge, 0 to 1.",
-  "citations[].region.y": "Top edge, 0 to 1.",
-  "citations[].region.width": "Width, a fraction of the page width.",
-  "citations[].region.height": "Height, a fraction of the page height.",
   "style.color":
     "Text colour token: gray, brown, red, orange, yellow, green, teal, blue, purple or pink.",
   "style.background": "Background colour token (same list as color).",
@@ -152,6 +145,13 @@ export const writeDocument = defineTool({
   writes: () => true,
   action: () => "create_document",
   run(ctx, input) {
+    const body = input as { nodeId?: string; parentId?: string };
+    ctx.claims.assertFree(
+      ctx.userId,
+      [body.nodeId, body.parentId].filter((x): x is string => typeof x === "string"),
+      ctx.keyId,
+    );
+    checkQuotes(ctx, input);
     const r = docs(ctx).write(ctx.auth, "create_document", input);
     return { text: resultText("Created", r), structured: { ...r } };
   },
@@ -182,7 +182,7 @@ const OPERATIONS = Object.keys(PUBLISHED_OPERATIONS) as DocumentEditOperation[];
 export const editBlocks = defineTool({
   name: "edit_blocks",
   title: "Change the blocks of a document",
-  description: `Change an existing document with one "operation": insert_blocks (add blocks at a position), update_block (mode "replace" with a whole new block, or mode "patch" with only the fields to change), move_blocks (reorder, or move to another document), delete_blocks (removed blocks stay in revision history), replace_generated (regenerate: removes your earlier unreviewed blocks, keeps hers and reports them as skipped), restore_revision. Protection: you may only overwrite blocks an agent wrote that she has not edited or reviewed, unless you pass the requestId of her request asking for it. Pass expectedRevision (from get_item) so a write is refused instead of overwriting her newer changes. Positions: "start", "end", {"after":"blk_…"}, {"before":"blk_…"}, {"index":0}.`,
+  description: `Change an existing document with one "operation": insert_blocks (add blocks at a position), update_block (mode "replace" with a whole new block, or mode "patch" with only the fields to change), move_blocks (reorder, or move to another document), delete_blocks (removed blocks stay in revision history), replace_generated (regenerate: removes your earlier unreviewed blocks, keeps hers and reports them as skipped), restore_revision. Protection: you may only overwrite blocks an agent wrote that she has not edited or reviewed, unless you pass the requestId of her request about that document or block, claimed by you (requests tool). Pass expectedRevision (from get_item) so a write is refused instead of overwriting her newer changes. Positions: "start", "end", {"after":"blk_…"}, {"before":"blk_…"}, {"index":0}.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,
@@ -201,7 +201,7 @@ export const editBlocks = defineTool({
         blocks: "insert_blocks: 1 to 100 blocks; replace_generated: the new blocks, up to 300.",
         position:
           'Where: "start", "end" (default for inserts), {"after":"blk_…"}, {"before":"blk_…"} or {"index":0}.',
-        mode: 'update_block: "replace" (send block) or "patch" (send patch).',
+        mode: 'update_block: "replace" (send block) or "patch" (send patch); inferred from which of the two you send.',
         blockId: `update_block: the block to change, e.g. "${exampleId("block")}".`,
         block:
           'update_block mode replace: the whole new block, shaped like an item of "blocks" ({"type", "content", "citations", ...}).',
@@ -239,6 +239,11 @@ export const editBlocks = defineTool({
       );
     }
     const { operation: _op, ...rest } = body;
+    // update_block: the mode follows from what was sent (block: replace, patch: patch), as the HTTP route does.
+    if (operation === "update_block" && rest.mode === undefined) {
+      if (rest.block !== undefined && rest.patch === undefined) rest.mode = "replace";
+      else if (rest.patch !== undefined && rest.block === undefined) rest.mode = "patch";
+    }
     const result = validateOperation(operation as DocumentEditOperation, rest, {
       writer: "agent",
     });
@@ -259,7 +264,17 @@ export const editBlocks = defineTool({
       operation: DocumentEditOperation;
       value: never;
     };
-    const r = docs(ctx).write(ctx.auth, operation, value);
+    const port = docs(ctx);
+    const target = (value as { documentId: string }).documentId;
+    try {
+      const { document } = port.getDocument(ctx.auth, target, { offset: 0, limit: 1 });
+      ctx.claims.assertFree(ctx.userId, [document.nodeId], ctx.keyId);
+    } catch (error) {
+      if (error instanceof AppError && error.code === "conflict") throw error;
+      // a missing document is the domain's error to report
+    }
+    checkQuotes(ctx, value);
+    const r = port.write(ctx.auth, operation, value);
     return { text: resultText(`Applied ${operation} to`, r), structured: { operation, ...r } };
   },
 });
