@@ -215,21 +215,24 @@ paths and private Docker projects (`notes-st`, `notes-rt`) and clean up after th
 ## Rolling out a change (Watchtower)
 
 The mini runs Watchtower, which replaces a container when its image gets a newer version in the registry. The stack
-uses that instead of rebuilding on the mini.
+uses that instead of rebuilding on the mini. It is the same arrangement as the other labs projects.
 
-1. On the MacBook, on a clean `main` that passed `pnpm gate`: `scripts/publish.sh`. It builds both images for arm64 and
-   pushes `ghcr.io/lxrbckl-labs/notes-app` and `ghcr.io/lxrbckl-labs/notes-converter`, tagged `latest` and the commit.
-   The login used by `docker login ghcr.io` must be allowed to write packages.
-2. Watchtower on the mini sees the new `latest` on its next poll and recreates `app` and `converter` with it.
+1. Push to `main` as usual. Nothing is built: `.github/workflows/dockerhub-build-push.yml` runs and skips.
+2. To roll out, make a commit on `main` whose message **starts with `publish`** (an empty commit is fine:
+   `git commit --allow-empty -m "publish: <what changed>"`) and push it. GitHub builds both images for arm64 with the
+   org's shared workflow and pushes `<dockerhub user>/notes-app` and `<dockerhub user>/notes-converter`, tagged `main`
+   and the commit hash. Publishing is Alex's call each time.
+3. Watchtower on the mini sees the new `main` tag on its next poll and recreates `app` and `converter` with it.
 
-One-time switch on the mini: set `APP_IMAGE=ghcr.io/lxrbckl-labs/notes-app:latest` and
-`CONVERTER_IMAGE=ghcr.io/lxrbckl-labs/notes-converter:latest` in `deploy/.env`, `docker pull` both, then
-`scripts/up.sh`. Compose itself never pulls (`pull_policy: never`); only Watchtower and a manual `docker pull` do.
+One-time switch on the mini: set `APP_IMAGE=<dockerhub user>/notes-app:main` and
+`CONVERTER_IMAGE=<dockerhub user>/notes-converter:main` in `deploy/.env`, `docker pull` both, then `scripts/up.sh`.
+Compose itself never pulls (`pull_policy: never`); only Watchtower and a manual `docker pull` do.
 
 Notes:
 
-- The images are private. The mini's Docker login must be able to read them.
-- No GitHub pipeline is involved. Publishing is a deliberate act on the MacBook, not a side effect of a push.
+- The build logs in to Docker Hub with the org secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
+- A new Docker Hub repository is public unless the account's default is private. The images hold the app's code, never
+  her data or any secret.
 - Watchtower does not take a database snapshot first. Run `scripts/backup.sh` on the mini before publishing a change
   that alters the database.
-- To go back, publish the earlier commit again, or point the two image names at an earlier `:<commit>` tag.
+- To go back, point the two image names at an earlier `:<commit hash>` tag and run `scripts/up.sh`.

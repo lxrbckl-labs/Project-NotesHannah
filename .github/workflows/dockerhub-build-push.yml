@@ -1,0 +1,28 @@
+name: dockerhub-build-push
+
+# Builds and pushes the two images to Docker Hub, where Watchtower on the mini picks them up.
+# The shared workflow builds only when the commit message starts with "publish"; every other push is skipped.
+# See docs/deploy.md, "Rolling out a change".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  app:
+    uses: lxrbckl-labs/.github/.github/workflows/dockerhub-build-push.yml@main
+    secrets: inherit
+    with:
+      image_name: notes-app
+      dockerfile: deploy/Dockerfile
+      caller_event_name: ${{ github.event_name }}
+      caller_commit_message: ${{ github.event.head_commit.message }}
+
+  converter:
+    uses: lxrbckl-labs/.github/.github/workflows/dockerhub-build-push.yml@main
+    secrets: inherit
+    with:
+      image_name: notes-converter
+      dockerfile: deploy/converter.Dockerfile
+      caller_event_name: ${{ github.event_name }}
+      caller_commit_message: ${{ github.event.head_commit.message }}
