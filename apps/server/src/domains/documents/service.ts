@@ -194,6 +194,8 @@ export interface ReviewInput {
 export interface ListOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
+  /** Skip this many hits (search only). Takes the place of `cursor`; the unified search pages with it. */
+  offset?: number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -477,6 +479,12 @@ export function createDocumentsService(
     target: { pageId: string } | { fileId: string },
     options: ListOptions = {},
   ): CitedBy {
+    if (sources.exists && !sources.exists(auth.userId, target)) {
+      const what = "pageId" in target ? "page" : "file";
+      throw new AppError("not_found", `No such ${what}.`, {
+        hint: `Check the ${what} ID; it must be one of her ${what}s that has not been deleted.`,
+      });
+    }
     const limit = limitOf(options);
     const offset = decodeOffset(options.cursor);
     const column = "pageId" in target ? "page_id" : "file_id";
@@ -536,7 +544,7 @@ export function createDocumentsService(
     const match = ftsQuery(query);
     if (match === null) return { items: [], nextCursor: null };
     const limit = limitOf(options);
-    const offset = decodeOffset(options.cursor);
+    const offset = options.offset ?? decodeOffset(options.cursor);
     const rows = db
       .prepare(
         `SELECT b.id AS block_id, b.type, b.document_id, d.node_id, d.title,

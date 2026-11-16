@@ -47,12 +47,18 @@ export const DEFAULT_QUEUE_OPTIONS: QueueOptions = {
   heartbeatStaleMs: 30_000,
 };
 
+/** What the queue tells the files service when a conversion ends, inside the same transaction. */
+export type QueueEvent =
+  | { type: "converted"; file: FileRow }
+  | { type: "failed"; file: FileRow; code: ErrorCode };
+
 export interface QueueContext {
   db: Db;
   now: () => number;
   storage: () => Storage;
   options: QueueOptions;
   log: (message: string) => void;
+  onEvent?: (event: QueueEvent) => void;
 }
 
 export interface ProcessSummary {
@@ -194,10 +200,14 @@ export function createQueue(ctx: QueueContext) {
       db.prepare(
         "UPDATE conversion_jobs SET state = ?, finished_at = ?, error = ? WHERE id = ?",
       ).run(state, t, `${code}: ${clean}`, job.id);
-      db.prepare(
-        `UPDATE source_files SET status = 'failed', error_code = ?, error_message = ?, updated_at = ?
-         WHERE id = ? AND status = 'converting'`,
-      ).run(code, clean || describe(code), t, job.file_id);
+      const failed = db
+        .prepare(
+          `UPDATE source_files SET status = 'failed', error_code = ?, error_message = ?, updated_at = ?
+           WHERE id = ? AND status = 'converting'`,
+        )
+        .run(code, clean || describe(code), t, job.file_id);
+      const file = fileById.get(job.file_id) as FileRow | undefined;
+      if (failed.changes > 0 && file) ctx.onEvent?.({ type: "failed", file, code });
     })();
     removeImages({ user_id: job.user_id, id: job.file_id });
   }
@@ -284,6 +294,7 @@ export function createQueue(ctx: QueueContext) {
         job.id,
       );
       recomputeStatus(db, file.id, t);
+      ctx.onEvent?.({ type: "converted", file: fileById.get(file.id) as FileRow });
     })();
   }
 

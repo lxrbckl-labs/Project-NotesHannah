@@ -29,7 +29,12 @@ import {
   type Storage,
 } from "../../storage/storage.js";
 import { sha256 as digest, digestsEqual, randomToken, TOKEN_PATTERN } from "../accounts/secrets.js";
-import { createLibraryService, type LibraryService } from "../library/index.js";
+import type { ActivityLink, ActivityPort } from "../activity/index.js";
+import {
+  type ChangeRecorder,
+  createLibraryService,
+  type LibraryService,
+} from "../library/index.js";
 import { decodeCursor, encodeCursor } from "./cursor.js";
 import {
   actorKey,
@@ -49,6 +54,7 @@ import {
   createQueue,
   DEFAULT_QUEUE_OPTIONS,
   type ProcessSummary,
+  type QueueEvent,
   type QueueOptions,
 } from "./queue.js";
 import {
@@ -81,6 +87,10 @@ export interface FilesServiceOptions extends Partial<QueueOptions> {
   linkTtlSeconds?: number;
   library?: LibraryService;
   log?: (message: string) => void;
+  /** Every file and transcript change is appended here, as the actor who made it. */
+  changes?: ChangeRecorder;
+  /** What agents do is logged here in plain words (entries for the user are ignored by the log). */
+  activity?: ActivityPort;
 }
 
 export interface ListFilesOptions {
@@ -181,11 +191,80 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     return storageCache;
   }
 
+  // ---- change feed and activity -------------------------------------------
+
+  /** "lecture 07 · Beta blockers", "the Sources section": where a file is filed, in words. */
+  function placeWords(node: {
+    kind: string;
+    name: string;
+    lecture: { number: number | null } | null;
+  }): string {
+    if (node.kind === "section") return `the ${node.name} section`;
+    const number =
+      node.kind === "lecture" && node.lecture?.number != null
+        ? `${String(node.lecture.number).padStart(2, "0")} · `
+        : "";
+    return `${node.kind} ${number}${node.name}`;
+  }
+
+  interface Note {
+    /** e.g. "file.filed": the change feed's action; the activity log gets the same code. */
+    action: string;
+    summary: string;
+    file: FileRow;
+    page?: PageRow;
+    /** Left out of the activity log (the library or the conversion already says it). */
+    quiet?: boolean;
+  }
+
+  function note(actor: Actor, n: Note): void {
+    const ids = n.page ? [n.file.id, n.page.id] : [n.file.id];
+    options.changes?.record(n.file.user_id, {
+      action: n.action,
+      objectType: n.page ? "page" : "file",
+      objectIds: ids,
+      nodeId: n.file.node_id,
+      actor,
+      summary: n.summary,
+    });
+    if (n.quiet) return;
+    const links: ActivityLink[] = [{ type: "file", id: n.file.id, label: n.file.original_name }];
+    if (n.page) links.push({ type: "page", id: n.page.id, label: `Page ${n.page.idx}` });
+    options.activity?.record(n.file.user_id, {
+      actor,
+      action: n.action,
+      summary: n.summary,
+      links,
+    });
+  }
+
+  /** Conversion results arrive from the queue, not from a person: the uploader is the actor. */
+  function onQueueEvent(event: QueueEvent): void {
+    const actor = JSON.parse(event.file.uploaded_by) as Actor;
+    if (event.type === "converted") {
+      const pages = event.file.page_count ?? 0;
+      note(actor, {
+        action: "file.converted",
+        summary: `Converted ${event.file.original_name}: ${pages} ${pages === 1 ? "page" : "pages"} ready`,
+        file: event.file,
+        quiet: true,
+      });
+    } else {
+      note(actor, {
+        action: "file.failed",
+        summary: `Could not convert ${event.file.original_name} (${event.code})`,
+        file: event.file,
+        quiet: true,
+      });
+    }
+  }
+
   const queue = createQueue({
     db,
     now,
     storage,
     log,
+    onEvent: onQueueEvent,
     options: {
       pickupTimeoutMs: options.pickupTimeoutMs ?? DEFAULT_QUEUE_OPTIONS.pickupTimeoutMs,
       processingTimeoutMs: options.processingTimeoutMs ?? DEFAULT_QUEUE_OPTIONS.processingTimeoutMs,
@@ -310,23 +389,31 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     }
     const t = now();
     const id = newId("file", t);
-    db.prepare(
-      `INSERT INTO source_files (id, user_id, node_id, original_name, sha256, bytes, type, status,
-         uploaded_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'uploaded', ?, ?, ?)`,
-    ).run(
-      id,
-      userId,
-      place,
-      sanitizeFileName(name),
-      received.sha256,
-      received.bytes,
-      received.type,
-      JSON.stringify(actor),
-      t,
-      t,
-    );
-    const row = fileStmt.get(id, userId) as FileRow;
+    const row = db.transaction((): FileRow => {
+      db.prepare(
+        `INSERT INTO source_files (id, user_id, node_id, original_name, sha256, bytes, type, status,
+           uploaded_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'uploaded', ?, ?, ?)`,
+      ).run(
+        id,
+        userId,
+        place,
+        sanitizeFileName(name),
+        received.sha256,
+        received.bytes,
+        received.type,
+        JSON.stringify(actor),
+        t,
+        t,
+      );
+      const created = fileStmt.get(id, userId) as FileRow;
+      note(actor, {
+        action: "file.uploaded",
+        summary: `Uploaded ${created.original_name}`,
+        file: created,
+      });
+      return created;
+    })();
     try {
       queue.enqueue(row);
     } catch (error) {
@@ -523,12 +610,24 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     const file = needLive(auth.userId, id, "filed");
     const place = nodeId === null ? null : checkPlace(auth.userId, nodeId);
     db.transaction(() => {
-      db.prepare("UPDATE source_files SET node_id = ?, updated_at = ? WHERE id = ?").run(
-        place,
-        now(),
-        file.id,
-      );
+      db.prepare(
+        "UPDATE source_files SET node_id = ?, parked_node_id = NULL, updated_at = ? WHERE id = ?",
+      ).run(place, now(), file.id);
       recomputeStatus(db, file.id, now());
+      const after = needFile(auth.userId, id);
+      if (place !== null) {
+        note(auth.actor, {
+          action: "file.filed",
+          summary: `Filed ${file.original_name} under ${placeWords(library.get(auth.userId, place))}`,
+          file: after,
+        });
+      } else if (file.node_id !== null) {
+        note(auth.actor, {
+          action: "file.unfiled",
+          summary: `Took ${file.original_name} back to the inbox`,
+          file: after,
+        });
+      }
     })();
     return view(needFile(auth.userId, id));
   }
@@ -551,6 +650,11 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     }
     queue.removeImages(file);
     queue.enqueue(file);
+    note(auth.actor, {
+      action: "file.retried",
+      summary: `Asked for ${file.original_name} to be converted again`,
+      file: needFile(auth.userId, id),
+    });
     return view(needFile(auth.userId, id));
   }
 
@@ -586,6 +690,11 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     db.prepare(
       "UPDATE source_files SET claimed_by = ?, claimed_at = ?, claim_expires_at = ?, updated_at = ? WHERE id = ?",
     ).run(JSON.stringify(auth.actor), t, t + claimTtlMs, t, file.id);
+    note(auth.actor, {
+      action: "file.claimed",
+      summary: `Claimed ${file.original_name} to work on it`,
+      file: needFile(auth.userId, id),
+    });
     return view(needFile(auth.userId, id));
   }
 
@@ -603,6 +712,11 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
       db.prepare(
         "UPDATE source_files SET claimed_by = NULL, claimed_at = NULL, claim_expires_at = NULL, updated_at = ? WHERE id = ?",
       ).run(now(), file.id);
+      note(auth.actor, {
+        action: "file.released",
+        summary: `Released ${file.original_name}`,
+        file: needFile(auth.userId, id),
+      });
     }
     return view(needFile(auth.userId, id));
   }
@@ -611,11 +725,18 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     assertWrite(auth);
     const file = needFile(auth.userId, id);
     if (file.trashed_at === null) {
-      db.prepare("UPDATE source_files SET trashed_at = ?, updated_at = ? WHERE id = ?").run(
-        now(),
-        now(),
-        file.id,
-      );
+      db.transaction(() => {
+        db.prepare("UPDATE source_files SET trashed_at = ?, updated_at = ? WHERE id = ?").run(
+          now(),
+          now(),
+          file.id,
+        );
+        note(auth.actor, {
+          action: "file.trashed",
+          summary: `Moved ${file.original_name} to the trash`,
+          file: needFile(auth.userId, id),
+        });
+      })();
     }
     return view(needFile(auth.userId, id));
   }
@@ -624,10 +745,17 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     assertWrite(auth);
     const file = needFile(auth.userId, id);
     if (file.trashed_at !== null) {
-      db.prepare("UPDATE source_files SET trashed_at = NULL, updated_at = ? WHERE id = ?").run(
-        now(),
-        file.id,
-      );
+      db.transaction(() => {
+        db.prepare("UPDATE source_files SET trashed_at = NULL, updated_at = ? WHERE id = ?").run(
+          now(),
+          file.id,
+        );
+        note(auth.actor, {
+          action: "file.restored",
+          summary: `Restored ${file.original_name} from the trash`,
+          file: needFile(auth.userId, id),
+        });
+      })();
     }
     return view(needFile(auth.userId, id));
   }
@@ -653,6 +781,11 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     }>;
     let shared = false;
     db.transaction(() => {
+      note(auth.actor, {
+        action: "file.deleted",
+        summary: `Deleted ${file.original_name} for good`,
+        file,
+      });
       db.prepare("DELETE FROM source_files WHERE id = ?").run(file.id);
       shared =
         (
@@ -796,6 +929,8 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     page: PageRow,
     text: string,
     flags: Transcript["flags"],
+    how: "saved" | "restored" = "saved",
+    restoredRevision?: number,
   ): Transcript {
     const t = now();
     const id = newId("transcript", t);
@@ -824,6 +959,19 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
       db.prepare("INSERT INTO transcripts_fts (rowid, text) VALUES (?, ?)").run(page.seq, text);
       db.prepare("UPDATE source_files SET updated_at = ? WHERE id = ?").run(t, page.file_id);
       recomputeStatus(db, page.file_id, t);
+      const file = needFile(page.user_id, page.file_id);
+      const where = `page ${page.idx} of ${file.original_name}`;
+      note(auth.actor, {
+        action: how === "saved" ? "transcript.saved" : "transcript.restored",
+        summary:
+          how === "restored"
+            ? `Restored revision ${restoredRevision} of ${where} as the new revision ${revision}`
+            : revision === 1
+              ? `Transcribed ${where}`
+              : `Rewrote the transcript of ${where} (revision ${revision})`,
+        file,
+        page,
+      });
     })();
     return toTranscript(transcriptStmt.get(id) as TranscriptRow);
   }
@@ -875,6 +1023,13 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
       reviewed ? now() : null,
       row.id,
     );
+    const file = needFile(auth.userId, page.file_id);
+    note(auth.actor, {
+      action: "transcript.reviewed",
+      summary: `${reviewed ? "Marked" : "Unmarked"} page ${page.idx} of ${file.original_name} as reviewed`,
+      file,
+      page,
+    });
     return toTranscript(transcriptStmt.get(row.id) as TranscriptRow);
   }
 
@@ -924,7 +1079,14 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     if (page.transcript_id === old.id) {
       throw new AppError("conflict", "That revision is already the current transcript.");
     }
-    return insertRevision(auth, page, old.text, JSON.parse(old.flags) as Transcript["flags"]);
+    return insertRevision(
+      auth,
+      page,
+      old.text,
+      JSON.parse(old.flags) as Transcript["flags"],
+      "restored",
+      old.revision,
+    );
   }
 
   // ---- search --------------------------------------------------------------
@@ -936,19 +1098,26 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
   function searchTranscripts(
     who: Caller,
     query: string,
-    opts: { cursor?: string | undefined; limit?: number | undefined } = {},
+    opts: {
+      cursor?: string | undefined;
+      limit?: number | undefined;
+      /** Skip this many hits; takes the place of `cursor` (the unified search pages with it). */
+      offset?: number | undefined;
+    } = {},
   ): Paged<TranscriptHit> {
     const userId = uid(who);
     const match = ftsQuery(query);
     if (match === null) return { items: [], nextCursor: null };
     const limit = opts.limit ?? DEFAULT_LIMIT;
-    const offset = opts.cursor
-      ? decodeCursor(
-          opts.cursor,
-          (v): v is { o: number } =>
-            typeof v === "object" && v !== null && Number.isInteger((v as { o?: unknown }).o),
-        ).o
-      : 0;
+    const offset =
+      opts.offset ??
+      (opts.cursor
+        ? decodeCursor(
+            opts.cursor,
+            (v): v is { o: number } =>
+              typeof v === "object" && v !== null && Number.isInteger((v as { o?: unknown }).o),
+          ).o
+        : 0);
     const rows = db
       .prepare(
         `SELECT p.id AS page_id, p.idx, p.transcript_id, f.id AS file_id, f.original_name, f.node_id,
@@ -984,7 +1153,87 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     };
   }
 
+  // ---- library node hooks ----------------------------------------------------
+
+  const underNodes = db.prepare(
+    `SELECT * FROM source_files
+     WHERE user_id = ? AND node_id IN (SELECT value FROM json_each(?))`,
+  );
+
+  /**
+   * These library nodes went to the trash (or are about to be deleted for good):
+   * every source file filed under one returns to the inbox, unfiled. Nothing is
+   * deleted. For the trash the old place is remembered, so restoring the node
+   * files them there again.
+   */
+  function onNodesRemoved(
+    userId: string,
+    nodeIds: readonly string[],
+    actor: Actor,
+    why: "trashed" | "deleted",
+  ): void {
+    if (nodeIds.length === 0) return;
+    const ids = JSON.stringify(nodeIds);
+    db.transaction(() => {
+      const t = now();
+      for (const file of underNodes.all(userId, ids) as FileRow[]) {
+        db.prepare(
+          "UPDATE source_files SET node_id = NULL, parked_node_id = ?, updated_at = ? WHERE id = ?",
+        ).run(why === "trashed" ? file.node_id : null, t, file.id);
+        recomputeStatus(db, file.id, t);
+        note(actor, {
+          action: "file.unfiled",
+          summary: `${file.original_name} went back to the inbox because its place was ${
+            why === "trashed" ? "moved to the trash" : "deleted"
+          }`,
+          file: needFile(userId, file.id),
+          quiet: true,
+        });
+      }
+      if (why === "deleted") {
+        db.prepare(
+          `UPDATE source_files SET parked_node_id = NULL
+           WHERE user_id = ? AND parked_node_id IN (SELECT value FROM json_each(?))`,
+        ).run(userId, ids);
+      }
+    })();
+  }
+
+  /** These nodes came back from the trash: files parked from them are filed there again. */
+  function onNodesRestored(userId: string, nodeIds: readonly string[], actor: Actor): void {
+    if (nodeIds.length === 0) return;
+    const ids = JSON.stringify(nodeIds);
+    db.transaction(() => {
+      const t = now();
+      const parked = db
+        .prepare(
+          `SELECT * FROM source_files
+           WHERE user_id = ? AND node_id IS NULL
+             AND parked_node_id IN (SELECT value FROM json_each(?))`,
+        )
+        .all(userId, ids) as FileRow[];
+      for (const file of parked) {
+        db.prepare(
+          "UPDATE source_files SET node_id = parked_node_id, parked_node_id = NULL, updated_at = ? WHERE id = ?",
+        ).run(t, file.id);
+        recomputeStatus(db, file.id, t);
+        note(actor, {
+          action: "file.filed",
+          summary: `${file.original_name} is filed again, because its place came back from the trash`,
+          file: needFile(userId, file.id),
+          quiet: true,
+        });
+      }
+    })();
+  }
+
   return {
+    // library node hooks
+    onNodesTrashed: (userId: string, nodeIds: readonly string[], actor: Actor) =>
+      onNodesRemoved(userId, nodeIds, actor, "trashed"),
+    onNodesDeleted: (userId: string, nodeIds: readonly string[], actor: Actor) =>
+      onNodesRemoved(userId, nodeIds, actor, "deleted"),
+    onNodesRestored,
     // uploads
     requestUploads,
     upload,

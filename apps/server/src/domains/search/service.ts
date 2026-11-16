@@ -1,0 +1,127 @@
+import { SEARCH_KINDS, type SearchHit, type SearchKind, type SearchPage } from "@notes/schema";
+import { AppError } from "../../http/errors.js";
+import type { DocumentsService } from "../documents/index.js";
+import type { FilesService } from "../files/index.js";
+import type { LibraryService } from "../library/index.js";
+
+/** What the search needs from each domain: its own ranked, user-scoped, paged text search. */
+export interface SearchSources {
+  library: Pick<LibraryService, "search">;
+  files: Pick<FilesService, "searchTranscripts">;
+  documents: Pick<DocumentsService, "searchDocuments">;
+}
+
+export interface SearchRequest {
+  q: string;
+  /** Restrict to these kinds. Default: all. */
+  kinds?: readonly SearchKind[] | undefined;
+  cursor?: string | undefined;
+  limit?: number | undefined;
+}
+
+const DEFAULT_LIMIT = 50;
+
+/**
+ * How the kinds compete. Each domain ranks its own hits (FTS5 rank), and those scores
+ * cannot be compared across tables, so the lists are merged by reciprocal rank:
+ * a hit at position `r` of its kind scores `weight / (K + r)`. A name match outranks
+ * a block (curated study material), which outranks a raw transcript page; within a
+ * kind the domain's own order is kept. Ties go to the earlier kind in `ORDER`.
+ */
+const WEIGHT: Record<SearchKind, number> = { node: 1.5, block: 1, page: 0.9 };
+const RANK_OFFSET = 3;
+const ORDER: readonly SearchKind[] = ["node", "block", "page"];
+
+type Taken = Record<SearchKind, number>;
+
+function invalidCursor(): AppError {
+  return new AppError("invalid_input", "The cursor is not valid.", {
+    hint: "Pass the nextCursor value from the previous page unchanged, or omit cursor for the first page.",
+    example: { q: "beta", limit: 50 },
+  });
+}
+
+/** The cursor is how many hits of each kind earlier pages already used. */
+function decode(cursor: string | undefined): Taken {
+  if (!cursor) return { node: 0, block: 0, page: 0 };
+  try {
+    const value = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<
+      string,
+      unknown
+    >;
+    const taken = { node: value.n, block: value.b, page: value.p };
+    if (Object.values(taken).every((n) => Number.isInteger(n) && (n as number) >= 0)) {
+      return taken as Taken;
+    }
+  } catch {
+    // fall through
+  }
+  throw invalidCursor();
+}
+
+function encode(taken: Taken): string {
+  return Buffer.from(JSON.stringify({ n: taken.node, b: taken.block, p: taken.page })).toString(
+    "base64url",
+  );
+}
+
+/**
+ * One search over names, transcripts and document blocks, with one cursor.
+ *
+ * Because scores fall with position inside each kind, the best `limit` merged hits are always
+ * a prefix of every kind's list. The cursor therefore only has to count how many of each kind
+ * were used, and the next page asks each domain to skip that many.
+ */
+export function createSearchService(sources: SearchSources) {
+  function search(userId: string, request: SearchRequest): SearchPage {
+    const limit = request.limit ?? DEFAULT_LIMIT;
+    const kinds = new Set<SearchKind>(request.kinds ?? SEARCH_KINDS);
+    const skip = decode(request.cursor);
+    const ask = { limit: limit + 1 };
+
+    const lists: Record<SearchKind, SearchHit[]> = {
+      node: kinds.has("node")
+        ? sources.library.search(userId, { q: request.q, ...ask, offset: skip.node }).items
+        : [],
+      block: kinds.has("block")
+        ? sources.documents.searchDocuments(userId, request.q, { ...ask, offset: skip.block }).items
+        : [],
+      page: kinds.has("page")
+        ? sources.files
+            .searchTranscripts(userId, request.q, { ...ask, offset: skip.page })
+            .items.map(
+              (hit): SearchHit => ({
+                kind: "page",
+                pageId: hit.pageId,
+                pageIndex: hit.pageIndex,
+                fileId: hit.fileId,
+                fileName: hit.fileName,
+                nodeId: hit.nodeId,
+                transcriptId: hit.transcriptId,
+                snippet: hit.snippet,
+              }),
+            )
+        : [],
+    };
+
+    const merged = ORDER.flatMap((kind) =>
+      lists[kind].map((hit, position) => ({
+        hit,
+        kind,
+        score: WEIGHT[kind] / (RANK_OFFSET + skip[kind] + position),
+      })),
+    ).sort((a, b) => b.score - a.score || ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
+
+    const page = merged.slice(0, limit);
+    const used: Taken = { ...skip };
+    for (const entry of page) used[entry.kind]++;
+    return {
+      items: page.map((entry) => entry.hit),
+      nextCursor: merged.length > limit ? encode(used) : null,
+    };
+  }
+
+  return { search };
+}
+
+export type SearchService = ReturnType<typeof createSearchService>;

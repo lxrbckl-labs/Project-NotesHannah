@@ -180,8 +180,13 @@ function sendFile(
   return new Response(stream, { status, headers });
 }
 
-export function filesRoutes(deps: FilesDeps, options: FilesServiceOptions = {}): Hono<AppEnv> {
-  const files: FilesService = createFilesService(deps, options);
+export function filesRoutes(
+  deps: FilesDeps,
+  options: FilesServiceOptions = {},
+  /** The app's one files service. Default: a new one made from `deps` and `options`. */
+  service?: FilesService,
+): Hono<AppEnv> {
+  const files: FilesService = service ?? createFilesService(deps, options);
   const app = new Hono<AppEnv>();
   const maxBytes = options.maxUploadBytes ?? UPLOAD_LIMITS.maxBytes;
 

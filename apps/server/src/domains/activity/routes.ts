@@ -3,8 +3,8 @@ import { z } from "zod";
 import { type AppEnv, getAuth, requireAuth } from "../../http/auth-context.js";
 import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
-import { createActivityLog } from "./activity.js";
-import { createChangeFeed } from "./changes.js";
+import { type ActivityLog, createActivityLog } from "./activity.js";
+import { type ChangeFeed, createChangeFeed } from "./changes.js";
 
 const ChangesQuery = z.object({
   cursor: z.string().max(20).optional(),
@@ -34,9 +34,13 @@ function parseQuery<T extends z.ZodType>(schema: T, data: unknown, example: unkn
 }
 
 /** The change feed (H9) and the agent activity log (H10). Reads only; writes happen as work is done. */
-export function activityRoutes(deps: Pick<ServerDeps, "db" | "now">): Hono<AppEnv> {
-  const feed = createChangeFeed(deps.db, deps.now);
-  const log = createActivityLog(deps.db, deps.now);
+export function activityRoutes(
+  deps: Pick<ServerDeps, "db" | "now">,
+  /** The app's one feed and log. Default: new ones over the same database. */
+  shared: { changes?: ChangeFeed; activity?: ActivityLog } = {},
+): Hono<AppEnv> {
+  const feed = shared.changes ?? createChangeFeed(deps.db, deps.now);
+  const log = shared.activity ?? createActivityLog(deps.db, deps.now);
   const app = new Hono<AppEnv>();
 
   app.get("/changes", requireAuth, (c) => {

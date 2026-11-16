@@ -1,4 +1,5 @@
 import {
+  type Actor,
   COURSE_SECTIONS,
   type CreateNodeInput,
   canContain,
@@ -14,6 +15,7 @@ import {
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 import type { Db } from "../../db/client.js";
 import { AppError } from "../../http/errors.js";
+import type { ActivityPort, ChangeInput } from "../activity/index.js";
 import { decodeCursor, encodeCursor } from "./cursor.js";
 import {
   call,
@@ -65,11 +67,50 @@ export interface SearchHit {
 export interface ListOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
+  /** Skip this many hits (search only). Takes the place of `cursor`; the unified search pages with it. */
+  offset?: number | undefined;
+}
+
+/**
+ * Told about whole-subtree changes, inside the same transaction, so other
+ * domains can keep what hangs off a node in step (its document, the source
+ * files filed under it). Every listener is optional. `nodeIds` always cover
+ * the node and everything under it.
+ */
+export interface LibraryListener {
+  /** The nodes just went to the trash. */
+  trashed?(event: NodesEvent): void;
+  /** The nodes just came back from the trash. */
+  restored?(event: NodesEvent): void;
+  /** The nodes are about to be deleted for good (still readable while this runs). */
+  deleted?(event: NodesEvent): void;
+  /** `pairs` map each original node to its fresh copy, the copied root first. */
+  duplicated?(event: {
+    userId: string;
+    actor: Actor;
+    pairs: ReadonlyArray<{ fromId: string; toId: string }>;
+  }): void;
+}
+
+export interface NodesEvent {
+  userId: string;
+  actor: Actor;
+  nodeIds: readonly string[];
+}
+
+/** Where the change feed entries go (the activity domain's `ChangeFeed` fits). */
+export interface ChangeRecorder {
+  record(userId: string, input: ChangeInput): unknown;
 }
 
 export interface LibraryServiceOptions {
   /** Injected clock for tests. */
   now?: () => Date;
+  listener?: LibraryListener;
+  /** Every change is appended here, as the actor who made it. */
+  changes?: ChangeRecorder;
+  /** What agents do is logged here in plain words (entries for the user are ignored by the log). */
+  activity?: ActivityPort;
 }
 
 const DEFAULT_LIMIT = 50;
@@ -82,7 +123,41 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 export function createLibraryService(db: Db, options: LibraryServiceOptions = {}) {
   const clock = options.now ?? (() => new Date());
+  const listener = options.listener ?? {};
   let lastStamp = 0;
+
+  const userActor = (userId: string): Actor => ({ type: "user", userId });
+
+  /** "lecture 07 · Beta blockers", "course Pharmacology II": a node in plain words. */
+  function label(r: Pick<Row, "kind" | "name" | "lecture_number">): string {
+    const number =
+      r.kind === "lecture" && r.lecture_number !== null
+        ? `${String(r.lecture_number).padStart(2, "0")} · `
+        : "";
+    return `${r.kind} ${number}${r.name}`;
+  }
+
+  /** Append to the change feed and, for an agent, the activity log. */
+  function note(
+    userId: string,
+    actor: Actor,
+    entry: { action: string; summary: string; node: Row; objectIds?: readonly string[] },
+  ): void {
+    options.changes?.record(userId, {
+      action: `node.${entry.action}`,
+      objectType: "node",
+      objectIds: entry.objectIds ?? [entry.node.id],
+      nodeId: entry.node.id,
+      actor,
+      summary: entry.summary,
+    });
+    options.activity?.record(userId, {
+      actor,
+      action: `library.${entry.action}`,
+      summary: entry.summary,
+      links: [{ type: "node", id: entry.node.id, nodeId: entry.node.id, label: entry.node.name }],
+    });
+  }
 
   /** Strictly increasing ISO timestamps, so one trash operation never shares a stamp with another. */
   function stamp(): string {
@@ -392,9 +467,12 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
     const limit = opts.limit ?? DEFAULT_LIMIT;
     const match = ftsQuery(opts.q);
     if (match === null) return { items: [], nextCursor: null };
-    const offset = opts.cursor
-      ? decodeCursor(opts.cursor, (v): v is { o: number } => isObject(v) && Number.isInteger(v.o)).o
-      : 0;
+    const offset =
+      opts.offset ??
+      (opts.cursor
+        ? decodeCursor(opts.cursor, (v): v is { o: number } => isObject(v) && Number.isInteger(v.o))
+            .o
+        : 0);
     const rows = db
       .prepare(
         `SELECT n.*, snippet(nodes_fts, 0, '', '', '…', 12) AS snippet
@@ -422,7 +500,8 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
     q.insert.run(r);
   }
 
-  function create(userId: string, input: CreateNodeInput): NodeWithLinks {
+  function create(userId: string, input: CreateNodeInput, by?: Actor): NodeWithLinks {
+    const actor = by ?? userActor(userId);
     return db.transaction(() => {
       if ((input.kind as NodeKind) === "section") throw sectionRefused("created by hand");
       const parent = input.parentId === null ? null : needLive(userId, input.parentId, "added to");
@@ -486,11 +565,18 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
           });
         });
       }
-      return one(userId, need(userId, id));
+      const created = need(userId, id);
+      note(userId, actor, {
+        action: "created",
+        summary: `Created ${label(created)}`,
+        node: created,
+      });
+      return one(userId, created);
     })();
   }
 
-  function update(userId: string, id: string, input: UpdateNodeInput): NodeWithLinks {
+  function update(userId: string, id: string, input: UpdateNodeInput, by?: Actor): NodeWithLinks {
+    const actor = by ?? userActor(userId);
     return db.transaction(() => {
       const r = needLive(userId, id, "changed");
       if (isFixed(r.kind)) throw sectionRefused("renamed or changed");
@@ -524,11 +610,26 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
         stamp(),
         id,
       );
-      return one(userId, need(userId, id));
+      const after = need(userId, id);
+      const parts: string[] = [];
+      if (input.name !== undefined && input.name !== r.name) {
+        parts.push(`Renamed ${label(r)} to "${after.name}"`);
+      }
+      if (input.favourite !== undefined && (input.favourite ? 1 : 0) !== r.favourite) {
+        parts.push(
+          input.favourite
+            ? `Marked ${label(after)} as a favourite`
+            : `Removed ${label(after)} from favourites`,
+        );
+      }
+      if (parts.length === 0) parts.push(`Changed the details of ${label(after)}`);
+      note(userId, actor, { action: "updated", summary: parts.join("; "), node: after });
+      return one(userId, after);
     })();
   }
 
-  function move(userId: string, id: string, input: MoveNodeInput): NodeWithLinks {
+  function move(userId: string, id: string, input: MoveNodeInput, by?: Actor): NodeWithLinks {
+    const actor = by ?? userActor(userId);
     return db.transaction(() => {
       const r = needLive(userId, id, "moved");
       if (isFixed(r.kind)) throw sectionRefused("moved");
@@ -553,11 +654,22 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
         stamp(),
         id,
       );
-      return one(userId, need(userId, id));
+      const moved = need(userId, id);
+      const place = parent ? `into ${label(parent)}` : "to the top level";
+      note(userId, actor, {
+        action: "moved",
+        summary:
+          parent?.id === r.parent_id
+            ? `Reordered ${label(moved)}`
+            : `Moved ${label(moved)} ${place}`,
+        node: moved,
+      });
+      return one(userId, moved);
     })();
   }
 
-  function duplicate(userId: string, id: string): NodeWithLinks {
+  function duplicate(userId: string, id: string, by?: Actor): NodeWithLinks {
+    const actor = by ?? userActor(userId);
     return db.transaction(() => {
       const original = needLive(userId, id, "duplicated");
       if (isFixed(original.kind)) throw sectionRefused("duplicated");
@@ -585,7 +697,9 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
       const copyId = newId("node");
       const suffix = " copy";
       const copyName = `${original.name.slice(0, MAX_NAME_LENGTH - suffix.length)}${suffix}`;
+      const pairs: Array<{ fromId: string; toId: string }> = [];
       const copyOf = (src: Row, newParent: string | null, key: string, copy: string): void => {
+        pairs.push({ fromId: src.id, toId: copy });
         insertNode({
           id: copy,
           user_id: userId,
@@ -606,11 +720,20 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
         }
       };
       copyOf(original, original.parent_id, rootKey, copyId);
-      return one(userId, need(userId, copyId));
+      const copy = need(userId, copyId);
+      note(userId, actor, {
+        action: "duplicated",
+        summary: `Duplicated ${label(original)}${pairs.length > 1 ? ` with ${pairs.length - 1} items inside` : ""}`,
+        node: copy,
+        objectIds: [copy.id, original.id],
+      });
+      listener.duplicated?.({ userId, actor, pairs });
+      return one(userId, copy);
     })();
   }
 
-  function trash(userId: string, id: string): NodeWithLinks {
+  function trash(userId: string, id: string, by?: Actor): NodeWithLinks {
+    const actor = by ?? userActor(userId);
     return db.transaction(() => {
       const r = need(userId, id);
       if (isFixed(r.kind)) throw sectionRefused("trashed");
@@ -627,11 +750,19 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
       const mark = db.prepare("UPDATE nodes SET trashed_at = ? WHERE id = ?");
       for (const nodeId of ids) mark.run(now, nodeId);
       db.prepare("UPDATE nodes SET updated_at = ? WHERE id = ?").run(now, id);
-      return one(userId, need(userId, id));
+      const trashed = need(userId, id);
+      note(userId, actor, {
+        action: "trashed",
+        summary: `Moved ${label(trashed)} to the trash${ids.length > 1 ? ` with ${ids.length - 1} items inside` : ""}`,
+        node: trashed,
+      });
+      listener.trashed?.({ userId, actor, nodeIds: ids });
+      return one(userId, trashed);
     })();
   }
 
-  function restore(userId: string, id: string): NodeWithLinks {
+  function restore(userId: string, id: string, by?: Actor): NodeWithLinks {
+    const actor = by ?? userActor(userId);
     return db.transaction(() => {
       const r = need(userId, id);
       if (isFixed(r.kind)) throw sectionRefused("restored on its own");
@@ -651,16 +782,28 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
         }
       }
       const unmark = db.prepare("UPDATE nodes SET trashed_at = NULL WHERE id = ?");
+      const restored: string[] = [];
       for (const s of q.subtree.all(id, userId) as Row[]) {
-        if (s.trashed_at === r.trashed_at) unmark.run(s.id);
+        if (s.trashed_at === r.trashed_at) {
+          unmark.run(s.id);
+          restored.push(s.id);
+        }
       }
       db.prepare("UPDATE nodes SET updated_at = ? WHERE id = ?").run(stamp(), id);
-      return one(userId, need(userId, id));
+      const back = need(userId, id);
+      note(userId, actor, {
+        action: "restored",
+        summary: `Restored ${label(back)} from the trash${restored.length > 1 ? ` with ${restored.length - 1} items inside` : ""}`,
+        node: back,
+      });
+      listener.restored?.({ userId, actor, nodeIds: restored });
+      return one(userId, back);
     })();
   }
 
   /** Permanently delete a node and everything under it. Only from the trash. */
-  function permanentDelete(userId: string, id: string): void {
+  function permanentDelete(userId: string, id: string, by?: Actor): void {
+    const actor = by ?? userActor(userId);
     db.transaction(() => {
       const r = need(userId, id);
       if (isFixed(r.kind)) throw sectionRefused("deleted on its own");
@@ -670,7 +813,16 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
           example: call("POST", `/api/nodes/${id}/trash`),
         });
       }
+      const nodeIds = (q.subtree.all(id, userId) as Row[]).map((s) => s.id);
+      // Before the rows go, so listeners can still read what hangs off them.
+      listener.deleted?.({ userId, actor, nodeIds });
       db.prepare("DELETE FROM nodes WHERE id = ? AND user_id = ?").run(id, userId);
+      note(userId, actor, {
+        action: "deleted",
+        summary: `Deleted ${label(r)} for good${nodeIds.length > 1 ? ` with ${nodeIds.length - 1} items inside` : ""}`,
+        node: r,
+        objectIds: nodeIds,
+      });
     })();
   }
 
