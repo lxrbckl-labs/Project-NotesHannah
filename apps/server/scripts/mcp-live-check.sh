@@ -9,7 +9,13 @@
 # get two fixture files in, transcribe them, file them and write a cited study
 # guide. Then it checks the result from the database (mcp-live-check.verify.ts).
 #
-# Usage (from apps/server):  scripts/mcp-live-check.sh [claude|codex|both]
+# Usage (from apps/server):  scripts/mcp-live-check.sh [claude|codex|both|smoke|measure] [guide|requests]
+#   guide (default): the two fixture files, filed and turned into a cited study guide.
+#   requests: she (seeded through the HTTP API with her session) has a lecture note with a
+#     paragraph she wrote, two unprocessed uploads, and two requests: "this is wrong: fix the
+#     dose" on her paragraph and "make me a quiz on beta blockers" on the lecture. Checked by
+#     mcp-live-check.verify-more.ts.
+#   measure: token cost of the tool listing and of start_here, read from Codex's usage.
 # Env: PORT (8790), CLAUDE_MODEL (haiku), BUDGET_USD (3), KEEP=1 keeps the temp dir,
 #      CONVERTER_IMAGE (notes-converter:mcp-live; built from deploy/converter.Dockerfile if missing).
 set -euo pipefail
@@ -18,6 +24,7 @@ cd "$(dirname "$0")/.."
 SERVER_DIR="$(pwd)"
 REPO="$(cd ../.. && pwd)"
 WHICH="${1:-claude}"
+SCENARIO="${2:-guide}"
 PORT="${PORT:-8790}"
 BASE="http://127.0.0.1:${PORT}"
 IMAGE="${CONVERTER_IMAGE:-notes-converter:mcp-live}"
@@ -39,7 +46,8 @@ trap cleanup EXIT
 
 # ---- storage, user, key ---------------------------------------------------------------
 npx tsx src/cli/admin.ts init-storage --create-dir >/dev/null
-npx tsx src/cli/admin.ts create-user hannah --name "Hannah" --generate </dev/null >/dev/null
+PASSWORD="$(npx tsx src/cli/admin.ts create-user hannah --name "Hannah" --generate </dev/null |
+  sed -n 's/^Password (shown once): //p')"
 NOTES_MCP_KEY="$(npx tsx src/cli/admin.ts create-key hannah --name "live check" --scope write |
   sed -n 's/^Secret (shown once): //p')"
 export NOTES_MCP_KEY
@@ -76,6 +84,12 @@ for _ in $(seq 1 50); do
   sleep 0.5
 done
 echo "converter heartbeat: $(cat "$DATA_DIR/queue/heartbeat" 2>/dev/null || echo none)"
+
+if [[ "$SCENARIO" == "requests" ]]; then
+  SEED="$(npx tsx scripts/mcp-live-check.seed.ts "$BASE" hannah "$PASSWORD" "$DECK" "$NOTES")"
+  echo "seeded: $SEED"
+  PROMPT="${PROMPT_REQUESTS:-Check what Hannah has asked for and do it, then finish any unprocessed files, then make sure lecture 7 has concepts recorded and a 12-question mixed practice set including two dose calculations and four flashcards. Report what you did.}"
+fi
 
 # The key stays in the environment; the config only references it.
 cat >"$TMP/notes-mcp.json" <<EOF
@@ -145,7 +159,7 @@ run_smoke() {
   echo "== Smoke: upload the deck through a link and wait for the real converter"
   local bytes url id
   bytes=$(wc -c <"$DECK" | tr -d ' ')
-  url=$(mcp_call request_upload_links "{\"files\":[{\"name\":\"lecture.pptx\",\"bytes\":$bytes}]}" |
+  url=$(mcp_call source_files "{\"action\":\"upload_links\",\"files\":[{\"name\":\"lecture.pptx\",\"bytes\":$bytes}]}" |
     node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result.structuredContent.tickets[0].url))')
   id=$(curl -fsS -X PUT --data-binary @"$DECK" "$url" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).file.id))')
   for _ in 1 2 3 4 5 6; do
@@ -154,8 +168,23 @@ run_smoke() {
   done
 }
 
+# Tokens of the tool listing and of start_here, as Claude Code reports its context: one
+# haiku session that loads every notes tool schema with ToolSearch, then calls start_here.
+# Each assistant turn's usage (input + cache read + cache write) is the context it saw, so
+# the growth between turns is what each step added. (Codex's usage could not be used: its
+# input tokens did not grow with the MCP server attached.)
+run_measure() {
+  (cd "$TMP" && claude -p --model haiku --strict-mcp-config --mcp-config "$TMP/notes-mcp.json" \
+    --allowedTools "mcp__notes" --permission-mode dontAsk --output-format stream-json --verbose \
+    --max-budget-usd 0.3 \
+    "First use ToolSearch to load the schemas of ALL tools whose names start with mcp__notes (one query: +notes, max_results 20). Then call mcp__notes__start_here once with no arguments. Then reply with the single word OK." \
+    </dev/null >"$TMP/measure.jsonl" 2>/dev/null) || true
+  node "$SERVER_DIR/scripts/mcp-live-check.tokens.mjs" "$TMP/measure.jsonl"
+}
+
 case "$WHICH" in
   smoke) run_smoke; exit 0 ;;
+  measure) run_measure; exit 0 ;;
   claude) run_claude ;;
   codex) run_codex ;;
   both) run_claude; echo "(a second agent on the same library; see the verify output)"; run_codex ;;
@@ -166,5 +195,9 @@ grep -E "mcp refused|error|Error" "$TMP/server.log" | head -40 || true
 echo "== Converter log (tail)"
 docker logs "$CONTAINER" 2>&1 | tail -10 || true
 echo "== Verification from the database"
-(cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify.ts hannah) || echo "verification found problems"
+if [[ "$SCENARIO" == "requests" ]]; then
+  (cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify-more.ts hannah "$SEED") || echo "verification found problems"
+else
+  (cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify.ts hannah) || echo "verification found problems"
+fi
 cp "$TMP"/*.jsonl "${LIVE_OUT:-$TMP}/" 2>/dev/null || true
