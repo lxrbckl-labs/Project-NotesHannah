@@ -265,6 +265,7 @@ describe("the transition table", () => {
     const agentCreateLike = canTransition("done", "reopen", "agent");
     expect(agentCreateLike.ok).toBe(false);
     if (!agentCreateLike.ok) {
+      expect(agentCreateLike.reason).toBe("actor");
       expect(agentCreateLike.message).toMatch(/Only she/);
       expect(agentCreateLike.hint).toMatch(/Creating, editing, cancelling and reopening are hers/);
     }
@@ -280,6 +281,7 @@ describe("the transition table", () => {
     const result = canTransition("done", "claim", "agent");
     expect(result.ok).toBe(false);
     if (!result.ok) {
+      expect(result.reason).toBe("status");
       expect(result.message).toBe(
         "A request that is done cannot be claimed: this only works on a request that is waiting.",
       );

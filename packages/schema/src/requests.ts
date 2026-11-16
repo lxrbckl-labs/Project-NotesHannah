@@ -195,7 +195,7 @@ export const REQUEST_TRANSITIONS: Record<RequestAction, TransitionRule> = {
 
 export type TransitionCheck =
   | { ok: true; to: RequestStatus }
-  | { ok: false; message: string; hint: string };
+  | { ok: false; reason: "actor" | "status"; message: string; hint: string };
 
 const WHO: Record<RequestActor, string> = {
   user: "she (a signed-in browser session)",
@@ -236,6 +236,7 @@ export function canTransition(
     const allowed = rule.by.map((who) => WHO[who]).join(" or ");
     return {
       ok: false,
+      reason: "actor",
       message: `Only ${allowed} can ${ACTION_VERB[action]} a request; this was tried by ${WHO[actor]}.`,
       hint:
         actor === "agent"
@@ -263,6 +264,7 @@ export function canTransition(
     }
     return {
       ok: false,
+      reason: "status",
       message: `A request that is ${shown} cannot be ${pastTense(action)}: this only works on a request that is ${wanted}.`,
       hint,
     };
@@ -455,10 +457,7 @@ export const ClaimRequestInput = z.strictObject({
 });
 export type ClaimRequestInput = z.infer<typeof ClaimRequestInput>;
 
-export const ReleaseRequestInput = z.strictObject({
-  /** Why it was handed back, shown to the next agent. */
-  note: z.string().trim().max(REQUEST_LIMITS.reasonChars).optional(),
-});
+export const ReleaseRequestInput = z.strictObject({});
 export type ReleaseRequestInput = z.infer<typeof ReleaseRequestInput>;
 
 /** An agent's answer: what it did, and links to what it made or changed. */
