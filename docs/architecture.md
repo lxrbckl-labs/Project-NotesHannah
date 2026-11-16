@@ -161,9 +161,9 @@ so anything the screen can do, an agent can do.
 
 `apps/server/src/services.ts` builds one instance of each domain service and wires them
 together; the web routes, the queue watcher and the MCP layer all take that `Services` object
-(`library`, `files`, `documents`, `practice`, `exams`, `requests`, `concepts`, `changes`,
-`activity`, `search`, `sources`, plus the narrow `practicePort`, `conceptsPort` and `requestsPort`
-the MCP layer calls).
+(`library`, `files`, `documents`, `practice`, `exams`, `requests`, `concepts`, `references`,
+`marginNotes` (her side notes), `canvas`, `changes`, `activity`, `search`, `sources`, plus the narrow
+`practicePort`, `conceptsPort`, `requestsPort` and `canvasPort` the MCP layer calls).
 
 - The domains do not import each other's code. They meet through small ports passed in at
   composition: the library takes a listener (`trashed`, `restored`, `deleted`, `duplicated`)
@@ -175,8 +175,11 @@ the MCP layer calls).
 - Source files under a trashed or deleted node return to the inbox, unfiled; they are never
   deleted as a side effect. Trashing remembers the old place, so a restore files them there
   again.
-- Search is one service over three domains' own full-text searches, merged by rank, with one
-  cursor.
+- A document write tells the canvas and the side notes, inside its own transaction, with the
+  blocks as they now are (`onBlocksChanged`): canvas cards follow the blocks, and a side note
+  whose block is gone is marked detached (attached again when the block comes back).
+- Search is one service over the domains' own text searches (names, pages, blocks, questions,
+  concepts, references, side notes), merged by rank, with one cursor.
 
 ## Front end
 

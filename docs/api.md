@@ -278,7 +278,7 @@ It covers the current revision of each page of live files; [Search](#search) tur
 
 ## Search
 
-`GET /api/search?q=beta&kinds=node,page&limit=20` finds things in five places at once and
+`GET /api/search?q=beta&kinds=node,page&limit=20` finds things in seven places at once and
 returns `{ items: SearchHit[], nextCursor }` (`SearchHit` is in `@notes/schema`):
 
 | `kind` | Matches | Fields |
@@ -288,23 +288,29 @@ returns `{ items: SearchHit[], nextCursor }` (`SearchHit` is in `@notes/schema`)
 | `block` | the **text of a block** of a live document | `documentId`, `nodeId`, `documentTitle`, `blockId`, `blockType`, `snippet` |
 | `question` | the **prompt text** of a practice question she can see | `questionId`, `questionType`, `nodeId` (where she finds it), `snippet` |
 | `concept` | a concept's **name, alias, generic or brand name** | `conceptId`, `name`, `conceptType`, `genericName`, `snippet` |
+| `reference` | the **title, note or address** of one of her saved references | `referenceId`, `title`, `url`, `referenceKind`, `source`, `snippet` |
+| `margin_note` | the **text or quote** of one of her side notes on a live document | `noteId`, `documentId`, `nodeId`, `documentTitle`, `blockId`, `resolved`, `detached`, `snippet` (the note's first words) |
 
-- `kinds` is a comma-separated subset of `node,concept,block,question,page`; leave it out for all five. An
+- `kinds` is a comma-separated subset of `node,concept,reference,margin_note,block,question,page`; leave it
+  out for all seven. An
   unknown or empty list is `invalid_input`. `limit` is 1 to 100 (default 50).
 - **Words** are matched as prefixes, all of them, case and accents ignored.
 - **Ranking.** Each kind is ranked by the full-text engine on its own; the lists are merged by
   reciprocal rank: a hit at position `r` of its kind scores `weight / (3 + r)`, with weights
-  node 1.5, concept 1.3, block 1, question 0.95, page 0.9. So the best name match comes first,
+  node 1.5, concept 1.3, reference 1.2, margin_note 1.1, block 1, question 0.95, page 0.9. So the best
+  name match comes first,
   then the best concept, block, question and page in that order, then the next name matches,
   and so on; a name outranks a concept (a thing she studies, found by name), which outranks
   curated study material, which outranks a raw transcript page. Within a kind the engine's
-  order stands (concepts: exact name, then name prefix, then alias).
+  order stands (concepts: exact name, then name prefix, then alias). References and side notes are
+  matched by every word as a substring (not a prefix); references put title matches first, side notes
+  put open ones first, then the newest.
 - **One cursor.** `nextCursor` is opaque and covers all kinds; pass it back unchanged with the
   same `q` and `kinds`. Pages never repeat or skip a hit while nothing changes.
 - **Trash.** Trashed library items, documents in the trash (including those under a trashed
   node), questions in the trash or filed only under trashed nodes, and pages of files in the
-  trash are not found, and are found again after a restore. Concepts are not part of the
-  library tree and are always found.
+  trash are not found, and are found again after a restore; so are side notes on a document in
+  the trash. Concepts and saved references are not part of the library tree and are always found.
   A file taken back to the inbox because its place was trashed is still found, with
   `nodeId: null`.
 - Everything is scoped to the caller.
@@ -661,6 +667,51 @@ the copy too. Search (`GET /api/search`) has the hit kind `reference`.
 A block may carry `references: [{ title, url, referenceId? }]` (at most 5): outside references it
 draws on, shown as their own chips apart from its citations. A generated block with references
 satisfies the citation rule.
+
+## Side notes
+
+Her private notes in the margin of a document (docs/side-notes.md), "margin notes" in code. Code:
+`apps/server/src/domains/margin-notes/`. Each note sits beside one block (its id, plus optional quoted
+words) and is stored apart from the blocks: writing one never changes the document, its review state,
+its revision number or its history.
+
+Reading needs any signed-in caller (her session or any API key). Adding, changing, moving and deleting
+need **her browser session**: a write scope is not enough, every API key gets `forbidden` ("Side notes are
+hers: an agent can read them, not write them."; a read-only key gets `read_only_key`). Another person's
+document or note, a malformed id, and a document in the trash all answer `not_found`, the same as a
+missing one. At most 300 notes per document.
+
+| Method and path | Body | Returns |
+|---|---|---|
+| `GET /api/documents/:id/margin-notes` | none | `{ items: MarginNote[] }`, oldest first, resolved and detached ones included |
+| `POST /api/documents/:id/margin-notes` | `{ blockId, text, quote?, colour? }` | `201 { note }`. *Session.* |
+| `PATCH /api/documents/:id/margin-notes/:noteId` | any of `{ text, colour, resolved }` (at least one) | `{ note }`. *Session.* |
+| `DELETE /api/documents/:id/margin-notes/:noteId` | none | `204`. *Session.* |
+| `POST /api/documents/:id/margin-notes/:noteId/reattach` | `{ blockId, quote? }` | `{ note }`. *Session.* |
+
+`MarginNote` is `{ id (mgn_...), documentId, blockId, quote, text, colour, resolved, resolvedAt, detached,
+detachedAt, snippet, createdAt, updatedAt }`.
+
+- `text` is plain text with line breaks kept, 1 to 4000 characters after trimming. `quote` is at most 300
+  characters; blank is null (the whole block). `colour` is a colour token (`yellow`, `blue`, `pink`,
+  `green`, ...) or null; a raw colour such as `#ff0000` is `invalid_input`.
+- `blockId` must be one of the document's current blocks, else `not_found` with a hint to read the
+  document. `snippet` is the block's text when last seen, trimmed to 160 characters.
+- `resolved: true` sets `resolvedAt` (kept if it was already resolved); `false` clears it.
+- **Following the blocks.** Every document write updates the notes in the same transaction: a note
+  whose block is still there stays attached and its snippet follows the block's text; a note whose
+  block is gone (deleted, or replaced with fresh ids by `replace_generated`) becomes `detached`
+  (`detachedAt` is when it first went missing) and keeps its last snippet. Moving blocks keeps their
+  ids, so notes follow. Restoring a revision that brings the block back attaches the note again. None
+  of this changes a note's `updatedAt`.
+- `reattach` moves a note (usually a detached one) beside another block of the same document: it sets
+  the block and quote (left out: none), clears `detached` and refreshes the snippet.
+- A document deleted for good takes its notes with it. Duplicating a document or its node copies no
+  notes: they are her remarks on that one copy.
+- Each write adds a change feed entry (`margin_note.added`, `margin_note.changed`,
+  `margin_note.deleted`, `margin_note.reattached`; object type `margin_note`, with `documentId` and
+  `nodeId`) whose summary names the document but never her words. Search (`GET /api/search`) has the
+  hit kind `margin_note`; agents read notes with the MCP tool `side_notes`.
 
 ## Requests
 

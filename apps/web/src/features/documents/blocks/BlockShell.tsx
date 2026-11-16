@@ -19,6 +19,7 @@ import {
   Copy,
   GripVertical,
   MessageCircleQuestion,
+  MessageSquarePlus,
   Palette,
   PenLine,
   Plus,
@@ -48,6 +49,7 @@ import { looseFlags } from "../model/references";
 import type { RequestKind } from "../store/types";
 import { formatWhen } from "../ui/hooks";
 import { FlagIndicator, GeneralKnowledgeTag } from "./cited";
+import { NoteGutter } from "./noteGutter";
 import { OutsideRefsRow } from "./outside";
 import { CiteChip } from "./RichText";
 import { BlockBoundary, BlockContent } from "./registry";
@@ -450,6 +452,12 @@ function BlockMenu({
             <MenuItem icon={<MessageCircleQuestion />} onSelect={() => actions.askAbout(block.id)}>
               Ask about this…
             </MenuItem>
+            <MenuItem
+              icon={<MessageSquarePlus />}
+              onSelect={() => actions.sideNotes.compose(block.id)}
+            >
+              Add a side note
+            </MenuItem>
             {block.type !== "divider" && (
               <MenuItem icon={<BookMarked />} onSelect={() => setAddingRef(true)}>
                 Add a reference…
@@ -515,6 +523,8 @@ export const BlockShell = memo(function BlockShell({
   const actions = useActions();
   const { editing, isTouch } = useView();
   const active = useSignal(actions.active, (id) => id === block.id);
+  // A Resources entry under the pointer lights its block up, and the other way round.
+  const linked = useSignal(actions.hovered, (id) => id === block.id);
   const unverified = block.review.status === "unverified" && block.type !== "divider";
   const byAgent = block.provenance.lastEditedBy.type === "agent";
   const loose = looseFlags(block.flags ?? [], [
@@ -539,6 +549,7 @@ export const BlockShell = memo(function BlockShell({
       data-type={block.type}
       data-review={block.review.status}
       data-active={active ? "true" : undefined}
+      data-linked={linked ? "true" : undefined}
       className={cn(
         "doc-block group/block relative scroll-mt-24",
         block.type === "heading" ? "mt-7 mb-1 first:mt-0" : "my-2.5",
@@ -551,7 +562,15 @@ export const BlockShell = memo(function BlockShell({
       onPointerDownCapture={() => {
         if (editing && !active) actions.setActive(block.id);
       }}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") actions.hovered.set(block.id);
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse" && actions.hovered.get() === block.id)
+          actions.hovered.set(null);
+      }}
     >
+      <NoteGutter blockId={block.id} />
       {/* Who last edited: a slim bar in the left margin; tap for details. */}
       <Popover
         label="Who wrote this"

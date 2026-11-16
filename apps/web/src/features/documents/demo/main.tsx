@@ -15,6 +15,7 @@ import { MockDocumentStore } from "../store/mock-store";
  *   fail=1             make every write fail (rollback)
  *   latency=ms         simulated network delay (default 120)
  *   full=1             let the page grow instead of scrolling inside (full-page screenshots)
+ *   sidenotes=0        start without her demo side notes
  */
 const params = new URLSearchParams(window.location.search);
 const theme = params.get("theme");
@@ -31,6 +32,7 @@ const store = new MockDocumentStore({
   latency: Number(params.get("latency") ?? 120),
   large: params.get("large") === "1",
   failWrites: params.get("fail") === "1",
+  sideNotes: params.get("sidenotes") !== "0",
 });
 window.__docStore = store;
 

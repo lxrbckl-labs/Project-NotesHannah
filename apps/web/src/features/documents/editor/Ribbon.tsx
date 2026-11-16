@@ -7,6 +7,7 @@ import { Tooltip } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/cn";
 import { HUE_LABEL } from "../../../lib/hues";
 import { useActions } from "../context";
+import { useScrollEdges } from "../ui/hooks";
 import { BlockStyleMenu } from "./BlockStyleMenu";
 import {
   ActionButtons,
@@ -48,6 +49,9 @@ const COLOURABLE = new Set([
  */
 const MAX_FOLD = 4;
 
+/** Width of the fade at a cut edge (the same as the shared ScrollCue's). */
+const FADE = 28;
+
 /**
  * The formatting ribbon, Word and AFFiNE style: always shown under the
  * document's bar while editing on a tablet or a computer. It reflects the
@@ -80,6 +84,9 @@ export function Ribbon({
   const row = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [fold, setFold] = useState(0);
+  // Folding everything that folds is still not enough (an upright iPad beside the app's sidebar):
+  // the row wraps onto a second line rather than hide tools off the edge.
+  const [wrap, setWrap] = useState(false);
   useEffect(() => {
     const el = outer.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -98,13 +105,25 @@ export function Ribbon({
     if (fitted.current !== width) {
       // More or less room: unfold everything and fit again, one group per pass, before paint.
       fitted.current = width;
-      if (fold !== 0) {
+      if (fold !== 0 || wrap) {
         setFold(0);
+        setWrap(false);
         return;
       }
     }
-    if (el.scrollWidth > box.clientWidth + 1 && fold < MAX_FOLD) setFold(fold + 1);
-  }, [fold, width]);
+    if (el.scrollWidth > box.clientWidth + 1) {
+      if (fold < MAX_FOLD) setFold(fold + 1);
+      else if (!wrap) setWrap(true);
+    }
+  }, [fold, width, wrap]);
+
+  // Should it still be too wide (very narrow), the row scrolls inside itself and the cut edge
+  // fades, as the shared ScrollCue does, so a half-shown button reads as "more this way".
+  const edges = useScrollEdges(outer);
+  const mask =
+    edges.start || edges.end
+      ? `linear-gradient(to right, ${edges.start ? "transparent 0" : "#000 0"}, #000 ${FADE}px, #000 calc(100% - ${FADE}px), ${edges.end ? "transparent 100%" : "#000 100%"})`
+      : undefined;
 
   const colourable = Boolean(block && COLOURABLE.has(block.type));
   const colour = block?.style?.color ?? null;
@@ -129,11 +148,18 @@ export function Ribbon({
       aria-label="Formatting"
       data-testid="format-ribbon"
       data-live={editor ? "true" : "false"}
+      data-more-start={edges.start}
+      data-more-end={edges.end}
       className="relative z-(--z-sticky) shrink-0 overflow-x-auto overscroll-x-contain border-b border-border bg-surface [scrollbar-width:none]"
+      style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
     >
       <div
         ref={row}
-        className="mx-auto flex w-max items-center gap-0.5 px-2 py-1 md:px-3 xl:py-1.5"
+        data-wrap={wrap ? "true" : undefined}
+        className={cn(
+          "mx-auto flex items-center gap-0.5 px-2 py-1 md:px-3 xl:py-1.5",
+          wrap ? "w-full flex-wrap justify-center" : "w-max",
+        )}
       >
         <ToolButton
           label="Undo"

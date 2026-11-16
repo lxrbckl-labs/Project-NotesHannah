@@ -4,6 +4,7 @@ import type { ConceptsService } from "../concepts/index.js";
 import type { DocumentsService } from "../documents/index.js";
 import type { FilesService } from "../files/index.js";
 import type { LibraryService } from "../library/index.js";
+import type { MarginNotesService } from "../margin-notes/index.js";
 import type { PracticeService } from "../practice/index.js";
 import type { ReferencesService } from "../references/index.js";
 
@@ -16,6 +17,8 @@ export interface SearchSources {
   concepts: Pick<ConceptsService, "searchConcepts">;
   /** Optional so a search over the library alone (tests) still works. */
   references?: Pick<ReferencesService, "searchReferences"> | undefined;
+  /** Optional for the same reason. */
+  marginNotes?: Pick<MarginNotesService, "searchMarginNotes"> | undefined;
 }
 
 export interface SearchRequest {
@@ -41,12 +44,22 @@ const WEIGHT: Record<SearchKind, number> = {
   concept: 1.3,
   // Her saved references are things she chose to keep, found by their title: near a concept.
   reference: 1.2,
+  // Her own side notes: her words about a block, found by those words. Just above the blocks.
+  margin_note: 1.1,
   block: 1,
   question: 0.95,
   page: 0.9,
 };
 const RANK_OFFSET = 3;
-const ORDER: readonly SearchKind[] = ["node", "concept", "reference", "block", "question", "page"];
+const ORDER: readonly SearchKind[] = [
+  "node",
+  "concept",
+  "reference",
+  "margin_note",
+  "block",
+  "question",
+  "page",
+];
 
 type Taken = Record<SearchKind, number>;
 
@@ -59,17 +72,21 @@ function invalidCursor(): AppError {
 
 /** The cursor is how many hits of each kind earlier pages already used. */
 function decode(cursor: string | undefined): Taken {
-  if (!cursor) return { node: 0, concept: 0, reference: 0, block: 0, question: 0, page: 0 };
+  if (!cursor) {
+    return { node: 0, concept: 0, reference: 0, margin_note: 0, block: 0, question: 0, page: 0 };
+  }
   try {
     const value = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<
       string,
       unknown
     >;
-    // A cursor from before concepts, questions and references were searched lacks `c`, `q` or `r`: they start at 0.
+    // A cursor from before concepts, questions, references and side notes were searched lacks
+    // `c`, `q`, `r` or `m`: they start at 0.
     const taken = {
       node: value.n,
       concept: value.c ?? 0,
       reference: value.r ?? 0,
+      margin_note: value.m ?? 0,
       block: value.b,
       question: value.q ?? 0,
       page: value.p,
@@ -89,6 +106,7 @@ function encode(taken: Taken): string {
       n: taken.node,
       c: taken.concept,
       r: taken.reference,
+      m: taken.margin_note,
       b: taken.block,
       q: taken.question,
       p: taken.page,
@@ -133,6 +151,12 @@ export function createSearchService(sources: SearchSources) {
           ? sources.references
               .searchReferences(userId, request.q, { limit: limit + 1, offset: skip.reference })
               .map((h): SearchHit => ({ kind: "reference", ...h }))
+          : [],
+      margin_note:
+        kinds.has("margin_note") && sources.marginNotes
+          ? sources.marginNotes
+              .searchMarginNotes(userId, request.q, { limit: limit + 1, offset: skip.margin_note })
+              .map((h): SearchHit => ({ kind: "margin_note", ...h }))
           : [],
       question: kinds.has("question")
         ? sources.practice

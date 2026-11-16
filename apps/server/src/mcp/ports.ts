@@ -16,6 +16,7 @@ import type { CanvasPort } from "../domains/canvas/index.js";
 import type { ConceptsService } from "../domains/concepts/index.js";
 import type { ExamsService } from "../domains/exams/index.js";
 import type { LibraryService } from "../domains/library/index.js";
+import type { MarginNotesService } from "../domains/margin-notes/index.js";
 import type { PracticeService } from "../domains/practice/index.js";
 import type { ReferencesService } from "../domains/references/index.js";
 import type { RequestsService } from "../domains/requests/index.js";
@@ -210,6 +211,9 @@ export type ConceptsToolPort = Pick<
 /** Her saved outside references: read and add only; changing and deleting stay hers. */
 export type ReferencesToolPort = Pick<ReferencesService, "list" | "create">;
 
+/** Her side notes (docs/side-notes.md): read only. Only her browser session writes them. */
+export type MarginNotesToolPort = Pick<MarginNotesService, "forAgent" | "recent">;
+
 /** The study map (docs/canvas.md): read, set the structure, change; validation problems come back, not thrown. */
 export type CanvasToolPort = CanvasPort;
 
@@ -226,4 +230,5 @@ export interface McpBackend {
   concepts?: ConceptsToolPort | undefined;
   canvas?: CanvasToolPort | undefined;
   references?: ReferencesToolPort | undefined;
+  marginNotes?: MarginNotesToolPort | undefined;
 }

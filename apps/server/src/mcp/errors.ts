@@ -24,6 +24,7 @@ const KIND_NAMES: Partial<Record<IdKind, string>> = {
   apiKey: "API key",
   user: "user",
   session: "browser session",
+  marginNote: "side note of hers (read only)",
 };
 
 /** Where an agent should take an ID of a given kind. */
@@ -35,6 +36,8 @@ const KIND_ROUTES: Partial<Record<IdKind, string>> = {
     "Read it through its page with get_page; replace it with save_transcript (which takes the pageId).",
   document: "Read it with get_item; change its blocks with edit_blocks.",
   block: "Read it with get_item; change it with edit_blocks (which also needs its documentId).",
+  marginNote:
+    "Read it with side_notes (action list, with its documentId). Only she changes her side notes.",
 };
 
 export function describeIdKind(kind: IdKind): string {

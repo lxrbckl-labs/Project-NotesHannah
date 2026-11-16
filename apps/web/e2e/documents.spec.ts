@@ -172,7 +172,8 @@ test("inserts a callout with the slash menu", async ({ page }, info) => {
   await edit(page);
   const before = await page.locator('[data-testid="block"][data-type="callout"]').count();
   const para = block(page, "paragraph");
-  await para.getByTestId("field-main").click();
+  // Near the start of the text: the middle can be a link or a source chip, depending on the wrap.
+  await para.getByTestId("field-main").click({ position: { x: 20, y: 10 } });
   await expect(para.getByTestId("editor-main")).toBeFocused();
   await toEnd(page);
   await page.keyboard.press("Enter");

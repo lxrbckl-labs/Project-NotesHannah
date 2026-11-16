@@ -3,6 +3,8 @@ import type { Editor } from "@tiptap/core";
 import { createContext, useContext, useSyncExternalStore } from "react";
 import type { PendingCall } from "./model/ops";
 import type { ReferenceIndex } from "./model/references";
+import type { ReadingState } from "./panels/dock/position";
+import type { SideNotesModel } from "./panels/notes/model";
 import type { DocumentController } from "./state/controller";
 import type { DocumentStore, RequestKind } from "./store/types";
 import type { Layout } from "./ui/hooks";
@@ -90,6 +92,20 @@ export interface DocActions {
   slashKeyHandler: { current: ((key: string) => boolean) | null };
   docRef: { current: DocumentWithBlocks | null };
   notify: (message: string, tone?: "info" | "success" | "error") => void;
+  /** Her side notes (P1 to P8) and how a block reaches them. */
+  sideNotes: SideNotesActions;
+  /** The block under the pointer, or the one a panel entry points at: the two light up together. */
+  hovered: Signal<string | null>;
+  /** Where she is reading (P6): the block at the reading line and the blocks in view. */
+  reading: Signal<ReadingState>;
+}
+
+export interface SideNotesActions {
+  model: SideNotesModel;
+  /** Start a note on a block (words she selected in it become its quote); null: the block she is reading. */
+  compose: (blockId: string | null) => void;
+  /** Show a note: opens the Notes panel (or the phone sheet) at it. */
+  show: (noteId: string) => void;
 }
 
 /** What blocks need to draw themselves; changes rarely. */

@@ -182,6 +182,8 @@ export const COMPUTER_KEYS: GuideTable = {
     ["`⌘\\` or `Ctrl+\\`", "Show or hide the sidebar"],
     ["`F2`", "Rename the focused item in the sidebar"],
     ["`Delete`", "Move the focused item to the trash"],
+    ["`⌘⌥M` or `Ctrl+Alt+M`", "While editing a page: a side note on the block you are in"],
+    ["`Alt+O`", "On a page: show or hide the outline"],
   ],
 };
 
@@ -393,6 +395,10 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "Open a lecture from the library and choose Open the page. You will see the study guide as a page of blocks: headings, paragraphs, tables, drug cards and so on. The outline lets you jump between headings. The page for a lecture such as Beta blockers is built from your slides and notes for that day.",
       },
+      {
+        kind: "p",
+        text: "Beside the page there can be two sidebars, with the Outline, your Resources and your Side notes in them. They follow you as you scroll: the outline marks the section you are in, and Resources lights up the sources of the part you are reading. The next section but one, Side notes and the sidebars, has the details.",
+      },
       { kind: "figure", id: "lecture-page" },
       { kind: "h3", text: "Source chips" },
       {
@@ -524,6 +530,86 @@ export const SECTIONS: GuideSection[] = [
         tone: "limit",
         title: "Not there yet",
         text: "You cannot change the font, the text size or the alignment, and a colour applies to a whole block, not to single words. Highlighting works on single words.",
+      },
+    ],
+  },
+  {
+    id: "side-notes",
+    title: "Side notes and the sidebars",
+    lead: "Notes to yourself in the margin, and the panels that follow you down the page.",
+    blocks: [
+      {
+        kind: "p",
+        text: "A side note is a note to yourself, written beside a part of a page, much like a comment in a word processor. It sits level with the block it is about and moves with it as you scroll. Side notes are kept apart from the page itself, so you can write them on a study guide an assistant wrote without changing it, without touching what you have reviewed, and without adding to its version history.",
+      },
+      { kind: "h3", text: "Writing one" },
+      {
+        kind: "list",
+        items: [
+          "Point at a block on a computer, or scroll it to the middle of the screen on an iPad or phone, and tap the small note button at its right edge.",
+          "Or choose Add a side note from the block’s menu while editing.",
+          "Or press `⌘⌥M` (`Ctrl+Alt+M` on Windows) while you are writing in the block.",
+          "Or use the + at the top of the Side notes panel: the note goes on the part of the page you are reading.",
+        ],
+      },
+      { kind: "figure", id: "side-notes" },
+      {
+        kind: "p",
+        text: "If you select some words in the block and then press `⌘⌥M`, those words are kept with the note, so you know exactly what it was about. Notes are plain text, and line breaks are kept. Pick a colour if you like, then Add note. `⌘` or `Ctrl` with `Enter` saves, and `Escape` cancels.",
+      },
+      { kind: "h3", text: "Working with your notes" },
+      {
+        kind: "p",
+        text: "A block with notes shows a small marker with how many there are; tap it to open them. Tap a note to look at it: it lines up exactly with its block, the others move out of its way, and its buttons appear. Mark it as done when it no longer needs you (done notes tuck away under Done, at the foot of the panel), change it, or delete it. Deleting shows an Undo for a few seconds.",
+      },
+      {
+        kind: "p",
+        text: "If the block a note was on is deleted, or an assistant replaces the part of the guide it was on, the note is not lost. It moves to Detached, still showing the words it was on. Scroll to where it belongs and choose Attach here, or delete it. A note follows its block when the block is moved.",
+      },
+      { kind: "h3", text: "Resources" },
+      {
+        kind: "p",
+        text: "The Resources panel lists the sources and outside references of the page, grouped by section. The section you are reading is open, and the entries for the blocks on screen are highlighted. Tap an entry to jump to its block. The button at its end opens the source: the slide beside the page, or the outside page in a new tab. Point at a block and its entries light up; point at an entry and its block does.",
+      },
+      { kind: "h3", text: "Arranging the sidebars" },
+      {
+        kind: "p",
+        text: "Drag a panel by the grip at the left of its title into the other sidebar, or above or below another panel. Tap the grip instead for Move to the other sidebar, Move up, Move down and Close panel. Tap a panel’s title to fold it. The Panels button in the bar at the top shows or hides each sidebar and brings back a closed panel, and drag a sidebar’s inner edge to make it wider. Your arrangement is remembered on each device, once for all your documents.",
+      },
+      {
+        kind: "table",
+        head: ["Screen", "How the panels start"],
+        rows: [
+          ["Computer", "The outline on the left; side notes and resources on the right."],
+          [
+            "iPad, held sideways",
+            "Side notes on the right. The outline waits on the left: tap the outline button to show it.",
+          ],
+          [
+            "iPad, held upright",
+            "Both sidebars open over the page, one at a time, so the page keeps its width.",
+          ],
+          [
+            "Phone",
+            "No sidebars. The outline button opens a sheet with three tabs: Outline, Resources and Notes. A note marker opens it at that note.",
+          ],
+        ],
+      },
+      {
+        kind: "p",
+        text: "When there is not room for a sidebar beside the page, it waits folded away and opens over the page when you ask for it, so the page never gets too narrow to read.",
+      },
+      {
+        kind: "note",
+        tone: "tip",
+        title: "Assistants can read them",
+        text: "Your side notes are yours: an assistant cannot write, change or delete them. It can read them, though, so a note such as “I don’t get why selectivity fades” tells it where to explain more the next time it works on that guide.",
+      },
+      {
+        kind: "note",
+        tone: "limit",
+        title: "Not there yet",
+        text: "Side notes do not show on the canvas, and a copy of a document starts without them.",
       },
     ],
   },
@@ -823,8 +909,8 @@ export const PARTS: GuidePart[] = [
     id: "part-your-material",
     label: "Part two",
     title: "Your material",
-    lead: "Getting your slides and notes in, reading a lecture, and writing notes of your own.",
-    sections: ["getting-material-in", "reading-a-lecture", "writing-your-own-notes"],
+    lead: "Getting your slides and notes in, reading a lecture, writing notes of your own, and notes in the margin.",
+    sections: ["getting-material-in", "reading-a-lecture", "writing-your-own-notes", "side-notes"],
   },
   {
     id: "part-study-tools",
@@ -859,9 +945,14 @@ export const FIGURES: Record<FigureId, GuideFigure> = {
       "The library home: your whole library as one tree, with your next exams, the days left and your progress below it.",
   }),
   "lecture-page": figure("lecture-page", {
-    alt: "The Beta blockers lecture page, with numbered source chips under a paragraph and the outline of headings on the right.",
+    alt: "The Beta blockers lecture page, with numbered source chips under a paragraph, a side note level with it on the right, and the Resources panel below the notes.",
     caption:
-      "A lecture page. The numbered chips under a block are its sources, and the outline on the right jumps between headings.",
+      "A lecture page. The numbered chips under a block are its sources; on the right, your side notes and the resources of the part you are reading.",
+  }),
+  "side-notes": figure("side-notes", {
+    alt: "A side note about labetalol, open beside the mnemonic block it is about, with its done, change and delete buttons; the Resources panel below it lists the slides of the Classification section.",
+    caption:
+      "A side note, level with the block it is about. Tap a note to see its buttons: done, change and delete.",
   }),
   "source-page": figure("source-page", {
     alt: "A source chip opened beside the document: the original slide, and its transcript with the cited words highlighted.",

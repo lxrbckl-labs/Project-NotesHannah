@@ -5,6 +5,7 @@ import type {
   Document,
   DocumentWithBlocks,
   ImageSource,
+  MarginNote,
   Page,
   Revision,
   RevisionSummary,
@@ -16,6 +17,8 @@ import type {
   BlockRequestInput,
   CitationSource,
   DocumentStore,
+  MarginNoteDraft,
+  MarginNotePatch,
   PageChoice,
   PageImage,
   ReferenceWithStatus,
@@ -288,5 +291,54 @@ export class HttpDocumentStore implements DocumentStore {
       kind: input.kind,
       ...(input.note ? { message: input.note } : {}),
     }).then((r) => ({ id: r.request.id }));
+  }
+
+  // ---- side notes (docs/api.md, "Side notes") ----
+
+  async listMarginNotes(documentId: string): Promise<MarginNote[]> {
+    const r = await this.request<{ items: MarginNote[] }>(
+      "GET",
+      `/documents/${documentId}/margin-notes`,
+    );
+    return r.items;
+  }
+
+  async createMarginNote(documentId: string, input: MarginNoteDraft): Promise<MarginNote> {
+    const r = await this.request<{ note: MarginNote }>(
+      "POST",
+      `/documents/${documentId}/margin-notes`,
+      input,
+    );
+    return r.note;
+  }
+
+  async updateMarginNote(
+    documentId: string,
+    noteId: string,
+    patch: MarginNotePatch,
+  ): Promise<MarginNote> {
+    const r = await this.request<{ note: MarginNote }>(
+      "PATCH",
+      `/documents/${documentId}/margin-notes/${noteId}`,
+      patch,
+    );
+    return r.note;
+  }
+
+  async deleteMarginNote(documentId: string, noteId: string): Promise<void> {
+    await this.request("DELETE", `/documents/${documentId}/margin-notes/${noteId}`);
+  }
+
+  async reattachMarginNote(
+    documentId: string,
+    noteId: string,
+    input: { blockId: string; quote?: string | null },
+  ): Promise<MarginNote> {
+    const r = await this.request<{ note: MarginNote }>(
+      "POST",
+      `/documents/${documentId}/margin-notes/${noteId}/reattach`,
+      input,
+    );
+    return r.note;
   }
 }

@@ -107,7 +107,7 @@ function toolMap(f: Facts): string {
     ["requests", "what she asked for: list, claim, complete with a reply, decline, release"],
     ["browse_library", "one level of the tree (or the trash, favourites, recents)"],
     ["get_item", "open anything by ID; a file with text:true gives every page's text at once"],
-    ["search_notes", "find by words: names, pages, blocks, questions, concepts"],
+    ["search_notes", "find by words: names, pages, blocks, questions, concepts, her side notes"],
     [
       "edit_library",
       "create, rename, move, duplicate, trash, restore; claim a lecture you write for",
@@ -126,6 +126,10 @@ function toolMap(f: Facts): string {
     [
       "references",
       "her saved outside references (guidelines, calculators); list, add; link, never copy",
+    ],
+    [
+      "side_notes",
+      "her private notes beside a document's blocks: where she is stuck; list, recent; read only",
     ],
   ];
   return lines

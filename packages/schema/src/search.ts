@@ -13,10 +13,19 @@ import {
   TranscriptId,
 } from "./ids.js";
 import { NodeWithLinks } from "./library.js";
+import { MarginNoteSearchHitFields } from "./margin-notes.js";
 import { ReferenceKind, ReferenceSource } from "./references.js";
 
 /** What a search can find. */
-export const SearchKind = z.enum(["node", "page", "block", "question", "concept", "reference"]);
+export const SearchKind = z.enum([
+  "node",
+  "page",
+  "block",
+  "question",
+  "concept",
+  "reference",
+  "margin_note",
+]);
 export type SearchKind = z.infer<typeof SearchKind>;
 
 export const SEARCH_KINDS: readonly SearchKind[] = SearchKind.options;
@@ -92,6 +101,12 @@ export const ReferenceSearchHit = z.object({
 });
 export type ReferenceSearchHit = z.infer<typeof ReferenceSearchHit>;
 
+/** One of her side notes whose text matches. It opens the document at the note. */
+export const MarginNoteSearchHit = MarginNoteSearchHitFields.extend({
+  kind: z.literal("margin_note"),
+});
+export type MarginNoteSearchHit = z.infer<typeof MarginNoteSearchHit>;
+
 export const SearchHit = z.discriminatedUnion("kind", [
   NodeSearchHit,
   PageSearchHit,
@@ -99,6 +114,7 @@ export const SearchHit = z.discriminatedUnion("kind", [
   QuestionSearchHit,
   ConceptSearchHit,
   ReferenceSearchHit,
+  MarginNoteSearchHit,
 ]);
 export type SearchHit = z.infer<typeof SearchHit>;
 

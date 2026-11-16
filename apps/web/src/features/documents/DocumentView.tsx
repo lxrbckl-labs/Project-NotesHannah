@@ -18,6 +18,7 @@ import {
   History,
   ListTree,
   LoaderCircle,
+  MessageSquareText,
   Pencil,
   Plus,
   Redo2,
@@ -62,8 +63,14 @@ import type { PendingCall } from "./model/ops";
 import { buildReferenceIndex, type ReferenceIndex } from "./model/references";
 import { CitationPanel } from "./panels/CitationPanel";
 import { PagePicker, RequestDialog } from "./panels/dialogs";
+import { DocumentDock, type PanelData, PanelsSheet } from "./panels/dock/DocumentPanels";
+import { type PanelId, sideOf } from "./panels/dock/layout";
+import { PanelsMenu } from "./panels/dock/PanelsMenu";
+import { headingsOf, ReadingTracker } from "./panels/dock/position";
+import { type DockApi, useDock } from "./panels/dock/useDock";
 import { HistoryPanel } from "./panels/HistoryPanel";
-import { type OutlineItem, OutlinePanel } from "./panels/OutlinePanel";
+import { SideNotesModel } from "./panels/notes/model";
+import type { OutlineItem } from "./panels/OutlinePanel";
 import { References } from "./panels/References";
 import { DocumentController } from "./state/controller";
 import type { DocumentStore, RequestKind } from "./store/types";
@@ -84,6 +91,8 @@ export interface DocumentViewProps {
   onAskAboutBlock?: ((target: { blockId: string; kind: RequestKind }) => void) | undefined;
   /** Scroll to this block and flash it once the document has loaded (a search hit, a link). */
   focusBlockId?: string | undefined;
+  /** Open the side notes at this note once they have loaded (a search hit). */
+  focusNoteId?: string | undefined;
   /** An empty document gets one empty paragraph with the caret in it, ready to type (once). */
   startWriting?: boolean;
   className?: string;
@@ -125,6 +134,7 @@ function DocumentScreen({
   onOpenQuestion,
   initialMode,
   focusBlockId,
+  focusNoteId,
   onAskAboutBlock,
   startWriting,
   className,
@@ -150,8 +160,13 @@ function DocumentScreen({
     Map<string, { fileName: string | null; pageIndex: number | null }>
   >(() => new Map());
   const [citation, setCitation] = useState<number | null>(null);
-  const [outlineOpen, setOutlineOpen] = useState(layout === "computer");
   const [historyOpen, setHistoryOpen] = useState(false);
+  // The sidebars (P5) and, on a phone, the sheet that stands in for them.
+  const dock = useDock();
+  const [sheet, setSheet] = useState<{ open: boolean; tab: PanelId }>({
+    open: false,
+    tab: "outline",
+  });
   const [request, setRequest] = useState<{ blockId: string; kind: RequestKind } | null>(null);
   const [insert, setInsert] = useState<InsertMenuState | null>(null);
   const [picker, setPicker] = useState<{
@@ -160,7 +175,6 @@ function DocumentScreen({
     replaceId?: string;
   } | null>(null);
   const [panelWidth, setPanelWidth] = useState(layout === "computer" ? 460 : 400);
-  const [currentHeading, setCurrentHeading] = useState<string | null>(null);
   const [drop, setDrop] = useState<{
     blockId: string;
     top: number;
@@ -174,11 +188,6 @@ function DocumentScreen({
   const insertTypeRef = useRef<(type: BlockType, blockId: string | null, replace: boolean) => void>(
     () => {},
   );
-
-  useEffect(() => {
-    if (layout === "computer") setOutlineOpen(true);
-    else setOutlineOpen(false);
-  }, [layout]);
 
   // Source status for chips and the references list (K6).
   const signature = refs.references.map((r) => citationKey(r.citation)).join("\n");
@@ -219,15 +228,53 @@ function DocumentScreen({
       slashQuery: new Signal<{ blockId: string; query: string } | null>(null),
       slashKeyHandler: { current: null as ((key: string) => boolean) | null },
       seq: { current: 0 },
+      hovered: new Signal<string | null>(null),
     }),
     [],
   );
+
+  // Where she is reading (P6) and her side notes (P1 to P8): one of each per document.
+  const tracker = useMemo(() => new ReadingTracker(), []);
+  const notes = useMemo(
+    () => new SideNotesModel(store, documentId, (message) => toast.error(new Error(message))),
+    [store, documentId, toast],
+  );
+  useEffect(() => {
+    void notes.load();
+  }, [notes]);
+  // The scroller appears once the document has loaded.
+  const loaded = doc !== null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attach when the scroller exists
+  useEffect(() => {
+    const box = scroller.current;
+    return box ? tracker.attach(box) : undefined;
+  }, [tracker, loaded]);
+  const order = doc ? doc.blocks.map((b) => `${b.id}:${b.type}`).join(" ") : "";
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed by the block order and types
+  useEffect(() => {
+    const blocks = docRef.current?.blocks ?? [];
+    tracker.setHeadings(headingsOf(blocks));
+    tracker.invalidate();
+    notes.setBlocks(blocks.map((b) => b.id));
+  }, [order, tracker, notes]);
 
   const scrollToBlock = useCallback(
     (blockId: string, flash = true) => {
       const el = scroller.current?.querySelector(`[data-block-id="${blockId}"]`);
       if (!el) return;
       el.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
+      const box = scroller.current;
+      if (!reduced && box) {
+        // Blocks off screen are sized by estimate until drawn, so a long smooth scroll can stop
+        // short. When it ends, settle on the block exactly.
+        const settle = () => {
+          box.removeEventListener("scrollend", settle);
+          clearTimeout(fallback);
+          el.scrollIntoView({ block: "center", behavior: "auto" });
+        };
+        const fallback = setTimeout(settle, 1200);
+        box.addEventListener("scrollend", settle);
+      }
       if (flash) {
         el.classList.add("doc-flash");
         setTimeout(() => el.classList.remove("doc-flash"), 1300);
@@ -337,6 +384,13 @@ function DocumentScreen({
     [controller, documentId],
   );
 
+  // The actions are made once; showing a panel needs the dock as it is now.
+  const showPanelRef = useRef<(id: PanelId) => void>(() => {});
+  showPanelRef.current = (id) => {
+    if (layout === "phone") setSheet({ open: true, tab: id });
+    else if (!dock.visible(id)) dock.reveal(id);
+  };
+
   const actions: DocActions = useMemo(
     () => ({
       controller,
@@ -382,6 +436,26 @@ function DocumentScreen({
           : tone === "success"
             ? toast.success(message)
             : toast.show(message),
+      hovered: signals.hovered,
+      reading: tracker.state,
+      sideNotes: {
+        model: notes,
+        compose: (blockId) => {
+          const id = blockId ?? tracker.state.get().blockId;
+          if (!id) return;
+          notes.compose({ blockId: id, quote: selectedQuote(scroller.current, id) });
+          showPanelRef.current("notes");
+        },
+        show: (noteId) => {
+          const note = notes.state.get().notes.find((n) => n.id === noteId);
+          notes.focus(noteId);
+          showPanelRef.current("notes");
+          if (note && !tracker.state.get().inView.includes(note.blockId)) {
+            const el = scroller.current?.querySelector(`[data-block-id="${note.blockId}"]`);
+            el?.scrollIntoView({ block: "center" });
+          }
+        },
+      },
     }),
     [
       controller,
@@ -393,8 +467,26 @@ function DocumentScreen({
       signals,
       startDrag,
       onAskAboutBlock,
+      tracker,
+      notes,
     ],
   );
+
+  // A search hit names a side note: open the notes at it once they are loaded.
+  const shownNote = useRef<string | undefined>(undefined);
+  const notesPhase = useSyncExternalStore(
+    notes.state.subscribe,
+    () => notes.state.get().phase,
+    () => notes.state.get().phase,
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per note id, when both have loaded
+  useEffect(() => {
+    if (!focusNoteId || !loaded || notesPhase !== "ready" || shownNote.current === focusNoteId)
+      return;
+    shownNote.current = focusNoteId;
+    const t = setTimeout(() => actions.sideNotes.show(focusNoteId), 300);
+    return () => clearTimeout(t);
+  }, [focusNoteId, loaded, notesPhase]);
 
   // The slash menu follows the editor: its query updates as she types, and it closes with the "/".
   useEffect(
@@ -452,51 +544,54 @@ function DocumentScreen({
     return items;
   }, [doc]);
 
-  useEffect(() => {
-    const box = scroller.current;
-    if (!box) return;
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      // A heading scrolled to the top sits 96px down (its scroll margin); a couple of pixels
-      // of slack, because a smooth scroll can stop a fraction of a pixel short.
-      const top = box.getBoundingClientRect().top + 98;
-      let current: string | null = outline[0]?.id ?? null;
-      for (const item of outline) {
-        const el = document.getElementById(`h-${item.id}`);
-        if (el && el.getBoundingClientRect().top <= top) current = item.id;
-      }
-      setCurrentHeading(current);
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    update();
-    box.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      box.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
-    };
-  }, [outline]);
+  // Jumping from a panel that floats over the page (or the phone's sheet) puts it away.
+  const putAway = () => {
+    if (layout === "phone") setSheet((s) => ({ ...s, open: false }));
+    else if (dock.peek && dock.modes[dock.peek] === "auto") dock.setPeek(null);
+  };
+  const putAwayRef = useRef(putAway);
+  putAwayRef.current = putAway;
 
-  const jumpToHeading = (id: string) => {
-    if (layout !== "computer") setOutlineOpen(false);
-    requestAnimationFrame(() => {
-      const heading = document.getElementById(`h-${id}`);
-      const box = scroller.current;
-      if (!heading) return;
-      heading.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
-      if (reduced || !box) return;
-      // Blocks off screen are not drawn until they come near, so a smooth scroll aims with
-      // estimated heights and can stop short. When it ends, settle on the heading exactly.
-      const settle = () => {
-        box.removeEventListener("scrollend", settle);
-        clearTimeout(fallback);
-        heading.scrollIntoView({ block: "start", behavior: "auto" });
-      };
-      const fallback = setTimeout(settle, 1200);
-      box.addEventListener("scrollend", settle);
-    });
+  const jumpToHeading = useCallback(
+    (id: string) => {
+      putAwayRef.current();
+      requestAnimationFrame(() => {
+        const heading = document.getElementById(`h-${id}`);
+        const box = scroller.current;
+        if (!heading) return;
+        heading.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+        if (reduced || !box) return;
+        // Blocks off screen are not drawn until they come near, so a smooth scroll aims with
+        // estimated heights and can stop short. When it ends, settle on the heading exactly.
+        const settle = () => {
+          box.removeEventListener("scrollend", settle);
+          clearTimeout(fallback);
+          heading.scrollIntoView({ block: "start", behavior: "auto" });
+        };
+        const fallback = setTimeout(settle, 1200);
+        box.addEventListener("scrollend", settle);
+      });
+    },
+    [reduced],
+  );
+
+  const jumpToBlock = useCallback(
+    (blockId: string) => {
+      if (layout === "phone") setSheet((s) => ({ ...s, open: false }));
+      scrollToBlock(blockId);
+    },
+    [layout, scrollToBlock],
+  );
+
+  /** The Outline or Notes button: show the panel, or put its sidebar away when it is showing. */
+  const togglePanel = (id: PanelId) => {
+    if (layout === "phone") {
+      setSheet((s) => (s.open && s.tab === id ? { ...s, open: false } : { open: true, tab: id }));
+      return;
+    }
+    const side = sideOf(dock.state, id);
+    if (side && dock.visible(id)) dock.toggleSide(side);
+    else dock.reveal(id);
   };
 
   const unverified = doc ? countUnverified(doc.blocks) : 0;
@@ -528,6 +623,12 @@ function DocumentScreen({
       const target = event.target as HTMLElement | null;
       const typing = target?.closest("input, textarea, [contenteditable='true']");
       const mod = event.metaKey || event.ctrlKey;
+      // Cmd+Option+M (Ctrl+Alt+M), as for a comment in a word processor: a side note on this block.
+      if (editing && mod && event.altKey && event.code === "KeyM" && !target?.closest("textarea")) {
+        event.preventDefault();
+        actions.sideNotes.compose(signals.active.get());
+        return;
+      }
       if (typing) return;
       if (mod && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -541,7 +642,7 @@ function DocumentScreen({
         nextUnverified();
       } else if (event.altKey && event.code === "KeyO") {
         event.preventDefault();
-        setOutlineOpen((o) => !o);
+        togglePanel("outline");
       } else if (mod && event.shiftKey && event.key === "Enter") {
         const id = signals.active.get();
         if (id) {
@@ -550,6 +651,7 @@ function DocumentScreen({
         }
       } else if (event.key === "Escape") {
         signals.active.set(null);
+        notes.focus(null);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -646,6 +748,20 @@ function DocumentScreen({
     if (controller.perform(calls, "Insert image")) signals.active.set(p.replaceId ?? clientId);
   };
 
+  const panelData: PanelData = useMemo(
+    () => ({
+      scroller,
+      blocks: doc?.blocks ?? [],
+      outline,
+      refs,
+      status,
+      names,
+      onJumpHeading: jumpToHeading,
+      onJumpBlock: jumpToBlock,
+    }),
+    [doc?.blocks, outline, refs, status, names, jumpToHeading, jumpToBlock],
+  );
+
   // Errors from the controller as toasts.
   useEffect(() => {
     if (state.error && !state.conflict && state.failed.length === 0)
@@ -683,9 +799,8 @@ function DocumentScreen({
     );
   }
 
+  // The source panel takes the right sidebar's place while it is open.
   const sideCitation = citation !== null && layout !== "phone";
-  const sideOutline = !sideCitation && outlineOpen && layout === "computer";
-  const showSide = sideCitation || sideOutline;
 
   return (
     <ActionsContext.Provider value={actions}>
@@ -702,8 +817,13 @@ function DocumentScreen({
               controller={controller}
               unverified={unverified}
               onNext={nextUnverified}
-              onOutline={() => setOutlineOpen((o) => !o)}
-              outlineOpen={outlineOpen && layout === "computer"}
+              onOutline={() => togglePanel("outline")}
+              outlineOpen={
+                layout === "phone" ? sheet.open && sheet.tab === "outline" : dock.visible("outline")
+              }
+              onNotes={() => togglePanel("notes")}
+              notesOpen={layout !== "phone" && dock.visible("notes")}
+              dock={layout === "phone" ? null : dock}
               onHistory={() => setHistoryOpen(true)}
               compact={layout === "phone"}
               // The ribbon has undo and redo from tablet width; the phone dock has them on touch.
@@ -717,111 +837,107 @@ function DocumentScreen({
                 touch={isTouch}
               />
             )}
-            <div
-              ref={scroller}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-              data-testid="doc-scroller"
+            <DocumentDock
+              dock={dock}
+              data={panelData}
+              {...(sideCitation ? { suppress: ["right" as const] } : {})}
             >
-              <div className="relative">
-                <article
-                  data-testid="doc-page"
-                  className={cn(
-                    "mx-auto max-w-[46rem] pt-8 pb-[40vh]",
-                    "px-[max(20px,env(safe-area-inset-left))]",
-                    // From tablet up the document is a sheet of paper on the desk, as in a word
-                    // processor; the space under it lets the last lines scroll up to eye level.
-                    "md:mt-6 md:mb-[40vh] md:w-[calc(100%-3rem)] md:max-w-[52rem] md:rounded-panel md:border md:border-border md:bg-surface md:px-14 md:pt-12 md:pb-16 md:shadow-card",
-                    // The hover gutter (+ and the drag handle) needs room on the left of the text.
-                    editing && !isTouch ? "xl:pr-16 xl:pl-24" : "xl:px-20",
-                  )}
-                  aria-labelledby="doc-title"
-                >
-                  <header className="mb-8 md:mb-10 md:border-b md:border-border md:pb-8">
-                    <p className="m-0 text-label font-semibold uppercase tracking-[0.08em] text-text-muted">
-                      {KIND_LABEL[doc.kind]}
-                    </p>
-                    <h1
-                      id="doc-title"
-                      className="mt-1.5 mb-0 font-display text-[2.1rem] leading-[1.15] font-bold tracking-[-0.02em] text-balance md:text-[2.6rem]"
-                    >
-                      {doc.title}
-                    </h1>
-                    <p className="mt-2 mb-0 text-label text-text-muted">
-                      {doc.blocks.length} blocks · {refs.references.length} sources · edited{" "}
-                      {formatWhen(doc.updatedAt)}
-                    </p>
-                    <ReviewSummary
-                      unverified={unverified}
-                      onNext={nextUnverified}
-                      onMarkAll={markAll}
-                    />
-                  </header>
-                  <div data-testid="blocks">
-                    {doc.blocks.map((block, index) => (
-                      <BlockShell
-                        key={block.id}
-                        block={block}
-                        index={index}
-                        count={doc.blocks.length}
+              <div
+                ref={scroller}
+                className="@container/page min-h-0 flex-1 overflow-y-auto overscroll-contain"
+                data-testid="doc-scroller"
+              >
+                <div className="relative">
+                  <article
+                    data-testid="doc-page"
+                    className={cn(
+                      "mx-auto max-w-[46rem] pt-8 pb-[40vh]",
+                      "px-[max(20px,env(safe-area-inset-left))]",
+                      // From tablet up the document is a sheet of paper on the desk, as in a word
+                      // processor; the space under it lets the last lines scroll up to eye level.
+                      // Measured on the page column, not the window: the sidebars take some of it.
+                      "@min-[520px]/page:mt-6 @min-[520px]/page:mb-[40vh] @min-[520px]/page:w-[calc(100%-3rem)] @min-[520px]/page:max-w-[52rem] @min-[520px]/page:rounded-panel @min-[520px]/page:border @min-[520px]/page:border-border @min-[520px]/page:bg-surface @min-[520px]/page:px-14 @min-[520px]/page:pt-12 @min-[520px]/page:pb-16 @min-[520px]/page:shadow-card",
+                      // The hover gutter (+ and the drag handle) needs room on the left of the text.
+                      editing && !isTouch
+                        ? "@min-[880px]/page:pr-16 @min-[880px]/page:pl-24"
+                        : "@min-[880px]/page:px-20",
+                    )}
+                    aria-labelledby="doc-title"
+                  >
+                    <header className="mb-8 @min-[520px]/page:mb-10 @min-[520px]/page:border-b @min-[520px]/page:border-border @min-[520px]/page:pb-8">
+                      <p className="m-0 text-label font-semibold uppercase tracking-[0.08em] text-text-muted">
+                        {KIND_LABEL[doc.kind]}
+                      </p>
+                      <h1
+                        id="doc-title"
+                        className="mt-1.5 mb-0 font-display text-[2.1rem] leading-[1.15] font-bold tracking-[-0.02em] text-balance md:text-[2.6rem]"
+                      >
+                        {doc.title}
+                      </h1>
+                      <p className="mt-2 mb-0 text-label text-text-muted">
+                        {doc.blocks.length} blocks · {refs.references.length} sources · edited{" "}
+                        {formatWhen(doc.updatedAt)}
+                      </p>
+                      <ReviewSummary
+                        unverified={unverified}
+                        onNext={nextUnverified}
+                        onMarkAll={markAll}
                       />
-                    ))}
-                  </div>
-                  {editing && (
-                    <button
-                      type="button"
-                      data-testid="add-block-end"
-                      onClick={(e) =>
-                        actions.openInsertMenu(
-                          doc.blockIds[doc.blockIds.length - 1] ?? null,
-                          false,
-                          e.currentTarget.getBoundingClientRect(),
-                        )
-                      }
-                      className="mt-6 flex min-h-11 w-full items-center gap-2 rounded-card border border-dashed border-border-strong px-3 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:border-accent-border hover:bg-accent-soft hover:text-accent"
-                    >
-                      <Plus aria-hidden className="size-4" /> Add a block
-                    </button>
+                    </header>
+                    <div data-testid="blocks">
+                      {doc.blocks.map((block, index) => (
+                        <BlockShell
+                          key={block.id}
+                          block={block}
+                          index={index}
+                          count={doc.blocks.length}
+                        />
+                      ))}
+                    </div>
+                    {editing && (
+                      <button
+                        type="button"
+                        data-testid="add-block-end"
+                        onClick={(e) =>
+                          actions.openInsertMenu(
+                            doc.blockIds[doc.blockIds.length - 1] ?? null,
+                            false,
+                            e.currentTarget.getBoundingClientRect(),
+                          )
+                        }
+                        className="mt-6 flex min-h-11 w-full items-center gap-2 rounded-card border border-dashed border-border-strong px-3 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:border-accent-border hover:bg-accent-soft hover:text-accent"
+                      >
+                        <Plus aria-hidden className="size-4" /> Add a block
+                      </button>
+                    )}
+                    <References names={names} blocks={doc.blocks} />
+                  </article>
+                  {drop && (
+                    <div
+                      aria-hidden
+                      data-testid="drop-indicator"
+                      className="pointer-events-none absolute right-0 left-0 mx-auto h-1 max-w-[46rem] rounded-pill bg-selection shadow-[0_0_0_3px_var(--hue-blue-soft)]"
+                      style={{ top: drop.top }}
+                    />
                   )}
-                  <References names={names} blocks={doc.blocks} />
-                </article>
-                {drop && (
-                  <div
-                    aria-hidden
-                    data-testid="drop-indicator"
-                    className="pointer-events-none absolute right-0 left-0 mx-auto h-1 max-w-[46rem] rounded-pill bg-selection shadow-[0_0_0_3px_var(--hue-blue-soft)]"
-                    style={{ top: drop.top }}
-                  />
-                )}
+                </div>
               </div>
-            </div>
+            </DocumentDock>
           </div>
 
-          {showSide && (
+          {sideCitation && (
             <aside
-              aria-label={sideCitation ? "Source" : "Outline"}
+              aria-label="Source"
               className="anim-fade relative flex shrink-0 flex-col border-l border-border bg-surface pr-[env(safe-area-inset-right)]"
-              style={{ width: sideCitation ? panelWidth : 288 } as CSSProperties}
+              style={{ width: panelWidth } as CSSProperties}
             >
-              {sideCitation ? (
-                <>
-                  <ResizeHandle width={panelWidth} setWidth={setPanelWidth} />
-                  <CitationPanel
-                    number={citation as number}
-                    onNavigate={setCitation}
-                    onClose={() => setCitation(null)}
-                    variant="side"
-                  />
-                </>
-              ) : (
-                <>
-                  <p className="m-0 border-b border-border px-5 py-3 text-caption font-semibold uppercase tracking-[0.08em] text-text-muted">
-                    On this page
-                  </p>
-                  <div className="min-h-0 flex-1 overflow-y-auto">
-                    <OutlinePanel items={outline} current={currentHeading} onJump={jumpToHeading} />
-                  </div>
-                </>
-              )}
+              <ResizeHandle width={panelWidth} setWidth={setPanelWidth} />
+              <CitationPanel
+                number={citation as number}
+                onNavigate={setCitation}
+                onClose={() => setCitation(null)}
+                variant="side"
+              />
             </aside>
           )}
 
@@ -842,17 +958,14 @@ function DocumentScreen({
             </Sheet>
           )}
 
-          {layout !== "computer" && (
-            <Sheet
-              open={outlineOpen}
-              onOpenChange={setOutlineOpen}
-              title="Outline"
-              placement="side"
-              flush
-              testId="outline-sheet"
-            >
-              <OutlinePanel items={outline} current={currentHeading} onJump={jumpToHeading} />
-            </Sheet>
+          {layout === "phone" && (
+            <PanelsSheet
+              open={sheet.open}
+              tab={sheet.tab}
+              onTab={(tab) => setSheet({ open: true, tab })}
+              onOpenChange={(open) => setSheet((s) => ({ ...s, open }))}
+              data={panelData}
+            />
           )}
 
           <Sheet
@@ -1041,6 +1154,9 @@ function TopBar({
   onNext,
   onOutline,
   outlineOpen,
+  onNotes,
+  notesOpen,
+  dock,
   onHistory,
   compact,
   showUndo,
@@ -1053,6 +1169,10 @@ function TopBar({
   onNext: () => void;
   onOutline: () => void;
   outlineOpen: boolean;
+  onNotes: () => void;
+  notesOpen: boolean;
+  /** The sidebars, from tablet width up; the phone has its sheet instead. */
+  dock: DockApi | null;
   onHistory: () => void;
   compact: boolean;
   showUndo: boolean;
@@ -1098,13 +1218,26 @@ function TopBar({
         </button>
       )}
       <IconButton
-        label="Outline"
+        label={dock ? "Outline" : "Outline, resources and side notes"}
         pressed={outlineOpen}
         onClick={onOutline}
         data-testid="outline-button"
       >
         <ListTree className="size-[18px]" />
       </IconButton>
+      {dock && (
+        <>
+          <IconButton
+            label="Side notes"
+            pressed={notesOpen}
+            onClick={onNotes}
+            data-testid="notes-button"
+          >
+            <MessageSquareText className="size-[18px]" />
+          </IconButton>
+          <PanelsMenu dock={dock} />
+        </>
+      )}
       <IconButton label="Version history" onClick={onHistory} data-testid="history-button">
         <History className="size-[18px]" />
       </IconButton>
@@ -1125,4 +1258,15 @@ function TopBar({
       </Button>
     </div>
   );
+}
+
+/** Words she has selected inside a block, as a side note's quote (at most 300 characters). */
+function selectedQuote(scroller: HTMLElement | null, blockId: string): string | null {
+  const selection = typeof window === "undefined" ? null : window.getSelection();
+  if (!selection || selection.isCollapsed || !scroller) return null;
+  const block = scroller.querySelector(`[data-block-id="${blockId}"]`);
+  const node = selection.anchorNode;
+  if (!block || !node || !block.contains(node)) return null;
+  const text = selection.toString().replace(/\s+/g, " ").trim();
+  return text ? text.slice(0, 300) : null;
 }
