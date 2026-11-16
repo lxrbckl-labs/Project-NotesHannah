@@ -134,7 +134,12 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             <h1 className="truncate font-display text-lg font-semibold md:text-xl">{title}</h1>
             <p className="truncate text-xs text-text-muted">{n.path}</p>
           </div>
-          <div className="order-last flex basis-full flex-wrap items-center gap-2 md:order-none md:basis-auto">
+          {/* This row must stay on one line on a phone (down to 375 wide) and on a tablet with the
+              sidebar open: tighter gaps and switch padding on a phone, and "Sources" and "Practise
+              this" are 44px icon buttons (names kept) until the computer layout, so "Practise
+              this" never wraps onto a row of its own. flex-wrap stays as the fallback for
+              anything narrower. */}
+          <div className="order-last flex basis-full flex-wrap items-center gap-1 sm:gap-2 md:order-none md:basis-auto">
             <div
               role="tablist"
               aria-label="View"
@@ -149,7 +154,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
                   role="tab"
                   aria-selected={t.on}
                   to={t.to}
-                  className={segmentItemClass(t.on)}
+                  className={`${segmentItemClass(t.on)} max-sm:px-3`}
                 >
                   <t.icon size={15} aria-hidden />
                   {t.label}
@@ -159,10 +164,10 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             <Link
               to={`/library/${n.id}`}
               aria-label="Sources"
-              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 text-sm text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text sm:px-3 xl:min-h-9"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 text-sm text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:min-h-9 xl:px-3"
             >
               <Paperclip size={15} aria-hidden />
-              <span className="hidden sm:inline">Sources</span>
+              <span className="hidden xl:inline">Sources</span>
             </Link>
             <ReferencesButton place={{ nodeId: n.id, name: title, path: n.path }} />
             <AskButton
@@ -171,9 +176,13 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
               iconOnly
               text="Ask an agent"
             />
-            <Button onClick={() => navigate(`/practice?node=${n.id}`)} aria-label="Practise this">
+            <Button
+              onClick={() => navigate(`/practice?node=${n.id}`)}
+              aria-label="Practise this"
+              className="max-xl:w-11 max-xl:px-0"
+            >
               <GraduationCap size={16} aria-hidden />
-              <span className="hidden sm:inline">Practise this</span>
+              <span className="hidden xl:inline">Practise this</span>
             </Button>
           </div>
         </header>
