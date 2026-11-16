@@ -194,6 +194,21 @@ Migrations only move forward. To go back: `scripts/down.sh`, restore the pre-upd
 --db <the pre-update snapshot>`), set `APP_IMAGE=notes-app:previous` and `CONVERTER_IMAGE=notes-converter:previous` in
 `deploy/.env`, `scripts/up.sh`.
 
+### After every redeploy: the smoke check
+
+```sh
+pnpm smoke https://notes.example.app
+```
+
+Run it from any machine with Node (no sign-in, no browser, nothing written). It checks, in a few seconds, what a
+redeploy can break for a tab that is already open: the page shell answers `200` as HTML and is never cached
+(`Cache-Control: no-cache`) and carries the noindex header; every script and stylesheet the shell names is served with
+the right type; a made-up `/assets/...` file is a `404` and not the page shell (the failure that shows an open tab
+"'text/html' is not a valid JavaScript MIME type"); the guide PDF is a PDF; `/healthz` is healthy; `/api/me` is `401`
+and `/mcp` refuses a request without a key. It exits non-zero and lists every check that failed. Fix those before
+telling anyone the update is done. The built-app browser suite (`pnpm e2e:built`, see the README) runs the same
+script against its own server, so the check itself is tested before it is trusted.
+
 ## Where things are
 
 | | |

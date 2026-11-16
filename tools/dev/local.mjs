@@ -1,12 +1,11 @@
 // `pnpm local`: prepare data, start the converter (if Docker is up), the server and the web dev
 // server, all without the mock. Ctrl-C stops everything it started.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import {
   appOrigin,
   composeFile,
   composeProject,
-  credentialsFile,
   localDir,
   root,
   serverEnv,
@@ -15,6 +14,7 @@ import {
   storageDir,
   webPort,
 } from "./env.mjs";
+import { prepareData } from "./prepare.mjs";
 import { capture, dockerRunning, portInUse, run, waitFor } from "./run.mjs";
 
 const env = serverEnv();
@@ -62,63 +62,8 @@ mkdirSync(localDir, { recursive: true });
 say("building the shared schema");
 if ((await run("pnpm", ["build:schema"], { stdio: "pipe", env })) !== 0) process.exit(1);
 
-// 1. storage and database
-const init = capture(
-  "pnpm",
-  ["--filter", "@notes/server", "admin", "init-storage", "--create-dir"],
-  { env },
-);
-if (init.status !== 0) {
-  console.error(init.stdout + init.stderr);
-  process.exit(1);
-}
-say(init.stdout.trim().split("\n").at(-1) ?? "storage ready");
-
-// 2. a first user, if there is none
-const users = capture("pnpm", ["--filter", "@notes/server", "admin", "list-users"], { env });
-if (users.status !== 0) {
-  console.error(users.stdout + users.stderr);
-  process.exit(1);
-}
-if (users.stdout.includes("No users.")) {
-  const username = process.env.NOTES_LOCAL_USER ?? "hannah";
-  const made = capture(
-    "pnpm",
-    [
-      "--filter",
-      "@notes/server",
-      "admin",
-      "create-user",
-      username,
-      "--name",
-      "Hannah",
-      "--generate",
-    ],
-    { env },
-  );
-  if (made.status !== 0) {
-    console.error(made.stdout + made.stderr);
-    process.exit(1);
-  }
-  const password = /Password \(shown once\): (\S+)/.exec(made.stdout)?.[1];
-  if (!password) {
-    console.error(made.stdout);
-    process.exit(1);
-  }
-  // Kept so `pnpm local:seed` and the tests can sign in. It lives in the git-ignored data folder.
-  writeFileSync(credentialsFile, JSON.stringify({ username, password }), { mode: 0o600 });
-  console.log("\n================================================");
-  console.log(`  First user created. Sign in with:`);
-  console.log(`    username: ${username}`);
-  console.log(`    password: ${password}`);
-  console.log("  This is shown once (it is also in data/local/credentials.json,");
-  console.log("  which is git-ignored). Change it under Settings.");
-  console.log("================================================\n");
-} else {
-  say(
-    `user exists${existsSync(credentialsFile) ? " (credentials in data/local/credentials.json)" : ""}`,
-  );
-}
+// 1. storage and database, and 2. a first user, if there is none
+prepareData(env, say);
 
 // 3. the converter, locked down, against the same data directory
 if (process.env.NOTES_CONVERTER === "0") {

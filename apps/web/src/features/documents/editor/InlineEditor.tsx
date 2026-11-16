@@ -256,6 +256,8 @@ export function InlineEditor(props: InlineEditorProps) {
     content: toDoc(props.value, mode),
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
+    // Tiptap's base styles are in documents.css: the server's policy (style-src 'self') refuses a <style> element.
+    injectCSS: false,
     editorProps: {
       attributes: {
         "aria-label": ariaLabel,
