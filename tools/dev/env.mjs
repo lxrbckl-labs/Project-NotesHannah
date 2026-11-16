@@ -8,8 +8,10 @@ export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 export const localDir = resolve(process.env.NOTES_LOCAL_DIR ?? join(root, "data", "local"));
 export const serverPort = Number(process.env.NOTES_SERVER_PORT ?? 3210);
 export const webPort = Number(process.env.NOTES_WEB_PORT ?? 5273);
-export const appOrigin = `http://localhost:${webPort}`;
-export const serverUrl = `http://localhost:${serverPort}`;
+// NOTES_APP_ORIGIN and NOTES_SERVER_URL point the seeder at another instance (for example a deployed stack, from the
+// machine that runs it: the server on its loopback port, the origin as the public address).
+export const appOrigin = process.env.NOTES_APP_ORIGIN ?? `http://localhost:${webPort}`;
+export const serverUrl = process.env.NOTES_SERVER_URL ?? `http://localhost:${serverPort}`;
 export const storageDir = join(localDir, "storage");
 export const dbPath = join(localDir, "notes.db");
 export const credentialsFile = join(localDir, "credentials.json");
