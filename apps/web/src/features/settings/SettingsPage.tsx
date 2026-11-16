@@ -1,4 +1,4 @@
-import { Bot, ChevronRight, MessageSquarePlus, Trash2 } from "lucide-react";
+import { Bot, ChevronRight, MessageSquarePlus, Palette, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { MOD_KEY } from "../../app/AppShell";
@@ -40,6 +40,14 @@ export function SettingsPage() {
       <div className="grid gap-5">
         <Card title="Appearance" description="Follow your device, or pick light or dark.">
           <ThemeSwitch />
+          <Link
+            to="/design"
+            className="mt-4 flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-bg px-4 hover:border-border-strong"
+          >
+            <Palette size={18} aria-hidden className="text-text-muted" />
+            <span className="flex-1 text-sm font-medium">Design reference</span>
+            <ChevronRight size={16} aria-hidden className="text-text-muted" />
+          </Link>
         </Card>
 
         <Card

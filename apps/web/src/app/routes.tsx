@@ -102,6 +102,13 @@ export const routes: RouteObject[] = [
           { path: "trash", lazy: screens.trash, HydrateFallback: Loading },
           { path: "settings", lazy: screens.settings, HydrateFallback: Loading },
           { path: "activity", lazy: screens.activity, HydrateFallback: Loading },
+          {
+            path: "design",
+            lazy: async () => ({
+              Component: (await import("../features/design/DesignPage")).DesignPage,
+            }),
+            HydrateFallback: Loading,
+          },
           { path: "doc/:nodeId", lazy: doc.page },
           { path: "doc/:nodeId/canvas", lazy: doc.canvas },
           { path: "practice", lazy: practice.practice },
