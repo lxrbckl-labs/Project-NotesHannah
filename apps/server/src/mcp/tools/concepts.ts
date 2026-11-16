@@ -14,6 +14,7 @@ import {
 } from "@notes/schema";
 import { z } from "zod";
 import { AppError } from "../../http/errors.js";
+import { PublishedCitation } from "../citation.js";
 import { exampleId } from "../errors.js";
 import { clip, json } from "../format.js";
 import type { ConceptsToolPort } from "../ports.js";
@@ -65,14 +66,14 @@ const LooseRef = z.record(z.string(), z.unknown());
 const ConceptItem = z.looseObject({
   type: ConceptInput.shape.type,
   name: z.string(),
-  citations: z.array(Citation).optional(),
+  citations: z.array(PublishedCitation).optional(),
   generalKnowledge: z.boolean().optional(),
 });
 const RelationItem = z.looseObject({
   from: LooseRef,
   to: LooseRef,
   type: RelationInput.shape.type,
-  citations: z.array(Citation).optional(),
+  citations: z.array(PublishedCitation).optional(),
   generalKnowledge: z.boolean().optional(),
 });
 
@@ -134,13 +135,6 @@ const CITE = {
   fileId: "The source file.",
   pageId: "The source page.",
   quote: "The supporting passage, copied character for character from that page's transcript.",
-  transcriptId: "Optional.",
-  transcriptRevision: "Optional.",
-  region: "Optional: where on the page.",
-  "region.x": "0 to 1.",
-  "region.y": "0 to 1.",
-  "region.width": "0 to 1.",
-  "region.height": "0 to 1.",
   label: 'Optional chip label, e.g. "Slide 4".',
 };
 const cite = (prefix: string) =>

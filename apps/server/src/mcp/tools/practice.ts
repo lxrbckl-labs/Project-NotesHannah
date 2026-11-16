@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import type { QuestionSummary } from "../../domains/practice/index.js";
 import { AppError } from "../../http/errors.js";
+import { PublishedCitation } from "../citation.js";
 import { exampleId } from "../errors.js";
 import { clip, json } from "../format.js";
 import type { PracticeToolPort } from "../ports.js";
@@ -48,9 +49,9 @@ export function questionLine(q: QuestionSummary): string {
  */
 const PublishedQuestion = z.looseObject({
   type: practice.QuestionType,
-  sources: z.array(Citation).max(10).optional(),
+  sources: z.array(PublishedCitation).max(10).optional(),
   generalKnowledge: z.boolean().optional(),
-  difficulty: z.number().int().min(1).max(5).optional(),
+  difficulty: practice.QuestionDifficulty.optional(),
   tags: z.array(z.string().max(40)).max(20).optional(),
   conceptIds: z.array(ConceptId).max(20).optional(),
 });
@@ -103,17 +104,10 @@ const QUESTION_DESCRIPTIONS: Record<string, string> = {
   "questions[].sources[].fileId": "The source file.",
   "questions[].sources[].pageId": "The source page.",
   "questions[].sources[].quote": "The supporting passage, character for character.",
-  "questions[].sources[].transcriptId": "Optional: the transcript quoted.",
-  "questions[].sources[].transcriptRevision": "Optional: its revision.",
-  "questions[].sources[].region": "Optional: where on the page (fractions of the page).",
-  "questions[].sources[].region.x": "Left edge, 0 to 1.",
-  "questions[].sources[].region.y": "Top edge, 0 to 1.",
-  "questions[].sources[].region.width": "Width, 0 to 1.",
-  "questions[].sources[].region.height": "Height, 0 to 1.",
   "questions[].sources[].label": 'Optional chip label, e.g. "Slide 10".',
   "questions[].generalKnowledge":
     'True when it is not from her notes (labelled "not from your notes").',
-  "questions[].difficulty": "1 (easy) to 5 (hard); default 2.",
+  "questions[].difficulty": "1 (easy), 2 (medium, the default) or 3 (hard).",
   "questions[].tags": 'Short topic tags, e.g. ["dosing"], used for her weak-area figures.',
   "questions[].conceptIds": "Concepts it tests (con_ IDs), used for her weak-area figures.",
 };
@@ -158,16 +152,9 @@ export const practiceQuestions = defineTool({
       "question.sources[].fileId": "The source file.",
       "question.sources[].pageId": "The source page.",
       "question.sources[].quote": "The passage, character for character.",
-      "question.sources[].transcriptId": "Optional.",
-      "question.sources[].transcriptRevision": "Optional.",
-      "question.sources[].region": "Optional.",
-      "question.sources[].region.x": "0 to 1.",
-      "question.sources[].region.y": "0 to 1.",
-      "question.sources[].region.width": "0 to 1.",
-      "question.sources[].region.height": "0 to 1.",
       "question.sources[].label": "Optional.",
       "question.generalKnowledge": "As for questions[].",
-      "question.difficulty": "1 to 5.",
+      "question.difficulty": "1, 2 or 3.",
       "question.tags": "Topic tags.",
       "question.conceptIds": "Concepts it tests.",
     },

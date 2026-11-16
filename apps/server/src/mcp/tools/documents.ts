@@ -17,6 +17,7 @@ import {
 } from "@notes/schema";
 import { z } from "zod";
 import { AppError } from "../../http/errors.js";
+import { CITATION_TEXT, PublishedCitation } from "../citation.js";
 import { exampleId } from "../errors.js";
 import type { WriteSummary } from "../ports.js";
 import { checkQuotes } from "../quotes.js";
@@ -37,7 +38,7 @@ const PublishedBlock = z.object({
   type: BlockType,
   content: z.record(z.string(), z.unknown()).optional(),
   style: BlockStyle.optional(),
-  citations: z.array(Citation).max(20).optional(),
+  citations: z.array(PublishedCitation).max(20).optional(),
   generalKnowledge: z.boolean().optional(),
   flags: z.array(BlockFlag).max(20).optional(),
 });
@@ -48,21 +49,12 @@ const BLOCK_DESCRIPTIONS: Record<string, string> = {
   content:
     'The type-specific fields, e.g. for a paragraph {"text": "…"}; for a heading {"level": 2, "text": "…"}. Text accepts a plain string or rich-text runs.',
   style: 'Optional colours as tokens, e.g. {"background": "yellow"}.',
-  citations:
-    "Where it came from: at least one citation for generated text blocks, unless generalKnowledge is true.",
+  citations: `${CITATION_TEXT} At least one for generated text blocks, unless generalKnowledge is true.`,
   "citations[].fileId": `The source file, e.g. "${exampleId("file")}".`,
   "citations[].pageId": `The source page, e.g. "${exampleId("page")}".`,
   "citations[].quote":
     "The supporting passage, copied character for character from that page's transcript (1 to 1000 characters).",
-  "citations[].transcriptId": "Optional: the transcript the quote was taken from.",
-  "citations[].transcriptRevision": "Optional: that transcript's revision (needs transcriptId).",
-  "citations[].region":
-    'Optional: where on the page, as fractions of the page (0,0 top-left), e.g. {"x":0.1,"y":0.2,"width":0.5,"height":0.1}.',
   "citations[].label": 'Optional short chip label, e.g. "Slide 12".',
-  "citations[].region.x": "Left edge, 0 to 1.",
-  "citations[].region.y": "Top edge, 0 to 1.",
-  "citations[].region.width": "Width, a fraction of the page width.",
-  "citations[].region.height": "Height, a fraction of the page height.",
   "style.color":
     "Text colour token: gray, brown, red, orange, yellow, green, teal, blue, purple or pink.",
   "style.background": "Background colour token (same list as color).",

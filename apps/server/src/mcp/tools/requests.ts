@@ -107,6 +107,24 @@ const BRANCHES = {
 };
 type Action = keyof typeof BRANCHES;
 
+/** As published: each link as one flat object (the six link shapes are checked on the server). */
+const PUBLISHED = {
+  ...BRANCHES,
+  complete: z.strictObject({
+    ...RequestRef,
+    reply: CompleteRequestInput.shape.reply,
+    links: z
+      .array(
+        z.looseObject({
+          type: z.enum(["node", "document", "block", "question", "concept", "source"]),
+          label: z.string().max(200).optional(),
+        }),
+      )
+      .max(50)
+      .optional(),
+  }),
+};
+
 const EXAMPLES: Record<Action, Record<string, unknown>> = {
   list: { action: "list" },
   claim: { action: "claim", requestId: REQ },
@@ -144,7 +162,7 @@ export const requestsTool = defineTool({
   inputSchema: describe(
     flattenActions(
       "action",
-      Object.fromEntries(Object.entries(BRANCHES).map(([k, v]) => [k, jsonOf(v)])),
+      Object.fromEntries(Object.entries(PUBLISHED).map(([k, v]) => [k, jsonOf(v)])),
       '"list" open requests; "claim" one; "complete" it with a reply; "decline" it with a reason; "release" it.',
     ),
     {
@@ -158,14 +176,8 @@ export const requestsTool = defineTool({
       reply:
         "complete: what you did, in a sentence or two, for her to read (shown on the request).",
       links: "complete: what you made or changed, up to 50, so she can open it from the reply.",
-      "links[].type": '"node", "document", "block", "question", "concept" or "source".',
-      "links[].nodeId": "For a node link.",
-      "links[].documentId": "For a document or block link.",
-      "links[].blockId": "For a block link (with its documentId).",
-      "links[].questionId": "For a question link.",
-      "links[].conceptId": "For a concept link.",
-      "links[].fileId": "For a source link.",
-      "links[].pageId": "For a source link: the page, optional.",
+      "links[].type":
+        '"node" (with nodeId), "document" (documentId), "block" (documentId and blockId), "question" (questionId), "concept" (conceptId) or "source" (fileId, pageId?).',
       "links[].label": "Optional short label, e.g. the block's heading.",
       reason: "decline: why it cannot be done, and what she could change.",
     },

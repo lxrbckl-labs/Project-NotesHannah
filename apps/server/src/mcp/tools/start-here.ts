@@ -213,7 +213,7 @@ function practiceGuide(full: boolean): string {
     ].join("\n");
   }
   const lines = [
-    'A question is {"type", the type\'s own fields, "sources" (citations: fileId, pageId, exact quote) or "generalKnowledge": true, "difficulty" 1-5, "tags", "conceptIds"}. Create up to 100 per call under the lectures they belong to; validate first with "validateOnly": true. Agents never take sessions or answer.',
+    'A question is {"type", the type\'s own fields, "sources" (citations: fileId, pageId, exact quote) or "generalKnowledge": true, "difficulty" 1-3, "tags", "conceptIds"}. Create up to 100 per call under the lectures they belong to; validate first with "validateOnly": true. Agents never take sessions or answer.',
   ];
   for (const type of practice.QUESTION_TYPES) {
     const info = practice.QUESTION_REGISTRY[type];
