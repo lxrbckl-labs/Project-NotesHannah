@@ -134,6 +134,7 @@ is `not_found`.
 |---|---|---|
 | `GET /api/files` | `status`, `nodeId`, `inbox=true`, `trashed=true`, `cursor`, `limit` | list of `SourceFile`, newest first |
 | `GET /api/files/:id` | | `{ file: SourceFile }` |
+| `PATCH /api/files/:id` | `{ originalName }` | `{ file }`; changes the display name only (cleaned like an upload name); refused for a trashed file |
 | `POST /api/files/:id/retry` | none | `{ file }` (status `failed` or `uploaded` only) |
 | `POST /api/files/:id/file` | `{ nodeId: NodeId | null }` | `{ file }`; `null` takes it back to the inbox |
 | `POST /api/files/:id/claim` | none | `{ file }` |
@@ -371,7 +372,7 @@ nodeId, revision, actor, requestId, summary }`. Actions:
   (for a delete, everything deleted with it), `nodeId` is the node;
 - files (`objectType: "file"`, or `"page"` with `objectIds: [fileId, pageId]`): `file.uploaded`,
   `file.converted` and `file.failed` (the actor is whoever uploaded the file), `file.retried`,
-  `file.filed`, `file.unfiled` (also when its place went to the trash or was deleted),
+  `file.renamed`, `file.filed`, `file.unfiled` (also when its place went to the trash or was deleted),
   `file.claimed`, `file.released`, `file.trashed`, `file.restored`, `file.deleted`;
   `transcript.saved`, `transcript.restored`, `transcript.reviewed`.
 

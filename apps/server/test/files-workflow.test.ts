@@ -775,3 +775,33 @@ describe("isolation and read-only keys", () => {
     expect((await h.call(h.alice, "GET", `/api/files/${file.id}`)).body.file.trashedAt).toBeNull();
   });
 });
+
+describe("renaming a file", () => {
+  test("changes the display name only, cleaned, and is refused in the trash, for others and with bad input", async () => {
+    const h = harness();
+    const { file } = await h.converted(h.alice);
+    const renamed = await h.call(h.alice, "PATCH", `/api/files/${file.id}`, {
+      originalName: "  Beta/blockers: slides.pptx ",
+    });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.file.originalName).toBe("Beta_blockers_ slides.pptx");
+    expect(renamed.body.file.sha256).toBe(file.sha256);
+    expect((await h.call(h.alice, "GET", `/api/files/${file.id}`)).body.file.originalName).toBe(
+      "Beta_blockers_ slides.pptx",
+    );
+
+    expect(
+      (await h.call(h.alice, "PATCH", `/api/files/${file.id}`, { originalName: " " })).body.error
+        .code,
+    ).toBe("invalid_input");
+    expect(
+      (await h.call(h.bob, "PATCH", `/api/files/${file.id}`, { originalName: "x" })).status,
+    ).toBe(404);
+
+    await h.call(h.alice, "POST", `/api/files/${file.id}/trash`);
+    expect(
+      (await h.call(h.alice, "PATCH", `/api/files/${file.id}`, { originalName: "again.pptx" })).body
+        .error.code,
+    ).toBe("conflict");
+  });
+});
