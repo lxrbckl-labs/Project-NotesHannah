@@ -1,48 +1,81 @@
 #!/usr/bin/env bash
-# Live check of the MCP layer with real agents.
+# Live proof of the MCP layer against the real stack.
 #
-# Starts the real server on a throwaway database and storage directory,
-# creates a user with the admin CLI, signs in and creates a read-write API key
-# the way she would in Settings, then runs a headless Claude Code session (and
-# Codex, when it is logged in) against /mcp with only this server's tools.
-# Transcripts and the server log are kept in the temp directory it prints.
+# Starts the real server on a throwaway database and storage directory, builds
+# (if needed) and starts the REAL converter container against the same storage
+# with the lockdown flags of deploy/docker-compose.converter.yml, creates a user
+# and a write key with the admin CLI, and runs a headless agent (Claude Code
+# and/or Codex) with only this server's tools plus curl and Read, asking it to
+# get two fixture files in, transcribe them, file them and write a cited study
+# guide. Then it checks the result from the database (mcp-live-check.verify.ts).
 #
 # Usage (from apps/server):  scripts/mcp-live-check.sh [claude|codex|both]
-# Env: PORT (default 8790), CLAUDE_MODEL (default haiku), BUDGET_USD (default 1),
-#      PROMPT (default: the orientation task below).
+# Env: PORT (8790), CLAUDE_MODEL (haiku), BUDGET_USD (3), KEEP=1 keeps the temp dir,
+#      CONVERTER_IMAGE (notes-converter:mcp-live; built from deploy/converter.Dockerfile if missing).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-WHICH="${1:-both}"
+SERVER_DIR="$(pwd)"
+REPO="$(cd ../.. && pwd)"
+WHICH="${1:-claude}"
 PORT="${PORT:-8790}"
 BASE="http://127.0.0.1:${PORT}"
-ORIGIN="http://localhost:5173"
+IMAGE="${CONVERTER_IMAGE:-notes-converter:mcp-live}"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/notes-mcp-live.XXXXXX")"
-PROMPT="${PROMPT:-You have been connected to an app you have never seen. Find out what it is, then create a term 'Fall 2026' with a course 'Pharmacology II', add lectures numbered 1 to 3 with plausible titles, then deliberately try to create a document at the top level and report what the app told you.}"
+DECK="$REPO/fixtures/generated/lecture.pptx"
+NOTES="$REPO/fixtures/generated/image-only.pdf"
+CONTAINER="notes-converter-live-$$"
+PROMPT="${PROMPT:-You are connected to an app you have never seen. There is a lecture deck at $DECK and handwritten-style notes at $NOTES. Get them into the app, wait for them to be processed, transcribe every page carefully, file them under a course 'Pharmacology II' in term 'Fall 2026' as lecture 7 'Beta blockers' (use the real topic of the deck if different), and write a study guide document for that lecture with headings, at least one callout and a table, where every content block cites the page it came from. Then tell me what you did and anything the app refused.}"
 
-export NODE_ENV=development DATA_DIR="$TMP/storage" DB_PATH="$TMP/notes.db" PORT APP_ORIGIN="$ORIGIN"
+export NODE_ENV=development DATA_DIR="$TMP/data" DB_PATH="$TMP/notes.db" PORT APP_ORIGIN="$BASE"
 echo "work dir: $TMP"
 
-npx tsx src/cli/admin.ts init-storage --create-dir >/dev/null
-CREATED="$(npx tsx src/cli/admin.ts create-user hannah --name "Hannah" --generate </dev/null)"
-PASSWORD="$(printf '%s\n' "$CREATED" | sed -n 's/^Password (shown once): //p')"
+cleanup() {
+  docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  [[ -n "${SERVER_PID:-}" ]] && kill "$SERVER_PID" 2>/dev/null || true
+  if [[ "${KEEP:-0}" != "1" ]]; then rm -rf "$TMP"; else echo "kept $TMP"; fi
+}
+trap cleanup EXIT
 
+# ---- storage, user, key ---------------------------------------------------------------
+npx tsx src/cli/admin.ts init-storage --create-dir >/dev/null
+npx tsx src/cli/admin.ts create-user hannah --name "Hannah" --generate </dev/null >/dev/null
+NOTES_MCP_KEY="$(npx tsx src/cli/admin.ts create-key hannah --name "live check" --scope write |
+  sed -n 's/^Secret (shown once): //p')"
+export NOTES_MCP_KEY
+
+# ---- the real converter, locked down as in deploy/docker-compose.converter.yml --------------
+# The compose default user 10001:10001. init-storage makes the directories 0700 for this
+# user: Docker Desktop on macOS (virtiofs) does not enforce host ownership, so that works
+# as is (checked 2026-11-15); on Linux set CONVERTER_USER to this user's uid:gid, the
+# documented alternative to a shared group (docs/converter.md, step 7).
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build -f "$REPO/deploy/converter.Dockerfile" -t "$IMAGE" "$REPO"
+fi
+docker run -d --name "$CONTAINER" --init \
+  --network none --read-only --user "${CONVERTER_USER:-10001:10001}" \
+  --cap-drop ALL --security-opt no-new-privileges:true --ipc none \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=1g,mode=1777 \
+  --memory 3g --memory-swap 3g --cpus 2 --pids-limit 256 \
+  --ulimit nofile=1024:1024 --ulimit core=0 --ulimit fsize=2147483648 \
+  -e DATA_DIR=/data \
+  --mount "type=bind,source=$DATA_DIR/originals,target=/data/originals,readonly" \
+  --mount "type=bind,source=$DATA_DIR/pages,target=/data/pages" \
+  --mount "type=bind,source=$DATA_DIR/queue,target=/data/queue" \
+  "$IMAGE" >/dev/null
+
+# ---- the real server (routes, MCP, queue watcher) ---------------------------------------
 npx tsx src/index.ts >"$TMP/server.log" 2>&1 &
 SERVER_PID=$!
-trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-for _ in $(seq 1 50); do
+for _ in $(seq 1 100); do
   curl -fsS "$BASE/healthz" >/dev/null 2>&1 && break
   sleep 0.2
 done
-
-LOGIN_BODY="$(node -e 'console.log(JSON.stringify({username:"hannah",password:process.argv[1]}))' "$PASSWORD")"
-curl -fsS -c "$TMP/cookies" -H "Origin: $ORIGIN" -H 'Content-Type: application/json' \
-  -d "$LOGIN_BODY" "$BASE/api/auth/login" >/dev/null
-NOTES_MCP_KEY="$(curl -fsS -b "$TMP/cookies" -H "Origin: $ORIGIN" -H 'Content-Type: application/json' \
-  -d '{"name":"live check","scope":"write"}' "$BASE/api/keys" |
-  node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).secret))')"
-export NOTES_MCP_KEY
-rm -f "$TMP/cookies"
+for _ in $(seq 1 50); do
+  [[ -f "$DATA_DIR/queue/heartbeat" ]] && break
+  sleep 0.5
+done
+echo "converter heartbeat: $(cat "$DATA_DIR/queue/heartbeat" 2>/dev/null || echo none)"
 
 # The key stays in the environment; the config only references it.
 cat >"$TMP/notes-mcp.json" <<EOF
@@ -52,59 +85,86 @@ EOF
 summarise() {
   node --input-type=module -e '
     import { readFileSync } from "node:fs";
-    const lines = readFileSync(process.argv[1], "utf8").split("\n").filter(Boolean);
-    for (const line of lines) {
+    const clip = (s, n) => String(s).replace(/\s+/g, " ").slice(0, n);
+    for (const line of readFileSync(process.argv[1], "utf8").split("\n").filter(Boolean)) {
       let e; try { e = JSON.parse(line); } catch { continue; }
-      const parts = e.message?.content ?? [];
-      for (const p of Array.isArray(parts) ? parts : []) {
-        if (p.type === "tool_use") console.log(`CALL ${p.name} ${JSON.stringify(p.input)}`);
+      for (const p of Array.isArray(e.message?.content) ? e.message.content : []) {
+        if (p.type === "tool_use") console.log(`CALL ${p.name} ${clip(JSON.stringify(p.input), 300)}`);
         if (p.type === "tool_result") {
-          const text = Array.isArray(p.content) ? p.content.map((c) => c.text ?? `[${c.type}]`).join(" ") : String(p.content);
-          console.log(`  ${p.is_error ? "ERROR" : "ok"}: ${text.replace(/\s+/g, " ").slice(0, 300)}`);
+          const text = Array.isArray(p.content) ? p.content.map((c) => c.text ?? `[${c.type}]`).join(" ") : p.content;
+          console.log(`  ${p.is_error ? "ERROR" : "ok"}: ${clip(text, 300)}`);
         }
-        if (p.type === "text" && e.type === "assistant") console.log(`SAY ${p.text.replace(/\s+/g, " ").slice(0, 400)}`);
       }
-      if (e.type === "result") console.log(`RESULT turns=${e.num_turns} cost=$${e.total_cost_usd} ${String(e.result).replace(/\s+/g, " ").slice(0, 1200)}`);
-      if (e.type === "item.completed" && e.item) {
-        const i = e.item;
-        if (i.type === "mcp_tool_call") console.log(`CALL ${i.tool} ${JSON.stringify(i.arguments)}\n  ${i.status}: ${JSON.stringify(i.result ?? i.error).slice(0, 300)}`);
-        if (i.type === "agent_message") console.log(`SAY ${String(i.text).replace(/\s+/g, " ").slice(0, 1200)}`);
+      if (e.type === "result") console.log(`RESULT turns=${e.num_turns} cost=$${e.total_cost_usd} duration=${Math.round(e.duration_ms / 1000)}s\n${e.result}`);
+      const i = e.item;
+      if (e.type === "item.completed" && i?.type === "mcp_tool_call") {
+        console.log(`CALL ${i.tool} ${clip(JSON.stringify(i.arguments), 300)}`);
+        console.log(`  ${i.status}: ${clip(JSON.stringify(i.result ?? i.error), 300)}`);
       }
+      if (e.type === "item.completed" && i?.type === "command_execution") console.log(`SHELL ${clip(i.command, 200)} -> ${i.exit_code}`);
+      if (e.type === "item.completed" && i?.type === "agent_message") console.log(`SAY ${i.text}`);
       if (e.type === "turn.completed") console.log(`USAGE ${JSON.stringify(e.usage)}`);
     }
   ' "$1"
 }
 
-if [[ "$WHICH" == "claude" || "$WHICH" == "both" ]]; then
+run_claude() {
   echo "== Claude Code (${CLAUDE_MODEL:-haiku})"
-  claude -p --model "${CLAUDE_MODEL:-haiku}" --strict-mcp-config --mcp-config "$TMP/notes-mcp.json" \
-    --allowedTools "mcp__notes" --permission-mode dontAsk \
-    --output-format stream-json --verbose --max-budget-usd "${BUDGET_USD:-1}" \
-    "$PROMPT" </dev/null >"$TMP/claude.jsonl" 2>"$TMP/claude.err" || echo "claude exited $?"
+  (cd "$TMP" && claude -p --model "${CLAUDE_MODEL:-haiku}" --strict-mcp-config --mcp-config "$TMP/notes-mcp.json" \
+    --allowedTools "mcp__notes" "Bash(curl:*)" "Read" --permission-mode dontAsk \
+    --output-format stream-json --verbose --max-budget-usd "${BUDGET_USD:-3}" \
+    "$PROMPT" </dev/null >"$TMP/claude.jsonl" 2>"$TMP/claude.err") || echo "claude exited $?"
   summarise "$TMP/claude.jsonl"
-fi
+}
 
-if [[ "$WHICH" == "codex" || "$WHICH" == "both" ]]; then
-  if command -v codex >/dev/null && codex login status >/dev/null 2>&1; then
-    echo "== Codex"
-    mkdir -p "$TMP/codex-cwd"
-    codex exec --ignore-user-config --ephemeral --skip-git-repo-check --json -s read-only \
-      -C "$TMP/codex-cwd" \
-      -c "mcp_servers.notes.url=\"$BASE/mcp\"" \
-      -c 'mcp_servers.notes.bearer_token_env_var="NOTES_MCP_KEY"' \
-      -c 'mcp_servers.notes.default_tools_approval_mode="approve"' \
-      "$PROMPT" </dev/null >"$TMP/codex.jsonl" 2>"$TMP/codex.err" || echo "codex exited $?"
-    summarise "$TMP/codex.jsonl"
-  else
+run_codex() {
+  if ! command -v codex >/dev/null || ! codex login status >/dev/null 2>&1; then
     echo "== Codex skipped (not installed or not logged in)"
+    return
   fi
-fi
+  echo "== Codex"
+  mkdir -p "$TMP/codex-cwd"
+  codex exec --ignore-user-config --ephemeral --skip-git-repo-check --json \
+    -s workspace-write -c 'sandbox_workspace_write.network_access=true' \
+    -C "$TMP/codex-cwd" --add-dir "$REPO/fixtures/generated" \
+    -c "mcp_servers.notes.url=\"$BASE/mcp\"" \
+    -c 'mcp_servers.notes.bearer_token_env_var="NOTES_MCP_KEY"' \
+    -c 'mcp_servers.notes.default_tools_approval_mode="approve"' \
+    "$PROMPT" </dev/null >"$TMP/codex.jsonl" 2>"$TMP/codex.err" || echo "codex exited $?"
+  summarise "$TMP/codex.jsonl"
+}
 
-echo "== Audit log (what the agents changed)"
-node -e '
-  const Database = require("better-sqlite3");
-  const db = new Database(process.argv[1], { readonly: true });
-  for (const r of db.prepare("SELECT at, tool, action, outcome, target_ids FROM mcp_audit ORDER BY seq").all())
-    console.log(`${r.at} ${r.tool} ${r.action ?? ""} ${r.outcome} ${r.target_ids}`);
-' "$DB_PATH"
-echo "transcripts and server log: $TMP"
+# A tool call by hand, for the smoke mode: JSON-RPC over curl, as any client would send it.
+mcp_call() {
+  curl -fsS "$BASE/mcp" -H "Authorization: Bearer $NOTES_MCP_KEY" -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$1\",\"arguments\":$2}}"
+}
+
+run_smoke() {
+  echo "== Smoke: upload the deck through a link and wait for the real converter"
+  local bytes url id
+  bytes=$(wc -c <"$DECK" | tr -d ' ')
+  url=$(mcp_call request_upload_links "{\"files\":[{\"name\":\"lecture.pptx\",\"bytes\":$bytes}]}" |
+    node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result.structuredContent.tickets[0].url))')
+  id=$(curl -fsS -X PUT --data-binary @"$DECK" "$url" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).file.id))')
+  for _ in 1 2 3 4 5 6; do
+    mcp_call source_files "{\"action\":\"wait\",\"fileIds\":[\"$id\"]}" |
+      node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const m=JSON.parse(s).result.structuredContent.message;console.log(m);process.exit(/All converted|failed/.test(m)?0:1)})' && break
+  done
+}
+
+case "$WHICH" in
+  smoke) run_smoke; exit 0 ;;
+  claude) run_claude ;;
+  codex) run_codex ;;
+  both) run_claude; echo "(a second agent on the same library; see the verify output)"; run_codex ;;
+esac
+
+echo "== Server log (agents, uploads, refusals)"
+grep -E "mcp refused|error|Error" "$TMP/server.log" | head -40 || true
+echo "== Converter log (tail)"
+docker logs "$CONTAINER" 2>&1 | tail -10 || true
+echo "== Verification from the database"
+(cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify.ts hannah) || echo "verification found problems"
+cp "$TMP"/*.jsonl "${LIVE_OUT:-$TMP}/" 2>/dev/null || true
