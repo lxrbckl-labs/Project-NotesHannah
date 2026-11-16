@@ -102,7 +102,7 @@ export function Compare() {
   const canBuild = drugs.length >= 2 && attributes.length > 0;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <Card className="grid gap-4">
         <div>
           <h2 className="font-display text-lg font-semibold">Compare drugs side by side</h2>
@@ -209,7 +209,7 @@ export function Compare() {
       ) : state.status === "error" ? (
         <ErrorState error={state.error} onRetry={build} />
       ) : state.status === "ready" ? (
-        <section aria-label="Comparison" className="grid gap-3">
+        <section aria-label="Comparison" className="grid min-w-0 gap-3">
           <ComparisonTable result={state.result} />
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={() => setComposer(true)}>
@@ -251,7 +251,7 @@ export function Compare() {
 export function ComparisonTable({ result }: { result: ComparisonResult }) {
   return (
     <section
-      className="overflow-x-auto rounded-3xl border border-border bg-surface shadow-card"
+      className="relative max-w-full overflow-x-auto rounded-3xl border border-border bg-surface shadow-card"
       // biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area needs the keyboard
       tabIndex={0}
       aria-label="Comparison table, scrolls sideways"

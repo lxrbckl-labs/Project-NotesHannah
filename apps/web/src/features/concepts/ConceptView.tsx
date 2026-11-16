@@ -95,7 +95,7 @@ function PageBody({ data, reload }: { data: ConceptPage; reload: () => void }) {
             <p className="text-sm text-text-muted">No relations have been filed for this yet.</p>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2" data-testid="relations">
+          <div className="grid items-start gap-4 md:grid-cols-2" data-testid="relations">
             {sections.map((s) => (
               <Card key={s.key} className={cn(s.type === "interacts_with" && "md:col-span-2")}>
                 <h2 className="font-display text-base font-semibold" data-testid="relation-title">

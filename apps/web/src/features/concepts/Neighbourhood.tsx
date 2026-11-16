@@ -5,7 +5,7 @@ import { memo, useMemo, useState } from "react";
 import { ErrorState, Skeleton } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
 import { useLayout } from "../../lib/useMedia";
-import { filterGraph, neighbours, radialLayout } from "./model/graph";
+import { filterGraph, neighbours, radialLayout, treeEdges } from "./model/graph";
 import { EDGE_LABEL, RELATION_FILTER_LABEL, sectionTitle } from "./model/relations";
 import { useConcepts } from "./ui/context";
 import { useAsync } from "./ui/hooks";
@@ -20,8 +20,7 @@ const NODE = { width: 156, height: 48 };
 
 type FlowData = { label: string; type: GraphResult["nodes"][number]["type"]; center: boolean };
 
-const ConceptNode = memo(function ConceptNode({ id, data }: NodeProps<Node<FlowData>>) {
-  const { openConcept } = useConcepts();
+const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<FlowData>>) {
   return (
     <div style={{ width: NODE.width }}>
       <Handle type="target" position={Position.Top} style={HIDDEN} isConnectable={false} />
@@ -31,7 +30,6 @@ const ConceptNode = memo(function ConceptNode({ id, data }: NodeProps<Node<FlowD
         data-testid="graph-node"
         data-center={data.center ? "true" : undefined}
         aria-label={data.center ? `${data.label} (this concept)` : `Open ${data.label}`}
-        onClick={() => !data.center && openConcept(id)}
         className={cn(
           "flex min-h-11 w-full items-center justify-center rounded-2xl border px-2.5 py-1.5 text-center text-[13px] font-medium leading-tight shadow-card",
           TONE_CLASS[toneOf(data.type)],
@@ -205,6 +203,7 @@ function Seg({
 
 function GraphView({ graph }: { graph: GraphResult }) {
   const layout = useLayout();
+  const { openConcept } = useConcepts();
   const { nodes, edges } = useMemo(() => {
     const names = new Map(graph.nodes.map((n) => [n.id, n]));
     const placed = radialLayout(graph, NODE);
@@ -225,7 +224,7 @@ function GraphView({ graph }: { graph: GraphResult }) {
           ]
         : [];
     });
-    const flowEdges = graph.edges.map((e) => ({
+    const flowEdges = [...treeEdges(graph).values()].map((e) => ({
       id: e.id,
       source: e.from,
       target: e.to,
@@ -242,7 +241,7 @@ function GraphView({ graph }: { graph: GraphResult }) {
   return (
     <div
       className="cx-flow overflow-hidden rounded-2xl border border-border bg-bg"
-      style={{ height: layout === "phone" ? 360 : layout === "tablet" ? 440 : 480 }}
+      style={{ height: layout === "phone" ? 420 : layout === "tablet" ? 480 : 500 }}
       data-testid="graph"
     >
       <ReactFlow
@@ -254,6 +253,7 @@ function GraphView({ graph }: { graph: GraphResult }) {
         fitViewOptions={{ padding: 0.12 }}
         minZoom={0.25}
         maxZoom={1.6}
+        onNodeClick={(_, node) => node.id !== graph.center && openConcept(node.id)}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}
