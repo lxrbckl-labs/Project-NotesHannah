@@ -748,7 +748,10 @@ function CanvasInner({
         .finally(() => setFramed(true));
     });
   }, [activeFrame, frames, layout, model.settled, nodes.length, padding, phone]);
-  const shown = model.settled && framed;
+  // A document with nothing in it has no cards to measure or frame: show the empty map at once
+  // instead of waiting for a layout that will never come.
+  const nothingToLayOut = model.status === "ready" && nodes.length === 0;
+  const shown = nothingToLayOut || (model.settled && framed);
 
   // ---- Render ------------------------------------------------------------------
   if (model.status === "error")

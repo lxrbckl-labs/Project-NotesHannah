@@ -159,7 +159,7 @@ function Shell() {
             // measured and clipped by this scrolling area. Without it such an element escaped and made the whole
             // window scroll past the app.
             "dot-grid relative min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
-            layout === "phone" && "px-safe pb-24",
+            layout === "phone" && "px-safe clear-tabbar",
           )}
         >
           <Outlet />

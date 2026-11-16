@@ -558,13 +558,16 @@ h3 {
 }
 
 /*
- * A sticky bar that rests on the phone's tab bar. The main area keeps 6rem of padding under its content
- * so nothing ends up behind the tab bar, and a sticky bar is held above that padding, which left a strip of
- * page showing between the two. This moves the bar down by the difference: the padding less the tab bar's
- * height (3.5rem, its 1px edge, and the home-indicator inset).
+ * The phone's tab bar is fixed over the bottom of the main area, so the main area keeps exactly the tab
+ * bar's height clear under its content: 3.5rem, its 1px edge, and the home-indicator inset. Exactly, not
+ * roughly: a screen that fills the pane (the canvas) or a sticky bar (Practice's Start) then ends on the
+ * tab bar, with no strip of page showing between them. Pages add their own breathing room above it.
  */
-.above-tabbar {
-  bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom) - 6rem);
+:root {
+  --tabbar-h: calc(3.5rem + 1px + env(safe-area-inset-bottom));
+}
+.clear-tabbar {
+  padding-bottom: var(--tabbar-h);
 }
 
 /* The faint dotted grid motif. */

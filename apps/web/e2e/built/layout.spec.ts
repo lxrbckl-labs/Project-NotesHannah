@@ -138,3 +138,50 @@ test.describe("practice start bar", () => {
     });
   }
 });
+
+test.describe("canvas on a phone", () => {
+  const phone = { width: 390, height: 844 };
+
+  test("a canvas with cards finishes opening", async ({ page }) => {
+    await page.setViewportSize(phone);
+    await signInBuilt(page);
+    await page.goto(`/doc/${ids().docNodeId}/canvas`);
+    await expect(page.getByTestId("canvas-view")).toHaveAttribute("data-ready", "true", {
+      timeout: 15_000,
+    });
+    await expect(page.getByText("Opening the canvas…")).toHaveCount(0);
+  });
+
+  test("a document with nothing in it opens an empty canvas instead of waiting forever", async ({
+    page,
+  }) => {
+    await page.setViewportSize(phone);
+    await signInBuilt(page);
+    const created = await page.request.post("/api/nodes", {
+      headers: { Origin: new URL(page.url()).origin, "Content-Type": "application/json" },
+      data: { parentId: ids().lectureId, kind: "document", name: `Empty ${Date.now()}` },
+    });
+    expect(created.status()).toBeLessThan(300);
+    const { node } = (await created.json()) as { node: { id: string } };
+    await page.goto(`/doc/${node.id}/canvas`);
+    await expect(page.getByTestId("canvas-view")).toBeVisible();
+    await expect(page.getByText("Opening the canvas…")).toHaveCount(0, { timeout: 10_000 });
+  });
+
+  test("the canvas toolbar rests on the tab bar", async ({ page }) => {
+    await page.setViewportSize(phone);
+    await signInBuilt(page);
+    await page.goto(`/doc/${ids().docNodeId}/canvas`);
+    const toolbar = page.getByTestId("canvas-toolbar");
+    await expect(toolbar).toBeVisible();
+    const gap = await page.evaluate(() => {
+      const view = document.querySelector('[data-testid="canvas-view"]');
+      const tabs = document.querySelector('[data-testid="tab-bar"]');
+      if (!view || !tabs) return null;
+      // The canvas pane must end where the tab bar begins: no strip of page between them.
+      return Math.round(tabs.getBoundingClientRect().top - view.getBoundingClientRect().bottom);
+    });
+    expect(gap).not.toBeNull();
+    expect(Math.abs(gap ?? 99)).toBeLessThanOrEqual(1);
+  });
+});

@@ -280,8 +280,8 @@ export function Start({
 
       {problem && <Notice tone="danger">{problem}</Notice>}
 
-      {/* Rests on the tab bar (above-tabbar in styles.css); from tablet up it is an ordinary button row. */}
-      <div className="above-tabbar sticky -mx-4 border-t border-border bg-bg/95 px-4 pb-3 pt-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+      {/* Rests on the tab bar (the main area clears exactly its height); from tablet up an ordinary button row. */}
+      <div className="sticky bottom-0 -mx-4 border-t border-border bg-bg/95 px-4 pb-3 pt-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <Button
           variant="primary"
           size="lg"
