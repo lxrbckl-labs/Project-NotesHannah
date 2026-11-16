@@ -179,6 +179,10 @@ export function LibraryHome() {
                 <Plus size={16} aria-hidden />
                 <span className="hidden lg:inline">New term</span>
               </Button>
+              {/* Icon only at every size (Alex, 2026-11-16): the trash is a place she visits, not an action on the tree. */}
+              <Link to="/trash" aria-label="Trash" className={buttonClass()}>
+                <Trash2 size={16} aria-hidden />
+              </Link>
             </div>
           }
         >
@@ -245,15 +249,8 @@ export function LibraryHome() {
           </Badge>
         ) : null}
       </Link>
-      <Link
-        to="/references"
-        data-testid="home-references-link"
-        className={buttonClass({ className: "mr-2" })}
-      >
+      <Link to="/references" data-testid="home-references-link" className={buttonClass()}>
         <BookMarked size={16} aria-hidden /> References
-      </Link>
-      <Link to="/trash" className={buttonClass()}>
-        <Trash2 size={16} aria-hidden /> Trash
       </Link>
     </Page>
   );
