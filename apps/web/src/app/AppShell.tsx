@@ -155,7 +155,10 @@ function Shell() {
           id="main"
           tabIndex={-1}
           className={cn(
-            "dot-grid min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
+            // `relative`: anything positioned inside a page (a hidden table for screen readers, a popover) is then
+            // measured and clipped by this scrolling area. Without it such an element escaped and made the whole
+            // window scroll past the app.
+            "dot-grid relative min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
             layout === "phone" && "px-safe pb-24",
           )}
         >

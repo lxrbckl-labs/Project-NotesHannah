@@ -61,6 +61,10 @@ const screens: Screen[] = [
     ready: (p) => p.getByTestId("canvas-view"),
   },
   { pattern: "practice", at: () => "/practice", ready: h1("Practice") },
+  // The other Practice views: each has its own charts and lists.
+  { pattern: "practice", at: () => "/practice?view=cards", ready: anyH1 },
+  { pattern: "practice", at: () => "/practice?view=notebook", ready: anyH1 },
+  { pattern: "practice", at: () => "/practice?view=weak", ready: anyH1 },
   {
     pattern: "practice/session/:id",
     at: (i) => `/practice/session/${i.sessionId}`,
@@ -123,6 +127,14 @@ test.describe("signed in", () => {
         await expect(screen.ready(page), address).toBeVisible();
         await settle(page);
         seen.assertClean(address);
+        // The app fills the window and scrolls inside itself. If the window itself can scroll, something
+        // has escaped the page area, and on a phone she can drag the whole app up past its edge.
+        const spill = await page.evaluate(() => ({
+          down: document.documentElement.scrollHeight - window.innerHeight,
+          across: document.documentElement.scrollWidth - window.innerWidth,
+        }));
+        expect(spill.down, `${address}: the window scrolls down`).toBeLessThanOrEqual(1);
+        expect(spill.across, `${address}: the window scrolls sideways`).toBeLessThanOrEqual(1);
       });
     }
   });
