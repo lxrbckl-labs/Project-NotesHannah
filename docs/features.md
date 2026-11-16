@@ -181,3 +181,10 @@ Added 2026-11-15.
 3. **Practice:** G1 to G8.
 4. **Canvas and concepts:** E1 to E6, F.
 5. **Before she gets it:** I, J3, J4, J6, H11.
+
+## N. User guide
+
+Added 2026-11-16.
+
+- **N1** A guide page at `/help` ("Guide"), written for her: what the app is, finals planning with assistants, every screen in plain words, a "what makes this different" band and a list of current limits. Reached from the sidebar and from Settings (the phone's tab bar is full).
+- **N2** The same guide as a PDF at `/guide/notes-guide.pdf`, linked by a Download PDF button on the page, and a print layout so the browser's Print is clean too. The words live in `apps/web/src/features/help/content.ts`; `pnpm guide:pdf` regenerates the file.

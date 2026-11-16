@@ -56,6 +56,7 @@ const screens = {
     import("../features/settings/SettingsPage").then((m) => ({ Component: m.SettingsPage })),
   activity: () =>
     import("../features/activity/ActivityPage").then((m) => ({ Component: m.ActivityPage })),
+  help: () => import("../features/help/GuidePage").then((m) => ({ Component: m.GuidePage })),
   designBits: () =>
     import("../features/design-bits/DesignBitsPage").then((m) => ({
       Component: m.DesignBitsPage,
@@ -90,6 +91,12 @@ const practice: Record<"practice" | "exams" | "session", RouteObject["lazy"]> = 
 
 export const routes: RouteObject[] = [
   { path: "/login", element: <LoginPage /> },
+  // The guide on its own, for the PDF script: no sign-in and no app shell. It holds no personal data.
+  {
+    path: "/help/print",
+    HydrateFallback: Loading,
+    lazy: () => import("../features/help/GuidePage").then((m) => ({ Component: m.GuidePrintPage })),
+  },
   {
     element: <AuthGate />,
     HydrateFallback: Loading,
@@ -105,6 +112,7 @@ export const routes: RouteObject[] = [
           { path: "inbox", lazy: screens.inbox, HydrateFallback: Loading },
           { path: "trash", lazy: screens.trash, HydrateFallback: Loading },
           { path: "settings", lazy: screens.settings, HydrateFallback: Loading },
+          { path: "help", lazy: screens.help, HydrateFallback: Loading },
           { path: "activity", lazy: screens.activity, HydrateFallback: Loading },
           { path: "design/bits", lazy: screens.designBits, HydrateFallback: Loading },
           {

@@ -16,6 +16,7 @@
     "typecheck": "pnpm build:schema && pnpm -r typecheck",
     "build:schema": "pnpm --filter @notes/schema build",
     "e2e": "pnpm --filter @notes/web e2e",
+    "guide:pdf": "node tools/guide-pdf.mjs",
     "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "local": "node tools/dev/local.mjs",
     "local:reset": "node tools/dev/reset.mjs",

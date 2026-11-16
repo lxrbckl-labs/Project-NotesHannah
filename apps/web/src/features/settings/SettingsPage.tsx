@@ -1,4 +1,12 @@
-import { Bot, ChevronRight, MessageSquarePlus, Palette, Settings, Trash2 } from "lucide-react";
+import {
+  Bot,
+  ChevronRight,
+  LifeBuoy,
+  MessageSquarePlus,
+  Palette,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { MOD_KEY } from "../../app/AppShell";
@@ -76,6 +84,9 @@ export function SettingsPage() {
 
         <SettingsCard title="Library">
           <div className="grid gap-2">
+            <LinkRow to="/help" icon={<LifeBuoy size={18} />}>
+              Guide
+            </LinkRow>
             <LinkRow to="/requests" icon={<MessageSquarePlus size={18} />}>
               Requests
             </LinkRow>
