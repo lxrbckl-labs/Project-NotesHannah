@@ -161,7 +161,9 @@ so anything the screen can do, an agent can do.
 
 `apps/server/src/services.ts` builds one instance of each domain service and wires them
 together; the web routes, the queue watcher and the MCP layer all take that `Services` object
-(`library`, `files`, `documents`, `changes`, `activity`, `search`, `sources`).
+(`library`, `files`, `documents`, `practice`, `exams`, `requests`, `concepts`, `changes`,
+`activity`, `search`, `sources`, plus the narrow `practicePort`, `conceptsPort` and `requestsPort`
+the MCP layer calls).
 
 - The domains do not import each other's code. They meet through small ports passed in at
   composition: the library takes a listener (`trashed`, `restored`, `deleted`, `duplicated`)

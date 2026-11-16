@@ -57,9 +57,9 @@ const TYPE_WORDS: Record<string, string> = {
   calculation: "calculation",
   case: "case",
   flashcard: "flashcard",
-  fill_in_the_blank: "fill-in-the-blank",
+  fill_blank: "fill-in-the-blank",
   matching: "matching",
-  short_answer: "short answer",
+  free_response: "free-response",
 };
 const typeWords = (type: string) => TYPE_WORDS[type] ?? type.replaceAll("_", " ");
 const snip = (text: string, max = 70) => {

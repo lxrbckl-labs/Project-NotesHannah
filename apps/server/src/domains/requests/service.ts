@@ -302,7 +302,8 @@ export function createRequestsService(
   /** "a fix request on "Beta blockers"": a request in plain words. */
   function words(r: Row): string {
     const name = contextOf(r.user_id, targetOf(r)).name;
-    return `a ${r.kind.replaceAll("_", " ")} request${name ? ` on "${name}"` : ""}`;
+    const kind = r.kind.replaceAll("_", " ");
+    return `${/^[aeiou]/i.test(kind) ? "an" : "a"} ${kind} request${name ? ` on "${name}"` : ""}`;
   }
 
   // ---- her side --------------------------------------------------------------------

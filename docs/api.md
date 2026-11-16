@@ -85,6 +85,23 @@ Trashing, restoring, deleting and duplicating a node carry through to what hangs
   came back from the trash they are filed there again, unless they were filed somewhere
   else in the meantime. After a permanent delete they simply stay in the inbox.
 
+- **Questions** filed under the node or anything under it are hidden (they answer `not_found`,
+  leave every list, session pool, notebook, due list, concept page and search) and return with
+  their schedule and history on restore. Questions filed under a node that is deleted for good
+  lose that home, and a question left with no home is deleted; **her attempts are never deleted**
+  (they stay as history, and the notebook and weak areas ignore attempts on questions that are
+  gone). Duplicating a node copies its questions (new IDs, a fresh schedule and no history).
+- **Exams** of a course in the trash are hidden and return with it; an exam's coverage counts only
+  material that is not in the trash, so trashing a covered lecture takes its questions out of the
+  exam's progress until it is restored. Deleting a course for good deletes its exams; duplicating
+  a course copies its exams onto the copy, covering the copied lectures.
+- **Requests** on a trashed node, or on a document, block or question under it, are hidden until
+  it is restored; when it is deleted for good they are closed (see Requests).
+
+Source files going to the trash or coming back hide and show the requests on them; deleting one
+for good closes the open requests on it and notes the concepts that cited it in the change
+feed (`concept.source_deleted`; citations keep their quote).
+
 All of this happens in the same transaction as the library change.
 
 ## Files, pages and inbox
@@ -240,7 +257,7 @@ It covers the current revision of each page of live files; [Search](#search) tur
 
 ## Search
 
-`GET /api/search?q=beta&kinds=node,page&limit=20` finds things in three places at once and
+`GET /api/search?q=beta&kinds=node,page&limit=20` finds things in five places at once and
 returns `{ items: SearchHit[], nextCursor }` (`SearchHit` is in `@notes/schema`):
 
 | `kind` | Matches | Fields |
@@ -248,19 +265,25 @@ returns `{ items: SearchHit[], nextCursor }` (`SearchHit` is in `@notes/schema`)
 | `node` | the **name** of a library item (sections excluded) | `node: NodeWithLinks`, `snippet` |
 | `page` | the **current transcript** of a page of a live file | `pageId`, `pageIndex` (1-based), `fileId`, `fileName`, `nodeId` (null while in the inbox), `transcriptId`, `snippet` |
 | `block` | the **text of a block** of a live document | `documentId`, `nodeId`, `documentTitle`, `blockId`, `blockType`, `snippet` |
+| `question` | the **prompt text** of a practice question she can see | `questionId`, `questionType`, `nodeId` (where she finds it), `snippet` |
+| `concept` | a concept's **name, alias, generic or brand name** | `conceptId`, `name`, `conceptType`, `genericName`, `snippet` |
 
-- `kinds` is a comma-separated subset of `node,page,block`; leave it out for all three. An
+- `kinds` is a comma-separated subset of `node,concept,block,question,page`; leave it out for all five. An
   unknown or empty list is `invalid_input`. `limit` is 1 to 100 (default 50).
 - **Words** are matched as prefixes, all of them, case and accents ignored.
 - **Ranking.** Each kind is ranked by the full-text engine on its own; the lists are merged by
   reciprocal rank: a hit at position `r` of its kind scores `weight / (3 + r)`, with weights
-  node 1.5, block 1, page 0.9. So the best name match comes first, then the best block and
-  the best page, then the next name matches, and so on; a name match outranks a block, which
-  outranks a raw transcript page. Within a kind the engine's order stands.
+  node 1.5, concept 1.3, block 1, question 0.95, page 0.9. So the best name match comes first,
+  then the best concept, block, question and page in that order, then the next name matches,
+  and so on; a name outranks a concept (a thing she studies, found by name), which outranks
+  curated study material, which outranks a raw transcript page. Within a kind the engine's
+  order stands (concepts: exact name, then name prefix, then alias).
 - **One cursor.** `nextCursor` is opaque and covers all kinds; pass it back unchanged with the
   same `q` and `kinds`. Pages never repeat or skip a hit while nothing changes.
 - **Trash.** Trashed library items, documents in the trash (including those under a trashed
-  node) and pages of files in the trash are not found, and are found again after a restore.
+  node), questions in the trash or filed only under trashed nodes, and pages of files in the
+  trash are not found, and are found again after a restore. Concepts are not part of the
+  library tree and are always found.
   A file taken back to the inbox because its place was trashed is still found, with
   `nodeId: null`.
 - Everything is scoped to the caller.
@@ -311,11 +334,15 @@ A document whose library node is in the trash is `not_found` too, and returns on
   writes are also checked against her library: the page must exist, must not be trashed, and
   the quote must occur character for character in its current transcript.
 - **Edit protection.** An agent may not replace, patch or delete a block she wrote, edited or
-  reviewed unless the call carries a `requestId` (accepted and recorded; the request itself
-  is validated later). Refusal is `forbidden`; the message names the blocks and why, the hint
-  says to pass `requestId`, and nothing is written. A delete naming several blocks is refused
+  reviewed unless the call carries a `requestId` that the requests domain verifies: the request
+  must be in progress, its claim not run out, claimed by **the calling API key**, and about this
+  document or this very block (a request on one block never covers another block; requests on a
+  node, source, question or the library cover nothing). Anything else is `forbidden` with a
+  message that says what a request must be, naming the blocks it did not cover; the hint says to
+  pass `requestId`, and nothing is written. A delete naming several blocks is refused
   whole. Regeneration instead keeps those blocks and reports them in `skipped` with reason
-  `user_edited` or `reviewed`. Moving a block is allowed. An agent restoring a revision is
+  `user_edited` or `reviewed`; with a `requestId` it replaces the protected blocks the request
+  covers and keeps (and reports) the others, and it is refused when it covers none of them. Moving a block is allowed. An agent restoring a revision is
   refused when it would change or remove one of her blocks.
 - **Concurrency.** Per document: every write may carry `expectedRevision`. A stale one is
   `409 conflict` with the current revision in the message and `example: { expectedRevision }`;
@@ -373,7 +400,17 @@ nodeId, revision, actor, requestId, summary }`. Actions:
   `file.converted` and `file.failed` (the actor is whoever uploaded the file), `file.retried`,
   `file.filed`, `file.unfiled` (also when its place went to the trash or was deleted),
   `file.claimed`, `file.released`, `file.trashed`, `file.restored`, `file.deleted`;
-  `transcript.saved`, `transcript.restored`, `transcript.reviewed`.
+  `transcript.saved`, `transcript.restored`, `transcript.reviewed`;
+- practice (`objectType: "question"`): `question.created` (one entry per call, `objectIds` all the
+  questions), `question.updated`, `question.trashed`, `question.restored`, `question.deleted`;
+- exams (`objectType: "exam"`): `exam.created`, `exam.updated`, `exam.deleted`;
+- concepts (`objectType: "concept"`): `concept.bulk_upserted` (one entry for a whole bulk call, with
+  the counts in the summary), `concept.created`, `concept.updated`, `concept.related`,
+  `concept.merged`, `concept.deleted`, `concept.source_deleted`;
+- requests (`objectType: "request"`, `requestId` set): `request.created`, `request.edited`,
+  `request.cancelled`, `request.reopened`, `request.claim`, `request.release`,
+  `request.complete`, `request.decline`. A document change made by an agent through a request
+  carries that `requestId` too.
 
 All of them land in the same feed, in commit order, for the user whose data it is.
 
@@ -396,6 +433,13 @@ blockers`, `Uploaded beta-blockers.pptx`, `Transcribed page 3 of beta-blockers.p
 the `node`, `file` and `page`. `objectId` filters on any of those IDs. Conversion results
 (done by the converter, not an agent) and the knock-on effects of trashing a node are in the
 change feed only.
+
+Questions, exams, concepts and requests log the same way (the change feed's codes as `action`):
+`Wrote 4 practice questions (2 multiple choice, 1 fill-in-the-blank, 1 flashcard) for lecture
+07 · Beta blockers`, `Updated the concept map: 3 concepts added, 0 updated, 1 relation added, 0
+updated` (one entry per bulk call), `Added the exam "Exam 2" on 2026-12-14 for course Pharmacology
+II, covering 1 item`, `Claimed a wrong request on "Beta blockers"`, `Answered a wrong request on
+"Beta blockers": <the reply>`, `Declined an expand request on "Beta blockers": <the reason>`.
 (`insert_blocks`, `replace_generated`, ...) or `batch`; `summary` is plain words such as
 `Beta blockers: Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone`; `links` point at
 the document (with its library `nodeId`), up to 15 of the blocks, and the request when one
