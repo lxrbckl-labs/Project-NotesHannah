@@ -15,9 +15,11 @@ her real lecture material. Nothing has been through a pull request; work was mer
 locally and pushed to `main` at checkpoints.
 
 Local gate (`pnpm gate`): lint, type checks, 2,273 unit and integration tests, build.
-Browser tests run separately at phone, tablet and computer sizes: 450 against a mock and
-81 against the real server. One fails, and failed before the design pass: dragging a card
-into a frame on the canvas at tablet and computer sizes (see Known gaps).
+Browser tests run separately at phone, tablet and computer sizes, in three suites: against a mock,
+against the real server, and against the built app as it is deployed (`pnpm e2e:built`). `pnpm gate:full`
+runs the gate and all three; `pnpm smoke <address>` checks a live site after a redeploy. The long-failing
+canvas drag test was a fault in the test (it dragged between points off screen) and passes since 2026-11-16.
+On Beta blockers in the demo set, the "Which one" and "Safety" frames overlap each other because of pinned cards.
 
 ## Built
 
