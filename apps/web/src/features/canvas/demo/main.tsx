@@ -2,6 +2,7 @@ import { type Block, blockPlainText, stampNewBlock, validateBlockInput } from "@
 import { StrictMode, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "../../../app/styles.css";
+import { Button, IconButton } from "../../../components/ui/button";
 import { CanvasView } from "../CanvasView";
 import { makeFixture } from "../layout/fixtures";
 import { MemoryCanvasStore, type MemoryDocument } from "../store/memory-store";
@@ -64,11 +65,9 @@ function ThemeToggle() {
       : matchMedia("(prefers-color-scheme: dark)").matches,
   );
   return (
-    <button
-      type="button"
-      className="nc-btn"
-      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-      title="Theme"
+    <IconButton
+      label={dark ? "Switch to light theme" : "Switch to dark theme"}
+      className="nc-tool"
       data-testid="theme-toggle"
       onClick={() => {
         const next = dark ? "light" : "dark";
@@ -82,7 +81,7 @@ function ThemeToggle() {
       }}
     >
       <Icon name={dark ? "sun" : "moon"} />
-    </button>
+    </IconButton>
   );
 }
 
@@ -96,9 +95,7 @@ function Demo() {
       <main style={{ padding: 24 }} data-testid="page-view">
         <h1>{document_.title}</h1>
         <p>The page view lives in the documents feature.</p>
-        <button type="button" className="nc-btn" onClick={() => setPage(false)}>
-          Back to canvas
-        </button>
+        <Button onClick={() => setPage(false)}>Back to canvas</Button>
       </main>
     );
   return (
@@ -126,20 +123,18 @@ function Demo() {
             background: "var(--color-surface)",
             color: "var(--color-text)",
             border: "1px solid var(--color-border)",
-            borderRadius: 16,
+            borderRadius: "var(--radius-card)",
             padding: "12px 16px",
             maxWidth: "min(520px, calc(100vw - 32px))",
-            boxShadow: "0 8px 30px rgb(0 0 0 / 0.18)",
-            zIndex: 100,
+            boxShadow: "var(--shadow-pop)",
+            zIndex: "var(--z-toast)",
           }}
         >
           <strong>Would open in the page view</strong>
           <p style={{ margin: "6px 0 10px", color: "var(--color-text-muted)" }}>
             {block ? blockPlainText(block).slice(0, 160) : opened}
           </p>
-          <button type="button" onClick={() => setOpened(null)} style={{ minHeight: 44 }}>
-            Close
-          </button>
+          <Button onClick={() => setOpened(null)}>Close</Button>
         </div>
       )}
     </div>

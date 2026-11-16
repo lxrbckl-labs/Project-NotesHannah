@@ -1,13 +1,13 @@
 /* biome-ignore-all lint/suspicious/noArrayIndexKey: block content is a static snapshot; position is its identity */
 import {
   type Block,
-  CALLOUT_DEFAULT_COLORS,
   type CitedText,
   type Inline,
   type MindMapNode,
   richTextToPlain,
 } from "@notes/schema";
 import { memo, type ReactNode } from "react";
+import { CALLOUT_HUE } from "../../../lib/roles";
 
 /**
  * The canvas's own block renderer, used until the documents feature passes
@@ -42,7 +42,7 @@ function RichText({ value }: { value: readonly Inline[] }) {
           node = (
             <mark
               className="nc-mark-highlight"
-              data-tint={item.highlight}
+              data-hue={item.highlight}
               style={{ color: "inherit" }}
             >
               {node}
@@ -58,7 +58,7 @@ const cited = (value: CitedText | undefined) => (value ? richTextToPlain(value.t
 
 function Chips({ items, tint, max = 6 }: { items: CitedText[]; tint?: string; max?: number }) {
   return (
-    <div className="nc-chips" data-tint={tint}>
+    <div className="nc-chips" data-hue={tint}>
       {items.slice(0, max).map((item, i) => (
         <span key={`${i}-${cited(item)}`} className="nc-chip">
           {cited(item)}
@@ -150,13 +150,13 @@ export const FallbackBlock = memo(function FallbackBlock({ block }: { block: Blo
       return (
         <hr
           className="nc-block"
-          style={{ border: 0, borderTop: "1px solid var(--nc-card-border)" }}
+          style={{ border: 0, borderTop: "1px solid var(--color-border)" }}
         />
       );
     case "callout": {
-      const tint = block.style?.color ?? CALLOUT_DEFAULT_COLORS[block.content.kind];
+      const hue = block.style?.color ?? CALLOUT_HUE[block.content.kind];
       return (
-        <div className="nc-block nc-callout" data-tint={tint}>
+        <div className="nc-block nc-callout" data-hue={hue}>
           <div className="nc-callout-title">
             <span aria-hidden="true">{CALLOUT_ICON[block.content.kind]}</span>
             <span>
@@ -235,9 +235,7 @@ export const FallbackBlock = memo(function FallbackBlock({ block }: { block: Blo
         <div className="nc-block">
           <div className="nc-drug-name">{c.name}</div>
           {c.brandNames.length > 0 && (
-            <div className="nc-muted" style={{ fontSize: 13 }}>
-              {c.brandNames.join(", ")}
-            </div>
+            <div className="nc-muted text-label">{c.brandNames.join(", ")}</div>
           )}
           {c.drugClass && <div className="nc-drug-class">{cited(c.drugClass)}</div>}
           {c.mechanism && <p style={{ marginTop: 6 }}>{cited(c.mechanism)}</p>}
@@ -286,8 +284,8 @@ export const FallbackBlock = memo(function FallbackBlock({ block }: { block: Blo
           className="nc-block"
           style={{
             aspectRatio: "16 / 10",
-            borderRadius: 10,
-            background: "var(--nc-chrome-hover)",
+            borderRadius: "var(--radius-control)",
+            background: "var(--color-surface-muted)",
             display: "grid",
             placeItems: "center",
             padding: 12,

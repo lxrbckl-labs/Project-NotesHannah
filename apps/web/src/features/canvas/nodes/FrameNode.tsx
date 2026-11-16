@@ -18,7 +18,7 @@ function FrameNodeView({ id, data }: NodeProps<FrameNodeType>) {
     >
       <div
         className={classes.join(" ")}
-        data-tint={frame.color}
+        data-hue={frame.color}
         data-testid="canvas-frame"
         data-frame-id={id}
       >
@@ -31,12 +31,12 @@ function FrameNodeView({ id, data }: NodeProps<FrameNodeType>) {
           }}
         >
           <span className="nc-frame-step">
-            <span className="nc-sr">Step </span>
+            <span className="sr-only">Step </span>
             {step}
           </span>
           {editing ? (
             <input
-              className="nodrag nopan"
+              className="nc-frame-input nodrag nopan"
               aria-label="Frame title"
               // biome-ignore lint/a11y/noAutofocus: renaming starts with the field focused
               autoFocus
@@ -56,23 +56,13 @@ function FrameNodeView({ id, data }: NodeProps<FrameNodeType>) {
                   setEditing(false);
                 }
               }}
-              style={{
-                font: "inherit",
-                fontWeight: 650,
-                height: 30,
-                borderRadius: 8,
-                border: "1px solid var(--nc-select)",
-                padding: "0 8px",
-                background: "var(--nc-card)",
-                color: "inherit",
-              }}
             />
           ) : (
             <span className="nc-frame-title">{frame.title}</span>
           )}
           <span className="nc-count">
             {count}
-            <span className="nc-sr"> cards</span>
+            <span className="sr-only"> cards</span>
           </span>
         </div>
       </div>

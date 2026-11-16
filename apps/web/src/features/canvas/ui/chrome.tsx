@@ -1,5 +1,4 @@
 import {
-  COLOR_TOKENS,
   CONNECTOR_DIRECTIONS,
   CONNECTOR_KINDS,
   type ColorToken,
@@ -14,9 +13,16 @@ import {
 } from "@notes/schema";
 import { useStore } from "@xyflow/react";
 import { useEffect, useState } from "react";
+import { Chip } from "../../../components/ui/badge";
+import { inputClass } from "../../../components/ui/field";
+import { HuePicker } from "../../../components/ui/hue-picker";
+import { Popover } from "../../../components/ui/popover";
+import { SegmentedControl, segmentItemClass } from "../../../components/ui/segmented";
+import { cn } from "../../../lib/cn";
+import { CONNECTOR_HUE } from "../../../lib/roles";
 import { StickerArt, stickerLabel } from "../stickers/Stickers";
 import type { IconName } from "./icons";
-import { IconButton, Popover } from "./primitives";
+import { ToolButton, useCanvasPortal } from "./primitives";
 
 export const KIND_LABEL: Record<ConnectorKind, string> = {
   leads_to: "leads to",
@@ -37,7 +43,7 @@ const DIRECTION_ICON: Record<ConnectorDirection, string> = {
 export function ZoomLabel() {
   const zoom = useStore((s) => Math.round(s.transform[2] * 100));
   return (
-    <span className="nc-btn nc-zoom-label" aria-live="off" data-testid="zoom-label">
+    <span className="nc-zoom-label" aria-live="off" data-testid="zoom-label">
       {zoom}%
     </span>
   );
@@ -51,14 +57,23 @@ export function StickerPicker({
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const container = useCanvasPortal();
   return (
-    <Popover label="Stickers" open={open} onOpenChange={setOpen} trigger={trigger}>
+    <Popover
+      label="Stickers"
+      open={open}
+      onOpenChange={setOpen}
+      trigger={trigger}
+      side="top"
+      container={container}
+      focusOnOpen={false}
+    >
       <div className="nc-sticker-grid">
         {STICKERS.map((s) => (
           <button
             key={s}
             type="button"
-            className="nc-btn"
+            className="flex size-14 items-center justify-center rounded-control transition-colors duration-(--duration-instant) hover:bg-surface-muted"
             aria-label={`Add ${stickerLabel(s)} sticker`}
             onClick={() => {
               onPick(s);
@@ -73,41 +88,23 @@ export function StickerPicker({
   );
 }
 
+/** The colour of a card or frame: the shared HuePicker in a popover. */
 export function ColorPicker({
+  label,
   value,
   onPick,
   trigger,
 }: {
+  /** The picker's accessible name, e.g. "Card colour". */
+  label: string;
   value: ColorToken | undefined;
   onPick: (c: ColorToken | null) => void;
   trigger: React.ReactNode;
 }) {
+  const container = useCanvasPortal();
   return (
-    <Popover label="Colour" trigger={trigger}>
-      <div className="nc-seg" style={{ maxWidth: 220 }}>
-        <button
-          type="button"
-          className="nc-btn"
-          aria-label="No colour"
-          aria-pressed={!value}
-          onClick={() => onPick(null)}
-        >
-          <span className="nc-swatch nc-swatch-none" />
-        </button>
-        {COLOR_TOKENS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            className="nc-btn"
-            aria-label={`${c} colour`}
-            aria-pressed={value === c}
-            onClick={() => onPick(c)}
-            data-tint={c}
-          >
-            <span className="nc-swatch" />
-          </button>
-        ))}
-      </div>
+    <Popover label="Colour" trigger={trigger} side="top" container={container} focusOnOpen={false}>
+      <HuePicker label={label} value={value ?? null} onChange={onPick} className="max-w-60" />
     </Popover>
   );
 }
@@ -147,6 +144,7 @@ export function ConnectorEditor({
       <div className="nc-editor-row">
         <input
           type="text"
+          className={cn(inputClass, "min-w-0 flex-1")}
           aria-label="Connector label"
           placeholder="Label, e.g. lowers heart rate"
           value={label}
@@ -164,8 +162,8 @@ export function ConnectorEditor({
             if (e.key === "Escape") onClose();
           }}
         />
-        <IconButton icon="trash" label="Delete connector" danger onClick={onDelete} />
-        <IconButton
+        <ToolButton icon="trash" label="Delete connector" danger onClick={onDelete} />
+        <ToolButton
           icon="close"
           label="Close"
           onClick={() => {
@@ -174,53 +172,53 @@ export function ConnectorEditor({
           }}
         />
       </div>
-      <fieldset
-        className="nc-editor-row"
-        style={{ marginTop: 8, border: 0, padding: 0, marginInline: 0 }}
-      >
-        <legend className="nc-sr">Kind</legend>
+      <fieldset className="nc-editor-row mt-3">
+        <legend className="sr-only">Kind</legend>
         {CONNECTOR_KINDS.map((k) => (
-          <button
+          <Chip
             key={k}
-            type="button"
-            className="nc-kind"
-            aria-pressed={connector.kind === k}
-            style={{ ["--edge-color" as string]: `var(--edge-${k})` }}
+            hue={CONNECTOR_HUE[k]}
+            pressed={connector.kind === k}
             onClick={() => onChange({ kind: k })}
           >
             {KIND_LABEL[k]}
-          </button>
+          </Chip>
         ))}
       </fieldset>
-      <div className="nc-editor-row nc-seg" style={{ marginTop: 8 }}>
-        {CONNECTOR_DIRECTIONS.map((d) => (
-          <button
-            key={d}
-            type="button"
-            className="nc-btn"
-            aria-label={`Arrow ${d}`}
-            aria-pressed={connector.direction === d}
-            onClick={() => onChange({ direction: d })}
-          >
-            {DIRECTION_ICON[d]}
-          </button>
-        ))}
-        <span className="nc-sep" />
-        {LINE_STYLES.map((l) => (
-          <button
-            key={l}
-            type="button"
-            className="nc-btn"
-            aria-pressed={connector.line === l}
-            onClick={() => onChange({ line: connector.line === l ? null : l })}
-          >
-            {l}
-          </button>
-        ))}
+      <div className="nc-editor-row mt-3">
+        <SegmentedControl
+          label="Arrow"
+          value={connector.direction}
+          onValueChange={(d) => onChange({ direction: d })}
+          items={CONNECTOR_DIRECTIONS.map((d) => ({
+            value: d,
+            label: `Arrow ${d}`,
+            icon: <span className="text-body leading-none">{DIRECTION_ICON[d]}</span>,
+            iconOnly: true,
+          }))}
+        />
+        {/* Line style can be cleared back to the kind's default, so these are toggles. */}
+        <fieldset className={cn(SEGMENT_TRACK, "m-0 min-w-0")}>
+          <legend className="sr-only">Line</legend>
+          {LINE_STYLES.map((l) => (
+            <button
+              key={l}
+              type="button"
+              className={segmentItemClass(connector.line === l)}
+              aria-pressed={connector.line === l}
+              onClick={() => onChange({ line: connector.line === l ? null : l })}
+            >
+              {l}
+            </button>
+          ))}
+        </fieldset>
       </div>
     </div>
   );
 }
+
+/** The grey track of a segmented row (as the shared SegmentedControl draws it). */
+const SEGMENT_TRACK = "inline-flex gap-1 rounded-card border border-border bg-surface-muted p-1";
 
 /** Frames in step order, nested by parent, to jump to, rename, reorder and delete. */
 export function FramePanel({
@@ -256,34 +254,22 @@ export function FramePanel({
   };
   return (
     <section
-      className="nc-panel nc-chrome"
+      className={cn("nc-panel nc-chrome", phone && "nc-panel-phone")}
       aria-label="Frames"
       data-testid="frame-panel"
-      style={
-        phone
-          ? {
-              top: "auto",
-              bottom: "calc(76px + env(safe-area-inset-bottom))",
-              left: 12,
-              right: 12,
-              width: "auto",
-              maxHeight: "55%",
-            }
-          : undefined
-      }
     >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <h2 style={{ flex: 1 }}>Frames</h2>
-        <IconButton
+      <div className="flex items-center">
+        <h2 className="nc-panel-title">Frames</h2>
+        <ToolButton
           icon="play"
           label="Step through"
           onClick={onStep}
           disabled={frames.length === 0}
         />
-        <IconButton icon="close" label="Close frames" onClick={onClose} />
+        <ToolButton icon="close" label="Close frames" onClick={onClose} />
       </div>
       {ordered.length === 0 && (
-        <p className="nc-muted" style={{ margin: "4px 10px 10px" }}>
+        <p className="mx-2.5 mb-2.5 mt-1 text-ui text-text-muted">
           No frames yet. Select cards and press Frame.
         </p>
       )}
@@ -291,6 +277,7 @@ export function FramePanel({
         <div key={f.id} className="nc-frame-row" style={{ paddingLeft: depth(f) * 14 }}>
           {editing === f.id ? (
             <input
+              className={cn(inputClass, "min-w-0 flex-1")}
               aria-label="Frame title"
               // biome-ignore lint/a11y/noAutofocus: renaming starts with the field focused
               autoFocus
@@ -308,15 +295,15 @@ export function FramePanel({
               }}
             />
           ) : (
-            <button type="button" className="nc-btn nc-frame-jump" onClick={() => onJump(f.id)}>
-              <span className="nc-frame-step" data-tint={f.color}>
+            <button type="button" className="nc-frame-jump" onClick={() => onJump(f.id)}>
+              <span className="nc-frame-step" data-hue={f.color}>
                 {i + 1}
               </span>
               <span className="nc-frame-name">{f.title}</span>
               <span className="nc-count">{f.members.length}</span>
             </button>
           )}
-          <IconButton
+          <ToolButton
             icon="edit"
             label={`Rename ${f.title}`}
             onClick={() => {
@@ -325,7 +312,7 @@ export function FramePanel({
             }}
           />
           {!phone && (
-            <IconButton
+            <ToolButton
               icon="up"
               label={`Move ${f.title} earlier`}
               disabled={i === 0}
@@ -333,14 +320,14 @@ export function FramePanel({
             />
           )}
           {!phone && (
-            <IconButton
+            <ToolButton
               icon="down"
               label={`Move ${f.title} later`}
               disabled={i === ordered.length - 1}
               onClick={() => onMove(f.id, i + 1)}
             />
           )}
-          <IconButton
+          <ToolButton
             icon="trash"
             label={`Delete frame ${f.title}`}
             danger
@@ -375,11 +362,11 @@ export function StepBar({
 }) {
   return (
     <nav
-      className={`nc-stepbar nc-chrome${inline ? " nc-stepbar-inline" : ""}`}
+      className={cn("nc-stepbar nc-chrome", inline && "nc-stepbar-inline")}
       aria-label="Step through frames"
       data-testid="step-bar"
     >
-      <IconButton icon="left" label="Previous frame" onClick={onPrev} disabled={index <= 0} />
+      <ToolButton icon="left" label="Previous frame" onClick={onPrev} disabled={index <= 0} />
       <span className="nc-step-text">
         <span className="nc-step-count" aria-live="polite">
           {index + 1} / {total}
@@ -388,9 +375,9 @@ export function StepBar({
           {title}
         </span>
       </span>
-      <IconButton icon="right" label="Next frame" onClick={onNext} disabled={index >= total - 1} />
+      <ToolButton icon="right" label="Next frame" onClick={onNext} disabled={index >= total - 1} />
       {!inline && <span className="nc-sep" />}
-      <IconButton icon={exitIcon} label={exitLabel} onClick={onExit} />
+      <ToolButton icon={exitIcon} label={exitLabel} onClick={onExit} />
     </nav>
   );
 }

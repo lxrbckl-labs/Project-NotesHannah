@@ -26,6 +26,10 @@ import {
   SelectionMode,
 } from "@xyflow/react";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "../../components/ui/button";
+import { ConfirmDialog } from "../../components/ui/dialog";
+import { Spinner } from "../../components/ui/states";
+import { hueVar } from "../../lib/hues";
 import "./canvas.css";
 import { ConnectorEdge } from "./edges/ConnectorEdge";
 import { shapeFor } from "./layout/elk-layout";
@@ -67,7 +71,7 @@ import {
   ZoomLabel,
 } from "./ui/chrome";
 import { Icon } from "./ui/icons";
-import { ConfirmDialog, IconButton, PortalContext } from "./ui/primitives";
+import { ToolButton as IconButton, PortalContext } from "./ui/primitives";
 
 /** Node and edge types live outside components so React Flow never remounts them. */
 const NODE_TYPES: NodeTypes = { card: CardNode, frame: FrameNode } as unknown as NodeTypes;
@@ -89,6 +93,8 @@ export interface CanvasViewProps {
   onSwitchToPage?: () => void;
   /** Extra controls for the top bar (e.g. the shell's theme switch). */
   topBarExtras?: ReactNode;
+  /** Leave the document title out of the top bar (the screen around the canvas already shows it). */
+  hideTitle?: boolean;
   /** Measure: render only what is on screen (React Flow's culling). */
   onlyRenderVisible?: boolean;
   /** For tests: a layout runner that does not use a worker. */
@@ -122,6 +128,7 @@ function CanvasInner({
   onOpenConcept,
   onSwitchToPage,
   topBarExtras,
+  hideTitle = false,
   onlyRenderVisible = false,
   layoutRunner,
 }: CanvasViewProps) {
@@ -739,7 +746,6 @@ function CanvasInner({
   const rootClass = [
     "nc-canvas",
     coarse ? "nc-coarse" : "nc-fine",
-    device.dark ? "nc-dark" : "",
     connectMode ? "nc-connecting" : "",
   ].join(" ");
 
@@ -828,22 +834,32 @@ function CanvasInner({
               variant={BackgroundVariant.Dots}
               gap={24}
               size={1.6}
-              color="var(--nc-dot)"
+              color="var(--color-dot)"
             />
             {showMinimap && (
-              <MiniMap
+              <MiniMap<CanvasNode>
                 pannable
                 zoomable
-                bgColor="var(--nc-chrome)"
-                maskColor={device.dark ? "rgb(0 0 0 / 0.45)" : "rgb(28 27 24 / 0.08)"}
-                maskStrokeColor="var(--nc-select)"
+                bgColor="var(--color-chrome)"
+                maskColor="color-mix(in srgb, var(--color-overlay) 30%, transparent)"
+                maskStrokeColor="var(--color-selection)"
                 maskStrokeWidth={2}
                 position="bottom-right"
                 ariaLabel="Mini map"
                 nodeBorderRadius={6}
-                nodeColor={(n) => (n.type === "frame" ? "transparent" : "var(--nc-card-border)")}
+                nodeColor={(n) =>
+                  n.type === "frame"
+                    ? "transparent"
+                    : n.data.card.color
+                      ? hueVar(n.data.card.color, "border")
+                      : "var(--color-border-strong)"
+                }
                 nodeStrokeColor={(n) =>
-                  n.type === "frame" ? "var(--nc-frame-border)" : "transparent"
+                  n.type !== "frame"
+                    ? "transparent"
+                    : n.data.frame.color
+                      ? hueVar(n.data.frame.color, "border")
+                      : "var(--color-border-strong)"
                 }
                 nodeStrokeWidth={6}
                 style={{ width: 180, height: 120 }}
@@ -905,6 +921,7 @@ function CanvasInner({
                                 { op: "update_card", id: singleCard.id, patch: { color } },
                               ])
                             }
+                            label="Card colour"
                             trigger={<IconButton icon="palette" label="Colour" />}
                           />
                         )}
@@ -978,6 +995,7 @@ function CanvasInner({
                     onPick={(color) =>
                       void commit([{ op: "update_frame", id: singleFrame.id, patch: { color } }])
                     }
+                    label="Frame colour"
                     trigger={<IconButton icon="palette" label="Frame colour" />}
                   />
                   <IconButton
@@ -1004,11 +1022,13 @@ function CanvasInner({
           <header className="nc-topbar">
             {phone && activeFrame ? (
               stepBar
-            ) : (
+            ) : hideTitle && !onSwitchToPage ? null : (
               <div className="nc-title-pill nc-chrome">
-                <span className="nc-title-text" title={model.documentTitle}>
-                  {model.documentTitle || "Canvas"}
-                </span>
+                {!hideTitle && (
+                  <span className="nc-title-text" title={model.documentTitle}>
+                    {model.documentTitle || "Canvas"}
+                  </span>
+                )}
                 {onSwitchToPage && (
                   <IconButton
                     icon="page"
@@ -1020,7 +1040,7 @@ function CanvasInner({
               </div>
             )}
             {!(phone && activeFrame) && <div style={{ flex: 1 }} />}
-            <div className="nc-title-pill nc-chrome" style={{ paddingLeft: 4 }}>
+            <div className="nc-title-pill nc-tools-pill nc-chrome">
               {!phone && (
                 <>
                   <IconButton
@@ -1116,9 +1136,9 @@ function CanvasInner({
               {touchMulti && selectedCards.length > 1 && (
                 <IconButton icon="frame" label="Frame selected" onClick={() => void makeFrame()} />
               )}
-              <button
-                type="button"
-                className="nc-btn"
+              <Button
+                variant="ghost"
+                className="nc-tool"
                 onClick={() => {
                   setConnectMode(false);
                   setConnectSource(null);
@@ -1126,14 +1146,13 @@ function CanvasInner({
                 }}
               >
                 Done
-              </button>
+              </Button>
             </div>
           )}
 
           {model.arranging && (
-            <div className="nc-arranging nc-chrome" role="status" data-testid="arranging">
-              <span className="nc-spinner" aria-hidden="true" />
-              Arranging…
+            <div className="nc-arranging nc-chrome" data-testid="arranging">
+              <Spinner inline label="Arranging…" />
             </div>
           )}
 
@@ -1269,17 +1288,20 @@ function CanvasInner({
 
           <ConfirmDialog
             open={!!confirm}
+            onOpenChange={(open) => {
+              if (!open) setConfirm(null);
+            }}
+            container={portal}
             title={confirm?.title ?? ""}
-            body={confirm?.body ?? ""}
-            confirm={confirm?.confirm ?? "OK"}
-            onCancel={() => setConfirm(null)}
+            description={confirm?.body ?? ""}
+            confirmLabel={confirm?.confirm ?? "OK"}
             onConfirm={() => {
               const run = confirm?.run;
               setConfirm(null);
               run?.();
             }}
           />
-          <span className="nc-sr" aria-live="polite">
+          <span className="sr-only" aria-live="polite">
             {model.layoutMs !== null ? `Laid out ${canvas?.cards.length ?? 0} cards` : ""}
           </span>
         </CanvasActionsContext.Provider>
@@ -1305,17 +1327,16 @@ function Toast({
     <div className="nc-toast nc-chrome" role="status" data-testid="toast">
       <span>{message.text}</span>
       {message.undo && (
-        <button
-          type="button"
-          className="nc-btn"
+        <Button
+          variant="ghost"
+          className="nc-tool font-semibold"
           onClick={() => {
             onUndo();
             onClose();
           }}
-          style={{ fontWeight: 650 }}
         >
           <Icon name="undo" size={18} /> Undo
-        </button>
+        </Button>
       )}
       <IconButton icon="close" label="Dismiss" onClick={onClose} />
     </div>

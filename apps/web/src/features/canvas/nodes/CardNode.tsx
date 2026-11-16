@@ -139,7 +139,7 @@ function CardNodeView({ id, data }: NodeProps<CardNodeType>) {
     <div
       {...press}
       className={classes.join(" ")}
-      data-tint={tint}
+      data-hue={tint}
       data-testid="canvas-card"
       data-card-id={id}
       data-pinned={pinned ? "true" : undefined}
@@ -160,7 +160,7 @@ function CardNodeView({ id, data }: NodeProps<CardNodeType>) {
       )}
       {content.kind === "concept" ? (
         <div className="nc-card-concept">
-          <span className="nc-concept-dot" data-tint={tint ?? "teal"} aria-hidden="true">
+          <span className="nc-concept-dot" data-hue={tint ?? "teal"} aria-hidden="true">
             ◆
           </span>
           <span>{content.label ?? "Concept"}</span>

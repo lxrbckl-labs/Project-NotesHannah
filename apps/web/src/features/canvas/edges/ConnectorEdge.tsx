@@ -8,6 +8,8 @@ import {
   useInternalNode,
 } from "@xyflow/react";
 import { memo } from "react";
+import { hueVar } from "../../../lib/hues";
+import { CONNECTOR_HUE } from "../../../lib/roles";
 import { useCanvasActions } from "../model/actions";
 import type { ConnectorEdge as ConnectorEdgeType } from "../model/flow";
 
@@ -100,7 +102,8 @@ function ConnectorEdgeView({ id, source, target, data, selected }: EdgeProps<Con
     targetPosition: ends.tp,
     curvature: 0.32,
   });
-  const color = `var(--edge-${c.kind})`;
+  const hue = CONNECTOR_HUE[c.kind];
+  const color = hueVar(hue, "solid");
   const line = c.line ?? CONNECTOR_DEFAULT_LINE[c.kind];
   return (
     <g
@@ -117,7 +120,8 @@ function ConnectorEdgeView({ id, source, target, data, selected }: EdgeProps<Con
           <button
             type="button"
             className={`nc-edge-label nodrag nopan${selected ? " nc-selected" : ""}${data.dim ? " nc-edge-dim" : ""}`}
-            style={{ left: labelX, top: labelY, ["--edge-color" as string]: color }}
+            data-hue={hue}
+            style={{ left: labelX, top: labelY }}
             onClick={(e) => {
               e.stopPropagation();
               actions.editConnector(id);
