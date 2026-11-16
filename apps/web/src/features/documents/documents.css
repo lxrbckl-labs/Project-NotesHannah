@@ -1,0 +1,532 @@
+/* Documents feature styles. Colour comes only from the schema's ten tokens,
+   each with a text (fg), tint (bg), border, highlighter (hl) and solid value,
+   in light and dark. Names are prefixed --doc- so nothing collides with the
+   shell's tokens in src/app/styles.css. */
+
+:root {
+  --doc-gray-fg: #57564f;
+  --doc-gray-bg: #f2f1ec;
+  --doc-gray-border: #dcdad1;
+  --doc-gray-hl: #e6e4dc;
+  --doc-gray-solid: #8a887f;
+  --doc-brown-fg: #7a4e2a;
+  --doc-brown-bg: #f7efe6;
+  --doc-brown-border: #e6d2bd;
+  --doc-brown-hl: #efdcc6;
+  --doc-brown-solid: #a0714a;
+  --doc-red-fg: #b0261b;
+  --doc-red-bg: #fdefed;
+  --doc-red-border: #f3c8c2;
+  --doc-red-hl: #fad3ce;
+  --doc-red-solid: #d84a3e;
+  --doc-orange-fg: #a64708;
+  --doc-orange-bg: #fef2e7;
+  --doc-orange-border: #f6d1ad;
+  --doc-orange-hl: #fcdcbd;
+  --doc-orange-solid: #e3772a;
+  --doc-yellow-fg: #7f5a00;
+  --doc-yellow-bg: #fdf7dc;
+  --doc-yellow-border: #eedf9c;
+  --doc-yellow-hl: #fbeb9a;
+  --doc-yellow-solid: #d6a50e;
+  --doc-green-fg: #276d40;
+  --doc-green-bg: #ecf6ef;
+  --doc-green-border: #c3e2cc;
+  --doc-green-hl: #cdeed6;
+  --doc-green-solid: #3c9e5f;
+  --doc-teal-fg: #17696a;
+  --doc-teal-bg: #e8f5f4;
+  --doc-teal-border: #bde0dd;
+  --doc-teal-hl: #c6ebe7;
+  --doc-teal-solid: #2b9a96;
+  --doc-blue-fg: #2556a8;
+  --doc-blue-bg: #edf3fd;
+  --doc-blue-border: #c6d7f4;
+  --doc-blue-hl: #d3e2fb;
+  --doc-blue-solid: #3a77dc;
+  --doc-purple-fg: #5f37b8;
+  --doc-purple-bg: #f4f0fd;
+  --doc-purple-border: #d8cbf6;
+  --doc-purple-hl: #e3d8fa;
+  --doc-purple-solid: #8660dc;
+  --doc-pink-fg: #a82867;
+  --doc-pink-bg: #fdeef5;
+  --doc-pink-border: #f2c4da;
+  --doc-pink-hl: #f9d3e5;
+  --doc-pink-solid: #d9579a;
+
+  --doc-paper: var(--color-surface, #fff);
+  --doc-sheet-shadow: 0 1px 2px rgb(30 28 20 / 0.05), 0 8px 28px rgb(30 28 20 / 0.08);
+  --doc-pop-shadow: 0 2px 6px rgb(30 28 20 / 0.08), 0 16px 40px rgb(30 28 20 / 0.14);
+  --doc-focus: #3a77dc;
+  --doc-scrim: rgb(20 18 12 / 0.32);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --doc-gray-fg: #c9c7be;
+    --doc-gray-bg: #272622;
+    --doc-gray-border: #3d3b35;
+    --doc-gray-hl: #46443d;
+    --doc-gray-solid: #96948a;
+    --doc-brown-fg: #dfb994;
+    --doc-brown-bg: #2c241c;
+    --doc-brown-border: #4a3b2d;
+    --doc-brown-hl: #5a4532;
+    --doc-brown-solid: #bf9068;
+    --doc-red-fg: #f6a39a;
+    --doc-red-bg: #33201e;
+    --doc-red-border: #5a302b;
+    --doc-red-hl: #6b322b;
+    --doc-red-solid: #e8685c;
+    --doc-orange-fg: #f7b884;
+    --doc-orange-bg: #33261a;
+    --doc-orange-border: #5a4027;
+    --doc-orange-hl: #6a4724;
+    --doc-orange-solid: #ee8c48;
+    --doc-yellow-fg: #eed582;
+    --doc-yellow-bg: #312c18;
+    --doc-yellow-border: #554b25;
+    --doc-yellow-hl: #5f5320;
+    --doc-yellow-solid: #dcb942;
+    --doc-green-fg: #95d8aa;
+    --doc-green-bg: #1c2d23;
+    --doc-green-border: #2f4d39;
+    --doc-green-hl: #2b5a3a;
+    --doc-green-solid: #58bb78;
+    --doc-teal-fg: #8ad8d2;
+    --doc-teal-bg: #192f2e;
+    --doc-teal-border: #2a4c4a;
+    --doc-teal-hl: #245753;
+    --doc-teal-solid: #44b6b0;
+    --doc-blue-fg: #a6c5f6;
+    --doc-blue-bg: #1c2638;
+    --doc-blue-border: #2e4161;
+    --doc-blue-hl: #2b4470;
+    --doc-blue-solid: #6496e8;
+    --doc-purple-fg: #c9b5f8;
+    --doc-purple-bg: #261f3a;
+    --doc-purple-border: #41355f;
+    --doc-purple-hl: #45366e;
+    --doc-purple-solid: #9e80ec;
+    --doc-pink-fg: #f4aecf;
+    --doc-pink-bg: #351f2c;
+    --doc-pink-border: #58304a;
+    --doc-pink-hl: #64304f;
+    --doc-pink-solid: #e273aa;
+    --doc-sheet-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 30px rgb(0 0 0 / 0.35);
+    --doc-pop-shadow: 0 2px 8px rgb(0 0 0 / 0.4), 0 18px 44px rgb(0 0 0 / 0.5);
+    --doc-focus: #7aa7f0;
+    --doc-scrim: rgb(0 0 0 / 0.55);
+  }
+}
+
+:root[data-theme="dark"] {
+  --doc-gray-fg: #c9c7be;
+  --doc-gray-bg: #272622;
+  --doc-gray-border: #3d3b35;
+  --doc-gray-hl: #46443d;
+  --doc-gray-solid: #96948a;
+  --doc-brown-fg: #dfb994;
+  --doc-brown-bg: #2c241c;
+  --doc-brown-border: #4a3b2d;
+  --doc-brown-hl: #5a4532;
+  --doc-brown-solid: #bf9068;
+  --doc-red-fg: #f6a39a;
+  --doc-red-bg: #33201e;
+  --doc-red-border: #5a302b;
+  --doc-red-hl: #6b322b;
+  --doc-red-solid: #e8685c;
+  --doc-orange-fg: #f7b884;
+  --doc-orange-bg: #33261a;
+  --doc-orange-border: #5a4027;
+  --doc-orange-hl: #6a4724;
+  --doc-orange-solid: #ee8c48;
+  --doc-yellow-fg: #eed582;
+  --doc-yellow-bg: #312c18;
+  --doc-yellow-border: #554b25;
+  --doc-yellow-hl: #5f5320;
+  --doc-yellow-solid: #dcb942;
+  --doc-green-fg: #95d8aa;
+  --doc-green-bg: #1c2d23;
+  --doc-green-border: #2f4d39;
+  --doc-green-hl: #2b5a3a;
+  --doc-green-solid: #58bb78;
+  --doc-teal-fg: #8ad8d2;
+  --doc-teal-bg: #192f2e;
+  --doc-teal-border: #2a4c4a;
+  --doc-teal-hl: #245753;
+  --doc-teal-solid: #44b6b0;
+  --doc-blue-fg: #a6c5f6;
+  --doc-blue-bg: #1c2638;
+  --doc-blue-border: #2e4161;
+  --doc-blue-hl: #2b4470;
+  --doc-blue-solid: #6496e8;
+  --doc-purple-fg: #c9b5f8;
+  --doc-purple-bg: #261f3a;
+  --doc-purple-border: #41355f;
+  --doc-purple-hl: #45366e;
+  --doc-purple-solid: #9e80ec;
+  --doc-pink-fg: #f4aecf;
+  --doc-pink-bg: #351f2c;
+  --doc-pink-border: #58304a;
+  --doc-pink-hl: #64304f;
+  --doc-pink-solid: #e273aa;
+  --doc-sheet-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 30px rgb(0 0 0 / 0.35);
+  --doc-pop-shadow: 0 2px 8px rgb(0 0 0 / 0.4), 0 18px 44px rgb(0 0 0 / 0.5);
+  --doc-focus: #7aa7f0;
+  --doc-scrim: rgb(0 0 0 / 0.55);
+}
+
+/* A tone is set per element with style="--tone: blue" via toneVars(); these
+   classes read the five shades of the current tone. */
+.doc-tone {
+  --t-fg: var(--doc-gray-fg);
+  --t-bg: var(--doc-gray-bg);
+  --t-border: var(--doc-gray-border);
+  --t-hl: var(--doc-gray-hl);
+  --t-solid: var(--doc-gray-solid);
+}
+
+.doc-root {
+  font-size: 16.5px;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+.doc-root :focus-visible {
+  outline: 2px solid var(--doc-focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Inline citation chip: small, numbered, tappable (with a 32px hit area). */
+.doc-cite {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35em;
+  height: 1.35em;
+  padding: 0 0.32em;
+  margin: 0 0.12em;
+  border-radius: 999px;
+  font-size: 0.68em;
+  font-weight: 650;
+  line-height: 1;
+  vertical-align: 0.42em;
+  color: var(--doc-blue-fg);
+  background: var(--doc-blue-bg);
+  border: 1px solid var(--doc-blue-border);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  transition: background-color 120ms ease;
+}
+.doc-cite::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
+}
+.doc-cite:hover {
+  background: var(--doc-blue-hl);
+}
+.doc-cite[data-status="source_trashed"],
+.doc-cite[data-status="source_deleted"] {
+  color: var(--doc-gray-fg);
+  background: var(--doc-gray-bg);
+  border-style: dashed;
+  border-color: var(--doc-gray-solid);
+}
+.doc-cite[data-active="true"] {
+  color: #fff;
+  background: var(--doc-blue-solid);
+  border-color: var(--doc-blue-solid);
+}
+
+/* Labelled source chip in a block's footer: "3 Slide 4". */
+.doc-cite.doc-source {
+  height: 22px;
+  min-width: 22px;
+  font-size: 11.5px;
+  vertical-align: middle;
+  padding: 0 7px;
+  margin: 0;
+  gap: 5px;
+}
+.doc-source-label {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+.doc-cite[data-active="true"] .doc-source-label {
+  color: inherit;
+}
+
+.doc-concept {
+  color: var(--doc-teal-fg);
+  text-decoration: underline;
+  text-decoration-color: var(--doc-teal-border);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.doc-concept:hover {
+  background: var(--doc-teal-bg);
+}
+
+.doc-hl {
+  border-radius: 3px;
+  padding: 0.05em 0.12em;
+  margin: 0 -0.05em;
+  color: inherit;
+  background: var(--doc-yellow-hl);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.doc-hl[data-color="gray"] {
+  background: var(--doc-gray-hl);
+}
+.doc-hl[data-color="brown"] {
+  background: var(--doc-brown-hl);
+}
+.doc-hl[data-color="red"] {
+  background: var(--doc-red-hl);
+}
+.doc-hl[data-color="orange"] {
+  background: var(--doc-orange-hl);
+}
+.doc-hl[data-color="yellow"] {
+  background: var(--doc-yellow-hl);
+}
+.doc-hl[data-color="green"] {
+  background: var(--doc-green-hl);
+}
+.doc-hl[data-color="teal"] {
+  background: var(--doc-teal-hl);
+}
+.doc-hl[data-color="blue"] {
+  background: var(--doc-blue-hl);
+}
+.doc-hl[data-color="purple"] {
+  background: var(--doc-purple-hl);
+}
+.doc-hl[data-color="pink"] {
+  background: var(--doc-pink-hl);
+}
+
+.doc-root a.doc-link,
+.doc-root .ProseMirror a {
+  color: var(--doc-blue-fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.doc-root code,
+.doc-root .ProseMirror code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.88em;
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: var(--doc-gray-bg);
+  border: 1px solid var(--doc-gray-border);
+}
+
+/* Flagged words: a wavy amber underline; tapping shows the note. */
+.doc-flag {
+  text-decoration: underline wavy var(--doc-orange-solid);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  cursor: help;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  border: 0;
+}
+.doc-flag[data-kind="dose"],
+.doc-flag[data-kind="unit"],
+.doc-flag[data-kind="decimal"] {
+  text-decoration-color: var(--doc-red-solid);
+}
+
+/* Editor surfaces look exactly like the read view. */
+.doc-root .ProseMirror {
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  caret-color: var(--doc-focus);
+}
+.doc-root .ProseMirror p {
+  margin: 0;
+}
+.doc-root .ProseMirror p.is-empty:first-child::before,
+.doc-root .ProseMirror[data-empty="true"] p:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* List lines: shared by the read view and the list editor. */
+.doc-line {
+  position: relative;
+  padding-left: calc(1.6em + var(--indent, 0) * 1.5em);
+  margin: 0.15em 0;
+}
+.doc-line::before {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(var(--indent, 0) * 1.5em);
+  width: 1.3em;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.doc-lines[data-kind="number"] .doc-line::before {
+  text-align: right;
+  width: 1.4em;
+  font-size: 0.94em;
+}
+.doc-lines[data-kind="check"] .doc-line {
+  padding-left: calc(2em + var(--indent, 0) * 1.5em);
+}
+.doc-lines[data-kind="check"] .doc-line::before {
+  content: none;
+}
+
+.doc-check {
+  position: absolute;
+  left: calc(var(--indent, 0) * 1.5em);
+  top: 0.22em;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 6px;
+  border: 1.5px solid var(--doc-gray-solid);
+  background: var(--doc-paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+}
+.doc-check::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+.doc-check[aria-checked="true"],
+.doc-check[data-checked="true"] {
+  background: var(--doc-green-solid);
+  border-color: var(--doc-green-solid);
+}
+.doc-line[data-checked="true"] .doc-line-text {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--doc-gray-solid);
+}
+
+/* Large documents: let the browser skip rendering off-screen blocks. */
+/* Only the body: the shell's handles and bars sit outside the box and must not be clipped. */
+.doc-block-body {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+.doc-no-cv .doc-block-body,
+.doc-block[data-active="true"] .doc-block-body {
+  content-visibility: visible;
+}
+
+/* Comparison table: sticky first column on narrow screens. */
+.doc-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.doc-scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.doc-quote-hit {
+  background: var(--doc-yellow-hl);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--doc-yellow-hl);
+  scroll-margin: 40vh;
+}
+
+@keyframes doc-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes doc-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes doc-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes doc-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.doc-anim-pop {
+  animation: doc-pop-in 140ms ease-out;
+}
+.doc-anim-sheet {
+  animation: doc-sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.doc-anim-slide {
+  animation: doc-slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.doc-anim-fade {
+  animation: doc-fade 160ms ease-out;
+}
+.doc-flash {
+  animation: doc-flash 1.2s ease-out;
+}
+@keyframes doc-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--doc-yellow-solid);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+/* Unlayered, so this beats Tailwind's layered utilities without !important. */
+@media (prefers-reduced-motion: reduce) {
+  .doc-root *,
+  .doc-root *::before,
+  .doc-root *::after,
+  .doc-portal *,
+  .doc-portal {
+    animation: none;
+    transition: none;
+    scroll-behavior: auto;
+  }
+}
