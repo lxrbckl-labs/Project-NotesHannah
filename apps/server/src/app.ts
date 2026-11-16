@@ -8,6 +8,7 @@ import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { healthRoutes } from "./domains/health/routes.js";
+import { libraryRoutes } from "./domains/library/index.js";
 import type { AppEnv } from "./http/auth-context.js";
 import { authenticate } from "./http/authenticate.js";
 import type { ServerDeps } from "./http/deps.js";
@@ -56,7 +57,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.use("/api/*", originCheck(config));
   app.route("/api", accountRoutes(deps));
   app.route("/api", keyRoutes(deps));
-  // Library mounts here (routes carry full /api paths): app.route("/", libraryRoutes(db));
+  // Library routes carry their full /api paths.
+  app.route("/", libraryRoutes(db));
 
   // Unknown API-ish paths are ApiError 404s, never the SPA shell.
   for (const prefix of ["/api", "/mcp"]) {
