@@ -1,0 +1,515 @@
+import type { NodeWithLinks, SourceFile } from "@notes/schema";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, FileText, Image as ImageIcon, Inbox, Presentation } from "lucide-react";
+import {
+  createContext,
+  type KeyboardEvent,
+  type ReactNode,
+  use,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from "react";
+import { useMatch, useNavigate } from "react-router";
+import { Badge } from "../../components/ui/field";
+import { ContextActions } from "../../components/ui/menu";
+import { api } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { useFinePointer } from "../../lib/useMedia";
+import { useNodeActions } from "./actions";
+import { useRowDnd } from "./dnd";
+import { InlineName } from "./InlineName";
+import { NodeIcon } from "./NodeIcon";
+import { nodeTitle } from "./NodeRow";
+import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
+import { type Destination, isPending, toDestination } from "./rules";
+import { useTreeState } from "./treeState";
+import { useNodeMenu } from "./useNodeMenu";
+
+type Variant = "sidebar" | "page";
+
+interface TreeState {
+  variant: Variant;
+  go: (to: string) => void;
+  currentId: string | undefined;
+  tabbableId: string | undefined;
+  setFocusId: (id: string) => void;
+  dnd: boolean;
+}
+
+const TreeContext = createContext<TreeState | null>(null);
+const useTree = () => {
+  const value = use(TreeContext);
+  if (!value) throw new Error("TreeItem outside SidebarTree");
+  return value;
+};
+
+/** The library as an accessible, lazily loaded tree: arrows move, Enter opens. */
+export function LibraryTree({
+  label = "Library",
+  variant = "sidebar",
+  withInbox,
+}: {
+  label?: string;
+  variant?: Variant;
+  withInbox?: boolean;
+}) {
+  const roots = useChildren(null);
+  const match = useMatch("/library/:nodeId");
+  const currentId = match?.params.nodeId;
+  const current = useNode(currentId);
+  const fine = useFinePointer();
+  const treeState = useTreeState();
+  const navigate = useNavigate();
+  const [focusId, setFocusId] = useState<string>();
+
+  const ancestors = current.data?.ancestors;
+  const { expandMany } = treeState;
+  useEffect(() => {
+    if (variant === "sidebar" && ancestors?.length) expandMany(ancestors);
+  }, [ancestors, expandMany, variant]);
+
+  const state = useMemo<TreeState>(
+    () => ({
+      variant,
+      go: (to) => {
+        if (variant === "page") {
+          const main = document.getElementById("main");
+          if (main) treeState.saveScroll(main.scrollTop);
+        }
+        navigate(to);
+      },
+      currentId,
+      tabbableId: focusId ?? currentId ?? roots.data?.[0]?.id,
+      setFocusId,
+      dnd: fine,
+    }),
+    [variant, navigate, treeState, currentId, focusId, roots.data, fine],
+  );
+
+  if (roots.isPending) {
+    return (
+      <div role="status" aria-label="Loading library" className="grid gap-2 px-3 py-2">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="skeleton h-7" aria-hidden />
+        ))}
+      </div>
+    );
+  }
+  if (roots.isError) {
+    return (
+      <p role="alert" className="px-3 py-2 text-sm text-danger">
+        The library could not load.{" "}
+        <button type="button" className="underline" onClick={() => roots.refetch()}>
+          Try again
+        </button>
+      </p>
+    );
+  }
+  if (roots.data.length === 0) {
+    return <p className="px-3 py-2 text-sm text-text-muted">No terms yet. Add one above.</p>;
+  }
+  return (
+    <TreeContext value={state}>
+      <ul
+        // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: ARIA tree pattern
+        role="tree"
+        aria-label={label}
+        className={cn(
+          "grid gap-px [--indent:12px] md:[--indent:16px]",
+          variant === "sidebar" ? "px-2" : "gap-0.5",
+        )}
+      >
+        {withInbox ? <InboxRow /> : null}
+        {roots.data.map((node, i) => (
+          <TreeItem
+            key={node.id}
+            node={node}
+            depth={0}
+            parent={null}
+            previousId={roots.data[i - 1]?.id ?? null}
+          />
+        ))}
+      </ul>
+    </TreeContext>
+  );
+}
+
+function TreeBranch({ parent, depth }: { parent: NodeWithLinks; depth: number }) {
+  const children = useChildren(parent.id);
+  const pad = { paddingLeft: `calc(var(--indent) * ${depth} + 40px)` };
+  const hasFiles = parent.kind === "lecture" || parent.kind === "folder";
+  const files = useQuery({
+    queryKey: fileKeys.of(parent.id),
+    queryFn: () => api.filesOf(parent.id),
+    enabled: hasFiles,
+  });
+  if (children.isPending) {
+    return (
+      <li role="none" className="py-1 text-xs text-text-muted" style={pad}>
+        Loading
+      </li>
+    );
+  }
+  if (children.isError) {
+    return (
+      <li role="none" className="py-1 text-xs text-danger" style={pad}>
+        Could not load
+      </li>
+    );
+  }
+  return (
+    <>
+      {children.data.map((node, i) => (
+        <TreeItem
+          key={node.id}
+          node={node}
+          depth={depth}
+          parent={parent}
+          previousId={children.data[i - 1]?.id ?? null}
+        />
+      ))}
+      {files.data?.map((file) => (
+        <FileLeaf key={file.id} file={file} depth={depth} />
+      ))}
+      {hasFiles && files.isPending ? (
+        <li role="none" className="py-1 text-xs text-text-muted" style={pad}>
+          Loading files
+        </li>
+      ) : null}
+      {hasFiles && files.isError ? (
+        <li role="none" className="py-1 text-xs text-danger" style={pad}>
+          Could not load files
+        </li>
+      ) : null}
+      {children.data.length === 0 && files.data?.length === 0 ? (
+        <li role="none" className="py-1 text-xs text-text-muted" style={pad}>
+          Nothing here yet
+        </li>
+      ) : null}
+    </>
+  );
+}
+
+const STATUS_LABEL: Record<SourceFile["status"], string> = {
+  uploaded: "Uploaded",
+  converting: "Converting",
+  converted: "Converted",
+  transcribed: "Transcribed",
+  filed: "Filed",
+  failed: "Failed",
+};
+
+export function FileTypeIcon({ type, size = 17 }: { type: SourceFile["type"]; size?: number }) {
+  if (type === "pptx") return <Presentation size={size} aria-hidden />;
+  if (type === "pdf") return <FileText size={size} aria-hidden />;
+  return <ImageIcon size={size} aria-hidden />;
+}
+
+export function FileStatusBadge({ status }: { status: SourceFile["status"] }) {
+  const tone =
+    status === "failed"
+      ? "danger"
+      : status === "transcribed" || status === "filed"
+        ? "accent"
+        : "neutral";
+  return <Badge tone={tone}>{STATUS_LABEL[status]}</Badge>;
+}
+
+/** A source file as a leaf: opens the file page. Not movable or renamable in this pass. */
+function FileLeaf({ file, depth }: { file: SourceFile; depth: number }) {
+  const tree = useTree();
+  const nameId = useId();
+  const pages = file.pageCount
+    ? `${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"}`
+    : null;
+  return (
+    <li role="none">
+      <div
+        role="treeitem"
+        aria-labelledby={nameId}
+        aria-level={depth + 1}
+        aria-selected={false}
+        tabIndex={tree.tabbableId === file.id ? 0 : -1}
+        data-testid="tree-file"
+        data-type={file.type}
+        title={file.originalName}
+        onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(file.id)}
+        onClick={() => tree.go(`/files/${file.id}`)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            tree.go(`/files/${file.id}`);
+          } else if (e.target === e.currentTarget) {
+            treeArrowKeys(e, depth);
+          }
+        }}
+        className={cn(
+          "flex cursor-pointer items-center gap-2 rounded-xl py-1.5 pr-2 text-text hover:bg-surface-muted",
+          tree.variant === "page" ? "min-h-12 text-[15px]" : "min-h-11 text-sm xl:min-h-8",
+        )}
+        style={{ paddingLeft: `calc(var(--indent) * ${depth} + 40px)` }}
+      >
+        <span className="shrink-0 text-text-muted">
+          <FileTypeIcon type={file.type} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span id={nameId} className="line-clamp-2 block break-words md:truncate">
+            {file.originalName}
+          </span>
+          {tree.variant === "page" ? (
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+              {pages ? <span>{pages}</span> : null}
+              <FileStatusBadge status={file.status} />
+            </span>
+          ) : null}
+        </span>
+      </div>
+    </li>
+  );
+}
+
+function InboxRow() {
+  const tree = useTree();
+  const inbox = useQuery({ queryKey: fileKeys.inbox, queryFn: api.inboxFiles });
+  return (
+    <li role="none">
+      <div
+        role="treeitem"
+        aria-level={1}
+        aria-selected={false}
+        tabIndex={0}
+        data-testid="tree-inbox"
+        onClick={() => tree.go("/inbox")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            tree.go("/inbox");
+          } else if (e.target === e.currentTarget) {
+            treeArrowKeys(e, 0);
+          }
+        }}
+        className="flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-transparent pl-1 pr-3 text-[15px] hover:border-border"
+      >
+        <span className="size-9 shrink-0" aria-hidden />
+        <Inbox size={17} className="shrink-0 opacity-80" aria-hidden />
+        <span className="ml-1.5 flex-1 font-medium">Inbox</span>
+        <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+          {inbox.isPending ? "…" : inbox.isError ? "!" : inbox.data.length}
+        </span>
+      </div>
+    </li>
+  );
+}
+
+/** Up and down move between visible rows; shared by the leaf rows. */
+function treeArrowKeys(event: KeyboardEvent<HTMLElement>, _depth: number) {
+  const items = Array.from(
+    event.currentTarget
+      .closest<HTMLElement>('[role="tree"]')
+      ?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [],
+  );
+  const index = items.indexOf(event.currentTarget);
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    items[index + 1]?.focus();
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    items[index - 1]?.focus();
+  } else if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    for (let i = index - 1; i >= 0; i--) {
+      if (
+        Number(items[i]?.getAttribute("aria-level")) <
+        Number(event.currentTarget.getAttribute("aria-level"))
+      ) {
+        items[i]?.focus();
+        break;
+      }
+    }
+  }
+}
+
+function TreeItem({
+  node,
+  depth,
+  parent,
+  previousId,
+}: {
+  node: NodeWithLinks;
+  depth: number;
+  parent: NodeWithLinks | null;
+  previousId: string | null;
+}) {
+  const tree = useTree();
+  const open_ = useTreeState();
+  const titleId = useId();
+  const client = useQueryClient();
+  const actions = useNodeActions();
+  const [renaming, setRenaming] = useState(false);
+  const { entries, trash } = useNodeMenu(node, { onRename: () => setRenaming(true) });
+  // Lectures and folders may hold source files, which childCount does not count.
+  const expandable = node.childCount > 0 || node.kind === "lecture" || node.kind === "folder";
+  const open = expandable && open_.expanded.has(node.id);
+  const selected = tree.currentId === node.id;
+
+  const parentDest: Destination | null = parent
+    ? toDestination(parent, folderDepthOf(client, parent))
+    : null;
+  const { dragProps, dropProps, dropMode } = useRowDnd({
+    node,
+    enabled: tree.dnd,
+    asDestination: toDestination(node, folderDepthOf(client, node)),
+    parentDestination: parentDest,
+    previousSiblingId: previousId,
+    onMove: (source, input) => void actions.move(source, input),
+  });
+
+  function focusItem(el: HTMLElement | undefined) {
+    el?.focus();
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    const items = Array.from(
+      event.currentTarget
+        .closest<HTMLElement>('[role="tree"]')
+        ?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [],
+    );
+    const index = items.indexOf(event.currentTarget);
+    const stop = () => event.preventDefault();
+    switch (event.key) {
+      case "ArrowDown":
+        stop();
+        focusItem(items[index + 1]);
+        break;
+      case "ArrowUp":
+        stop();
+        focusItem(items[index - 1]);
+        break;
+      case "Home":
+        stop();
+        focusItem(items[0]);
+        break;
+      case "End":
+        stop();
+        focusItem(items.at(-1));
+        break;
+      case "ArrowRight":
+        stop();
+        if (expandable && !open) open_.toggle(node.id, true);
+        else if (open) focusItem(items[index + 1]);
+        break;
+      case "ArrowLeft":
+        stop();
+        if (open) open_.toggle(node.id, false);
+        else {
+          const level = depth + 1;
+          for (let i = index - 1; i >= 0; i--) {
+            if (Number(items[i]?.getAttribute("aria-level")) === level - 1) {
+              focusItem(items[i]);
+              break;
+            }
+          }
+        }
+        break;
+      case "Enter":
+      case " ":
+        stop();
+        tree.go(`/library/${node.id}`);
+        break;
+      case "F2":
+        if (node.kind !== "section" && !isPending(node)) {
+          stop();
+          setRenaming(true);
+        }
+        break;
+      case "Delete":
+        if (node.kind !== "section" && !isPending(node)) {
+          stop();
+          trash();
+        }
+        break;
+    }
+  }
+
+  const row: ReactNode = (
+    <div
+      role="treeitem"
+      aria-labelledby={titleId}
+      aria-level={depth + 1}
+      aria-expanded={expandable ? open : undefined}
+      aria-selected={selected}
+      aria-current={selected ? "page" : undefined}
+      tabIndex={tree.tabbableId === node.id ? 0 : -1}
+      data-testid="tree-item"
+      data-kind={node.kind}
+      data-drop={dropMode ?? undefined}
+      onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(node.id)}
+      onKeyDown={onKeyDown}
+      onClick={() => !renaming && tree.go(`/library/${node.id}`)}
+      {...dragProps}
+      {...dropProps}
+      className={cn(
+        "flex cursor-pointer items-center gap-1 rounded-xl pr-2",
+        tree.variant === "page"
+          ? "min-h-12 border border-transparent text-[15px] hover:border-border"
+          : "min-h-11 text-sm xl:min-h-8",
+        selected ? "bg-accent-soft font-medium text-accent" : "text-text hover:bg-surface-muted",
+        isPending(node) && "opacity-60",
+      )}
+      style={{ paddingLeft: `calc(var(--indent) * ${depth} + 4px)` }}
+    >
+      {expandable ? (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={`${open ? "Collapse" : "Expand"} ${node.name}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            open_.toggle(node.id);
+          }}
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-border/50 xl:size-6"
+        >
+          <ChevronRight size={15} className={cn("transition-transform", open && "rotate-90")} />
+        </button>
+      ) : (
+        <span className="size-9 shrink-0 xl:size-6" aria-hidden />
+      )}
+      <NodeIcon kind={node.kind} section={node.section} size={17} className="shrink-0 opacity-80" />
+      {renaming ? (
+        <InlineName
+          value={node.name}
+          label={`Rename ${node.name}`}
+          className="min-h-8 py-0 text-sm"
+          onCancel={() => setRenaming(false)}
+          onCommit={(name) => {
+            setRenaming(false);
+            void actions.rename(node, name);
+          }}
+        />
+      ) : (
+        <span
+          id={titleId}
+          title={nodeTitle(node)}
+          className="ml-1.5 min-w-0 flex-1 line-clamp-2 break-words md:truncate"
+        >
+          {nodeTitle(node)}
+        </span>
+      )}
+    </div>
+  );
+
+  return (
+    <li role="none">
+      <ContextActions entries={entries}>{row}</ContextActions>
+      {open ? (
+        // biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern
+        <ul role="group" className="grid gap-px">
+          <TreeBranch parent={node} depth={depth + 1} />
+        </ul>
+      ) : null}
+    </li>
+  );
+}
