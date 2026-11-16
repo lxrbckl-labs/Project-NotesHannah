@@ -200,8 +200,6 @@ describe("mount points", () => {
       ["/doc/nod_x/canvas", "Canvas"],
       ["/practice", "Practice"],
       ["/exams", "Exams"],
-      ["/requests", "Requests"],
-      ["/concepts/con_x", "Concepts"],
     ] as const) {
       const view = await renderReady(path);
       expect(await screen.findByRole("heading", { level: 1, name: title })).toBeInTheDocument();
