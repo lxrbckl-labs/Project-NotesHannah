@@ -7,6 +7,7 @@ import { type Config, webDistDir } from "./config.js";
 import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
+import { filesRoutes } from "./domains/files/index.js";
 import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
 import type { AppEnv } from "./http/auth-context.js";
@@ -59,6 +60,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/api", keyRoutes(deps));
   // Library routes carry their full /api paths.
   app.route("/", libraryRoutes(db));
+  // Files routes carry their full /api paths; PUT /api/uploads/:token is credentialed by its token alone.
+  app.route("/", filesRoutes(deps));
 
   // Unknown API-ish paths are ApiError 404s, never the SPA shell.
   for (const prefix of ["/api", "/mcp"]) {
