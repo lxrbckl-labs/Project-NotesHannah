@@ -37,6 +37,12 @@ export interface SourceInfo {
  */
 export interface SourceLookup {
   resolve(userId: string, refs: readonly SourceRef[]): SourceInfo[];
+  /**
+   * Whether this page or file exists for this user (a trashed one does). The reverse
+   * lookup answers `not_found` for one that does not, as the other routes do for
+   * someone else's objects. Optional: without it every ID is taken to exist.
+   */
+  exists?(userId: string, target: { pageId: string } | { fileId: string }): boolean;
 }
 
 export const UNKNOWN_SOURCE: SourceInfo = {

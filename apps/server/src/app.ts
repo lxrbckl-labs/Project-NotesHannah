@@ -12,12 +12,14 @@ import { documentsRoutes } from "./domains/documents/index.js";
 import { filesRoutes } from "./domains/files/index.js";
 import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
+import { searchRoutes } from "./domains/search/index.js";
 import type { AppEnv } from "./http/auth-context.js";
 import { authenticate } from "./http/authenticate.js";
 import type { ServerDeps } from "./http/deps.js";
 import { AppError, handleError } from "./http/errors.js";
 import { originCheck, securityHeaders } from "./http/security.js";
 import { mcpRoutes } from "./mcp/index.js";
+import { createServices, type Services } from "./services.js";
 
 export const SCHEMA_VERSION_IN_USE = SCHEMA_VERSION;
 
@@ -28,6 +30,8 @@ export interface AppOptions {
   db?: Db;
   now?: () => number;
   hasher?: PasswordHasher;
+  /** The one set of domain services. Optional: the app builds them over `db` when left out. */
+  services?: Services;
 }
 
 function notFound(): never {
@@ -46,6 +50,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
     now: options.now ?? Date.now,
     hasher: options.hasher ?? new PasswordHasher(),
   };
+  // One instance of each domain service, shared by every route (and by the MCP layer).
+  const services = options.services ?? createServices(deps);
   // Have the dummy hash ready so the first unknown-username sign-in is not faster.
   void deps.hasher.warmUp();
 
@@ -61,12 +67,13 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.use("/api/*", originCheck(config));
   app.route("/api", accountRoutes(deps));
   app.route("/api", keyRoutes(deps));
-  // Library routes carry their full /api paths.
-  app.route("/", libraryRoutes(db));
+  // Library routes carry their full /api paths; the search is the unified one, mounted below.
+  app.route("/", libraryRoutes(db, { service: services.library, nameSearch: false }));
+  app.route("/", searchRoutes(services.search));
   // Files routes carry their full /api paths; PUT /api/uploads/:token is credentialed by its token alone.
-  app.route("/", filesRoutes(deps));
-  app.route("/api", documentsRoutes(deps));
-  app.route("/api", activityRoutes(deps));
+  app.route("/", filesRoutes(deps, {}, services.files));
+  app.route("/api", documentsRoutes(deps, {}, services.documents));
+  app.route("/api", activityRoutes(deps, services));
   // The agent front door: POST /mcp (API key only) and GET /agents.txt.
   app.route("/", mcpRoutes(deps));
 

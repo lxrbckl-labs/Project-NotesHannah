@@ -76,104 +76,122 @@ function checkInvariants(db: Db, label: string): void {
 
 const KINDS: NodeKind[] = ["term", "course", "folder", "lecture", "document"];
 
+/** Run one seeded session and return how often each operation succeeded. */
+function simulate(seed: number): Record<string, number> {
+  {
+    const db = createTestDatabase();
+    const lib = createLibraryService(db);
+    const users = [newId("user"), newId("user")];
+    const rnd = prng(seed);
+    const pick = <T>(list: T[]): T | undefined => list[Math.floor(rnd() * list.length)];
+    let succeeded = 0;
+    const stats: Record<string, number> = {};
+
+    const ids = (user: string, where = "1=1") =>
+      (
+        db
+          // ORDER BY seq (insertion order): without it SQLite may walk an index on the
+          // random node IDs, so the seeded picks below would differ from run to run.
+          .prepare(
+            `SELECT id, kind, trashed_at FROM nodes WHERE user_id = ? AND ${where} ORDER BY seq`,
+          )
+          .all(user) as Array<{ id: string; kind: NodeKind; trashed_at: string | null }>
+      ).map((r) => r);
+
+    for (let step = 0; step < 400; step++) {
+      const user = pick(users) as string;
+      const all = ids(user);
+      const live = all.filter((n) => n.trashed_at === null);
+      const op = pick([
+        "create",
+        "create",
+        "create",
+        "create",
+        "move",
+        "move",
+        "move",
+        "update",
+        "duplicate",
+        "trash",
+        "trash",
+        "restore",
+        "delete",
+      ]) as string;
+      try {
+        if (op === "create") {
+          const kind = pick(KINDS) as NodeKind;
+          const parent = pick(live);
+          lib.create(user, {
+            parentId: kind === "term" || !parent ? null : parent.id,
+            kind: kind as never,
+            name: `${kind} ${step}`,
+          });
+        } else if (op === "move") {
+          const node = pick(all);
+          const target = pick(live);
+          if (!node) continue;
+          const siblings = target
+            ? (db
+                .prepare(
+                  "SELECT id FROM nodes WHERE parent_id = ? AND trashed_at IS NULL ORDER BY seq",
+                )
+                .all(target.id) as Array<{ id: string }>)
+            : [];
+          const after = rnd() < 0.3 ? undefined : rnd() < 0.3 ? null : pick(siblings)?.id;
+          lib.move(user, node.id, {
+            parentId: rnd() < 0.05 ? null : (target?.id ?? null),
+            ...(after === undefined ? {} : { afterId: after }),
+          });
+        } else if (op === "update") {
+          const node = pick(live);
+          if (node) lib.update(user, node.id, { name: `renamed ${step}`, favourite: rnd() < 0.5 });
+        } else if (op === "duplicate") {
+          const node = pick(live);
+          if (node) lib.duplicate(user, node.id);
+        } else if (op === "trash") {
+          const node = pick(live);
+          if (node) lib.trash(user, node.id);
+        } else if (op === "restore") {
+          const node = pick(all.filter((n) => n.trashed_at !== null));
+          if (node) lib.restore(user, node.id);
+        } else if (op === "delete") {
+          const node = pick(all.filter((n) => n.trashed_at !== null));
+          if (node) lib.permanentDelete(user, node.id);
+        } else {
+          continue;
+        }
+        succeeded++;
+        stats[op] = (stats[op] ?? 0) + 1;
+      } catch (error) {
+        // refused operations are fine; anything else is a bug
+        expect(error, `step ${step} ${op}`).toBeInstanceOf(AppError);
+      }
+      if (step % 25 === 0) checkInvariants(db, `seed ${seed} step ${step}`);
+    }
+    checkInvariants(db, `seed ${seed} end`);
+    expect(succeeded).toBeGreaterThan(150);
+    for (const op of ["create", "move", "duplicate", "trash", "restore", "delete"]) {
+      expect(stats[op] ?? 0, `${op} succeeded at least once`).toBeGreaterThan(0);
+    }
+    // each user's data is untouched by the other's operations
+    for (const user of users) {
+      for (const n of ids(user)) {
+        expect(() => lib.get(users.find((u) => u !== user) as string, n.id)).toThrow(AppError);
+      }
+    }
+    return stats;
+  }
+}
+
 describe("library invariants under random operations", () => {
   for (const seed of [1, 2, 3]) {
     it(`holds after hundreds of random operations (seed ${seed})`, () => {
-      const db = createTestDatabase();
-      const lib = createLibraryService(db);
-      const users = [newId("user"), newId("user")];
-      const rnd = prng(seed);
-      const pick = <T>(list: T[]): T | undefined => list[Math.floor(rnd() * list.length)];
-      let succeeded = 0;
-      const stats: Record<string, number> = {};
-
-      const ids = (user: string, where = "1=1") =>
-        (
-          db
-            .prepare(`SELECT id, kind, trashed_at FROM nodes WHERE user_id = ? AND ${where}`)
-            .all(user) as Array<{ id: string; kind: NodeKind; trashed_at: string | null }>
-        ).map((r) => r);
-
-      for (let step = 0; step < 400; step++) {
-        const user = pick(users) as string;
-        const all = ids(user);
-        const live = all.filter((n) => n.trashed_at === null);
-        const op = pick([
-          "create",
-          "create",
-          "create",
-          "create",
-          "move",
-          "move",
-          "move",
-          "update",
-          "duplicate",
-          "trash",
-          "trash",
-          "restore",
-          "delete",
-        ]) as string;
-        try {
-          if (op === "create") {
-            const kind = pick(KINDS) as NodeKind;
-            const parent = pick(live);
-            lib.create(user, {
-              parentId: kind === "term" || !parent ? null : parent.id,
-              kind: kind as never,
-              name: `${kind} ${step}`,
-            });
-          } else if (op === "move") {
-            const node = pick(all);
-            const target = pick(live);
-            if (!node) continue;
-            const siblings = target
-              ? (db
-                  .prepare("SELECT id FROM nodes WHERE parent_id = ? AND trashed_at IS NULL")
-                  .all(target.id) as Array<{ id: string }>)
-              : [];
-            const after = rnd() < 0.3 ? undefined : rnd() < 0.3 ? null : pick(siblings)?.id;
-            lib.move(user, node.id, {
-              parentId: rnd() < 0.05 ? null : (target?.id ?? null),
-              ...(after === undefined ? {} : { afterId: after }),
-            });
-          } else if (op === "update") {
-            const node = pick(live);
-            if (node)
-              lib.update(user, node.id, { name: `renamed ${step}`, favourite: rnd() < 0.5 });
-          } else if (op === "duplicate") {
-            const node = pick(live);
-            if (node) lib.duplicate(user, node.id);
-          } else if (op === "trash") {
-            const node = pick(live);
-            if (node) lib.trash(user, node.id);
-          } else if (op === "restore") {
-            const node = pick(all.filter((n) => n.trashed_at !== null));
-            if (node) lib.restore(user, node.id);
-          } else if (op === "delete") {
-            const node = pick(all.filter((n) => n.trashed_at !== null));
-            if (node) lib.permanentDelete(user, node.id);
-          } else {
-            continue;
-          }
-          succeeded++;
-          stats[op] = (stats[op] ?? 0) + 1;
-        } catch (error) {
-          // refused operations are fine; anything else is a bug
-          expect(error, `step ${step} ${op}`).toBeInstanceOf(AppError);
-        }
-        if (step % 25 === 0) checkInvariants(db, `seed ${seed} step ${step}`);
-      }
-      checkInvariants(db, `seed ${seed} end`);
-      expect(succeeded).toBeGreaterThan(150);
-      for (const op of ["create", "move", "duplicate", "trash", "restore", "delete"]) {
-        expect(stats[op] ?? 0, `${op} succeeded at least once`).toBeGreaterThan(0);
-      }
-      // each user's data is untouched by the other's operations
-      for (const user of users) {
-        for (const n of ids(user)) {
-          expect(() => lib.get(users.find((u) => u !== user) as string, n.id)).toThrow(AppError);
-        }
-      }
+      simulate(seed);
     });
   }
+
+  it("is deterministic: the same seed performs the same operations whatever the random IDs", () => {
+    // Node and user IDs are random on every run; nothing the seeded picks depend on may be.
+    for (const seed of [1, 2, 3]) expect(simulate(seed)).toEqual(simulate(seed));
+  });
 });

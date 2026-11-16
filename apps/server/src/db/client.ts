@@ -28,6 +28,8 @@ export function openDatabase(path: string): Db {
  *   0001-0099 accounts and core   0100-0199 library
  *   0200-0299 files and inbox     0300-0399 documents
  *   0400-0499 practice            0500-0599 concepts and canvas
+ *   0600-0699 agent layer and integration   0700-0799 requests
+ *   0600-0699 integration (changes that span domains)
  */
 export function migrate(db: Db, dir: string = MIGRATIONS_DIR): string[] {
   db.exec(

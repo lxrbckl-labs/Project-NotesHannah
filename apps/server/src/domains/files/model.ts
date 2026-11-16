@@ -21,6 +21,8 @@ export interface FileRow {
   created_at: number;
   updated_at: number;
   trashed_at: number | null;
+  /** Where it was filed before that node went to the trash (see 0600_integration.sql). */
+  parked_node_id: string | null;
 }
 
 export interface PageRow {

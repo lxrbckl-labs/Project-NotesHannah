@@ -1,8 +1,15 @@
-import { createFilesService, type FilesDeps, type FilesServiceOptions } from "./service.js";
+import {
+  createFilesService,
+  type FilesDeps,
+  type FilesService,
+  type FilesServiceOptions,
+} from "./service.js";
 
 export interface QueueWatcherOptions extends FilesServiceOptions {
   /** How often the queue directories are scanned. */
   intervalMs?: number;
+  /** Scan with the app's one files service instead of making another. */
+  service?: FilesService;
 }
 
 export interface QueueWatcher {
@@ -22,7 +29,7 @@ export function startQueueWatcher(
   options: QueueWatcherOptions = {},
 ): QueueWatcher {
   const log = options.log ?? ((message: string) => console.warn(`[files] ${message}`));
-  const service = createFilesService(deps, { ...options, log });
+  const service = options.service ?? createFilesService(deps, { ...options, log });
   let lastError = "";
   let running = false;
 
