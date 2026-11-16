@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BookOpen, Layers } from "lucide-react";
 import { lazy, Suspense, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
+import { backButtonClass } from "../../components/ui/button";
 import { segmentItemClass } from "../../components/ui/segmented";
 import { ErrorState, Skeleton } from "../../components/ui/states";
 import { appHttp } from "../../lib/api";
@@ -90,7 +91,7 @@ export default function CanvasScreen({
         <Link
           to={parentId ? `/library/${parentId}` : "/library"}
           aria-label={`Back to the library from ${title}`}
-          className="flex size-11 shrink-0 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:size-9"
+          className={backButtonClass}
         >
           <ArrowLeft size={20} />
         </Link>

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { cn } from "../../lib/cn";
 import type { Tone } from "../../lib/hues";
+import { backButtonClass } from "./button";
 
 /**
  * The top of a screen: an optional back link, an eyebrow, the title, a line of description and
@@ -33,11 +34,7 @@ export function PageHeader({
   return (
     <header className={cn("mb-6 flex flex-wrap items-start gap-x-4 gap-y-3", className)}>
       {back ? (
-        <Link
-          to={back.to}
-          aria-label={back.label}
-          className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-control text-text-muted hover:bg-surface-muted hover:text-text xl:size-9"
-        >
+        <Link to={back.to} aria-label={back.label} className={backButtonClass}>
           <ArrowLeft size={20} aria-hidden />
         </Link>
       ) : null}

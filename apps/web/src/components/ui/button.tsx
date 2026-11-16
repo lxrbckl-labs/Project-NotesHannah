@@ -68,6 +68,14 @@ export function Button({
   return <button type={type} className={buttonClass({ variant, size, className })} {...props} />;
 }
 
+/**
+ * Every back arrow looks the same: a solid square with an edge, like the other buttons, so it reads as a
+ * button on the dotted page and on a header bar alike (Alex, 2026-11-16). For a link; a button uses
+ * `<IconButton variant="secondary">`, which draws the same.
+ */
+export const backButtonClass =
+  "flex size-11 shrink-0 items-center justify-center rounded-control border border-border-strong bg-surface text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted active:bg-surface-muted xl:size-9";
+
 type IconButtonVariant = "ghost" | "subtle" | "secondary" | "primary" | "ghostDanger";
 
 const ICON_VARIANTS: Record<IconButtonVariant, string> = {

@@ -66,7 +66,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
   return (
     <header data-hue={hue ?? undefined} className="mb-6">
       <div className="mb-3 flex items-center gap-1">
-        <IconButton aria-label="Back" onClick={back} className="-ml-2 md:hidden">
+        <IconButton aria-label="Back" variant="secondary" onClick={back} className="mr-1 md:hidden">
           <ArrowLeft size={20} />
         </IconButton>
         <div className="min-w-0 flex-1 overflow-x-auto">

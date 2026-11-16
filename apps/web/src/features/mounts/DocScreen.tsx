@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { Button } from "../../components/ui/button";
+import { Button, backButtonClass } from "../../components/ui/button";
 import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { appHttp, isApiError } from "../../lib/api";
@@ -126,7 +126,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
           <Link
             to={n.parentId ? `/library/${n.parentId}` : "/library"}
             aria-label="Back to the library"
-            className="flex size-11 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:size-9"
+            className={backButtonClass}
           >
             <ArrowLeft size={20} />
           </Link>
