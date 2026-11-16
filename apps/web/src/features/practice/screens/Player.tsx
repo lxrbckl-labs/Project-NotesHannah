@@ -295,6 +295,7 @@ export function Player({
       <div
         ref={mainRef}
         tabIndex={-1}
+        data-fills-pane
         className="pr-scroll relative min-h-0 flex-1 overflow-y-auto outline-none"
         data-testid="player-main"
       >

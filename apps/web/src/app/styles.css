@@ -523,6 +523,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* The app stops at its edges: no dragging the window past its top or bottom (the rubber band). */
+  overscroll-behavior: none;
 }
 
 body {
@@ -530,7 +532,17 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  overscroll-behavior-y: none;
+  overscroll-behavior: none;
+}
+
+/*
+ * The same for the areas that fill the pane and scroll inside the app: they stop dead at their ends.
+ * Small scrolling boxes inside a page are left alone, so reaching their end still scrolls the page.
+ */
+#main,
+#main [data-testid="doc-scroller"],
+[data-fills-pane] {
+  overscroll-behavior: none;
 }
 
 h1,
