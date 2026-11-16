@@ -17,7 +17,7 @@ import {
 } from "../model/richtext";
 import { SHORTCUT_PREFIX } from "../model/shortcuts";
 import { inlineExtensions } from "./extensions";
-import { type LineKind, listLinesExtension } from "./lines";
+import { changeIndent, type LineKind, listLinesExtension } from "./lines";
 
 /** Keys the surrounding block handles (splitting, merging, moving between blocks). */
 export interface EditorKeys {
@@ -46,6 +46,8 @@ export interface EditorKeys {
 export type EditorValue = RichText | EditorLine[];
 
 export interface InlineEditorProps {
+  /** The block this text belongs to, so the ribbon knows what the caret is in. */
+  blockId?: string;
   mode: "single" | "lines";
   value: EditorValue;
   lineKind?: LineKind;
@@ -133,15 +135,7 @@ export function InlineEditor(props: InlineEditorProps) {
           return selection.empty && selection.from >= doc.content.size - 1;
         };
         const currentLine = () => editor.state.selection.$from.parent;
-        const setIndent = (delta: number) => {
-          const { $from } = editor.state.selection;
-          const index = $from.index(0);
-          const prev = index > 0 ? Number(editor.state.doc.child(index - 1).attrs.indent ?? 0) : -1;
-          const now = Number($from.parent.attrs.indent ?? 0);
-          const next = Math.max(0, Math.min(2, prev + 1, now + delta));
-          if (next === now) return true;
-          return editor.commands.updateAttributes("paragraph", { indent: next });
-        };
+        const setIndent = (delta: number) => changeIndent(editor, delta);
         const undo = () => {
           flushRef.current();
           actions.controller.undo();
@@ -307,6 +301,10 @@ export function InlineEditor(props: InlineEditorProps) {
     },
     onFocus: ({ editor }) => {
       actions.activeEditor.set(editor);
+      // The ribbon keeps acting on this editor while a menu of its own has the focus.
+      const blockId = latest.current.blockId;
+      if (blockId && actions.caretEditor.get()?.editor !== editor)
+        actions.caretEditor.set({ editor, blockId });
       latest.current.onFocusChange?.(true);
     },
     onBlur: ({ editor }) => {
@@ -341,8 +339,9 @@ export function InlineEditor(props: InlineEditorProps) {
     () => () => {
       flushRef.current();
       if (editor && actions.activeEditor.get() === editor) actions.activeEditor.set(null);
+      if (editor && actions.caretEditor.get()?.editor === editor) actions.caretEditor.set(null);
     },
-    [editor, actions.activeEditor],
+    [editor, actions.activeEditor, actions.caretEditor],
   );
 
   // Take in outside changes (undo, another device) when she is not mid-typing.

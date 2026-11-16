@@ -1,4 +1,4 @@
-import type { CitationStatus, DocumentWithBlocks } from "@notes/schema";
+import type { BlockType, CitationStatus, DocumentWithBlocks } from "@notes/schema";
 import type { Editor } from "@tiptap/core";
 import { createContext, useContext, useSyncExternalStore } from "react";
 import type { PendingCall } from "./model/ops";
@@ -41,6 +41,12 @@ export interface FocusRequest {
   seq: number;
 }
 
+/** An editor that had the caret, and the block it edits. */
+export interface CaretEditor {
+  editor: Editor;
+  blockId: string;
+}
+
 /** Stable things: the controller, the store and the actions. Never changes for a document. */
 export interface DocActions {
   controller: DocumentController;
@@ -62,13 +68,23 @@ export interface DocActions {
   active: Signal<string | null>;
   setActive: (blockId: string | null) => void;
   activeEditor: Signal<Editor | null>;
+  /**
+   * The editor the caret was last in, kept while it stays mounted. `activeEditor` clears
+   * soon after a blur; this one survives a ribbon menu taking the focus, so the menu's
+   * choice still lands in the right place.
+   */
+  caretEditor: Signal<CaretEditor | null>;
   /** Show the slash/insert menu for a block (after it, or replacing it when empty). */
   openInsertMenu: (
     blockId: string | null,
     replace: boolean,
     anchor: DOMRect | null,
     query?: string,
+    /** "plus" shows the search field even when replacing (the ribbon's Insert button). */
+    source?: "slash" | "plus",
   ) => void;
+  /** Add a block of this type after a block (or in its place) and put the caret in it. */
+  insertType: (type: BlockType, blockId: string | null, replace?: boolean) => void;
   slashQuery: Signal<{ blockId: string; query: string } | null>;
   /** The open slash menu's key handler, called by the editor for arrows, Enter and Escape. */
   slashKeyHandler: { current: ((key: string) => boolean) | null };

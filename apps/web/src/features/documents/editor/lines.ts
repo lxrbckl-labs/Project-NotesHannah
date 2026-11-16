@@ -1,4 +1,4 @@
-import { Extension } from "@tiptap/core";
+import { type Editor, Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
@@ -50,6 +50,34 @@ export function listLabels(indents: readonly number[], kind: LineKind, start = 1
     if (indent === 1) return `${alpha(n)}.`;
     return `${roman(n)}.`;
   });
+}
+
+/** The deepest list level the schema allows (indent 0, 1 and 2). */
+export const MAX_INDENT = 2;
+
+/**
+ * Indent (+1) or outdent (-1) the list line the caret is on. A line goes at
+ * most one level deeper than the line above it, so the list never skips a
+ * level. Shared by Tab / Shift-Tab and the ribbon's indent buttons.
+ */
+export function changeIndent(editor: Editor, delta: number): boolean {
+  const { $from } = editor.state.selection;
+  const index = $from.index(0);
+  const prev = index > 0 ? Number(editor.state.doc.child(index - 1).attrs.indent ?? 0) : -1;
+  const now = Number($from.parent.attrs.indent ?? 0);
+  const next = Math.max(0, Math.min(MAX_INDENT, prev + 1, now + delta));
+  if (next === now) return true;
+  return editor.commands.updateAttributes("paragraph", { indent: next });
+}
+
+/** What indent and outdent can do on the caret's line now, for the buttons' enabled state. */
+export function indentRoom(editor: Editor): { indent: boolean; outdent: boolean } {
+  const { $from } = editor.state.selection;
+  if ($from.depth < 1) return { indent: false, outdent: false };
+  const index = $from.index(0);
+  const prev = index > 0 ? Number(editor.state.doc.child(index - 1).attrs.indent ?? 0) : -1;
+  const now = Number($from.parent.attrs.indent ?? 0);
+  return { indent: now < Math.min(MAX_INDENT, prev + 1), outdent: now > 0 };
 }
 
 /**

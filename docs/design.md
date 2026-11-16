@@ -492,6 +492,26 @@ colours.
 `useToast()` returns `show(message, action?)`, the new `success(message, action?)` and
 `error(error)`. `error` takes any error; for a plain sentence pass `new Error("...")`.
 
+### Document editor toolbars (`features/documents/editor/`)
+
+Not shared components, but the pattern for any text-editing surface:
+
+- **Ribbon** (`Ribbon.tsx`): from tablet width up, a full-width bar under the document's own bar
+  while editing, on the surface colour with a bottom hairline. Groups left to right, split by thin
+  dividers: undo and redo; the block style dropdown (an outlined text button with the kind's icon);
+  bold, italic, underline, strikethrough, code; highlight, block colour, link; list toggles and
+  indent; an outlined "Insert" button with one-tap table, callout and divider; the shortcuts
+  cheat sheet. With no text being edited it rests greyed out. When it does not fit, the least used
+  groups fold into a "More" menu (inserts, then indent, then lists, then colour) instead of wrapping.
+- **Selection bubble** (`FormatToolbar.tsx`): on a computer only, the inline marks, highlight and link
+  over selected words.
+- **Keyboard dock** (`FormatToolbar.tsx`): on a phone, the same controls in one row above the
+  on-screen keyboard, scrolling sideways, with Done at the end.
+- Every control cancels mouse down so the caret stays in the text; popovers that only pick (colours,
+  shortcuts) do not take the focus, and menus that do give it back to the text when they close.
+- Colour is per block in the schema, so the control is called "Block colour"; the highlighter is the
+  only per-word colour.
+
 ### Not provided
 
 There is no shared Select: no feature uses a native or custom select today. If one is needed, build

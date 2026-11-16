@@ -493,6 +493,11 @@ export const BlockShell = memo(function BlockShell({
       className={cn(
         "doc-block group/block relative scroll-mt-24",
         block.type === "heading" ? "mt-7 mb-1 first:mt-0" : "my-2.5",
+        // An invisible strip in the left margin keeps the hover alive on the way from the
+        // text to the + and the handle, so they do not blink out halfway.
+        editing &&
+          !isTouch &&
+          "before:absolute before:inset-y-0 before:right-full before:w-6 before:content-['']",
       )}
       onPointerDownCapture={() => {
         if (editing && !active) actions.setActive(block.id);
@@ -533,8 +538,11 @@ export const BlockShell = memo(function BlockShell({
       {editing && !isTouch && (
         <div
           className={cn(
-            "absolute top-0 -left-[4.25rem] flex h-8 items-center gap-0.5 opacity-0 transition-opacity group-hover/block:opacity-100 focus-within:opacity-100",
-            active && "opacity-100",
+            // Out of the flow and only faded in: hovering never moves the text.
+            "absolute top-0 right-[calc(100%+1.125rem)] flex items-center gap-0.5 pl-2 opacity-0 transition-opacity duration-(--duration-fast) group-hover/block:opacity-100 focus-within:opacity-100",
+            // Level with the first line of text.
+            block.type === "heading" && block.content.level === 1 ? "h-9" : "h-8",
+            (active || menuOpen) && "opacity-100",
           )}
         >
           <IconButton

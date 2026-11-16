@@ -40,14 +40,16 @@ import { cn } from "../../lib/cn";
 import { BlockShell } from "./blocks/BlockShell";
 import {
   ActionsContext,
+  type CaretEditor,
   type DocActions,
   type DocView,
   type FocusRequest,
   Signal,
   ViewContext,
 } from "./context";
-import { FormatToolbar } from "./editor/FormatToolbar";
+import { KeyboardDock, SelectionBubble } from "./editor/FormatToolbar";
 import { InsertMenu, type InsertMenuState } from "./editor/InsertMenu";
+import { Ribbon } from "./editor/Ribbon";
 import {
   insertBlock,
   isListType,
@@ -168,6 +170,10 @@ function DocumentScreen({
   const docRef = useRef(doc);
   docRef.current = doc;
   const lastDragEnd = useRef(0);
+  // The insert logic reads the latest document; actions are created once and call it through this.
+  const insertTypeRef = useRef<(type: BlockType, blockId: string | null, replace: boolean) => void>(
+    () => {},
+  );
 
   useEffect(() => {
     if (layout === "computer") setOutlineOpen(true);
@@ -209,6 +215,7 @@ function DocumentScreen({
       focus: new Signal<FocusRequest | null>(null),
       active: new Signal<string | null>(null),
       activeEditor: new Signal<Editor | null>(null),
+      caretEditor: new Signal<CaretEditor | null>(null),
       slashQuery: new Signal<{ blockId: string; query: string } | null>(null),
       slashKeyHandler: { current: null as ((key: string) => boolean) | null },
       seq: { current: 0 },
@@ -356,8 +363,16 @@ function DocumentScreen({
       active: signals.active,
       setActive: (blockId) => signals.active.set(blockId),
       activeEditor: signals.activeEditor,
-      openInsertMenu: (blockId, replace, anchor, query = "") =>
-        setInsert({ blockId, replace, anchor, query, source: replace ? "slash" : "plus" }),
+      caretEditor: signals.caretEditor,
+      openInsertMenu: (blockId, replace, anchor, query = "", source) =>
+        setInsert({
+          blockId,
+          replace,
+          anchor,
+          query,
+          source: source ?? (replace ? "slash" : "plus"),
+        }),
+      insertType: (type, blockId, replace = false) => insertTypeRef.current(type, blockId, replace),
       slashQuery: signals.slashQuery,
       slashKeyHandler: signals.slashKeyHandler,
       docRef,
@@ -443,7 +458,9 @@ function DocumentScreen({
     let frame = 0;
     const update = () => {
       frame = 0;
-      const top = box.getBoundingClientRect().top + 96;
+      // A heading scrolled to the top sits 96px down (its scroll margin); a couple of pixels
+      // of slack, because a smooth scroll can stop a fraction of a pixel short.
+      const top = box.getBoundingClientRect().top + 98;
       let current: string | null = outline[0]?.id ?? null;
       for (const item of outline) {
         const el = document.getElementById(`h-${item.id}`);
@@ -464,11 +481,22 @@ function DocumentScreen({
 
   const jumpToHeading = (id: string) => {
     if (layout !== "computer") setOutlineOpen(false);
-    requestAnimationFrame(() =>
-      document
-        .getElementById(`h-${id}`)
-        ?.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" }),
-    );
+    requestAnimationFrame(() => {
+      const heading = document.getElementById(`h-${id}`);
+      const box = scroller.current;
+      if (!heading) return;
+      heading.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+      if (reduced || !box) return;
+      // Blocks off screen are not drawn until they come near, so a smooth scroll aims with
+      // estimated heights and can stop short. When it ends, settle on the heading exactly.
+      const settle = () => {
+        box.removeEventListener("scrollend", settle);
+        clearTimeout(fallback);
+        heading.scrollIntoView({ block: "start", behavior: "auto" });
+      };
+      const fallback = setTimeout(settle, 1200);
+      box.addEventListener("scrollend", settle);
+    });
   };
 
   const unverified = doc ? countUnverified(doc.blocks) : 0;
@@ -533,11 +561,17 @@ function DocumentScreen({
     const st = insert;
     setInsert(null);
     signals.slashQuery.set(null);
-    if (!st || !doc) return;
-    const replaceId = st.replace ? st.blockId : null;
+    if (!st) return;
+    insertType(type, st.blockId, st.replace);
+  };
+
+  /** Add a block after `blockId` (or in its place) and put the caret in it; shared with the ribbon. */
+  const insertType = (type: BlockType, blockId: string | null, replace: boolean) => {
+    if (!doc) return;
+    const replaceId = replace ? blockId : null;
     if (NEEDS_PAGE.includes(type)) {
-      const at = st.blockId ? doc.blockIds.indexOf(st.blockId) : -1;
-      const afterId = replaceId ? (doc.blockIds[at - 1] ?? null) : st.blockId;
+      const at = blockId ? doc.blockIds.indexOf(blockId) : -1;
+      const afterId = replaceId ? (doc.blockIds[at - 1] ?? null) : blockId;
       setPicker({
         type: type as "image" | "labelled_image",
         afterId,
@@ -546,6 +580,8 @@ function DocumentScreen({
       return;
     }
     const editable = isTextType(type) || isListType(type);
+    // A new table gets the caret in its first cell, ready to type the first heading.
+    const field = type === "table" ? "cell-0-0" : "main";
     if (replaceId) {
       if (type === "paragraph") {
         signals.activeEditor.get()?.commands.clearContent(true);
@@ -567,22 +603,21 @@ function DocumentScreen({
         ],
         "Turn into",
       );
-      if (ok && editable) actions.requestFocus(replaceId, "start");
+      if (ok && (editable || type === "table")) actions.requestFocus(replaceId, "start", field);
       else if (ok) signals.active.set(replaceId);
       return;
     }
     const clientId = newId("block");
     const ok = controller.perform(
-      insertBlock(documentId, st.blockId, newBlockInput(type), clientId),
+      insertBlock(documentId, blockId, newBlockInput(type), clientId),
       "Insert block",
     );
     if (!ok) return;
-    if (editable) actions.requestFocus(clientId, "start");
-    else {
-      signals.active.set(clientId);
-      requestAnimationFrame(() => scrollToBlock(clientId, false));
-    }
+    if (editable || type === "table") actions.requestFocus(clientId, "start", field);
+    else signals.active.set(clientId);
+    if (!editable) requestAnimationFrame(() => scrollToBlock(clientId, false));
   };
+  insertTypeRef.current = insertType;
 
   const onPick = (page: {
     fileId: string;
@@ -671,8 +706,17 @@ function DocumentScreen({
               outlineOpen={outlineOpen && layout === "computer"}
               onHistory={() => setHistoryOpen(true)}
               compact={layout === "phone"}
-              touch={isTouch}
+              // The ribbon has undo and redo from tablet width; the phone dock has them on touch.
+              showUndo={editing && layout === "phone" && !isTouch}
             />
+            {editing && layout !== "phone" && (
+              <Ribbon
+                blocks={doc.blocks}
+                canUndo={state.canUndo}
+                canRedo={state.canRedo}
+                touch={isTouch}
+              />
+            )}
             <div
               ref={scroller}
               className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
@@ -680,20 +724,25 @@ function DocumentScreen({
             >
               <div className="relative">
                 <article
+                  data-testid="doc-page"
                   className={cn(
                     "mx-auto max-w-[46rem] pt-8 pb-[40vh]",
-                    "px-[max(20px,env(safe-area-inset-left))] md:px-12",
-                    editing && !isTouch ? "xl:pr-12 xl:pl-24" : "xl:px-16",
+                    "px-[max(20px,env(safe-area-inset-left))]",
+                    // From tablet up the document is a sheet of paper on the desk, as in a word
+                    // processor; the space under it lets the last lines scroll up to eye level.
+                    "md:mt-6 md:mb-[40vh] md:w-[calc(100%-3rem)] md:max-w-[52rem] md:rounded-panel md:border md:border-border md:bg-surface md:px-14 md:pt-12 md:pb-16 md:shadow-card",
+                    // The hover gutter (+ and the drag handle) needs room on the left of the text.
+                    editing && !isTouch ? "xl:pr-16 xl:pl-24" : "xl:px-20",
                   )}
                   aria-labelledby="doc-title"
                 >
-                  <header className="mb-8">
+                  <header className="mb-8 md:mb-10 md:border-b md:border-border md:pb-8">
                     <p className="m-0 text-label font-semibold uppercase tracking-[0.08em] text-text-muted">
                       {KIND_LABEL[doc.kind]}
                     </p>
                     <h1
                       id="doc-title"
-                      className="mt-1 mb-0 text-[2.1rem] leading-[1.15] font-bold tracking-[-0.02em] md:text-[2.5rem]"
+                      className="mt-1.5 mb-0 font-display text-[2.1rem] leading-[1.15] font-bold tracking-[-0.02em] text-balance md:text-[2.6rem]"
                     >
                       {doc.title}
                     </h1>
@@ -728,7 +777,7 @@ function DocumentScreen({
                           e.currentTarget.getBoundingClientRect(),
                         )
                       }
-                      className="mt-4 flex min-h-11 w-full items-center gap-2 rounded-card px-3 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface hover:text-text"
+                      className="mt-6 flex min-h-11 w-full items-center gap-2 rounded-card border border-dashed border-border-strong px-3 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:border-accent-border hover:bg-accent-soft hover:text-accent"
                     >
                       <Plus aria-hidden className="size-4" /> Add a block
                     </button>
@@ -845,7 +894,8 @@ function DocumentScreen({
               sheet={insert.source === "plus" && layout === "phone"}
             />
           )}
-          {editing && <FormatToolbar touch={isTouch} />}
+          {editing && layout === "phone" && <KeyboardDock blocks={doc.blocks} />}
+          {editing && layout !== "phone" && !isTouch && <SelectionBubble />}
         </div>
       </ViewContext.Provider>
     </ActionsContext.Provider>
@@ -993,7 +1043,7 @@ function TopBar({
   outlineOpen,
   onHistory,
   compact,
-  touch,
+  showUndo,
 }: {
   editing: boolean;
   setEditing: (e: boolean) => void;
@@ -1005,13 +1055,13 @@ function TopBar({
   outlineOpen: boolean;
   onHistory: () => void;
   compact: boolean;
-  touch: boolean;
+  showUndo: boolean;
 }) {
   return (
     <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-1 border-b border-border bg-surface/85 px-2 pt-[env(safe-area-inset-top)] backdrop-blur md:px-3">
       <div className="flex min-h-14 flex-1 items-center gap-1">
         <SaveStatus state={state} controller={controller} compact={compact} />
-        {editing && !touch && (
+        {showUndo && (
           <>
             <span aria-hidden className="mx-1 h-5 w-px bg-border" />
             <IconButton

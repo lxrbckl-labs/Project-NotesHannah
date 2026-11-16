@@ -42,6 +42,9 @@ proposed for after the first release. See [architecture.md](architecture.md) for
 ## D. Documents and blocks
 
 - **D1** Page view with a block editor. Typing shortcuts at the start of a paragraph: `# `, `## `, `### ` headings; `- ` or `* ` bullets; `1. ` numbers; `[] ` checklist; `> ` quote; `!! ` warning callout; `?? ` tip callout; `---` then Enter (or `--- `) a divider. An empty document can start with the caret ready in one paragraph (`startWriting`).
+  - Typing marks inside text: `**bold**`, `*italic*` or `_italic_`, `` `code` ``, `~~strike~~` and `==highlight==` turn into the mark when the closing characters are typed.
+  - From tablet width up, editing shows a formatting ribbon under the document's bar, as in a word processor: undo and redo, a block style dropdown (Text, Heading 1 to 3, Quote, the three lists, Callout), bold, italic, underline, strikethrough, code, highlight, block colour, link, list toggles, indent and outdent, Insert (the full block menu) with one-tap table, callout and divider, and a cheat sheet of every shortcut. It follows the block and the marks where the caret is. On a computer a small bubble over selected words keeps the inline marks; on a phone the same controls sit in a bar above the keyboard.
+  - From tablet width up the document reads as a sheet of paper on the desk; wide tables scroll sideways inside their own box.
 - **D2** Basic blocks: heading, paragraph, lists, quote, divider, table, image.
 - **D3** Callouts and colour highlights.
 - **D4** Drug card: name, class, mechanism, indications, adverse effects, interactions, counselling points.

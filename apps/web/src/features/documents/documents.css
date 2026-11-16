@@ -239,6 +239,48 @@
   scrollbar-width: thin;
 }
 
+/* A wide table: it scrolls inside its own box; a soft shadow at an edge means more that way. */
+.doc-table-wrap {
+  position: relative;
+}
+.doc-table-wrap::before,
+.doc-table-wrap::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: var(--z-raised);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.doc-table-wrap::before {
+  left: 1px;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, var(--color-overlay) 35%, transparent),
+    transparent
+  );
+}
+.doc-table-wrap::after {
+  right: 1px;
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: linear-gradient(
+    to left,
+    color-mix(in oklab, var(--color-overlay) 35%, transparent),
+    transparent
+  );
+}
+.doc-table-wrap[data-more-start="true"]::before,
+.doc-table-wrap[data-more-end="true"]::after {
+  opacity: 1;
+}
+.doc-table-wrap .doc-scroll-x {
+  touch-action: pan-x pan-y;
+}
+
 /* The cited words in a source's transcript, and a block flashed after a jump. */
 .doc-quote-hit {
   background: var(--hue-yellow-mark);
