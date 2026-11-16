@@ -8,6 +8,7 @@ import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { activityRoutes } from "./domains/activity/index.js";
+import { canvasRoutes } from "./domains/canvas/index.js";
 import { conceptsRoutes } from "./domains/concepts/index.js";
 import { documentsRoutes } from "./domains/documents/index.js";
 import { examsRoutes } from "./domains/exams/index.js";
@@ -80,6 +81,7 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   // Files routes carry their full /api paths; PUT /api/uploads/:token is credentialed by its token alone.
   app.route("/", filesRoutes(deps, {}, services.files));
   app.route("/api", documentsRoutes(deps, {}, services.documents));
+  app.route("/api", canvasRoutes(services.canvas));
   app.route("/api", activityRoutes(deps, services));
   app.route("/api", practiceRoutes(deps, services.practice));
   app.route("/api", examsRoutes(deps, services.exams));

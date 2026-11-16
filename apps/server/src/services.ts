@@ -9,6 +9,12 @@ import {
   createChangeFeed,
 } from "./domains/activity/index.js";
 import {
+  type CanvasPort,
+  type CanvasService,
+  createCanvasPort,
+  createCanvasService,
+} from "./domains/canvas/index.js";
+import {
   type ConceptsPort,
   type ConceptsService,
   createConceptsService,
@@ -76,6 +82,8 @@ export interface Services {
   exams: ExamsService;
   requests: RequestsService;
   concepts: ConceptsService;
+  /** The second view of a document: cards, connectors and frames, pins of hers (docs/canvas.md). */
+  canvas: CanvasService;
   /** "What changed since" (H9). Every domain's changes land here. */
   changes: ChangeFeed;
   /** What agents did, in plain words (H10). */
@@ -88,6 +96,7 @@ export interface Services {
   practicePort: PracticePort;
   conceptsPort: ConceptsPort;
   requestsPort: RequestsPort;
+  canvasPort: CanvasPort;
 }
 
 const CONCEPTS_PORT_KEYS = [
@@ -125,6 +134,8 @@ function conceptsPortOf(concepts: ConceptsService): ConceptsPort {
  * - every domain appends to the same change feed and activity log;
  * - documents, practice and concepts check citations against the files tables, and a `requestId`
  *   only lifts the protection of her blocks when the requests domain says it covers them;
+ * - a document write tells the canvas (in the same transaction) so its cards follow the blocks, and a
+ *   duplicated node gets a copy of its canvas with fresh IDs; a canvas goes with its document;
  * - concept pages find their mentions (documents) and questions (practice) in the real tables.
  */
 export function createServices(deps: ServicesDeps, options: ServicesOptions = {}): Services {
@@ -142,6 +153,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     exams?: ExamsService;
     requests?: RequestsService;
     concepts?: ConceptsService;
+    canvas?: CanvasService;
   } = {};
   const need = <K extends keyof typeof later>(key: K): NonNullable<(typeof later)[K]> =>
     later[key] as NonNullable<(typeof later)[K]>;
@@ -172,6 +184,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
       const nodeMap = Object.fromEntries(pairs.map((p) => [p.fromId, p.toId]));
       for (const { fromId, toId } of pairs) {
         need("documents").onNodeDuplicated(userId, fromId, toId, actor);
+        need("canvas").onNodeDuplicated(userId, fromId, toId);
         need("exams").onNodeDuplicated(userId, fromId, toId, nodeMap);
       }
       need("practice").onNodesDuplicated(
@@ -231,6 +244,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
       activity: activity.port,
       requests: requests.port,
       onDocumentsDeleted: (userId, ids) => requests.onDocumentsDeleted(userId, ids),
+      onBlocksChanged: (change) => need("canvas").onBlocksChanged(change),
       ...(options.revisionCap === undefined ? {} : { revisionCap: options.revisionCap }),
     },
   );
@@ -260,7 +274,13 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
   later.practice = practice;
   later.exams = exams;
   later.requests = requests;
+  const canvas = createCanvasService(
+    { db, now },
+    { documents, changes, activity: activity.port, requests: requests.port },
+  );
+
   later.concepts = concepts;
+  later.canvas = canvas;
 
   const search = createSearchService({ library, files, documents, practice, concepts });
 
@@ -272,6 +292,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     exams,
     requests,
     concepts,
+    canvas,
     changes,
     activity,
     search,
@@ -279,5 +300,6 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     practicePort: createPracticePort(practice, exams),
     conceptsPort: conceptsPortOf(concepts),
     requestsPort: requests.port,
+    canvasPort: createCanvasPort(canvas),
   };
 }

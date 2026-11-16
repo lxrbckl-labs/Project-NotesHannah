@@ -82,6 +82,19 @@ export interface DocumentsPorts {
   requests?: RequestsPort;
   /** Told, inside the same transaction, when documents are removed for good (their node was deleted). */
   onDocumentsDeleted?: (userId: string, documentIds: readonly string[]) => void;
+  /**
+   * Told, inside the write's own transaction, after a document's blocks are saved, with the blocks
+   * as they now are. The canvas follows the document through this; documents never import it.
+   */
+  onBlocksChanged?: (change: {
+    userId: string;
+    documentId: string;
+    nodeId: string;
+    title: string;
+    blocks: readonly Block[];
+    actor: Actor;
+    at: string;
+  }) => void;
 }
 
 export type OperationInput<K extends WriterOperation> = z.input<(typeof WRITER_OPERATIONS)[K]>;
@@ -1154,6 +1167,15 @@ export function createDocumentsService(
     }
     repo.writeBlocks(row.id, ctx.userId, work.before, work.blocks);
     repo.replaceCitations(row.id, ctx.userId, citationIndexRows(row.id, work.blocks));
+    ports.onBlocksChanged?.({
+      userId: ctx.userId,
+      documentId: row.id,
+      nodeId: row.node_id,
+      title: work.title,
+      blocks: work.blocks,
+      actor: ctx.actor,
+      at: ctx.now,
+    });
 
     const summary = work.notes.join("; ").slice(0, 300);
     repo.insertRevision({
