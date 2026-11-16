@@ -139,10 +139,21 @@ test("edits a paragraph with formatting", async ({ page }, info) => {
     }
   });
   if (isComputer(info.project.name)) {
+    // The selection bubble and the ribbon both show; the shortcut works too.
     await expect(page.getByTestId("format-toolbar")).toBeVisible();
+    await expect(page.getByTestId("format-ribbon")).toHaveAttribute("data-live", "true");
     await page.keyboard.press("ControlOrMeta+b");
+  } else if (info.project.name === "tablet") {
+    // A tablet gets the ribbon at the top, as on a computer.
+    await page
+      .getByTestId("format-ribbon")
+      .getByRole("button", { name: "Bold", exact: true })
+      .click();
   } else {
-    await page.getByTestId("format-toolbar").getByRole("button", { name: "Bold" }).click();
+    await page
+      .getByTestId("format-toolbar")
+      .getByRole("button", { name: "Bold", exact: true })
+      .click();
   }
   await expect(editor.locator("strong", { hasText: "Remember this" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -178,6 +189,48 @@ test("inserts a callout with the slash menu", async ({ page }, info) => {
   await saved(page);
   const doc = await stored(page);
   expect(doc.blocks.filter((b) => b.type === "callout")).toHaveLength(before + 1);
+});
+
+test("turns a paragraph into a heading from the block style menu", async ({ page }) => {
+  await open(page);
+  await edit(page);
+  const para = block(page, "paragraph");
+  const id = await para.getAttribute("data-block-id");
+  await para.getByTestId("field-main").click({ position: { x: 20, y: 10 } });
+  await expect(para.getByTestId("editor-main")).toBeFocused();
+  // The ribbon on tablet and computer, the dock above the keyboard on a phone.
+  const style = page.getByTestId("block-style");
+  await expect(style).toHaveAccessibleName("Block style: Text");
+  await style.click();
+  await page.getByTestId("style-heading3").click();
+  const heading = page.locator(`[data-block-id="${id}"]`);
+  await expect(heading).toHaveAttribute("data-type", "heading");
+  // The caret is back in the text, now a heading.
+  await expect(heading.getByTestId("editor-main")).toBeFocused();
+  await expect(style).toHaveAccessibleName("Block style: Heading 3");
+  await saved(page);
+  const doc = await stored(page);
+  expect(doc.blocks.find((b) => b.id === id)?.content).toMatchObject({ level: 3 });
+});
+
+test("a wide table scrolls sideways inside its box", async ({ page }) => {
+  await open(page);
+  await edit(page);
+  const table = block(page, "table");
+  await table.getByTestId("field-cell-1-0").click();
+  for (let i = 0; i < 4; i++) await table.getByTestId("add-column").click();
+  const box = table.getByTestId("table-scroll");
+  const sizes = await box.evaluate((el) => ({
+    scroll: el.scrollWidth,
+    client: el.clientWidth,
+    block: (el.closest("[data-block-id]") as HTMLElement).getBoundingClientRect().width,
+    box: el.getBoundingClientRect().width,
+  }));
+  // Wider than its box, which stays inside the block instead of being cut off.
+  expect(sizes.scroll).toBeGreaterThan(sizes.client);
+  expect(sizes.box).toBeLessThanOrEqual(sizes.block + 0.5);
+  await box.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+  await expect.poll(() => box.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
 });
 
 test("edits a drug card field", async ({ page }) => {

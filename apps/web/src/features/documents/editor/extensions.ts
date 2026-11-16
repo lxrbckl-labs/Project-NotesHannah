@@ -1,4 +1,11 @@
-import { type Extensions, Mark, mergeAttributes, Node } from "@tiptap/core";
+import {
+  type Extensions,
+  Mark,
+  markInputRule,
+  markPasteRule,
+  mergeAttributes,
+  Node,
+} from "@tiptap/core";
 import Bold from "@tiptap/extension-bold";
 import Code from "@tiptap/extension-code";
 import Document from "@tiptap/extension-document";
@@ -114,6 +121,10 @@ export const ConceptNode = Node.create<InlineNodeOptions>({
   },
 });
 
+/** "==text==" at the caret (typed) or anywhere (pasted); the same patterns as Tiptap's highlight. */
+const HIGHLIGHT_TYPED = /(?:^|\s)(==(?!\s+==)((?:[^=]+))==(?!\s+==))$/;
+const HIGHLIGHT_PASTED = /(?:^|\s)(==(?!\s+==)((?:[^=]+))==(?!\s+==))/g;
+
 /** Highlighter with a colour token, stored as the run's `highlight`. */
 export const TokenHighlight = Mark.create({
   name: "highlight",
@@ -137,6 +148,22 @@ export const TokenHighlight = Mark.create({
     return {
       "Mod-Shift-h": () => this.editor.commands.toggleMark(this.name, { color: "yellow" }),
     };
+  },
+  // "==words==" turns into highlighted words as the closing "==" is typed (or pasted), like
+  // the markdown marks bold, italic, code and strike already do through their own extensions.
+  addInputRules() {
+    return [
+      markInputRule({ find: HIGHLIGHT_TYPED, type: this.type, getAttributes: { color: "yellow" } }),
+    ];
+  },
+  addPasteRules() {
+    return [
+      markPasteRule({
+        find: HIGHLIGHT_PASTED,
+        type: this.type,
+        getAttributes: { color: "yellow" },
+      }),
+    ];
   },
 });
 

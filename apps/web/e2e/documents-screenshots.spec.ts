@@ -71,7 +71,10 @@ for (const theme of THEMES) {
         }
       }
     });
-    await expect(page.getByTestId("format-toolbar")).toBeVisible();
+    // The bubble on a computer, the keyboard dock on a phone; a tablet has the ribbon only.
+    if (test.info().project.name === "tablet")
+      await expect(page.getByTestId("format-ribbon")).toHaveAttribute("data-live", "true");
+    else await expect(page.getByTestId("format-toolbar")).toBeVisible();
     await snap(page, "editing", theme);
   });
 

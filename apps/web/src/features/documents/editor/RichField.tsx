@@ -110,6 +110,7 @@ export function RichField({
   if (editable && mounted) {
     return (
       <InlineEditor
+        blockId={blockId}
         mode="single"
         value={value}
         onCommit={(v) => onCommit(v as RichText)}
@@ -209,6 +210,7 @@ export function ListField({
     return (
       <div className="doc-lines" data-kind={kind}>
         <InlineEditor
+          blockId={blockId}
           mode="lines"
           lineKind={kind}
           {...(start !== undefined ? { start } : {})}

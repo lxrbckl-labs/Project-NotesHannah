@@ -69,6 +69,37 @@ export function useKeyboardInset(): number {
   return inset;
 }
 
+/**
+ * Whether a sideways scroller has more to show before and after what is in view, for the
+ * soft edge shadows on wide tables. Follows scrolling and resizing.
+ */
+export function useScrollEdges(ref: { current: HTMLElement | null }): {
+  start: boolean;
+  end: boolean;
+} {
+  const [edges, setEdges] = useState({ start: false, end: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const start = el.scrollLeft > 1;
+      const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setEdges((e) => (e.start === start && e.end === end ? e : { start, end }));
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    observer?.observe(el);
+    const inner = el.firstElementChild;
+    if (inner) observer?.observe(inner);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }, [ref]);
+  return edges;
+}
+
 const time = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
   month: "short",
