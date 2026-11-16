@@ -1,4 +1,4 @@
-import { StrictMode, useMemo } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../../../app/styles.css";
 import { DocumentView } from "../DocumentView";
@@ -25,16 +25,15 @@ declare global {
   }
 }
 
+// One store for the page (outside React, so StrictMode's double render cannot make two).
+const store = new MockDocumentStore({
+  latency: Number(params.get("latency") ?? 120),
+  large: params.get("large") === "1",
+  failWrites: params.get("fail") === "1",
+});
+window.__docStore = store;
+
 function Demo() {
-  const store = useMemo(() => {
-    const s = new MockDocumentStore({
-      latency: Number(params.get("latency") ?? 120),
-      large: params.get("large") === "1",
-      failWrites: params.get("fail") === "1",
-    });
-    window.__docStore = s;
-    return s;
-  }, []);
   const mode = params.get("mode");
   const documentId = params.get("large") === "1" ? (store.documentIds[1] ?? GUIDE_ID) : GUIDE_ID;
   return (

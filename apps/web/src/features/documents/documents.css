@@ -429,13 +429,13 @@
 }
 
 /* Large documents: let the browser skip rendering off-screen blocks. */
-.doc-block {
+/* Only the body: the shell's handles and bars sit outside the box and must not be clipped. */
+.doc-block-body {
   content-visibility: auto;
   contain-intrinsic-size: auto 96px;
 }
-.doc-no-cv .doc-block,
-.doc-block[data-active="true"],
-.doc-block[data-dragging="true"] {
+.doc-no-cv .doc-block-body,
+.doc-block[data-active="true"] .doc-block-body {
   content-visibility: visible;
 }
 

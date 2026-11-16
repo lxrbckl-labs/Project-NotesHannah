@@ -95,6 +95,7 @@ export function InlineEditor(props: InlineEditorProps) {
   const refsRef = useRef(refs);
   refsRef.current = refs;
   const slashOpen = useRef(false);
+  const lastValue = useRef<EditorValue>(props.value);
 
   const flushRef = useRef<() => void>(() => {});
 
@@ -107,13 +108,20 @@ export function InlineEditor(props: InlineEditorProps) {
         const editor = this.editor;
         const keys = () => latest.current.keys ?? {};
         const slash = (key: string) => slashOpen.current && Boolean(keys().slashKey?.(key));
+        // Read a pending DOM selection change first (e.g. ⌘↓ just before Enter).
+        const sync = () =>
+          (
+            editor.view as unknown as { domObserver?: { flush?: () => void } }
+          ).domObserver?.flush?.();
         const atStart = () => {
+          sync();
           const { selection } = editor.state;
           return (
             selection.empty && selection.$from.parentOffset === 0 && selection.$from.index(0) === 0
           );
         };
         const atEnd = () => {
+          sync();
           const { selection, doc } = editor.state;
           return selection.empty && selection.from >= doc.content.size - 1;
         };
@@ -158,6 +166,7 @@ export function InlineEditor(props: InlineEditorProps) {
           "Shift-Tab": () => (mode === "lines" ? lineKind === "check" || setIndent(-1) : false),
           [KEY.enter]: () => {
             if (slash("Enter")) return true;
+            sync();
             if (mode === "single") {
               if (!editor.state.selection.empty) editor.commands.deleteSelection();
               const offset = editor.state.selection.$from.parentOffset;
@@ -257,6 +266,8 @@ export function InlineEditor(props: InlineEditorProps) {
     },
     onUpdate: ({ editor }) => {
       dirty.current = true;
+      // Kept current so a flush still has the text after the editor is destroyed.
+      lastValue.current = readValue(editor, mode, lineKind);
       if (mode === "single") {
         const text = editor.state.doc.textContent;
         const onlyText = editor.state.doc.firstChild?.childCount === 1 || text === "";
@@ -289,10 +300,10 @@ export function InlineEditor(props: InlineEditorProps) {
       clearTimeout(timer.current);
       timer.current = null;
     }
-    if (!dirty.current || !editor || editor.isDestroyed) return;
+    if (!dirty.current) return;
     dirty.current = false;
     if (slashOpen.current) return;
-    const value = readValue(editor, mode, lineKind);
+    const value = lastValue.current;
     if (same(value, committed.current)) return;
     committed.current = value;
     latest.current.onCommit(value);
@@ -331,9 +342,14 @@ export function InlineEditor(props: InlineEditorProps) {
       typeof autoFocus === "number"
         ? Math.min(autoFocus + 1, editor.state.doc.content.size - 1)
         : autoFocus;
-    requestAnimationFrame(() => {
-      if (!editor.isDestroyed) editor.commands.focus(at, { scrollIntoView: true });
-    });
+    // At once and without Tiptap's focus command, which re-applies the selection a frame
+    // later: keys pressed right after the tap must not have the caret jump back.
+    if (editor.isDestroyed || editor.isFocused) return;
+    const size = editor.state.doc.content.size;
+    const pos = at === "start" ? 1 : at === "end" ? size - 1 : Math.max(1, Math.min(at, size - 1));
+    editor.commands.setTextSelection(pos);
+    editor.view.focus();
+    editor.commands.scrollIntoView();
   }, [editor]);
 
   return <EditorContent editor={editor} className={props.className} />;

@@ -37,7 +37,7 @@ import {
   turnIntoTargets,
 } from "../model/gestures";
 import { looseFlags } from "../model/references";
-import { REQUEST_KINDS, type RequestKind } from "../store/types";
+import type { RequestKind } from "../store/types";
 import { formatWhen, toneVars } from "../ui/hooks";
 import {
   cx,
@@ -103,6 +103,33 @@ const COLOURABLE: string[] = [
   "mnemonic",
 ];
 
+/** A submenu on a computer; on a narrow touch screen its items are shown in place. */
+function Section({
+  touch,
+  label,
+  icon,
+  children,
+}: {
+  touch: boolean;
+  label: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  if (!touch)
+    return (
+      <MenuSub label={label} icon={icon}>
+        {children}
+      </MenuSub>
+    );
+  return (
+    <>
+      <MenuSeparator />
+      <MenuLabel>{label}</MenuLabel>
+      {children}
+    </>
+  );
+}
+
 function BlockMenu({
   block,
   trigger,
@@ -124,6 +151,7 @@ function BlockMenu({
   const reviewed = block.review.status === "reviewed";
   const colorable = COLOURABLE.includes(block.type);
   const order = actions.docRef.current?.blockIds ?? [];
+  const { isTouch } = useView();
   return (
     <Menu
       modal={false}
@@ -133,7 +161,7 @@ function BlockMenu({
       <MenuTrigger asChild>{trigger}</MenuTrigger>
       <MenuContent label="Block actions" align="start">
         {targets.length > 0 && (
-          <MenuSub label="Turn into" icon={<Repeat2 />}>
+          <Section touch={isTouch} label="Turn into" icon={<Repeat2 />}>
             {targets.map((type) => (
               <MenuItem
                 key={type}
@@ -142,10 +170,14 @@ function BlockMenu({
                 {BLOCK_REGISTRY[type].label}
               </MenuItem>
             ))}
-          </MenuSub>
+          </Section>
         )}
         {block.type === "callout" && (
-          <MenuSub label="Callout kind" icon={CALLOUT_META[block.content.kind].icon}>
+          <Section
+            touch={isTouch}
+            label="Callout kind"
+            icon={CALLOUT_META[block.content.kind].icon}
+          >
             {CALLOUT_KINDS.map((kind) => (
               <MenuItem
                 key={kind}
@@ -172,9 +204,44 @@ function BlockMenu({
                 {CALLOUT_META[kind].label}
               </MenuItem>
             ))}
-          </MenuSub>
+          </Section>
         )}
-        {colorable && (
+        {colorable && isTouch && (
+          <>
+            <MenuSeparator />
+            <MenuLabel>Colour</MenuLabel>
+            <fieldset className="m-0 grid grid-cols-6 gap-1.5 border-0 px-2.5 pt-0 pb-2">
+              <legend className="sr-only">Colour</legend>
+              <button
+                type="button"
+                aria-label="Default colour"
+                className="flex size-10 items-center justify-center rounded-xl border border-border"
+                onClick={() => {
+                  perform(setStyle(documentId, block.id, null), "Colour");
+                  onOpenChange?.(false);
+                }}
+              >
+                {!block.style && <Check aria-hidden className="size-4" />}
+              </button>
+              {COLOR_TOKENS.map((token) => (
+                <button
+                  key={token}
+                  type="button"
+                  aria-label={`${token} colour`}
+                  className="flex size-10 items-center justify-center rounded-xl border border-border text-white"
+                  style={{ background: `var(--doc-${token}-solid)` }}
+                  onClick={() => {
+                    perform(setStyle(documentId, block.id, { color: token }), "Colour");
+                    onOpenChange?.(false);
+                  }}
+                >
+                  {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                </button>
+              ))}
+            </fieldset>
+          </>
+        )}
+        {colorable && !isTouch && (
           <MenuSub label="Colour" icon={<Palette />}>
             <MenuItem
               icon={
@@ -279,13 +346,9 @@ function BlockMenu({
               Mark as reviewed
             </MenuItem>
           ))}
-        <MenuSub label="Ask about this" icon={<MessageCircleQuestion />}>
-          {REQUEST_KINDS.map((kind) => (
-            <MenuItem key={kind} onSelect={() => actions.askAbout(block.id, kind)}>
-              {REQUEST_LABELS[kind]}
-            </MenuItem>
-          ))}
-        </MenuSub>
+        <MenuItem icon={<MessageCircleQuestion />} onSelect={() => actions.askAbout(block.id)}>
+          Ask about this…
+        </MenuItem>
         <MenuSeparator />
         <MenuItem
           icon={<Trash2 />}
@@ -496,6 +559,8 @@ export const BlockShell = memo(function BlockShell({
             block={block}
             index={index}
             count={count}
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
             trigger={
               <IconButton label="Block actions" data-testid="block-menu-touch">
                 <span aria-hidden className="text-lg leading-none">
@@ -509,7 +574,7 @@ export const BlockShell = memo(function BlockShell({
 
       <div
         className={cx(
-          "doc-tone",
+          "doc-tone doc-block-body",
           textual && style?.background && "rounded-xl bg-[var(--t-bg)] px-3 py-1.5",
         )}
         style={style ? toneVars(style.color ?? style.background) : undefined}
