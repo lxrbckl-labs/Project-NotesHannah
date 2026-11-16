@@ -154,10 +154,12 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
                   role="tab"
                   aria-selected={t.on}
                   to={t.to}
+                  aria-label={t.label}
                   className={`${segmentItemClass(t.on)} max-sm:px-3`}
                 >
                   <t.icon size={15} aria-hidden />
-                  {t.label}
+                  {/* On a phone only the current view keeps its word: five actions share this row. */}
+                  <span className={t.on ? undefined : "max-sm:hidden"}>{t.label}</span>
                 </Link>
               ))}
             </div>

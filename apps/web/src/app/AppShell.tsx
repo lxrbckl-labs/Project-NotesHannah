@@ -15,7 +15,7 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useMatch } from "react-router";
 import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
@@ -286,8 +286,12 @@ const TABS = [
 
 const TAB_PATHS = TABS.map((t) => t.to);
 
+/** Longer than the slide itself (260ms in styles.css), with room for a slow device to start it. */
+const TAB_SLIDE_MS = 700;
+
 function TabBar() {
   const badges = useBadges();
+  const slideTimer = useRef<number | undefined>(undefined);
   const count: Record<string, number> = { "/practice": badges.practice, "/inbox": badges.inbox };
   return (
     <nav
@@ -304,10 +308,14 @@ function TabBar() {
               viewTransition
               // The address bar, not React state: a tap during a transition must still read where she is now.
               onClick={() => {
-                document.documentElement.dataset.tabDir = tabDirection(
-                  TAB_PATHS,
-                  window.location.pathname,
-                  to,
+                const root = document.documentElement;
+                root.dataset.tabDir = tabDirection(TAB_PATHS, window.location.pathname, to);
+                // The slide's layers exist only for the length of the slide.
+                root.classList.add("tab-sliding");
+                window.clearTimeout(slideTimer.current);
+                slideTimer.current = window.setTimeout(
+                  () => root.classList.remove("tab-sliding"),
+                  TAB_SLIDE_MS,
                 );
               }}
               className={({ isActive }) =>

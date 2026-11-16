@@ -730,10 +730,12 @@ h3 {
  * new one arrives from the other, by where the tapped tab sits (html[data-tab-dir], set by the tab bar).
  * The tab bar has its own name so it stays still. Browsers without view transitions just change page.
  */
-.vt-page {
+/* Named only while a tab change is running (html.tab-sliding, set by the tab bar and cleared after):
+ * a named element forms its own layer, which would otherwise trap a screen's own fixed bars under the tab bar. */
+.tab-sliding .vt-page {
   view-transition-name: page;
 }
-.vt-tabbar {
+.tab-sliding .vt-tabbar {
   view-transition-name: tabbar;
 }
 ::view-transition-group(tabbar) {
