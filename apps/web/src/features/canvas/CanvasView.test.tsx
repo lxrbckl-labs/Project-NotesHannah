@@ -1,7 +1,7 @@
 import type { CanvasOp } from "@notes/schema";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { CanvasView } from "./CanvasView";
 import { createLayoutRunner } from "./layout/layout-client";
 import { MemoryCanvasStore } from "./store/memory-store";
@@ -171,8 +171,13 @@ describe("CanvasView gestures", { timeout: 30_000 }, () => {
     await ready();
     const card = store.current(DEMO_DOCUMENT_ID).canvas.cards.find((c) => c.id === ref.mech);
     // d3-drag needs a real window on mousedown, so clicks are dispatched directly.
+    // Pin the clock so the two clicks always fall inside the double-tap window, however busy the machine is.
+    let now = 1000;
+    const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
     fireEvent.click(node(ref.mech as string));
+    now = 1100;
     fireEvent.click(node(ref.mech as string));
+    clock.mockRestore();
     expect(opened).toEqual([card?.content.kind === "block" ? card.content.blockIds[0] : ""]);
   });
 
