@@ -373,11 +373,17 @@ export function convertContent(block: Block, type: BlockType): unknown {
 }
 
 /** Turn a block into another type: a replace keeping citations, flags and colour. */
-export function turnInto(documentId: string, block: Block, type: BlockType): PendingCall[] {
+export function turnInto(
+  documentId: string,
+  block: Block,
+  type: BlockType,
+  /** Content to use instead of converting the block's own (typing shortcuts hold newer text). */
+  content: unknown = convertContent(block, type),
+): PendingCall[] {
   const input = inputOf(block);
   const next: Record<string, unknown> = {
     type,
-    content: convertContent(block, type),
+    content,
     citations: input.citations,
     generalKnowledge: input.generalKnowledge,
     flags: input.flags,

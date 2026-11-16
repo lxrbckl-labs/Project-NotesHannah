@@ -41,7 +41,7 @@ proposed for after the first release. See [architecture.md](architecture.md) for
 
 ## D. Documents and blocks
 
-- **D1** Page view with a block editor.
+- **D1** Page view with a block editor. Typing shortcuts at the start of a paragraph: `# `, `## `, `### ` headings; `- ` or `* ` bullets; `1. ` numbers; `[] ` checklist; `> ` quote; `!! ` warning callout; `?? ` tip callout; `---` then Enter (or `--- `) a divider. An empty document can start with the caret ready in one paragraph (`startWriting`).
 - **D2** Basic blocks: heading, paragraph, lists, quote, divider, table, image.
 - **D3** Callouts and colour highlights.
 - **D4** Drug card: name, class, mechanism, indications, adverse effects, interactions, counselling points.

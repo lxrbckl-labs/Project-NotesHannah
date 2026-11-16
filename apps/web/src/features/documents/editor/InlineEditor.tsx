@@ -15,6 +15,7 @@ import {
   splitRichText,
   type TiptapNode,
 } from "../model/richtext";
+import { SHORTCUT_PREFIX } from "../model/shortcuts";
 import { inlineExtensions } from "./extensions";
 import { type LineKind, listLinesExtension } from "./lines";
 
@@ -30,6 +31,12 @@ export interface EditorKeys {
   onExitList?: (lines: EditorLine[]) => void;
   /** Lists: Backspace in the only, empty line. */
   onEmptyList?: () => void;
+  /**
+   * A typing shortcut completed at the very start of the field ("#" and a space):
+   * `trigger` is what was typed before the space, `rest` the text after it. Return
+   * true when the block converted (the editor then goes away with its old block).
+   */
+  onShortcut?: (trigger: string, rest: RichText) => boolean;
   /** "/" typed at the start of an otherwise empty field; null when it goes away. */
   onSlash?: (query: string | null) => void;
   /** While the slash menu is open, it gets first go at arrow keys, Enter and Escape. */
@@ -268,6 +275,23 @@ export function InlineEditor(props: InlineEditorProps) {
       dirty.current = true;
       // Kept current so a flush still has the text after the editor is destroyed.
       lastValue.current = readValue(editor, mode, lineKind);
+      if (mode === "single" && latest.current.keys?.onShortcut && !slashOpen.current) {
+        const { selection } = editor.state;
+        const caret = selection.$from.parentOffset;
+        const before = selection.$from.parent.textBetween(0, caret);
+        // Chips count one position but no text, so a differing length means one sits in the prefix.
+        if (selection.empty && before.length === caret && SHORTCUT_PREFIX.test(before)) {
+          const [, rest] = splitRichText(docToRichText(editor.getJSON() as TiptapNode), caret);
+          const trigger = before.trimEnd();
+          // Commit the typed text first, so undo brings the paragraph back with its trigger.
+          flushRef.current();
+          // Out of this transaction: converting swaps the block's component and unmounts this editor.
+          queueMicrotask(() => {
+            if (!editor.isDestroyed) latest.current.keys?.onShortcut?.(trigger, rest);
+          });
+          return;
+        }
+      }
       if (mode === "single") {
         const text = editor.state.doc.textContent;
         const onlyText = editor.state.doc.firstChild?.childCount === 1 || text === "";
