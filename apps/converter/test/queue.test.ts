@@ -393,7 +393,13 @@ describe("crash recovery", () => {
       );
       await w.init();
       void w.processNext();
-      await new Promise((r) => setTimeout(r, 60));
+      // Wait for the outcome of this boot instead of a fixed sleep, so a busy machine cannot
+      // make the test race: boots 1 and 2 start a conversion, boot 3 publishes the failure.
+      const settled = async () =>
+        boot < 3 ? starts === boot : (await env.list("queue/failed")).includes(`${JOB}.json`);
+      for (let waited = 0; waited < 400 && !(await settled()); waited++) {
+        await new Promise((r) => setTimeout(r, 25));
+      }
     }
     expect(starts).toBe(2);
     expect(await env.read(`queue/failed/${JOB}.json`)).toMatchObject({
