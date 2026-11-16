@@ -1,19 +1,15 @@
-import { Dialog } from "radix-ui";
+import { X } from "lucide-react";
 import { useId, useState } from "react";
-import { Button, Chip, ErrorNote } from "../practice/ui/primitives";
+import { Button, IconButton } from "../../components/ui/button";
+import { Field, TextInput } from "../../components/ui/field";
+import { Notice } from "../../components/ui/notice";
+import { Sheet } from "../../components/ui/sheet";
 import type { CoverageNode, ExamInput, ExamSummary, PickedNode, PickNodes } from "./types";
 
 /** Create or edit an exam: course, title, date and which lectures/folders it covers. */
 export function ExamForm(props: ExamFormProps) {
-  return (
-    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="pr-fade fixed inset-0 z-[60] bg-black/40" />
-        {/* Content only exists while open, so its fields start fresh every time. */}
-        <ExamFormContent {...props} />
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
+  // The sheet only exists while open, so its fields start fresh every time.
+  return props.open ? <ExamFormSheet {...props} /> : null;
 }
 
 interface ExamFormProps {
@@ -26,7 +22,7 @@ interface ExamFormProps {
   onSave: (input: ExamInput) => Promise<void>;
 }
 
-function ExamFormContent({ onOpenChange, exam, courses, pickNodes, onSave }: ExamFormProps) {
+function ExamFormSheet({ onOpenChange, exam, courses, pickNodes, onSave }: ExamFormProps) {
   const uid = useId();
   const [course, setCourse] = useState(exam?.course ?? courses[0] ?? "");
   const [title, setTitle] = useState(exam?.title ?? "");
@@ -72,138 +68,121 @@ function ExamFormContent({ onOpenChange, exam, courses, pickNodes, onSave }: Exa
     }
   };
 
-  const field =
-    "min-h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base outline-none focus:border-accent";
-  const err = (msg: string | null) =>
-    touched && msg ? (
-      <p className="mt-1 text-sm" style={{ color: "var(--pr-wrong)" }} role="alert">
-        {msg}
-      </p>
-    ) : null;
+  const err = (msg: string | null) => (touched ? msg : null);
 
   return (
-    <Dialog.Content
-      className="pr-root pr-rise pr-card fixed inset-x-0 bottom-0 z-[61] mx-auto flex max-h-[92dvh] w-full max-w-lg flex-col rounded-b-none md:inset-y-auto md:top-1/2 md:-translate-y-1/2 md:rounded-b-[20px]"
-      aria-describedby={undefined}
-    >
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
-        <Dialog.Title className="text-lg font-semibold">
-          {exam ? "Edit exam" : "Add an exam"}
-        </Dialog.Title>
-        <Dialog.Close asChild>
-          <Button variant="quiet" aria-label="Close" className="size-11 !px-0">
-            <span aria-hidden>✕</span>
+    <Sheet
+      open
+      onOpenChange={onOpenChange}
+      title={exam ? "Edit exam" : "Add an exam"}
+      placement="center"
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
           </Button>
-        </Dialog.Close>
-      </div>
+          <Button
+            variant="primary"
+            className="min-w-32"
+            disabled={saving}
+            data-testid="exam-save"
+            onClick={() => void save()}
+          >
+            {saving ? "Saving..." : exam ? "Save changes" : "Add exam"}
+          </Button>
+        </>
+      }
+    >
       <form
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5"
+        className="space-y-5 pt-2"
         onSubmit={(e) => {
           e.preventDefault();
           void save();
         }}
       >
+        <Field label="Course" error={err(problems.course)}>
+          {(p) => (
+            <>
+              <TextInput
+                {...p}
+                list={`${uid}-courses`}
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+                autoComplete="off"
+                data-testid="exam-course"
+              />
+              <datalist id={`${uid}-courses`}>
+                {courses.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </>
+          )}
+        </Field>
+        <Field label="Title" error={err(problems.title)}>
+          {(p) => (
+            <TextInput
+              {...p}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              autoComplete="off"
+              placeholder="e.g. Midterm"
+              data-testid="exam-title"
+            />
+          )}
+        </Field>
+        <Field label="Date" error={err(problems.date)}>
+          {(p) => (
+            <TextInput
+              {...p}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              data-testid="exam-date"
+            />
+          )}
+        </Field>
         <div>
-          <label
-            htmlFor={`${uid}-course`}
-            className="mb-1.5 block text-sm font-medium text-text-muted"
-          >
-            Course
-          </label>
-          <input
-            id={`${uid}-course`}
-            className={field}
-            list={`${uid}-courses`}
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-            autoComplete="off"
-            data-testid="exam-course"
-          />
-          <datalist id={`${uid}-courses`}>
-            {courses.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
-          {err(problems.course)}
-        </div>
-        <div>
-          <label
-            htmlFor={`${uid}-title`}
-            className="mb-1.5 block text-sm font-medium text-text-muted"
-          >
-            Title
-          </label>
-          <input
-            id={`${uid}-title`}
-            className={field}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            autoComplete="off"
-            placeholder="e.g. Midterm"
-            data-testid="exam-title"
-          />
-          {err(problems.title)}
-        </div>
-        <div>
-          <label
-            htmlFor={`${uid}-date`}
-            className="mb-1.5 block text-sm font-medium text-text-muted"
-          >
-            Date
-          </label>
-          <input
-            id={`${uid}-date`}
-            type="date"
-            className={field}
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            data-testid="exam-date"
-          />
-          {err(problems.date)}
-        </div>
-        <div>
-          <p className="mb-1.5 text-sm font-medium text-text-muted">Covers</p>
+          <p className="mb-1.5 text-ui font-medium">Covers</p>
           {coverage.length > 0 && (
             <ul className="mb-3 flex flex-wrap gap-2" aria-label="Covered lectures and folders">
               {coverage.map((c) => (
                 <li key={c.id}>
-                  <Chip tone="accent" className="!pr-1">
-                    {c.title}
-                    <button
-                      type="button"
-                      aria-label={`Remove ${c.title}`}
-                      onClick={() => setCoverage(coverage.filter((x) => x.id !== c.id))}
-                      className="grid size-9 place-items-center rounded-full hover:bg-black/5"
-                    >
-                      <span aria-hidden>✕</span>
-                    </button>
-                  </Chip>
+                  <CoverageChip
+                    title={c.title}
+                    onRemove={() => setCoverage(coverage.filter((x) => x.id !== c.id))}
+                  />
                 </li>
               ))}
             </ul>
           )}
-          <Button variant="secondary" onClick={() => void choose()} data-testid="exam-choose">
+          <Button onClick={() => void choose()} data-testid="exam-choose">
             {coverage.length ? "Change coverage" : "Choose lectures or folders"}
           </Button>
-          {err(problems.coverage)}
+          {err(problems.coverage) ? (
+            <p role="alert" className="mt-1.5 text-ui text-danger">
+              {err(problems.coverage)}
+            </p>
+          ) : null}
         </div>
-        {error && <ErrorNote message={error} />}
+        {error && <Notice tone="danger">{error}</Notice>}
       </form>
-      <div className="flex gap-2 border-t border-border px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-        <Dialog.Close asChild>
-          <Button variant="quiet">Cancel</Button>
-        </Dialog.Close>
-        <Button
-          variant="primary"
-          className="ml-auto min-w-32"
-          disabled={saving}
-          data-testid="exam-save"
-          onClick={() => void save()}
-        >
-          {saving ? "Saving..." : exam ? "Save changes" : "Add exam"}
-        </Button>
-      </div>
-    </Dialog.Content>
+    </Sheet>
+  );
+}
+
+/** A removable chip (the shared Chip has no remove button yet). */
+function CoverageChip({ title, onRemove }: { title: string; onRemove: () => void }) {
+  return (
+    <span
+      data-hue="accent"
+      className="inline-flex max-w-full items-center gap-1 rounded-pill bg-tone-soft pl-3 text-label font-medium text-tone-text"
+    >
+      <span className="min-w-0 truncate">{title}</span>
+      <IconButton label={`Remove ${title}`} size="sm" onClick={onRemove} className="text-tone-text">
+        <X size={14} />
+      </IconButton>
+    </span>
   );
 }
 

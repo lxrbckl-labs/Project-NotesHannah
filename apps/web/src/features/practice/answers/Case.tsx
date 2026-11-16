@@ -1,9 +1,13 @@
+import { ChevronDown } from "lucide-react";
 import { Collapsible } from "radix-ui";
 import { useState } from "react";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
 import type { GradeResult, QuestionOutcome, Reveal, ServedCase } from "../types";
-import { FeedbackLines, verdict } from "../ui/Feedback";
+import { FeedbackLines, VERDICT_HUE, VerdictIcon, verdict } from "../ui/Feedback";
 import { Markdown } from "../ui/Markdown";
-import { Button, Chip } from "../ui/primitives";
+import { QUIET } from "../ui/quiet";
 import { isPartReady, type PartDraft, PartView } from "./Part";
 
 /** Draft for a case: one slot per sub-question; undefined = not visited yet, null = skipped. */
@@ -47,22 +51,23 @@ export function Case({
   const resolved = cur !== undefined;
 
   const vignette = (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={setOpen}
-      className="pr-card overflow-hidden md:static"
-      data-testid="vignette"
-    >
-      <Collapsible.Trigger className="flex min-h-11 w-full items-center justify-between gap-2 px-4 text-left text-sm font-semibold text-text-muted md:pointer-events-none">
-        <span>Patient case</span>
-        <span aria-hidden className="md:hidden">
-          {open ? "Hide" : "Show"}
-        </span>
-      </Collapsible.Trigger>
-      <Collapsible.Content className="max-h-[38vh] overflow-y-auto px-4 pb-4 text-[0.97rem] leading-relaxed md:max-h-none">
-        <Markdown text={question.vignette} />
-      </Collapsible.Content>
-    </Collapsible.Root>
+    <Card padding="none" className="overflow-hidden">
+      <Collapsible.Root open={open} onOpenChange={setOpen} data-testid="vignette">
+        <Collapsible.Trigger className="flex min-h-11 w-full items-center justify-between gap-2 px-4 text-left text-ui font-semibold text-text-muted md:pointer-events-none">
+          <span>Patient case</span>
+          <span aria-hidden className="flex items-center gap-1 md:hidden">
+            {open ? "Hide" : "Show"}
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-(--duration-fast) ${open ? "rotate-180" : ""}`}
+            />
+          </span>
+        </Collapsible.Trigger>
+        <Collapsible.Content className="max-h-[38vh] overflow-y-auto px-4 pb-4 text-body leading-relaxed md:max-h-none">
+          <Markdown text={question.vignette} />
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </Card>
   );
 
   return (
@@ -70,14 +75,14 @@ export function Case({
       className="grid gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-start md:gap-8"
       data-testid="answer-case"
     >
-      <div className="sticky top-0 z-10 -mx-1 bg-bg px-1 pb-2 pt-1 md:top-4 md:z-0 md:bg-transparent md:p-0">
+      <div className="sticky top-0 z-(--z-raised) -mx-1 bg-bg px-1 pb-2 pt-1 md:top-4 md:z-0 md:bg-transparent md:p-0">
         {vignette}
       </div>
       <div className="space-y-5">
         {!result ? (
           <>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-text-muted" data-testid="case-step">
+              <h2 className="text-ui font-semibold text-text-muted" data-testid="case-step">
                 Part {step + 1} of {n}
               </h2>
               <div className="flex gap-1.5" aria-hidden>
@@ -85,7 +90,7 @@ export function Case({
                   <span
                     // biome-ignore lint/suspicious/noArrayIndexKey: parts are addressed by position
                     key={`${p.type}-${i}`}
-                    className={`h-1.5 w-6 rounded-full ${
+                    className={`h-1.5 w-6 rounded-pill ${
                       i === step
                         ? "bg-accent"
                         : parts[i] !== undefined
@@ -109,12 +114,18 @@ export function Case({
               />
             )}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Button variant="quiet" disabled={step === 0} onClick={() => setStep(step - 1)}>
+              <Button
+                variant="ghost"
+                className={QUIET}
+                disabled={step === 0}
+                onClick={() => setStep(step - 1)}
+              >
                 Previous part
               </Button>
               {part && !isPartReady(part, cur ?? null) && (
                 <Button
-                  variant="quiet"
+                  variant="ghost"
+                  className={QUIET}
                   onClick={() => {
                     setPart(step, null);
                     if (step < n - 1) setStep(step + 1);
@@ -158,10 +169,14 @@ export function Case({
                 // biome-ignore lint/suspicious/noArrayIndexKey: parts are addressed by position
                 <li key={`${p.type}-${i}`} className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-text-muted">
+                    <h3 className="text-ui font-semibold text-text-muted">
                       Part {i + 1} of {n}
                     </h3>
-                    {v && <Chip tone={v.tone}>{v.title}</Chip>}
+                    {v && (
+                      <Badge hue={VERDICT_HUE[v.tone]} icon={<VerdictIcon tone={v.tone} />}>
+                        {v.title}
+                      </Badge>
+                    )}
                   </div>
                   <PartView
                     question={p}
@@ -177,13 +192,13 @@ export function Case({
                     p.type !== "free_response" &&
                     p.type !== "calculation" && <FeedbackLines result={r} />}
                   {r && !r.correct && p.type === "calculation" && (
-                    <p className="text-[0.95rem]">
+                    <p className="text-body">
                       <span className="font-medium">Correct answer: </span>
                       {r.correctAnswer.text}
                     </p>
                   )}
                   {partExplanations?.[i] && (
-                    <div className="rounded-2xl bg-surface-muted p-3.5 text-[0.93rem]">
+                    <div className="rounded-card bg-surface-muted p-3.5 text-ui">
                       <Markdown text={partExplanations[i] as string} />
                     </div>
                   )}

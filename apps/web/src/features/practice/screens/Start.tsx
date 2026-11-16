@@ -1,4 +1,12 @@
+import { CalendarCheck, NotebookPen } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Chip } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
+import { Notice } from "../../../components/ui/notice";
+import { PageHeader } from "../../../components/ui/page-header";
+import { StatTile } from "../../../components/ui/stat";
+import { Spinner } from "../../../components/ui/states";
 import { useAsync } from "../lib/hooks";
 import type {
   PracticeOverview,
@@ -8,10 +16,13 @@ import type {
   SessionState,
 } from "../types";
 import { PracticeApiError, QUESTION_TYPES, TYPE_LABELS } from "../types";
-import { Button, Card, ErrorNote, Spinner } from "../ui/primitives";
+import { QUIET } from "../ui/quiet";
 import { StatNumber } from "../ui/StatNumber";
 
 const LENGTHS = [5, 10, 20];
+
+const STAT_BUTTON =
+  "block min-w-0 rounded-card text-left transition-shadow duration-(--duration-fast) hover:shadow-raised";
 
 function defaultScope(
   o: PracticeOverview,
@@ -75,7 +86,19 @@ export function Start({
   const effective = length === "all" || length >= total ? total : length;
 
   if (loading && !data) return <Spinner label="Getting things ready" />;
-  if (error && !data) return <ErrorNote message={error} onRetry={reload} />;
+  if (error && !data)
+    return (
+      <Notice
+        tone="danger"
+        action={
+          <Button size="sm" onClick={reload}>
+            Try again
+          </Button>
+        }
+      >
+        {error}
+      </Notice>
+    );
   if (!data) return null;
 
   const toggle = (t: QuestionType) => {
@@ -108,19 +131,21 @@ export function Start({
 
   return (
     <div className="space-y-8" data-testid="start">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Practice</h1>
-        <p className="text-text-muted">Choose what to work on. One tap starts a session.</p>
-      </header>
+      <PageHeader
+        title="Practice"
+        description="Choose what to work on. One tap starts a session."
+      />
 
       {data.unfinished && (
         <Card
-          className="flex flex-col gap-3 border-accent p-5 sm:flex-row sm:items-center"
+          hue="accent"
+          padding="lg"
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
           data-testid="resume-card"
         >
           <div className="min-w-0 flex-1">
-            <p className="font-semibold">Pick up where you left off</p>
-            <p className="text-sm text-text-muted">
+            <p className="font-semibold text-tone-text">Pick up where you left off</p>
+            <p className="text-ui">
               {data.unfinished.scopeLabel}: {data.unfinished.answered} of {data.unfinished.total}{" "}
               answered
             </p>
@@ -134,7 +159,8 @@ export function Start({
               Resume
             </Button>
             <Button
-              variant="quiet"
+              variant="ghost"
+              className={QUIET}
               onClick={async () => {
                 await store.abandonSession((data.unfinished as { id: string }).id);
                 reload();
@@ -146,40 +172,36 @@ export function Start({
         </Card>
       )}
 
-      <dl className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => onOpenView("cards")}
-          className="pr-card min-h-20 p-4 text-left transition-colors hover:bg-surface-muted"
-        >
-          <dt className="text-sm text-text-muted">Cards due today</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums">
-            <StatNumber value={data.dueToday} testId="due-today" />
-          </dd>
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={() => onOpenView("cards")} className={STAT_BUTTON}>
+          <StatTile
+            label="Cards due today"
+            icon={<CalendarCheck />}
+            hue="blue"
+            value={<StatNumber value={data.dueToday} testId="due-today" />}
+          />
         </button>
-        <button
-          type="button"
-          onClick={() => onOpenView("notebook")}
-          className="pr-card min-h-20 p-4 text-left transition-colors hover:bg-surface-muted"
-        >
-          <dt className="text-sm text-text-muted">In your notebook</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums">
-            <StatNumber value={data.notebookSize} testId="notebook-size" />
-          </dd>
+        <button type="button" onClick={() => onOpenView("notebook")} className={STAT_BUTTON}>
+          <StatTile
+            label="In your notebook"
+            icon={<NotebookPen />}
+            hue="orange"
+            value={<StatNumber value={data.notebookSize} testId="notebook-size" />}
+          />
         </button>
-      </dl>
+      </div>
 
       <fieldset className="space-y-3">
-        <legend className="mb-1 text-base font-semibold">What to practise</legend>
+        <legend className="mb-1 text-body font-semibold">What to practise</legend>
         <div className="grid gap-2.5 md:grid-cols-2">
           {data.scopes.map((s) => {
             const on = scope?.id === s.id;
             return (
               <label
                 key={s.id}
-                className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
+                className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-card border px-4 py-3 transition-colors duration-(--duration-instant) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
                   on
-                    ? "border-accent bg-[var(--pr-accent-soft)]"
+                    ? "border-accent bg-accent-soft"
                     : "border-border bg-surface hover:bg-surface-muted"
                 }`}
               >
@@ -195,9 +217,15 @@ export function Start({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium">{s.label}</span>
-                  {s.detail && <span className="block text-sm text-text-muted">{s.detail}</span>}
+                  {s.detail && (
+                    <span className={`block text-ui ${on ? "" : "text-text-muted"}`}>
+                      {s.detail}
+                    </span>
+                  )}
                 </span>
-                <span className="text-sm tabular-nums text-text-muted">{s.total}</span>
+                <span className={`text-ui tabular-nums ${on ? "" : "text-text-muted"}`}>
+                  {s.total}
+                </span>
               </label>
             );
           })}
@@ -206,22 +234,20 @@ export function Start({
 
       {scope && !scope.dueOnly && (
         <fieldset className="space-y-3">
-          <legend className="mb-1 text-base font-semibold">Question types</legend>
-          <div className="flex flex-wrap gap-2">
+          <legend className="mb-1 text-body font-semibold">Question types</legend>
+          <div className="flex flex-wrap gap-x-2.5 gap-y-3.5">
             {QUESTION_TYPES.map((t) => {
               const n = scope.counts[t];
               return (
-                <button
+                <Chip
                   key={t}
-                  type="button"
                   disabled={n === 0}
-                  aria-pressed={chosen.has(t)}
+                  pressed={chosen.has(t)}
                   data-testid={`format-${t}`}
                   onClick={() => toggle(t)}
-                  className="min-h-11 rounded-full border border-border bg-surface px-4 text-sm font-medium transition-colors enabled:hover:bg-surface-muted aria-pressed:border-accent aria-pressed:bg-[var(--pr-accent-soft)] aria-pressed:text-accent disabled:opacity-40"
                 >
-                  {TYPE_LABELS[t]} <span className="tabular-nums text-text-muted">{n}</span>
-                </button>
+                  {TYPE_LABELS[t]} <span className="tabular-nums">{n}</span>
+                </Chip>
               );
             })}
           </div>
@@ -230,32 +256,29 @@ export function Start({
 
       {total > 0 && (
         <fieldset className="space-y-3">
-          <legend className="mb-1 text-base font-semibold">How many</legend>
-          <div className="flex flex-wrap gap-2">
+          <legend className="mb-1 text-body font-semibold">How many</legend>
+          <div className="flex flex-wrap gap-x-2.5 gap-y-3.5">
             {lengthOptions.map((n) => (
-              <button
+              <Chip
                 key={n}
-                type="button"
-                aria-pressed={length === n}
+                pressed={length === n}
                 onClick={() => setLength(n)}
-                className="min-h-11 min-w-14 rounded-full border border-border bg-surface px-4 text-sm font-medium tabular-nums transition-colors hover:bg-surface-muted aria-pressed:border-accent aria-pressed:bg-[var(--pr-accent-soft)] aria-pressed:text-accent"
+                className="min-w-14 justify-center tabular-nums"
               >
                 {n}
-              </button>
+              </Chip>
             ))}
-            <button
-              type="button"
-              aria-pressed={length === "all" || !lengthOptions.includes(length)}
+            <Chip
+              pressed={length === "all" || !lengthOptions.includes(length)}
               onClick={() => setLength("all")}
-              className="min-h-11 rounded-full border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-surface-muted aria-pressed:border-accent aria-pressed:bg-[var(--pr-accent-soft)] aria-pressed:text-accent"
             >
               All {total}
-            </button>
+            </Chip>
           </div>
         </fieldset>
       )}
 
-      {problem && <ErrorNote message={problem} />}
+      {problem && <Notice tone="danger">{problem}</Notice>}
 
       <div className="sticky bottom-0 -mx-4 border-t border-border bg-bg/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <Button

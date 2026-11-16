@@ -1,13 +1,17 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { expect, test } from "vitest";
+import { seriesHue } from "../../../lib/hues";
+import { FEEDBACK_HUE, RATING_HUE } from "../../../lib/roles";
 
-/** WCAG contrast of the colour pairs this feature relies on, in both themes. */
-const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
-const app = read("src/app/styles.css");
-const mine = read("src/features/practice/practice.css");
+/**
+ * The colours here all come from the shared palette; test/contrast.test.ts checks every hue.
+ * This test checks the pairs the practice screens build from them, in both themes: the matching
+ * badges (the text shade as the fill, the soft shade as the text) and the feedback roles.
+ */
+const css = readFileSync(`${process.cwd()}/src/app/styles.css`, "utf8");
+const mine = readFileSync(`${process.cwd()}/src/features/practice/practice.css`, "utf8");
 
-function block(css: string, selector: string): Record<string, string> {
+function block(selector: string): Record<string, string> {
   const start = css.indexOf(`${selector} {`);
   if (start < 0) throw new Error(`no ${selector}`);
   const end = css.indexOf("}", start);
@@ -18,11 +22,8 @@ function block(css: string, selector: string): Record<string, string> {
   return out;
 }
 
-const light = { ...block(app, ":root"), ...block(mine, ":root") };
-const dark = {
-  ...block(app, ':root[data-theme="dark"]'),
-  ...block(mine, ':root[data-theme="dark"]'),
-};
+const light = block(":root");
+const dark = { ...light, ...block(':root[data-theme="dark"]') };
 
 function lum(hex: string): number {
   const c = [1, 3, 5].map((i) => {
@@ -36,48 +37,31 @@ function ratio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const PAIRS: [string, string][] = [
-  ["--color-text", "--color-bg"],
-  ["--color-text", "--color-surface"],
-  ["--color-text-muted", "--color-bg"],
-  ["--color-text-muted", "--color-surface"],
-  ["--color-text-muted", "--color-surface-muted"],
-  ["--color-accent", "--color-bg"],
-  ["--color-accent", "--color-surface"],
-  ["--color-accent", "--pr-accent-soft"],
-  ["--color-accent-contrast", "--color-accent"],
-  ["--color-text", "--pr-accent-soft"],
-  ["--pr-correct", "--pr-correct-bg"],
-  ["--pr-wrong", "--pr-wrong-bg"],
-  ["--pr-partial", "--pr-partial-bg"],
-  ["--pr-correct", "--color-surface"],
-  ["--pr-partial", "--color-surface"],
+const hues = [
+  ...Array.from({ length: 6 }, (_, i) => seriesHue(i)),
+  ...Object.values(FEEDBACK_HUE),
+  ...Object.values(RATING_HUE),
 ];
 
 for (const [name, theme] of [
   ["light", light],
   ["dark", dark],
 ] as const) {
-  test(`AA contrast (4.5:1) for text pairs in the ${name} theme`, () => {
-    for (const [fg, bg] of PAIRS) {
-      const a = theme[fg];
-      const b = theme[bg];
-      expect(a, `${fg} defined`).toBeDefined();
-      expect(b, `${bg} defined`).toBeDefined();
-      expect(
-        ratio(a as string, b as string),
-        `${fg} on ${bg} (${a} / ${b})`,
-      ).toBeGreaterThanOrEqual(4.5);
+  test(`pair badges and feedback roles reach AA in the ${name} theme`, () => {
+    for (const hue of new Set(hues)) {
+      const text = theme[`--hue-${hue}-text`];
+      const soft = theme[`--hue-${hue}-soft`];
+      expect(text, `${hue} text`).toBeDefined();
+      expect(soft, `${hue} soft`).toBeDefined();
+      expect(ratio(text as string, soft as string), `${hue}`).toBeGreaterThanOrEqual(4.5);
     }
+    // Body text on the accent tint of a selected option.
+    expect(
+      ratio(theme["--color-text"] as string, theme["--color-accent-soft"] as string),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 }
 
-test("the six numbered-link badge colours carry their number legibly in both themes", () => {
-  for (const theme of [light, dark]) {
-    for (let i = 1; i <= 6; i++) {
-      expect(
-        ratio(theme["--pr-link-ink"] as string, theme[`--pr-link-${i}`] as string),
-      ).toBeGreaterThanOrEqual(4.5);
-    }
-  }
+test("the practice stylesheet holds no colours of its own", () => {
+  expect(mine).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(|--pr-(?!top|bottom|vh|vt)/);
 });

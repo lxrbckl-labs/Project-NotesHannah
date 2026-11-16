@@ -1,9 +1,14 @@
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
+import { Notice } from "../../../components/ui/notice";
+import { PageHeader } from "../../../components/ui/page-header";
+import { EmptyState, Spinner } from "../../../components/ui/states";
 import { formatDay, localDate } from "../lib/dates";
 import { useAsync } from "../lib/hooks";
 import type { NotebookItem, PracticeStore, SessionState } from "../types";
 import { TYPE_LABELS } from "../types";
 import { Markdown } from "../ui/Markdown";
-import { Button, Card, Chip, Empty, ErrorNote, Spinner } from "../ui/primitives";
 
 export function Notebook({
   store,
@@ -19,7 +24,19 @@ export function Notebook({
     [store, refreshKey],
   );
   if (loading && !data) return <Spinner label="Opening your notebook" />;
-  if (error) return <ErrorNote message={error} onRetry={reload} />;
+  if (error)
+    return (
+      <Notice
+        tone="danger"
+        action={
+          <Button size="sm" onClick={reload}>
+            Try again
+          </Button>
+        }
+      >
+        {error}
+      </Notice>
+    );
   const items = data ?? [];
 
   const retry = async (ids?: string[]) => {
@@ -39,25 +56,22 @@ export function Notebook({
 
   return (
     <div className="space-y-6" data-testid="notebook">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Missed questions</h1>
-          <p className="max-w-prose text-text-muted">
-            Questions you got wrong wait here. Answer one correctly and it leaves. Calculations need
-            two correct answers in a row.
-          </p>
-        </div>
-        {items.length > 0 && (
-          <Button variant="primary" data-testid="retry-all" onClick={() => void retry()}>
-            Retry all {items.length}
-          </Button>
-        )}
-      </header>
+      <PageHeader
+        title="Missed questions"
+        description="Questions you got wrong wait here. Answer one correctly and it leaves. Calculations need two correct answers in a row."
+        actions={
+          items.length > 0 ? (
+            <Button variant="primary" data-testid="retry-all" onClick={() => void retry()}>
+              Retry all {items.length}
+            </Button>
+          ) : null
+        }
+      />
       {items.length === 0 ? (
-        <Empty title="Your notebook is empty">
+        <EmptyState title="Your notebook is empty" headingLevel={3} compact>
           Nothing is waiting. When you miss a question it will appear here with the reason, so you
           can come back to it.
-        </Empty>
+        </EmptyState>
       ) : (
         <ul className="space-y-3" aria-label="Missed questions">
           {items.map((item) => (
@@ -77,25 +91,25 @@ function NotebookRow({ item, onRetry }: { item: NotebookItem; onRetry: () => voi
   const { entry } = item;
   return (
     <li>
-      <Card className="space-y-3 p-5" data-testid="notebook-row">
+      <Card padding="lg" className="space-y-3" data-testid="notebook-row">
         <div className="flex flex-wrap items-center gap-2">
-          <Chip>{TYPE_LABELS[entry.type]}</Chip>
-          {item.origin && <Chip>{item.origin}</Chip>}
-          <span className="text-xs text-text-muted">
+          <Badge tone="neutral">{TYPE_LABELS[entry.type]}</Badge>
+          {item.origin && <Badge tone="neutral">{item.origin}</Badge>}
+          <span className="text-caption text-text-muted">
             Missed {entry.timesMissed} {entry.timesMissed === 1 ? "time" : "times"}, last{" "}
             {formatDay(localDate(new Date(entry.lastMissedAt)), { weekday: undefined })}
           </span>
         </div>
-        <div className="line-clamp-4 text-[1.02rem] font-medium">
+        <div className="line-clamp-4 text-body font-medium">
           <Markdown text={item.promptText} />
         </div>
-        <dl className="grid gap-3 text-[0.93rem] md:grid-cols-2">
-          <div className="rounded-2xl bg-surface-muted p-3.5">
-            <dt className="text-xs font-semibold text-text-muted">Why it is here</dt>
+        <dl className="grid gap-3 text-ui md:grid-cols-2">
+          <div className="rounded-card bg-surface-muted p-3.5">
+            <dt className="text-caption font-semibold text-text-muted">Why it is here</dt>
             <dd className="mt-1">{item.reason ?? "You answered it incorrectly."}</dd>
           </div>
-          <div className="rounded-2xl bg-surface-muted p-3.5">
-            <dt className="text-xs font-semibold text-text-muted">How it leaves</dt>
+          <div className="rounded-card bg-surface-muted p-3.5">
+            <dt className="text-caption font-semibold text-text-muted">How it leaves</dt>
             <dd className="mt-1">{item.leaveRule}</dd>
           </div>
         </dl>

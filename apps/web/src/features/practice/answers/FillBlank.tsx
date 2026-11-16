@@ -1,4 +1,6 @@
+import { Check, X } from "lucide-react";
 import { Fragment, useRef } from "react";
+import { FEEDBACK_HUE } from "../../../lib/roles";
 import { keepVisibleOnFocus } from "../lib/hooks";
 import type { ServedFillBlank } from "../types";
 import { Inline } from "../ui/Markdown";
@@ -27,18 +29,21 @@ export function FillBlank({
 
   return (
     <div className="space-y-4" data-testid="answer-fill_blank">
-      <p className="text-[1.08rem] leading-[2.7] md:text-lg md:leading-[2.7]">
+      <p className="text-reading leading-[2.7] md:text-title md:leading-[2.7]">
         {pieces.map((piece, k) => {
           if (k % 2 === 0)
             // biome-ignore lint/suspicious/noArrayIndexKey: static split of one string
             return <Inline key={k} text={piece} />;
           const i = Number(piece) - 1;
           const fb = result?.feedback[i];
-          const tone = result
+          const hue = result
             ? fb?.correct
-              ? "pr-ok"
-              : "pr-bad"
-            : "border-border bg-surface focus:border-accent";
+              ? FEEDBACK_HUE.correct
+              : FEEDBACK_HUE.incorrect
+            : undefined;
+          const tone = result
+            ? "border-tone-border bg-tone-soft text-tone-text"
+            : "border-border-strong bg-surface focus:border-accent";
           const width = question.blanks[i]?.width ?? 8;
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: static split of one string
@@ -67,12 +72,21 @@ export function FillBlank({
                 spellCheck={false}
                 enterKeyHint={i < n - 1 ? "next" : "done"}
                 data-testid={`blank-${i + 1}`}
+                data-hue={hue}
+                data-feedback={result ? (fb?.correct ? "correct" : "incorrect") : undefined}
                 style={{ width: `${Math.max(6, width + 2)}ch` }}
-                className={`mx-1 inline-block min-h-11 max-w-full rounded-xl border px-3 py-1 text-center align-middle text-base outline-none transition-colors ${tone}`}
+                className={`mx-1 inline-block min-h-11 max-w-full rounded-control border px-3 py-1 text-center align-middle text-body outline-none transition-colors duration-(--duration-instant) ${tone}`}
               />
-              {result && !fb?.correct && accepted[i] && (
-                <span className="mr-1 align-middle text-sm font-medium text-[var(--pr-correct)]">
-                  ({accepted[i]})
+              {result && (
+                <span
+                  data-hue={hue}
+                  className="mr-1 inline-flex items-center gap-1 align-middle text-ui font-medium text-tone-text"
+                >
+                  {fb?.correct ? <Check size={16} aria-hidden /> : <X size={16} aria-hidden />}
+                  <span className="sr-only">{fb?.correct ? "Correct" : "Not correct"}</span>
+                  {!fb?.correct && accepted[i] ? (
+                    <span data-hue={FEEDBACK_HUE.correct}>({accepted[i]})</span>
+                  ) : null}
                 </span>
               )}
             </Fragment>
@@ -80,7 +94,7 @@ export function FillBlank({
         })}
       </p>
       {!disabled && (
-        <p className="text-sm text-text-muted">Press Enter to move to the next blank.</p>
+        <p className="text-ui text-text-muted">Press Enter to move to the next blank.</p>
       )}
     </div>
   );

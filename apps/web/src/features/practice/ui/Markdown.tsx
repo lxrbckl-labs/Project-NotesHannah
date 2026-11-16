@@ -19,7 +19,10 @@ export function Inline({
           return <strong key={key}>{numbers(part.slice(2, -2), emphasiseNumbers)}</strong>;
         if (part.startsWith("`") && part.endsWith("`") && part.length > 2)
           return (
-            <code key={key} className="rounded bg-surface-muted px-1 py-0.5 text-[0.92em]">
+            <code
+              key={key}
+              className="rounded-inline border border-hue-gray-border bg-hue-gray-soft px-1 py-0.5 font-mono text-[0.9em]"
+            >
               {part.slice(1, -1)}
             </code>
           );
@@ -36,7 +39,7 @@ function numbers(text: string, on: boolean): ReactNode {
   return text.split(/(\d[\d.,]*)/g).map((p, i) =>
     /^\d/.test(p) ? (
       // biome-ignore lint/suspicious/noArrayIndexKey: static split of one string
-      <span key={i} className="pr-num">
+      <span key={i} className="rounded-inline bg-accent-soft px-1 font-semibold tabular-nums">
         {p}
       </span>
     ) : (

@@ -1,5 +1,8 @@
 import { practice } from "@notes/schema";
+import { Check, X } from "lucide-react";
 import { useState } from "react";
+import { seriesHue } from "../../../lib/hues";
+import { FEEDBACK_HUE } from "../../../lib/roles";
 import { useFinePointer } from "../lib/hooks";
 import type { ServedMatching } from "../types";
 import { type AnswerProps, Prompt } from "./shared";
@@ -51,7 +54,8 @@ export function Matching({
     setPicked(leftId);
   };
   const linkOf = (leftId: string) => question.lefts.findIndex((l) => l.id === leftId) + 1;
-  const colour = (n: number) => `var(--pr-link-${((n - 1) % 6) + 1})`;
+  // Each pair has its own hue; the badge is the dark shade with light text, so the number passes AA.
+  const hueOfPair = (n: number) => seriesHue(n - 1);
 
   return (
     <fieldset className="space-y-4" data-testid="answer-matching">
@@ -59,7 +63,7 @@ export function Matching({
         <Prompt text={question.prompt} />
       </legend>
       {!disabled && (
-        <p className="text-sm text-text-muted" id="match-help">
+        <p className="text-ui text-text-muted" id="match-help">
           {fine
             ? "Pick an item, then its match, or drag a match onto an item."
             : "Tap an item, then tap its match. Tap the cross to undo a match."}
@@ -67,7 +71,10 @@ export function Matching({
       )}
       <div className="grid gap-6 md:grid-cols-2 md:gap-8">
         <div className="space-y-2.5">
-          <p aria-hidden className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <p
+            aria-hidden
+            className="text-label font-semibold uppercase tracking-wide text-text-muted"
+          >
             Items
           </p>
           <ul className="space-y-2.5" aria-label="Items to match">
@@ -76,18 +83,23 @@ export function Matching({
               const isActive = active === l.id;
               const good =
                 result && right !== null ? same(right, correctMap.get(l.id) ?? "") : null;
-              const tone = result
+              const hue = result
                 ? good
-                  ? "pr-ok"
-                  : "pr-bad"
+                  ? FEEDBACK_HUE.correct
+                  : FEEDBACK_HUE.incorrect
+                : undefined;
+              const tone = result
+                ? "border-tone-border bg-tone-soft text-tone-text"
                 : isActive
-                  ? "border-accent bg-[var(--pr-accent-soft)]"
+                  ? "border-accent bg-accent-soft"
                   : "border-border bg-surface";
               return (
                 <li
                   key={l.id}
                   data-testid={`left-${l.id}`}
                   data-active={isActive}
+                  data-hue={hue}
+                  data-feedback={result ? (good ? "correct" : "incorrect") : undefined}
                   onDragOver={(e) => {
                     if (disabled) return;
                     e.preventDefault();
@@ -100,7 +112,7 @@ export function Matching({
                     const text = e.dataTransfer.getData("text/plain");
                     if (text) assign(l.id, text);
                   }}
-                  className={`flex items-stretch overflow-hidden rounded-2xl border transition-colors ${tone} ${
+                  className={`flex items-stretch overflow-hidden rounded-card border transition-colors duration-(--duration-instant) ${tone} ${
                     dragOver === l.id ? "ring-2 ring-accent" : ""
                   }`}
                 >
@@ -113,31 +125,31 @@ export function Matching({
                   >
                     <span
                       aria-hidden
-                      className="grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold"
-                      style={{ background: colour(linkOf(l.id)), color: "var(--pr-link-ink)" }}
+                      data-hue={hueOfPair(linkOf(l.id))}
+                      className="grid size-7 shrink-0 place-items-center rounded-pill bg-tone-text text-caption font-bold text-tone-soft"
                     >
                       {linkOf(l.id)}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[1rem] font-medium">{l.text}</span>
+                      <span className="block text-body font-medium">{l.text}</span>
                       <span
-                        className={`mt-0.5 block text-sm ${right ? "" : "text-text-muted"}`}
+                        className={`mt-0.5 block text-ui ${right || result ? "" : "text-text-muted"}`}
                         data-testid={`match-${l.id}`}
                       >
                         {right ? `→ ${right}` : isActive ? "Choose a match" : "No match yet"}
                       </span>
                       {result && good === false && (
-                        <span className="mt-0.5 block text-sm font-medium">
+                        <span className="mt-0.5 block text-ui font-medium">
                           Correct: {correctMap.get(l.id)}
                         </span>
                       )}
                     </span>
                     {result && (
-                      <span aria-hidden className="text-lg">
-                        {good ? "✓" : "✗"}
+                      <span className="flex shrink-0 items-center gap-1 text-caption font-medium">
+                        {good ? <Check size={18} aria-hidden /> : <X size={18} aria-hidden />}
+                        {good ? "Correct" : "Not correct"}
                       </span>
                     )}
-                    {result && <span className="sr-only">{good ? "Correct" : "Not correct"}</span>}
                   </button>
                   {right !== null && !disabled && (
                     <button
@@ -146,7 +158,7 @@ export function Matching({
                       aria-label={`Remove match for ${l.text}`}
                       className="grid w-12 place-items-center border-l border-border text-text-muted hover:bg-surface-muted hover:text-text"
                     >
-                      <span aria-hidden>✕</span>
+                      <X size={16} aria-hidden />
                     </button>
                   )}
                 </li>
@@ -155,7 +167,10 @@ export function Matching({
           </ul>
         </div>
         <div className="space-y-2.5">
-          <p aria-hidden className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <p
+            aria-hidden
+            className="text-label font-semibold uppercase tracking-wide text-text-muted"
+          >
             Matches
           </p>
           <ul className="space-y-2.5" aria-label="Matches to choose from">
@@ -172,7 +187,7 @@ export function Matching({
                       e.dataTransfer.effectAllowed = "move";
                     }}
                     onClick={() => active && assign(active, r)}
-                    className={`flex min-h-12 w-full items-center justify-between gap-2 rounded-2xl border border-border bg-surface px-3.5 py-2.5 text-left text-[1rem] transition-colors enabled:hover:bg-surface-muted ${
+                    className={`flex min-h-12 w-full items-center justify-between gap-2 rounded-card border border-border bg-surface px-3.5 py-2.5 text-left text-body transition-colors duration-(--duration-instant) enabled:hover:bg-surface-muted ${
                       fine && !disabled ? "cursor-grab" : ""
                     }`}
                   >
@@ -181,8 +196,8 @@ export function Matching({
                       {users.map((u) => (
                         <span
                           key={u.id}
-                          className="grid size-6 place-items-center rounded-full text-xs font-bold"
-                          style={{ background: colour(linkOf(u.id)), color: "var(--pr-link-ink)" }}
+                          data-hue={hueOfPair(linkOf(u.id))}
+                          className="grid size-6 place-items-center rounded-pill bg-tone-text text-caption font-bold text-tone-soft"
                         >
                           {linkOf(u.id)}
                         </span>

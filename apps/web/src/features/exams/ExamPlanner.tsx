@@ -1,15 +1,15 @@
+import { CalendarClock, CalendarDays } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Card, CardTitle } from "../../components/ui/card";
+import { ConfirmDialog } from "../../components/ui/dialog";
+import { Notice } from "../../components/ui/notice";
+import { PageHeader } from "../../components/ui/page-header";
+import { ProgressBar } from "../../components/ui/progress";
+import { EmptyState, Spinner } from "../../components/ui/states";
 import { formatDay } from "../practice/lib/dates";
-import {
-  Button,
-  Card,
-  Chip,
-  ConfirmDialog,
-  Empty,
-  ErrorNote,
-  ProgressBar,
-  Spinner,
-} from "../practice/ui/primitives";
+import { QUIET } from "../practice/ui/quiet";
 import { ExamForm } from "./ExamForm";
 import type { ExamInput, ExamSummary, ExamsApi, PickNodes } from "./types";
 
@@ -18,6 +18,20 @@ export function daysLabel(days: number): string {
   if (days === 0) return "Today";
   if (days === 1) return "Tomorrow";
   return `In ${days} days`;
+}
+
+/** An exam within three days is a warning; otherwise it is the accent; a past exam is plain. */
+function DaysBadge({ days }: { days: number }) {
+  const soon = days >= 0 && days <= 3;
+  return (
+    <Badge
+      tone={soon ? "warning" : days < 0 ? "neutral" : "accent"}
+      icon={soon ? <CalendarClock /> : <CalendarDays />}
+      className="shrink-0"
+    >
+      <span data-testid="days-remaining">{daysLabel(days)}</span>
+    </Badge>
+  );
 }
 
 function useExams(api: ExamsApi, refreshKey: number) {
@@ -41,11 +55,12 @@ function ProgressLine({ exam }: { exam: ExamSummary }) {
   return (
     <div className="space-y-1.5">
       <ProgressBar
+        size="sm"
         value={p.attempted}
         max={Math.max(1, p.questionCount)}
         label={`${p.attempted} of ${p.questionCount} questions practised`}
       />
-      <p className="text-sm text-text-muted" data-testid="exam-progress">
+      <p className="text-ui text-text-muted" data-testid="exam-progress">
         Practised {p.attempted} of {p.questionCount} questions
         {p.inNotebook > 0 && ` · ${p.inNotebook} in your notebook`}
         {p.dueCards > 0 && ` · ${p.dueCards} ${p.dueCards === 1 ? "card" : "cards"} due`}
@@ -70,27 +85,23 @@ export function UpcomingExamsCard({
 }) {
   const { exams, error } = useExams(api, refreshKey);
   const upcoming = (exams ?? []).filter((e) => e.daysRemaining >= 0).slice(0, limit);
-  if (error) return <ErrorNote message={error} />;
+  if (error) return <Notice tone="danger">{error}</Notice>;
   if (!exams) return null;
   return (
-    <Card
-      className="space-y-4 p-5"
-      as="section"
-      aria-labelledby="upcoming-exams"
-      data-testid="upcoming-exams"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="upcoming-exams" className="text-base font-semibold">
-          Upcoming exams
-        </h2>
-        {onOpenPlanner && (
-          <Button variant="quiet" size="sm" onClick={onOpenPlanner}>
-            Plan
-          </Button>
-        )}
-      </div>
+    <Card padding="lg" as="section" aria-labelledby="upcoming-exams" data-testid="upcoming-exams">
+      <CardTitle
+        id="upcoming-exams"
+        title="Upcoming exams"
+        action={
+          onOpenPlanner ? (
+            <Button variant="ghost" size="sm" className={QUIET} onClick={onOpenPlanner}>
+              Plan
+            </Button>
+          ) : undefined
+        }
+      />
       {upcoming.length === 0 ? (
-        <p className="text-sm text-text-muted">
+        <p className="text-ui text-text-muted">
           No exams coming up. Add one to see how your review is going.
         </p>
       ) : (
@@ -99,12 +110,7 @@ export function UpcomingExamsCard({
             <li key={e.id} className="space-y-2" data-testid="upcoming-exam">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="min-w-0 truncate font-medium">{e.title}</p>
-                <span
-                  className="shrink-0 text-sm font-semibold tabular-nums text-accent"
-                  data-testid="days-remaining"
-                >
-                  {daysLabel(e.daysRemaining)}
-                </span>
+                <DaysBadge days={e.daysRemaining} />
               </div>
               <ProgressLine exam={e} />
               <Button variant="secondary" size="sm" onClick={() => onPractice(e.id)}>
@@ -134,7 +140,19 @@ export function ExamPlanner({
   const [editing, setEditing] = useState<ExamSummary | "new" | null>(null);
   const [deleting, setDeleting] = useState<ExamSummary | null>(null);
 
-  if (error && !exams) return <ErrorNote message={error} onRetry={() => void reload()} />;
+  if (error && !exams)
+    return (
+      <Notice
+        tone="danger"
+        action={
+          <Button size="sm" onClick={() => void reload()}>
+            Try again
+          </Button>
+        }
+      >
+        {error}
+      </Notice>
+    );
   if (!exams) return <Spinner label="Loading exams" />;
 
   const courses = [...new Set(exams.map((e) => e.course))];
@@ -146,22 +164,21 @@ export function ExamPlanner({
 
   return (
     <div className="space-y-6" data-testid="exam-planner">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Exams</h1>
-          <p className="max-w-prose text-text-muted">
-            Add an exam and what it covers. Practice sessions can then draw from exactly that
-            material.
-          </p>
-        </div>
-        <Button variant="primary" data-testid="add-exam" onClick={() => setEditing("new")}>
-          Add an exam
-        </Button>
-      </header>
+      <PageHeader
+        title="Exams"
+        description="Add an exam and what it covers. Practice sessions can then draw from exactly that material."
+        actions={
+          <Button variant="primary" data-testid="add-exam" onClick={() => setEditing("new")}>
+            Add an exam
+          </Button>
+        }
+      />
 
       {exams.length === 0 ? (
-        <Empty
+        <EmptyState
           title="No exams yet"
+          headingLevel={3}
+          compact
           action={
             <Button variant="primary" onClick={() => setEditing("new")}>
               Add your first exam
@@ -169,13 +186,13 @@ export function ExamPlanner({
           }
         >
           Pick a date and the lectures it covers, and this page shows how much you have reviewed.
-        </Empty>
+        </EmptyState>
       ) : (
         courses.map((course) => (
           <section key={course} aria-labelledby={`course-${course}`} className="space-y-3">
             <h2
               id={`course-${course}`}
-              className="text-sm font-semibold uppercase tracking-wide text-text-muted"
+              className="text-label font-semibold uppercase tracking-wide text-text-muted"
             >
               {course}
             </h2>
@@ -185,29 +202,26 @@ export function ExamPlanner({
                 .map((e) => (
                   <li key={e.id}>
                     <Card
-                      className="h-full space-y-4 p-5"
+                      padding="lg"
+                      className="h-full space-y-4"
                       data-testid="exam-card"
                       data-days={e.daysRemaining}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="text-lg font-semibold">{e.title}</h3>
-                          <p className="text-sm text-text-muted">
+                          <h3 className="text-title font-semibold">{e.title}</h3>
+                          <p className="text-ui text-text-muted">
                             {formatDay(e.date, { year: "numeric" })}
                           </p>
                         </div>
-                        <Chip
-                          tone={e.daysRemaining >= 0 && e.daysRemaining <= 3 ? "part" : "accent"}
-                        >
-                          <span data-testid="days-remaining">{daysLabel(e.daysRemaining)}</span>
-                        </Chip>
+                        <DaysBadge days={e.daysRemaining} />
                       </div>
                       <ul className="flex flex-wrap gap-2" aria-label="Covers">
                         {e.coverage.map((c) => (
                           <li key={c.id}>
-                            <Chip>
+                            <Badge tone="neutral">
                               {c.title} · {c.questionCount}
-                            </Chip>
+                            </Badge>
                           </li>
                         ))}
                       </ul>
@@ -230,7 +244,7 @@ export function ExamPlanner({
                           Edit
                         </Button>
                         <Button
-                          variant="quiet"
+                          variant="ghostDanger"
                           size="sm"
                           onClick={() => setDeleting(e)}
                           aria-label={`Delete ${e.title}`}
@@ -261,6 +275,7 @@ export function ExamPlanner({
         description="The exam and its coverage are removed. Your questions and answers are not affected."
         confirmLabel="Delete exam"
         cancelLabel="Keep it"
+        danger
         onConfirm={async () => {
           if (deleting) await api.deleteExam(deleting.id);
           setDeleting(null);

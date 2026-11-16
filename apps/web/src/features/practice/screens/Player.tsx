@@ -1,4 +1,10 @@
+import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, IconButton } from "../../../components/ui/button";
+import { ConfirmDialog } from "../../../components/ui/dialog";
+import { Notice } from "../../../components/ui/notice";
+import { ProgressBar } from "../../../components/ui/progress";
+import { LiveRegion, Spinner } from "../../../components/ui/states";
 import { AnswerFor, type Draft, isReady, SELF_SUBMITTING, toAnswer } from "../answers";
 import { useActiveTimer, useVisibleHeight } from "../lib/hooks";
 import type {
@@ -11,7 +17,7 @@ import type {
 } from "../types";
 import { PracticeApiError, TYPE_LABELS } from "../types";
 import { announcement, FeedbackPanel } from "../ui/Feedback";
-import { Announce, Button, ConfirmDialog, ErrorNote, ProgressBar, Spinner } from "../ui/primitives";
+import { QUIET } from "../ui/quiet";
 
 export interface PlayerProps {
   store: PracticeStore;
@@ -215,7 +221,7 @@ export function Player({
     return (
       <Shell rootRef={rootRef}>
         <div className="mx-auto w-full max-w-xl p-6">
-          <ErrorNote message={error} />
+          <Notice tone="danger">{error}</Notice>
           <Button className="mt-4" onClick={onExit}>
             Back
           </Button>
@@ -241,31 +247,34 @@ export function Player({
     <Shell rootRef={rootRef}>
       <header className="shrink-0 border-b border-border bg-bg px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6">
         <div className="mx-auto flex w-full max-w-5xl items-center gap-2">
-          <Button
-            variant="quiet"
-            aria-label="Leave this session"
+          <IconButton
+            label="Leave this session"
             data-testid="leave"
             onClick={() => setLeaveOpen(true)}
-            className="-ml-1 size-11 !px-0"
+            className="-ml-1"
           >
-            <span aria-hidden className="text-lg">
-              ✕
-            </span>
-          </Button>
+            <X size={20} />
+          </IconButton>
           <div className="min-w-0 flex-1 text-center">
-            <p className="truncate text-sm font-semibold" data-testid="position">
+            <p className="truncate text-ui font-semibold" data-testid="position">
               Question {position} of {session.total}
             </p>
-            <p className="truncate text-xs text-text-muted">{session.scopeLabel}</p>
+            <p className="truncate text-caption text-text-muted">{session.scopeLabel}</p>
           </div>
-          <Button variant="quiet" size="sm" data-testid="pause" onClick={() => setPaused(true)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={QUIET}
+            data-testid="pause"
+            onClick={() => setPaused(true)}
+          >
             Pause
           </Button>
           {session.answered > 0 && moreAfter && (
             <Button
-              variant="quiet"
+              variant="ghost"
               size="sm"
-              className="hidden sm:inline-flex"
+              className={`hidden sm:inline-flex ${QUIET}`}
               onClick={() => setFinishOpen(true)}
             >
               Finish
@@ -274,6 +283,7 @@ export function Player({
         </div>
         <div className="mx-auto mt-2 w-full max-w-5xl">
           <ProgressBar
+            size="sm"
             value={session.answered}
             max={session.total}
             label={`${session.answered} of ${session.total} answered`}
@@ -298,7 +308,7 @@ export function Player({
           data-index={current.index}
           data-phase={phase}
         >
-          <div className="mb-5 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+          <div className="mb-5 flex flex-wrap items-center gap-2 text-label text-text-muted">
             <span className="font-semibold uppercase tracking-wide">
               {TYPE_LABELS[current.type]}
             </span>
@@ -316,15 +326,16 @@ export function Player({
             onSubmitRequest={() => void submit()}
           />
           {error && (
-            <div className="mt-5">
-              <ErrorNote message={error} />
-            </div>
+            <Notice tone="danger" className="mt-5">
+              {error}
+            </Notice>
           )}
           {outcome && (
             <div className="mt-8">
               <FeedbackPanel
                 ref={feedbackRef}
                 outcome={outcome}
+                celebrate
                 type={current.type}
                 onOpenSource={onOpenSource}
                 onAsk={onAskQuestion ? () => onAskQuestion(current.questionId) : undefined}
@@ -337,10 +348,10 @@ export function Player({
             role="dialog"
             aria-modal="true"
             aria-label="Paused"
-            className="pr-fade absolute inset-0 grid place-items-center bg-bg p-6"
+            className="anim-fade absolute inset-0 grid place-items-center bg-bg p-6"
           >
-            <div className="pr-card max-w-sm space-y-4 p-8 text-center">
-              <h2 className="text-xl font-semibold">Paused</h2>
+            <div className="max-w-sm space-y-4 rounded-panel border border-border bg-surface p-8 text-center shadow-card">
+              <h2 className="font-display text-heading font-semibold">Paused</h2>
               <p className="text-text-muted">Your place is saved and the timer is stopped.</p>
               <Button
                 variant="primary"
@@ -362,12 +373,13 @@ export function Player({
           {phase === "answering" ? (
             <>
               {session.onlySkippedLeft ? (
-                <Button variant="quiet" onClick={() => setFinishOpen(true)}>
+                <Button variant="ghost" className={QUIET} onClick={() => setFinishOpen(true)}>
                   Finish
                 </Button>
               ) : (
                 <Button
-                  variant="quiet"
+                  variant="ghost"
+                  className={QUIET}
                   data-testid="skip"
                   disabled={busy}
                   onClick={() => void skip()}
@@ -403,7 +415,7 @@ export function Player({
         </div>
       </footer>
 
-      <Announce message={message} />
+      <LiveRegion message={message} testId="announcer" />
       <ConfirmDialog
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
@@ -411,7 +423,10 @@ export function Player({
         description="Your answers so far are saved. You can pick up where you left off from the start screen."
         confirmLabel="Leave"
         cancelLabel="Keep going"
-        onConfirm={leave}
+        onConfirm={() => {
+          setLeaveOpen(false);
+          leave();
+        }}
       />
       <ConfirmDialog
         open={finishOpen}
@@ -420,7 +435,10 @@ export function Player({
         description="Questions you have not answered will be left out of the results."
         confirmLabel="Finish and see results"
         cancelLabel="Keep going"
-        onConfirm={() => void finish()}
+        onConfirm={() => {
+          setFinishOpen(false);
+          void finish();
+        }}
       />
     </Shell>
   );
@@ -436,7 +454,7 @@ function Shell({
   return (
     <div
       ref={rootRef}
-      className="pr-root fixed inset-x-0 z-50 flex flex-col bg-bg"
+      className="pr-root fixed inset-x-0 z-(--z-dock) flex flex-col bg-bg"
       style={{ top: "var(--pr-vt, 0px)", height: "var(--pr-vh, 100dvh)" }}
       data-testid="player-shell"
     >

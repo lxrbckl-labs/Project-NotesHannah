@@ -1,4 +1,10 @@
+import { Check, ChevronDown } from "lucide-react";
 import { Collapsible } from "radix-ui";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
+import { StatTile } from "../../../components/ui/stat";
+import { FEEDBACK_HUE } from "../../../lib/roles";
 import { AnswerFor, type CaseDraft, type Draft } from "../answers";
 import { formatDuration } from "../lib/dates";
 import { percent, shortPrompt, summarise } from "../lib/results";
@@ -10,8 +16,8 @@ import type {
   SourceCitation,
 } from "../types";
 import { TYPE_LABELS } from "../types";
-import { FeedbackPanel, verdict } from "../ui/Feedback";
-import { Button, Card, Chip } from "../ui/primitives";
+import { FeedbackPanel, VERDICT_HUE, VerdictIcon, verdict } from "../ui/Feedback";
+import { QUIET } from "../ui/quiet";
 
 function encouragement(accuracy: number | null, answered: number): string {
   if (answered === 0 || accuracy === null) return "Nothing answered this time. That is fine.";
@@ -46,37 +52,37 @@ export function Results({
 }) {
   const s = summarise(results.items);
   return (
-    <div className="space-y-6 pr-fade" data-testid="results">
-      <Card className="p-6 md:p-8">
-        <p className="text-sm font-medium text-text-muted">{results.scopeLabel}</p>
+    <div className="anim-fade space-y-6" data-testid="results">
+      <Card padding="lg" className="md:p-8">
+        <p className="text-ui font-medium text-text-muted">{results.scopeLabel}</p>
         <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
-          <h1 className="text-4xl font-semibold tracking-tight" data-testid="score">
+          <h1 className="font-display text-4xl font-semibold tracking-tight" data-testid="score">
             {s.correct} <span className="text-text-muted">of</span> {s.answered}
           </h1>
-          <p className="pb-1 text-lg text-text-muted">{percent(s.accuracy)} right</p>
+          <p className="pb-1 text-title text-text-muted">{percent(s.accuracy)} right</p>
         </div>
-        <p className="mt-3 text-[1.02rem]">{encouragement(s.accuracy, s.answered)}</p>
-        <dl className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <Stat label="Time" value={formatDuration(s.timeMs)} />
-          <Stat label="Answered" value={`${s.answered} of ${s.total}`} />
-          <Stat label="Skipped" value={String(s.skipped)} />
-          <Stat label="Points" value={`${Math.round(s.points * 10) / 10} of ${s.maxPoints}`} />
-        </dl>
+        <p className="mt-3 text-body">{encouragement(s.accuracy, s.answered)}</p>
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile label="Time" value={formatDuration(s.timeMs)} />
+          <StatTile label="Answered" value={`${s.answered} of ${s.total}`} />
+          <StatTile label="Skipped" value={String(s.skipped)} />
+          <StatTile label="Points" value={`${Math.round(s.points * 10) / 10} of ${s.maxPoints}`} />
+        </div>
         {s.byType.length > 1 && (
           <ul className="mt-5 flex flex-wrap gap-2" aria-label="By question type">
             {s.byType.map((t) => (
               <li key={t.type}>
-                <Chip>
+                <Badge tone="neutral">
                   {TYPE_LABELS[t.type]} {t.correct}/{t.total}
-                </Chip>
+                </Badge>
               </li>
             ))}
           </ul>
         )}
       </Card>
 
-      <Card className="space-y-4 p-6" as="section" aria-labelledby="next-steps">
-        <h2 id="next-steps" className="text-base font-semibold">
+      <Card padding="lg" className="space-y-4" as="section" aria-labelledby="next-steps">
+        <h2 id="next-steps" className="text-title font-semibold">
           What next
         </h2>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -99,7 +105,7 @@ export function Results({
           </Button>
         </div>
         {results.weakest && (
-          <p className="text-sm text-text-muted">
+          <p className="text-ui text-text-muted">
             {results.weakest.label} is at {percent(results.weakest.accuracy)} across your attempts
             so far.
           </p>
@@ -107,18 +113,18 @@ export function Results({
       </Card>
 
       {(s.notebookAdded.length > 0 || s.notebookCleared.length > 0) && (
-        <Card className="space-y-3 p-6" as="section" aria-labelledby="nb-heading">
-          <h2 id="nb-heading" className="text-base font-semibold">
+        <Card padding="lg" className="space-y-3" as="section" aria-labelledby="nb-heading">
+          <h2 id="nb-heading" className="text-title font-semibold">
             Missed-questions notebook
           </h2>
           {s.notebookAdded.length > 0 && (
             <>
-              <p className="text-sm text-text-muted" data-testid="notebook-added-count">
+              <p className="text-ui text-text-muted" data-testid="notebook-added-count">
                 {s.notebookAdded.length}{" "}
                 {s.notebookAdded.length === 1 ? "question was" : "questions were"} added or kept.
                 Answer them correctly later and they leave.
               </p>
-              <ul className="space-y-1.5 text-[0.95rem]">
+              <ul className="space-y-1.5 text-body">
                 {s.notebookAdded.map((i) => (
                   <li key={i.index} className="flex gap-2">
                     <span aria-hidden>•</span>
@@ -129,18 +135,22 @@ export function Results({
             </>
           )}
           {s.notebookCleared.length > 0 && (
-            <p className="text-sm" style={{ color: "var(--pr-correct)" }}>
+            <p
+              data-hue={FEEDBACK_HUE.correct}
+              className="flex items-center gap-1.5 text-ui font-medium text-tone-text"
+            >
+              <Check size={16} aria-hidden />
               {s.notebookCleared.length} left the notebook this time.
             </p>
           )}
-          <Button variant="quiet" size="sm" onClick={onOpenNotebook}>
+          <Button variant="ghost" size="sm" className={QUIET} onClick={onOpenNotebook}>
             Open the notebook
           </Button>
         </Card>
       )}
 
       <section aria-labelledby="review-heading" className="space-y-3">
-        <h2 id="review-heading" className="text-base font-semibold">
+        <h2 id="review-heading" className="text-title font-semibold">
           Review each question
         </h2>
         <ul className="space-y-2.5">
@@ -159,15 +169,6 @@ export function Results({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-surface-muted px-3.5 py-2.5">
-      <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="mt-0.5 font-semibold tabular-nums">{value}</dd>
-    </div>
-  );
-}
-
 function ReviewRow({
   item,
   sessionId,
@@ -182,60 +183,59 @@ function ReviewRow({
   const v = item.outcome ? verdict(item.outcome.result) : null;
   return (
     <li>
-      <Collapsible.Root className="pr-card overflow-hidden" data-testid={`review-${item.index}`}>
-        <Collapsible.Trigger className="group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left">
-          <span
-            aria-hidden
-            className={`grid size-8 shrink-0 place-items-center rounded-full border text-sm ${
-              v
-                ? `pr-${v.tone === "ok" ? "ok" : v.tone === "bad" ? "bad" : "part"}`
-                : "border-border text-text-muted"
-            }`}
-          >
-            {v ? (v.tone === "ok" ? "✓" : v.tone === "bad" ? "✗" : "◐") : "–"}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[0.97rem] font-medium">
-              {shortPrompt(item.question, 90)}
+      <Card padding="none" className="overflow-hidden">
+        <Collapsible.Root data-testid={`review-${item.index}`}>
+          <Collapsible.Trigger className="group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left">
+            <span
+              aria-hidden
+              data-hue={v ? VERDICT_HUE[v.tone] : FEEDBACK_HUE.skipped}
+              data-feedback={v ? undefined : "skipped"}
+              className="grid size-8 shrink-0 place-items-center rounded-pill border border-tone-border bg-tone-soft text-tone-text"
+            >
+              <VerdictIcon tone={v ? v.tone : "skipped"} size={16} />
             </span>
-            <span className="block text-xs text-text-muted">
-              {TYPE_LABELS[item.question.type]} · {v ? v.title : "Skipped"}
-              {item.timeTakenMs > 0 && ` · ${formatDuration(item.timeTakenMs)}`}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-body font-medium">
+                {shortPrompt(item.question, 90)}
+              </span>
+              <span className="block text-caption text-text-muted">
+                {TYPE_LABELS[item.question.type]} · {v ? v.title : "Skipped"}
+                {item.timeTakenMs > 0 && ` · ${formatDuration(item.timeTakenMs)}`}
+              </span>
             </span>
-          </span>
-          <span
-            aria-hidden
-            className="text-text-muted transition-transform group-data-[state=open]:rotate-180"
-          >
-            ⌄
-          </span>
-          <span className="sr-only">Show review</span>
-        </Collapsible.Trigger>
-        <Collapsible.Content className="border-t border-border px-4 py-5">
-          {item.outcome ? (
-            <div className="space-y-6">
-              <AnswerFor
-                question={item.question}
-                draft={draftFor(item)}
-                onChange={() => undefined}
-                disabled
-                result={item.outcome.result}
-                partExplanations={item.outcome.partExplanations}
-                reveal={(p) => store.reveal(sessionId, item.index, p)}
-                onCommit={() => undefined}
-                onSubmitRequest={() => undefined}
-              />
-              <FeedbackPanel
-                outcome={item.outcome}
-                type={item.question.type}
-                onOpenSource={onOpenSource}
-              />
-            </div>
-          ) : (
-            <p className="text-sm text-text-muted">You skipped this one.</p>
-          )}
-        </Collapsible.Content>
-      </Collapsible.Root>
+            <ChevronDown
+              size={18}
+              aria-hidden
+              className="shrink-0 text-text-muted transition-transform duration-(--duration-fast) group-data-[state=open]:rotate-180"
+            />
+            <span className="sr-only">Show review</span>
+          </Collapsible.Trigger>
+          <Collapsible.Content className="border-t border-border px-4 py-5">
+            {item.outcome ? (
+              <div className="space-y-6">
+                <AnswerFor
+                  question={item.question}
+                  draft={draftFor(item)}
+                  onChange={() => undefined}
+                  disabled
+                  result={item.outcome.result}
+                  partExplanations={item.outcome.partExplanations}
+                  reveal={(p) => store.reveal(sessionId, item.index, p)}
+                  onCommit={() => undefined}
+                  onSubmitRequest={() => undefined}
+                />
+                <FeedbackPanel
+                  outcome={item.outcome}
+                  type={item.question.type}
+                  onOpenSource={onOpenSource}
+                />
+              </div>
+            ) : (
+              <p className="text-ui text-text-muted">You skipped this one.</p>
+            )}
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Card>
     </li>
   );
 }
