@@ -5,7 +5,9 @@
   "type": "module",
   "description": "Spike S5: sandboxed file converter (PPTX/PDF/JPEG/PNG/HEIC to per-page WebP plus native text)",
   "license": "UNLICENSED",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },

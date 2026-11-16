@@ -1,4 +1,4 @@
-import type { Block } from './pptx.js';
+import type { Block } from "./pptx.js";
 
 export interface Warning {
   code: string;
@@ -15,7 +15,7 @@ export interface ImageRef {
 
 export type NativeText =
   | {
-      kind: 'slide';
+      kind: "slide";
       title: string | null;
       text: string;
       notes: string | null;
@@ -23,7 +23,7 @@ export type NativeText =
       hasUnextractedObjects: boolean;
       blocks: Block[];
     }
-  | { kind: 'pdf'; text: string; hasTextLayer: boolean };
+  | { kind: "pdf"; text: string; hasTextLayer: boolean };
 
 export interface PageRecord {
   page: number;
