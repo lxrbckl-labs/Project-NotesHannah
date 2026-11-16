@@ -240,7 +240,14 @@ test("the question and the submit button stay in view when the on-screen keyboar
   }
 });
 
-test("touch targets are at least 44px on the start screen and in the player", async ({ page }) => {
+test("touch targets are at least 44px on the start screen and in the player", async ({
+  page,
+}, info) => {
+  // The shared buttons are compact on the computer layout (from 1280px); the rule is for touch layouts.
+  test.skip(
+    info.project.name === "computer",
+    "touch targets apply to the phone and tablet layouts",
+  );
   await openDemo(page);
   const small = async () =>
     page.evaluate(() =>
@@ -252,10 +259,23 @@ test("touch targets are at least 44px on the start screen and in the player", as
           (el) =>
             !(el instanceof HTMLInputElement && (el.type === "radio" || el.type === "checkbox")),
         )
-        .map((el) => ({
-          name: (el.textContent || el.getAttribute("aria-label") || el.tagName).trim().slice(0, 30),
-          r: el.getBoundingClientRect(),
-        }))
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          // A shared chip looks 28px tall and takes a 44px+ hit area (.hit-area::after) on touch.
+          if (el.classList.contains("hit-area")) {
+            const hit = getComputedStyle(el, "::after");
+            return {
+              name: (el.textContent || el.tagName).trim().slice(0, 30),
+              r: { width: Number.parseFloat(hit.width), height: Number.parseFloat(hit.height) },
+            };
+          }
+          return {
+            name: (el.textContent || el.getAttribute("aria-label") || el.tagName)
+              .trim()
+              .slice(0, 30),
+            r,
+          };
+        })
         .filter(({ r }) => r.height < 43.5 || (r.width < 43.5 && r.height < 43.5))
         .map(({ name, r }) => `${name} ${Math.round(r.width)}x${Math.round(r.height)}`),
     );
@@ -303,5 +323,6 @@ test("reduced motion: the flip happens without a transition", async ({ page }) =
   const duration = await page.evaluate(
     () => getComputedStyle(document.querySelector(".pr-flip-inner") as Element).transitionDuration,
   );
-  expect(duration).toMatch(/^0s$/);
+  // The app-wide reduced-motion rule sets 0.01ms.
+  expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
 });

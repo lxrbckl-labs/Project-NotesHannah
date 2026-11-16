@@ -170,7 +170,7 @@ export function PracticeApp({
                     setProblem(null);
                     setView(n.view);
                   }}
-                  className={`w-full max-sm:px-2 max-sm:text-label ${segmentItemClass(view === n.view, "segment")}`}
+                  className={`w-full whitespace-nowrap max-sm:px-2 max-sm:text-label ${segmentItemClass(view === n.view, "segment")}`}
                 >
                   {n.label}
                 </button>

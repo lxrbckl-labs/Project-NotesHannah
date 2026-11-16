@@ -235,7 +235,7 @@ export function Start({
       {scope && !scope.dueOnly && (
         <fieldset className="space-y-3">
           <legend className="mb-1 text-body font-semibold">Question types</legend>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-x-2.5 gap-y-3.5">
             {QUESTION_TYPES.map((t) => {
               const n = scope.counts[t];
               return (
@@ -257,7 +257,7 @@ export function Start({
       {total > 0 && (
         <fieldset className="space-y-3">
           <legend className="mb-1 text-body font-semibold">How many</legend>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-x-2.5 gap-y-3.5">
             {lengthOptions.map((n) => (
               <Chip
                 key={n}
