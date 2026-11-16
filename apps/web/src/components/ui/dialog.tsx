@@ -4,15 +4,16 @@ import type { ReactNode } from "react";
 import { cn } from "../../lib/cn";
 import { Button, IconButton } from "./button";
 
-const overlay = "fixed inset-0 z-[70] bg-(--color-overlay) anim-fade";
+export const overlayClass = "fixed inset-0 z-(--z-overlay) bg-(--color-overlay) anim-fade";
+const overlay = overlayClass;
 
 function contentClass(sheet: "touch" | "phone") {
   const bottom =
     sheet === "touch"
-      ? "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-3xl xl:inset-auto xl:left-1/2 xl:top-1/2 xl:max-h-[85dvh] xl:w-[30rem] xl:-translate-x-1/2 xl:-translate-y-1/2 xl:rounded-2xl"
-      : "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-3xl md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[85dvh] md:w-[30rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl";
+      ? "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-panel xl:inset-auto xl:left-1/2 xl:top-1/2 xl:max-h-[85dvh] xl:w-[30rem] xl:-translate-x-1/2 xl:-translate-y-1/2 xl:rounded-panel"
+      : "inset-x-0 bottom-0 max-h-[88dvh] rounded-t-panel md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[85dvh] md:w-[30rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-panel";
   return cn(
-    "fixed z-[71] flex flex-col border border-border bg-surface text-text shadow-pop outline-none anim-sheet",
+    "fixed z-(--z-modal) flex flex-col border border-border bg-surface text-text shadow-pop outline-none anim-sheet",
     bottom,
   );
 }
@@ -27,6 +28,7 @@ export function Modal({
   footer,
   sheet = "phone",
   hideDescription,
+  container,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,10 +38,12 @@ export function Modal({
   footer?: ReactNode;
   sheet?: "touch" | "phone";
   hideDescription?: boolean;
+  /** Where to mount; the document body by default. */
+  container?: HTMLElement | null;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
+      <Dialog.Portal container={container ?? undefined}>
         <Dialog.Overlay className={overlay} />
         <Dialog.Content
           className={contentClass(sheet)}
@@ -47,10 +51,10 @@ export function Modal({
         >
           <div className="flex items-start justify-between gap-3 px-5 pt-5">
             <div className="min-w-0">
-              <Dialog.Title className="font-display text-lg font-semibold">{title}</Dialog.Title>
+              <Dialog.Title className="font-display text-title font-semibold">{title}</Dialog.Title>
               {description ? (
                 <Dialog.Description
-                  className={cn("mt-1 text-sm text-text-muted", hideDescription && "sr-only")}
+                  className={cn("mt-1 text-ui text-text-muted", hideDescription && "sr-only")}
                 >
                   {description}
                 </Dialog.Description>
@@ -86,32 +90,37 @@ export function ConfirmDialog({
   onConfirm,
   danger,
   busy,
+  cancelLabel = "Cancel",
+  container,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: string;
+  /** What it affects, in a sentence or two. */
+  description: ReactNode;
   confirmLabel: string;
   onConfirm: () => void;
   danger?: boolean;
   busy?: boolean;
+  cancelLabel?: string;
+  container?: HTMLElement | null;
 }) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialog.Portal>
+      <AlertDialog.Portal container={container ?? undefined}>
         <AlertDialog.Overlay className={overlay} />
         <AlertDialog.Content className={contentClass("phone")}>
           <div className="px-5 pt-5">
-            <AlertDialog.Title className="font-display text-lg font-semibold">
+            <AlertDialog.Title className="font-display text-title font-semibold">
               {title}
             </AlertDialog.Title>
-            <AlertDialog.Description className="mt-2 text-sm text-text-muted">
-              {description}
+            <AlertDialog.Description asChild>
+              <div className="mt-2 text-ui text-text-muted">{description}</div>
             </AlertDialog.Description>
           </div>
           <div className="pb-safe mt-5 flex flex-wrap justify-end gap-2 px-5 pb-4">
             <AlertDialog.Cancel asChild>
-              <Button>Cancel</Button>
+              <Button>{cancelLabel}</Button>
             </AlertDialog.Cancel>
             <Button
               variant={danger ? "danger" : "primary"}

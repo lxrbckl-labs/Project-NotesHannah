@@ -2,6 +2,7 @@ import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { describeError } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import type { Tone } from "../../lib/hues";
 import { Button } from "./button";
 
 export function Skeleton({ className }: { className?: string }) {
@@ -24,20 +25,65 @@ export function EmptyState({
   title,
   children,
   action,
+  hue = "accent",
+  compact,
+  headingLevel = 2,
 }: {
   icon: ReactNode;
   title: string;
   children?: ReactNode;
   action?: ReactNode;
+  /** The colour of the icon tile; the accent by default. */
+  hue?: Tone;
+  /** Less padding, for empty lists inside a card or panel. */
+  compact?: boolean;
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   return (
-    <div className="dot-grid flex flex-col items-center rounded-3xl border border-dashed border-border-strong px-6 py-12 text-center">
-      <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+    <div
+      className={cn(
+        "dot-grid flex flex-col items-center rounded-panel border border-dashed border-border-strong text-center",
+        compact ? "px-4 py-8" : "px-6 py-12",
+      )}
+    >
+      <div
+        data-hue={hue}
+        className="mb-4 flex size-14 items-center justify-center rounded-card bg-tone-soft text-tone-text"
+      >
         {icon}
       </div>
-      <h2 className="text-lg font-semibold">{title}</h2>
-      {children ? <p className="mt-1.5 max-w-sm text-sm text-text-muted">{children}</p> : null}
+      <Heading className="text-title font-semibold">{title}</Heading>
+      {children ? <p className="mt-1.5 max-w-sm text-ui text-text-muted">{children}</p> : null}
       {action ? <div className="mt-5">{action}</div> : null}
+    </div>
+  );
+}
+
+/** A spinning ring with a visible label. With reduced motion the ring stands still. */
+export function Spinner({ label = "Loading", inline }: { label?: string; inline?: boolean }) {
+  return (
+    <div
+      role="status"
+      className={cn(
+        "flex items-center gap-2 text-text-muted",
+        inline ? "inline-flex" : "justify-center py-12",
+      )}
+    >
+      <span
+        aria-hidden
+        className="anim-spin size-4 rounded-pill border-2 border-border-strong border-t-accent"
+      />
+      <span className="text-ui">{label}</span>
+    </div>
+  );
+}
+
+/** A visually hidden polite live region: say what changed for screen readers. */
+export function LiveRegion({ message }: { message: string }) {
+  return (
+    <div className="sr-only" aria-live="polite" aria-atomic="true">
+      {message}
     </div>
   );
 }
@@ -47,13 +93,13 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   return (
     <div
       role="alert"
-      className="flex flex-col items-center rounded-3xl border border-border bg-surface px-6 py-12 text-center"
+      className="flex flex-col items-center rounded-panel border border-border bg-surface px-6 py-12 text-center"
     >
-      <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-danger-soft text-danger">
+      <div className="mb-4 flex size-14 items-center justify-center rounded-card bg-danger-soft text-danger">
         <CircleAlert size={26} />
       </div>
-      <h2 className="text-lg font-semibold">Something did not load</h2>
-      <p className="mt-1.5 max-w-sm text-sm text-text-muted">
+      <h2 className="text-title font-semibold">Something did not load</h2>
+      <p className="mt-1.5 max-w-sm text-ui text-text-muted">
         {message}
         {hint ? ` ${hint}` : ""}
       </p>

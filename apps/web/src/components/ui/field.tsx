@@ -1,8 +1,13 @@
-import { type InputHTMLAttributes, type ReactNode, useId } from "react";
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+  useId,
+} from "react";
 import { cn } from "../../lib/cn";
 
 export const inputClass =
-  "min-h-11 w-full rounded-xl border border-border-strong bg-surface px-3.5 text-base text-text placeholder:text-text-muted/80 focus-visible:outline-2 xl:min-h-9 xl:text-sm";
+  "min-h-11 w-full rounded-control border border-border-strong bg-surface px-3.5 text-body text-text placeholder:text-text-muted/80 focus-visible:outline-2 aria-invalid:border-danger xl:min-h-9 xl:text-ui";
 
 export function Field({
   label,
@@ -23,16 +28,16 @@ export function Field({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className="grid gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="text-ui font-medium">
         {label}
       </label>
       {children({ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined })}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-danger">
+        <p id={`${id}-error`} className="text-ui text-danger">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-sm text-text-muted">
+        <p id={`${id}-hint`} className="text-ui text-text-muted">
           {hint}
         </p>
       ) : null}
@@ -44,26 +49,11 @@ export function TextInput({ className, ...props }: InputHTMLAttributes<HTMLInput
   return <input className={cn(inputClass, className)} {...props} />;
 }
 
-export function Badge({
-  tone = "neutral",
-  children,
-}: {
-  tone?: "neutral" | "accent" | "danger";
-  children: ReactNode;
-}) {
-  const tones = {
-    neutral: "bg-surface-muted text-text-muted",
-    accent: "bg-accent-soft text-accent",
-    danger: "bg-danger-soft text-danger",
-  };
+export function TextArea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-        tones[tone],
-      )}
-    >
-      {children}
-    </span>
+    <textarea className={cn(inputClass, "min-h-24 py-2.5 leading-normal", className)} {...props} />
   );
 }
+
+/** The badge moved to ./badge; this keeps the old import path working. */
+export { Badge } from "./badge";

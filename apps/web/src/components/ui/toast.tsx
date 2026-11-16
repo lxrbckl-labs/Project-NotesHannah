@@ -1,11 +1,12 @@
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { createContext, type ReactNode, use, useCallback, useMemo, useState } from "react";
 import { describeError } from "../../lib/api";
+import { cn } from "../../lib/cn";
 import { Button } from "./button";
 
 interface ToastItem {
   id: number;
-  tone: "info" | "error";
+  tone: "info" | "success" | "error";
   message: string;
   hint?: string;
   action?: { label: string; run: () => void };
@@ -13,6 +14,8 @@ interface ToastItem {
 
 interface ToastApi {
   show: (message: string, action?: ToastItem["action"]) => void;
+  /** Like show, with the success colour: for something finished that she waited for. */
+  success: (message: string, action?: ToastItem["action"]) => void;
   error: (error: unknown) => void;
 }
 
@@ -45,6 +48,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const api = useMemo<ToastApi>(
     () => ({
       show: (message, action) => push({ tone: "info", message, action }, action ? 7000 : 4000),
+      success: (message, action) =>
+        push({ tone: "success", message, action }, action ? 7000 : 4000),
       error: (error) => push({ tone: "error", ...describeError(error) }, 9000),
     }),
     [push],
@@ -55,18 +60,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[90] flex flex-col items-center gap-2 px-4 md:bottom-6"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-(--z-toast) flex flex-col items-center gap-2 px-4 md:bottom-6"
       >
         {items.map((t) => (
           <div
             key={t.id}
             role={t.tone === "error" ? "alert" : "status"}
-            className="anim-pop pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl border border-border bg-surface p-3.5 text-sm shadow-pop"
+            className="anim-pop pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-card border border-border bg-surface p-3.5 text-ui shadow-pop"
           >
             {t.tone === "error" ? (
               <CircleAlert size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden />
             ) : (
-              <CircleCheck size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+              <CircleCheck
+                size={18}
+                className={cn(
+                  "mt-0.5 shrink-0",
+                  t.tone === "success" ? "text-success" : "text-accent",
+                )}
+                aria-hidden
+              />
             )}
             <div className="min-w-0 flex-1">
               <p className="font-medium">{t.message}</p>
