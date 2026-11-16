@@ -204,7 +204,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
       const touched = [...hit.concepts, ...hit.relations];
       if (touched.length > 0) {
         changes.record(userId, {
-          action: "concept.source_deleted",
+          action: "concept.unsourced",
           objectType: "concept",
           objectIds: touched,
           actor,

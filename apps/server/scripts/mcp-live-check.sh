@@ -9,12 +9,16 @@
 # get two fixture files in, transcribe them, file them and write a cited study
 # guide. Then it checks the result from the database (mcp-live-check.verify.ts).
 #
-# Usage (from apps/server):  scripts/mcp-live-check.sh [claude|codex|both|smoke|measure] [guide|requests]
+# Usage (from apps/server):  scripts/mcp-live-check.sh [claude|codex|both|smoke|measure] [guide|requests|canvas]
 #   guide (default): the two fixture files, filed and turned into a cited study guide.
 #   requests: she (seeded through the HTTP API with her session) has a lecture note with a
 #     paragraph she wrote, two unprocessed uploads, and two requests: "this is wrong: fix the
 #     dose" on her paragraph and "make me a quiz on beta blockers" on the lecture. Checked by
 #     mcp-live-check.verify-more.ts.
+#   canvas: lecture 7 with a cited study guide (written through the API by a seed agent key) and
+#     three cards she pinned on its study map (her session); the agent arranges the map into frames
+#     with labelled connectors and adds a note, without moving her pins. Checked by
+#     mcp-live-check.verify-canvas.ts.
 #   measure: token cost of the tool listing and of start_here, read from Codex's usage.
 # Env: PORT (8790), CLAUDE_MODEL (haiku), BUDGET_USD (3), KEEP=1 keeps the temp dir,
 #      CONVERTER_IMAGE (notes-converter:mcp-live; built from deploy/converter.Dockerfile if missing).
@@ -85,6 +89,14 @@ for _ in $(seq 1 50); do
 done
 echo "converter heartbeat: $(cat "$DATA_DIR/queue/heartbeat" 2>/dev/null || echo none)"
 
+if [[ "$SCENARIO" == "canvas" ]]; then
+  SEED_KEY="$(npx tsx src/cli/admin.ts create-key hannah --name "seed" --scope write |
+    sed -n 's/^Secret (shown once): //p')"
+  SEED="$(npx tsx scripts/mcp-live-check.seed-canvas.ts "$BASE" hannah "$PASSWORD" "$DECK" "$SEED_KEY")"
+  echo "seeded: $SEED"
+  CANVAS_PROMPT="Arrange lecture 7's study map into frames by topic with labelled connectors between related cards, and add a note card summarising the single most important point. Do not move anything she placed. Report what you did."
+  PROMPT="${PROMPT_CANVAS:-$CANVAS_PROMPT}"
+fi
 if [[ "$SCENARIO" == "requests" ]]; then
   SEED="$(npx tsx scripts/mcp-live-check.seed.ts "$BASE" hannah "$PASSWORD" "$DECK" "$NOTES")"
   echo "seeded: $SEED"
@@ -195,7 +207,9 @@ grep -E "mcp refused|error|Error" "$TMP/server.log" | head -40 || true
 echo "== Converter log (tail)"
 docker logs "$CONTAINER" 2>&1 | tail -10 || true
 echo "== Verification from the database"
-if [[ "$SCENARIO" == "requests" ]]; then
+if [[ "$SCENARIO" == "canvas" ]]; then
+  (cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify-canvas.ts hannah "$SEED") || echo "verification found problems"
+elif [[ "$SCENARIO" == "requests" ]]; then
   (cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify-more.ts hannah "$SEED") || echo "verification found problems"
 else
   (cd "$SERVER_DIR" && npx tsx scripts/mcp-live-check.verify.ts hannah) || echo "verification found problems"

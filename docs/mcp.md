@@ -11,12 +11,12 @@ Related: [architecture.md](architecture.md) (MCP layer, agent orientation),
 operations), [converter.md](converter.md) (how uploads become pages),
 `spikes/s1-mcp-key-auth/FINDINGS.md` (what the two agents do with images and keys).
 
-## State (2026-11-16)
+## State (2026-11-16, canvas and the four fixes added)
 
 Everything below is live on the shared services: `createApp` passes the one `Services`
 object to `mcpRoutes(deps, services)`, so MCP and the HTTP API run the same domain code.
-Sixteen tools are registered in production, covering the library, files, documents,
-requests, practice, exams and concepts. Proved end to end with the real server, the real
+Seventeen tools are registered in production, covering the library, files, documents,
+the study map, requests, practice, exams and concepts. Proved end to end with the real server, the real
 converter container and headless Claude Code and Codex sessions (see Live checks).
 
 ## Endpoint
@@ -40,28 +40,40 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 | `browse_library` | One level of the tree, or trash, favourites, recents; paged | read-only |
 | `get_item` | Any object by ID (nod_, fil_, pag_, doc_, blk_, req_, qst_, con_, exm_) with links to its neighbours; a file with `text: true` gives every page's text at once; a lecture shows who is writing for it | read-only |
 | `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts | read-only |
-| `edit_library` | create, update (rename), move, duplicate, trash, restore; claim and release a lecture or document for writing | destructive |
+| `edit_library` | create, update (rename), move, duplicate, trash, restore; claim and release any library item or document for writing | destructive |
 | `changes` | The change feed since a cursor | read-only |
-| `requests` | Her requests: list (waiting first, with target, path, preview), claim, release, complete with a reply and links, decline with a reason | write |
-| `source_files` | upload links, list (status and transcription progress), wait for conversion, claim, release, file, move (or back to the inbox), retry | write |
+| `requests` | Her requests: list (waiting first, with target, path, preview), claim, release, complete with a reply and links (figures in the reply are checked against its sources), decline with a reason | write |
+| `source_files` | upload links, list (status and transcription progress), wait for conversion, claim, release, file, move (or back to the inbox), retry; filing is refused while pages have no transcript unless forced with a reason | write |
 | `get_page` | Page image inline (WebP) or a signed link; native text, notes, the current transcript, neighbours, how often it is cited | read-only |
 | `save_transcript` | Verbatim transcript with flags; refuses unflagged doses | write |
 | `write_document` | `create_document` with its first blocks | write |
 | `edit_blocks` | insert, update (replace or patch), move, delete, replace_generated, restore_revision; `requestId` for her blocks | destructive |
+| `study_map` | A document's study map (docs/canvas.md): `get` (frames with card previews, connectors as "A -[label]-> B", hers and pinned items marked), `set_structure` (the whole map), `change` (incremental ops); never coordinates | write |
 | `concepts` | upsert concepts and relations in bulk; search, page, neighbourhood, path, filter, compare, look-alike suggestions; merge only with her claimed request | destructive |
 | `practice_questions` | create in bulk (or validate only), list, update, trash, restore | destructive |
 | `study_progress` | Her weak areas, missed-questions notebook, due cards, sessions, a session's results | read-only |
 | `exams` | Upcoming exams with coverage and progress; create, update (never delete) | write |
 
-Why this list (and not more): each tool is one job an agent recognises by name. Actions
+Why this list (and not more) and why ONE `study_map` tool: each tool is one job an agent recognises by name. Actions
 that share a subject fold into one tool with an `action` (requests, source_files, concepts,
 practice_questions, study_progress, exams), and anything that only reads one object by ID
 is `get_item`, so the four new domains added four tools, not twenty: their `get` lives in
 `get_item`, and upload links moved into `source_files` (an upload is the start of a file's
-life), which keeps the count at sixteen. `study_progress` is separate from
+life). `study_progress` is separate from
 `practice_questions` because it only reads and has a read-only annotation; `exams` is
 separate because it is about dates and coverage, not questions. Agents can never take a
 practice session or answer for her: those service methods are not in the port.
+
+The canvas is one tool, `study_map`, with `get`, `set_structure` and `change`, not three
+`canvas_*` tools. The three share one subject (one document's map), one input (`documentId`
+plus the optional `requestId` and `expectedRevision`) and one rule (the pin rule), and an agent
+decides between them by reading, not by name; three more entries would cost three more
+descriptions in every session's tool listing, and the listing is the budget that matters
+(`study_map` as one tool is about 2,300 tokens, measured). `get` is its own action but the tool
+is annotated as a writer because two of its three actions write; a read-only key can still
+`get`. The published schema describes the card, connector, frame and op fields so an agent sees the
+shapes, while the exact checking stays with the canvas validators, whose errors (path, plain
+message, a minimal valid example) are passed through as the tool error.
 
 Decisions:
 
@@ -72,6 +84,21 @@ Decisions:
   in progress and claimed by the calling key (checked in the MCP layer), and the domain
   still requires both concepts to be unreviewed agent work. Look-alikes are reported, never
   merged.
+- **The study map and the pin rule.** The app lays the map out and she can drag cards, so an
+  agent's input never carries coordinates (`x`, `y`, `position`, `width`, `height` are refused
+  with the reason). What she made, edited or pinned is hers: `set_structure` keeps it and lists
+  it as skipped; an op on it is refused (`forbidden`) with the pin rule in her terms. Only a
+  request of hers about the whole document (not one block), in progress and claimed by this key,
+  lifts it; the canvas domain checks that with `requestsPort.verifyForEdit`. `place_cards`,
+  `release_pins` and `insert_items` are hers alone. The write also respects a writing claim on
+  the document.
+- **Filing untranscribed files.** The files domain refuses an AGENT filing or moving a file into a
+  place while any of its pages has no transcript: `invalid_input`, naming the page numbers, with
+  how to proceed. `force: true` with a short `reason` (3 to 200 characters) overrides it and the
+  reason goes into the activity summary ("... (forced; 2 pages not transcribed: ...)"). She
+  (a browser session) can always file, and anyone can send a file back to the inbox. It lives in
+  the domain (`fileUnder`, `POST /api/files/:id/file` takes `force` and `reason`), so it holds
+  for the HTTP API with a key as well.
 - **Her edits.** Her blocks, her questions and anything she reviewed are protected. Only a
   request of hers lifts that, when `requestsPort.verifyForEdit` confirms it is in progress,
   claimed by this key and about that document or block. The documents domain enforces it;
@@ -95,19 +122,43 @@ though all of them are recoverable.
    `study_progress` to target weak areas.
 8. **Finish**: complete the claimed requests; release file and writing claims.
 
+### Request replies and their figures
+
+In one live run an agent's reply to her dose request cited the slide but stated a range the slide
+does not give, and nothing checked it. When an agent completes a request (domain `requests`,
+so MCP and the HTTP API alike), every number with a unit, range or decimal in the reply is looked
+for in: the page(s) or block(s) the request is about (a `node` request: the documents and files under
+it), the objects the agent passes in `links`, and her own message. Figures found nowhere come back as
+a refusal, naming them, before anything is completed; the agent must add a link to a source that
+contains them, fix the reply, or pass `acknowledgeUnsourced: true`. An acknowledged reply is stored
+with `unsourcedFigures: true` and the list (`unsourcedFigureList`) on the reply, and the app shows it
+with "contains figures not found in your notes" (web change below). A reply without such figures
+stores `unsourcedFigures: false`; older replies lack the field. Declines are not checked. The matching
+is deliberately simple: the same number and unit (also as one end of a range; a range needs both
+ends), case, spacing, a decimal comma and mcg for µg ignored.
+
 ### Duplicate work: writing claims
 
 Two agents could write a study guide for the same lecture. A file claim (source_files) and
 a request claim (requests) cover their own objects, so writing gets the same idea:
-`edit_library {"action":"claim","id":"<lecture>"}` takes an advisory, expiring claim
-(30 minutes) on a lecture, folder or document and everything under it (table
-`mcp_write_claims`, migration 0620, owned by the MCP layer). While another key holds it,
-`write_document`, `edit_blocks` and `practice_questions` writes into that subtree are
-refused with who holds it and until when, and so is a second claim; `get_item` on the
-lecture shows the holder; the holder's own writes renew it; `release` ends it. Her browser
-session is never affected. Limitation: a study guide written into the course's Study
-guides section is outside the lecture's subtree, so the claim only advises there (the
-holder is still shown on the lecture).
+`edit_library {"action":"claim","id":"<id>"}` takes an advisory, expiring claim (30 minutes)
+on a library item and everything under it (table `mcp_write_claims`, migration
+`0620_mcp_write_claims.sql`, owned by the MCP layer). The target can be any library item (a
+lecture, folder, document or section such as the course's Study guides) by its `nod_` ID, or a
+document by its `doc_` ID. While another key holds it, `write_document`, `edit_blocks`,
+`practice_questions` and `study_map` writes into that subtree are refused with who holds it and
+until when, and so is a second claim; the holder's own writes renew it; `release` ends it. Her
+browser session is never affected.
+
+A study guide for a lecture lives in the course's Study guides section, outside the lecture's
+subtree, so a claim on the lecture alone cannot guard it. The claim is therefore takeable on
+the section (guards every guide being written there) or on the guide itself once it exists, and
+`get_item` shows it from both directions: on a document, a section, folder or lecture it says who
+holds a claim on it or above it ("Being written for by ...") and which claims exist below it
+("Being written below this: doc_... by Codex until ..."). Claiming a lecture says where its guide
+goes. Limit: nothing can be claimed before the guide document exists except its section, so two
+agents that both create a guide at the same instant can still produce two (the second sees the
+first at its next `get_item`).
 
 ### Quotes
 
@@ -187,16 +238,23 @@ Example: {"action":"create","parentId":"nod_01HZX3K9Q2V7M4N8P6R5T0W1YB","kind":"
 
 The MCP layer writes no activity of its own: every agent change is recorded by the domain
 that makes it, the same way for MCP and the HTTP API, and writing claims are deliberately
-not logged (advisory, and they would drown the log). So no MCP-originated names needed
-changing. The names the domains use today, seen in the live runs and the code, are not
-consistent; to fix in the domains (suggested form `<object>.<past participle>`):
+not logged (advisory, and they would drown the log). The change feed and the activity log use
+the SAME code for the same event, and since migration `0620_activity_names.sql` one scheme,
+`<area>.<past-tense verb>`:
 
-| Domain | Today | Suggested |
+| Area | Names now | Was |
 |---|---|---|
-| library | `library.created`, `.updated`, `.moved`, `.duplicated`, `.trashed`, `.restored`, `.deleted` (its change feed says `node.*`) | `node.*`, as in the feed |
-| documents | the operation names: `create_document`, `insert_blocks`, `update_block`, `move_blocks`, `delete_blocks`, `replace_generated`, `restore_revision`, `batch` (its change feed says `document.created`, `document.updated`) | `document.created`, `blocks.inserted`, `block.updated`, `blocks.moved`, `blocks.deleted`, `document.regenerated`, `document.restored`, `document.batch` |
-| requests | `request.claim`, `request.release`, `request.complete`, `request.decline` | `request.claimed`, `.released`, `.completed`, `.declined` |
-| files, transcripts, practice, exams, concepts | `file.filed`, `transcript.saved`, `question.created`, `exam.created`, `concept.bulk_upserted`, ... | already consistent |
+| library | `library.created`, `.updated`, `.moved`, `.duplicated`, `.trashed`, `.restored`, `.deleted` | the feed said `node.*`, the activity log `library.*` |
+| documents | `document.created`, `.restored` (a revision), `.trashed`, `.untrashed`, `.deleted`; `block.inserted`, `.edited`, `.moved`, `.deleted`, `.regenerated`, `.reviewed`; `document.edited` (a commit of several kinds) | activity: `create_document`, `insert_blocks`, `update_block`, `move_blocks`, `delete_blocks`, `replace_generated`, `restore_revision`, `batch`; feed: `document.updated`, `document.reviewed`, `document.restored_from_trash` |
+| requests | `request.created`, `.edited`, `.cancelled`, `.reopened`, `.claimed`, `.released`, `.completed`, `.declined` | `request.claim`, `.release`, `.complete`, `.decline` |
+| practice | `question.authored`, `.updated`, `.trashed`, `.restored`, `.deleted` | `question.created` |
+| concepts | `concept.upserted` (one entry per bulk call), `.created`, `.updated`, `.related`, `.merged`, `.deleted`, `.unsourced` | `concept.bulk_upserted`, `concept.source_deleted` |
+| files | `file.*` and `transcript.*`, `exam.*` | unchanged |
+| canvas | `canvas.arranged` (an agent set the structure, or she arranged), `.edited` (an agent's ops), `.placed` (hers), `.synced` (the document changed) | `canvas.structure_set`, `canvas.changed`, `canvas.merged` |
+
+The migration rewrote the old rows in both tables (`document.updated` in the feed cannot be
+traced to one operation any more and became `document.edited`). The plain-word summaries did not
+change.
 
 ## Inputs
 
@@ -260,11 +318,30 @@ methods (start, answer, finish) are left out on purpose.
   without a request and done with her claimed request, read-only key); writing claims; an
   array sent as a JSON string; and the whole surface (sixteen tools, every field described,
   every schema small and valid, start_here within budget).
+- `test/mcp-canvas.test.ts`, over the real composed app: `study_map` (get; set_structure with
+  frames, labelled connectors, a note and a wide card; the same body twice changes nothing;
+  change with an earlier call's IDs; the activity entry `canvas.arranged` in plain words),
+  teach-by-error (coordinates, a connector to nowhere, a block outside the document, ops hers
+  alone, a stale revision, a library ID where a document goes), the pin rule (three cards
+  she pinned through her session keep their exact positions after a set_structure that omits
+  them; an op on one is refused with the rule; a request about one block does not lift it, a
+  request about the document does), read-only key, another user's document, a writing claim by
+  another agent, `start_here`'s study-map section and topic; writing claims on a section and on a
+  study guide by `doc_` ID with `get_item` from both directions; a request reply whose dose the
+  slide does not say (refused with the figures, acknowledged, shown flagged to her).
+- `test/request-figures.test.ts`: the figure recognizer (values, ranges, decimals, mcg for µg, decimal
+  commas; bare integers and words never trip it) and the domain guard (refused, accepted from the
+  target, from a cited block, from her own message; acknowledged with the flag and the list;
+  declines unchecked; over the HTTP API).
+- `test/activity-names.test.ts`: migration `0620_activity_names.sql` on rows written under every old
+  name, in both tables, idempotent. The filing rule is tested in `files-workflow.test.ts` (HTTP: both
+  callers, force without a reason, back to the inbox) and `services.test.ts` (the forced reason in
+  the activity log), the MCP side in `mcp-real.test.ts`.
 - `test/mcp-cli.test.ts`: `admin create-key`.
 
 ## Live checks
 
-`apps/server/scripts/mcp-live-check.sh [claude|codex|both|smoke|measure] [guide|requests]` starts the real server
+`apps/server/scripts/mcp-live-check.sh [claude|codex|both|smoke|measure] [guide|requests|canvas]` starts the real server
 (routes, MCP, queue watcher) on a temporary database and storage directory, starts the
 real converter image with the lockdown flags of `deploy/docker-compose.converter.yml`
 (user 10001:10001, no network, read-only root, originals mounted read-only), creates a
@@ -323,25 +400,56 @@ on their pages; agent document blocks' citations; the activity log.
 | Claude sonnet | Finished (61 turns, 527 s) and reported both requests done, both files transcribed and filed, 36 concepts, 34 relations, 12 questions. **Not verified**: I edited the live script while it ran, bash read the changed file and the verification step failed with a syntax error; the temporary database was removed on exit. | $2.00 |
 | Codex | **All checks passed**: both requests done (dose corrected to the slide's 50-200 mg), both files transcribed and filed, 12 questions (2 calculations, 4 flashcards) all citing real pages and the calculations grading their own answers correct, 33 concepts and 29 relations all cited. 1.31M input tokens (1.17M cached), 7k output. | ChatGPT plan |
 
+### Canvas scenario (2026-11-16)
+
+`scripts/mcp-live-check.sh <agent> canvas` seeds, through the HTTP API (`mcp-live-check.seed-canvas.ts`):
+term, course and lecture 7; the 12-slide deck uploaded by her session and converted by the real
+converter; a cited study guide written into the lecture by a separate agent key ("Seed agent": an h1,
+then an h2 and two quoted, cited paragraphs for each of nine slides, 28 blocks); the deck filed by her;
+and three cards on the map pinned by her session (`PUT .../canvas/placements`, at (120, 1900),
+(640, 1900), (1160, 1900)). The prompt: "Arrange lecture 7's study map into frames by topic with
+labelled connectors between related cards, and add a note card summarising the single most important
+point. Do not move anything she placed. Report what you did." `mcp-live-check.verify-canvas.ts` then
+reads the database: frames and connectors made by the agent, every connector labelled and joining two
+cards on the map, every block card naming a real block, a connector across two frames, her three cards
+at exactly their coordinates and no other card pinned or sized, a note card by the agent, and the
+activity log.
+
+| Run | Outcome (from the database) | Cost |
+|---|---|---|
+| Claude `haiku` (the cheapest model; first and only run) | **All checks passed.** 12 turns, 80 s: start_here, library walk to the lecture, `get_item` on it, `study_map get` with `include: full`, then one `set_structure` refused from its error alone (two connector `kind`s were not in the list; the error named `$.connectors[1].kind` and the valid kinds), then the corrected one. Result: 5 agent frames by topic (Fundamentals, Drug selectivity, Clinical use, Safety, Dosing), 9 labelled connectors across frames, an agent note card; her three pins unchanged; entry `canvas.arranged`: "Arranged the study map for Beta blockers: study guide into 6 frames". | $0.20 |
+| Codex | **All checks passed.** One `start_here {"topic":"study_map"}`, `study_map get`, then a single `change` call (4 frame renames, 1 frame, 1 note card, 9 labelled connectors); nothing refused; entry `canvas.edited`: "Changed the study map for Beta blockers: study guide: added 1 card, 9 connectors, 1 frame; changed 4 frames". Neither agent touched a pinned card, so the pin refusal itself is proved in `mcp-canvas.test.ts`, not live. 284k input tokens (248k cached), 1.4k output. | ChatGPT plan |
+
 ### Size
 
-Measured with `scripts/mcp-live-check.sh claude measure` (Claude Code's own usage, read
-by `mcp-live-check.tokens.mjs`): loading every tool schema with ToolSearch added 19,310
-tokens to the context (18 schemas: the 16 notes tools and two others), and the default
-`start_here` result added 2,591 tokens. That listing was measured before the compact
-citation and link schemas; the JSON of the listing then went from 63,816 to 55,637
-characters. Codex's reported input did not grow when the server was attached, so it could
-not be used for this. `start_here` stays short by keeping detail in topics (largest:
-blocks 7.3k and practice 6.0k characters).
+Measured with `scripts/mcp-live-check.sh measure` (Claude Code's own usage, read by
+`mcp-live-check.tokens.mjs`; haiku loads every notes tool schema with ToolSearch, then calls
+`start_here`; the growth of the context between turns is the cost). Budget: the whole listing under
+80,000 characters of JSON, every tool's schema under 9,000, `start_here`'s overview under 12,000
+characters and any topic under 20,000 (all tested), and the listing under about 20,000 tokens.
+
+| 2026-11-16 | Listing (all schemas) | `start_here` default |
+|---|---|---|
+| Sixteen tools, after the compact citation and link schemas (measured now; 18 schemas incl. 2 non-notes) | +17,495 tokens (two runs: 17,494 and 17,496) | +2,613 |
+| Seventeen tools, with `study_map` (19 schemas) | **+19,831 tokens**, 61,600 characters of JSON | **+2,926** (`study_map` is 7,621 characters, about 2,340 tokens; its overview section about 310) |
+
+The earlier figure (19,310 for sixteen tools, 2,591 for `start_here`) was taken before the compact
+schemas; the sixteen-tool listing is now 17.5k. The current listing is within the budget (19.8k of
+about 20k tokens). Codex's reported input did not grow when the server was attached, so it could
+not be used. `start_here` stays short by keeping detail in topics (largest: blocks 7.3k and
+practice 6.0k characters).
 
 ## Open questions
 
-- The handwriting PDF was twice filed untranscribed by haiku: filing is allowed with a
-  warning by decision; refusing it (or making the warning an error) would stop that.
-- Agents can state facts in a request reply that the cited page does not say (haiku #4's
-  dose range); nothing checks a reply's text.
-- Writing claims cover a lecture's subtree; a study guide filed in the course's Study
-  guides section is outside it, so the claim only advises there.
-- The domains' activity names are inconsistent (table above).
-- The check for unflagged doses and decimals is a pattern; tune it on her real notes.
+- The figure check on a request reply (below) only looks for numbers with units, ranges and
+  decimals, and only for their presence in the sources: it cannot tell that a figure that does
+  occur is the right one (a dose of 50 mg from another drug's row passes), and a reply that cites
+  nothing about a lecture-wide request (`node` target) is checked against everything under the node,
+  which is generous. Tune the unit list on her real notes.
+- The check for unflagged doses and decimals is a pattern; tune it on her real notes. The figure
+  check reuses that pattern (`domains/files/figures.ts`).
+- Two agents that both create a study guide at the same instant can still write two; the claim helps
+  once one exists (see Duplicate work).
+- A study map's card text previews are the first 100 characters of a block; a very long document
+  gives a long `get`. Pass `include` only when the whole structure is needed.
 - Rate limiting is in memory, which fits the single container.

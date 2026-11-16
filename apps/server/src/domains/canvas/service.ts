@@ -368,7 +368,7 @@ export function createCanvasService(deps: Pick<ServerDeps, "db" | "now">, ports:
             ? `Arranged the study map for ${o.doc.title} into ${plural(frames, "frame")}`
             : `Set the study map for ${o.doc.title}: ${plural(canvas.cards.length, "card")}, ${plural(canvas.connectors.length, "connector")}`;
         return {
-          action: "canvas.structure_set",
+          action: "canvas.arranged",
           summary: `study map set (${summarise(report)})`,
           activity,
         };
@@ -384,7 +384,7 @@ export function createCanvasService(deps: Pick<ServerDeps, "db" | "now">, ports:
       input,
       (canvas, body, ctx) => applyCanvasChange(canvas, body, ctx),
       (o, _canvas, report) => ({
-        action: "canvas.changed",
+        action: "canvas.edited",
         summary: `study map changed (${summarise(report)})`,
         activity: `Changed the study map for ${o.doc.title}: ${summarise(report)}`,
       }),
@@ -618,7 +618,7 @@ export function createCanvasService(deps: Pick<ServerDeps, "db" | "now">, ports:
           : "",
       ].filter(Boolean);
       ports.changes.record(change.userId, {
-        action: "canvas.merged",
+        action: "canvas.synced",
         objectType: "canvas",
         objectIds: [change.documentId],
         documentId: change.documentId,

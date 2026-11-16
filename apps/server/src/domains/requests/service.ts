@@ -27,7 +27,9 @@ import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
 import { type ActivityPort, createActivityLog } from "../activity/activity.js";
 import type { ChangeRecorder } from "../activity/trace.js";
+import { figuresNotIn } from "../files/figures.js";
 import { createDbTargetLookup, type TargetInfo, type TargetLookup } from "./lookup.js";
+import { createDbSourceTexts, type SourceTexts } from "./sources.js";
 
 /** How long a claim lasts without being renewed. */
 export const DEFAULT_CLAIM_TTL_MS = 30 * 60_000;
@@ -45,6 +47,8 @@ export interface RequestsPorts {
   changes?: ChangeRecorder;
   /** Default claim length in milliseconds (default 30 minutes). */
   claimTtlMs?: number;
+  /** The text a reply's figures are checked against. Default: read the documents, files and questions tables. */
+  sourceTexts?: SourceTexts;
 }
 
 interface Row {
@@ -135,6 +139,7 @@ export function createRequestsService(
   const lookup = ports.lookup ?? createDbTargetLookup(db);
   const activity = ports.activity ?? createActivityLog(db, now);
   const defaultTtl = ports.claimTtlMs ?? DEFAULT_CLAIM_TTL_MS;
+  const sourceTexts = ports.sourceTexts ?? createDbSourceTexts(db);
   const iso = (ms: number) => new Date(ms).toISOString();
 
   const q = {
@@ -557,7 +562,7 @@ export function createRequestsService(
          claim_expires_at = ?, updated_at = ? WHERE id = ?`,
     ).run(JSON.stringify(auth.actor), t, t + ttl, t, r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.claim", `Claimed ${words(fresh)}`);
+    log(auth, fresh, "request.claimed", `Claimed ${words(fresh)}`);
     return view(fresh);
   }
 
@@ -574,11 +579,26 @@ export function createRequestsService(
          claim_expires_at = NULL, updated_at = ? WHERE id = ?`,
     ).run(now(), r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.release", `Handed ${words(fresh)} back`);
+    log(auth, fresh, "request.released", `Handed ${words(fresh)} back`);
     return view(fresh);
   }
 
-  function replyOf(auth: AuthContext, text: string, links: RequestReply["links"]): RequestReply {
+  /**
+   * The reply's numbers with units that neither the request's target, nor her own words, nor what the
+   * agent cited contain. Only a check that the figures occur somewhere in the sources: it cannot tell
+   * whether a figure that does occur is the right one.
+   */
+  function unsourcedFigures(r: Row, input: CompleteRequestInput): string[] {
+    const texts = [r.message, ...sourceTexts(r.user_id, targetOf(r), input.links)];
+    return figuresNotIn(input.reply, texts);
+  }
+
+  function replyOf(
+    auth: AuthContext,
+    text: string,
+    links: RequestReply["links"],
+    unsourced: readonly string[] = [],
+  ): RequestReply {
     const by =
       auth.actor.type === "agent"
         ? ({
@@ -587,7 +607,14 @@ export function createRequestsService(
             ...(auth.actor.label ? { label: auth.actor.label } : {}),
           } as const)
         : ({ type: "system" } as const);
-    return { text, links, by, at: iso(now()) };
+    return {
+      text,
+      links,
+      by,
+      at: iso(now()),
+      unsourcedFigures: unsourced.length > 0,
+      ...(unsourced.length > 0 ? { unsourcedFigureList: unsourced.slice(0, 20) } : {}),
+    };
   }
 
   function complete(
@@ -603,13 +630,30 @@ export function createRequestsService(
     }
     check(auth, r.status, "complete");
     needClaim(auth, r, "complete");
+    // An agent's reply is never checked against its source by a person; check the figures here.
+    const unsourced = actorKind(auth) === "agent" ? unsourcedFigures(r, input) : [];
+    if (unsourced.length > 0 && !input.acknowledgeUnsourced) {
+      const shown = unsourced.slice(0, 8).map((f) => `"${f}"`);
+      throw new AppError(
+        "invalid_input",
+        `Warning: the reply states ${shown.join(", ")}${unsourced.length > shown.length ? ", …" : ""}, which ${unsourced.length === 1 ? "does" : "do"} not occur in the pages or blocks this request is about, in her message, or in what you cited. Nothing was completed.`,
+        {
+          hint: 'Check each figure against the source page. Fix the reply, or add to "links" the page ({"type":"source",...}) or block that contains it. Only if it truly comes from general knowledge, complete again with "acknowledgeUnsourced": true: she then sees the reply flagged "contains figures not found in your notes".',
+          example: {
+            reply: input.reply.slice(0, 80),
+            links: [{ type: "source", fileId: "fil_…", pageId: "pag_…" }],
+            acknowledgeUnsourced: true,
+          },
+        },
+      );
+    }
     const t = now();
     db.prepare(
       `UPDATE requests SET status = 'done', reply = ?, claimed_by = NULL, claimed_at = NULL,
          claim_expires_at = NULL, updated_at = ?, closed_at = ? WHERE id = ?`,
-    ).run(JSON.stringify(replyOf(auth, input.reply, input.links)), t, t, r.id);
+    ).run(JSON.stringify(replyOf(auth, input.reply, input.links, unsourced)), t, t, r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.complete", `Answered ${words(fresh)}: ${input.reply}`);
+    log(auth, fresh, "request.completed", `Answered ${words(fresh)}: ${input.reply}`);
     return view(fresh);
   }
 
@@ -627,7 +671,7 @@ export function createRequestsService(
          claim_expires_at = NULL, updated_at = ?, closed_at = ? WHERE id = ?`,
     ).run(JSON.stringify(replyOf(auth, input.reason, [])), t, t, r.id);
     const fresh = need(auth.userId, id);
-    log(auth, fresh, "request.decline", `Declined ${words(fresh)}: ${input.reason}`);
+    log(auth, fresh, "request.declined", `Declined ${words(fresh)}: ${input.reason}`);
     return view(fresh);
   }
 

@@ -2,7 +2,6 @@ import {
   BlockFlag,
   BlockStyle,
   BlockType,
-  Citation,
   CreateDocumentInput,
   DeleteBlocksInput,
   InsertBlocksInput,

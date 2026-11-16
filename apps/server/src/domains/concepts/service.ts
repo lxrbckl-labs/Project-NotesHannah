@@ -1294,7 +1294,7 @@ export function createConceptsService(
       ];
       if (touched.length > 0) {
         leaveTrace(ports, auth.userId, auth.actor, {
-          action: "concept.bulk_upserted",
+          action: "concept.upserted",
           objectType: "concept",
           objectIds: touched,
           summary: `Updated the concept map: ${parts.join(", ")}`,

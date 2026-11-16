@@ -47,7 +47,12 @@ const ImageQuery = SizeQuery.extend({
   sig: z.string().max(200).optional(),
 });
 const DownloadQuery = z.object({ download: Flag.optional() });
-const FileBody = z.object({ nodeId: NodeId.nullable() });
+const FileBody = z.object({
+  nodeId: NodeId.nullable(),
+  /** An agent filing a file with untranscribed pages must say why. She is never asked. */
+  force: z.boolean().optional(),
+  reason: z.string().trim().min(3).max(200).optional(),
+});
 const TranscriptBody = SaveTranscriptInput.omit({ pageId: true }).extend({
   pageId: SaveTranscriptInput.shape.pageId.optional(),
 });
@@ -270,7 +275,12 @@ export function filesRoutes(
 
   app.post("/api/files/:id/file", requireWrite, async (c) => {
     const body = parse(FileBody, await readJson(c, EXAMPLES.file), EXAMPLES.file);
-    return c.json({ file: files.fileUnder(getAuth(c), c.req.param("id"), body.nodeId) });
+    return c.json({
+      file: files.fileUnder(getAuth(c), c.req.param("id"), body.nodeId, {
+        force: body.force,
+        reason: body.reason,
+      }),
+    });
   });
 
   app.post("/api/files/:id/claim", requireWrite, (c) =>

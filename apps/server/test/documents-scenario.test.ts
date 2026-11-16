@@ -202,9 +202,9 @@ describe("end to end: a beta blocker study guide", () => {
     // the log shows what the agent did; hers do not appear
     const log = t.log.list(t.alice).items;
     expect(log.map((e) => e.action)).toEqual([
-      "replace_generated",
-      "update_block",
-      "create_document",
+      "block.regenerated",
+      "block.edited",
+      "document.created",
     ]);
     expect(log[0]?.summary).toBe(
       "Beta blockers: Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone",

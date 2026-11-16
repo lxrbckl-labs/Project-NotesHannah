@@ -435,12 +435,12 @@ describe("end to end: concepts, questions, practice, requests and exams", () => 
     const feed = (await ok(user("GET", "/api/changes?limit=500"))).items as Json[];
     const actions = new Set(feed.map((c) => c.action));
     for (const action of [
-      "question.created",
-      "concept.bulk_upserted",
+      "question.authored",
+      "concept.upserted",
       "exam.created",
       "request.created",
-      "request.claim",
-      "request.complete",
+      "request.claimed",
+      "request.completed",
     ]) {
       expect(actions, action).toContain(action);
     }

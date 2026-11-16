@@ -100,7 +100,7 @@ Trashing, restoring, deleting and duplicating a node carry through to what hangs
 
 Source files going to the trash or coming back hide and show the requests on them; deleting one
 for good closes the open requests on it and notes the concepts that cited it in the change
-feed (`concept.source_deleted`; citations keep their quote).
+feed (`concept.unsourced` (a source file was deleted for good); citations keep their quote).
 
 All of this happens in the same transaction as the library change.
 
@@ -153,7 +153,7 @@ is `not_found`.
 | `GET /api/files/:id` | | `{ file: SourceFile }` |
 | `PATCH /api/files/:id` | `{ originalName }` | `{ file }`; changes the display name only (cleaned like an upload name); refused for a trashed file |
 | `POST /api/files/:id/retry` | none | `{ file }` (status `failed` or `uploaded` only) |
-| `POST /api/files/:id/file` | `{ nodeId: NodeId | null }` | `{ file }`; `null` takes it back to the inbox |
+| `POST /api/files/:id/file` | `{ nodeId: NodeId | null, force?, reason? }` | `{ file }`; `null` takes it back to the inbox. An agent key is refused (`invalid_input`, naming the page numbers) while any page has no transcript, unless `force: true` with a `reason` (3 to 200 characters, recorded in the activity summary); a browser session is never refused |
 | `POST /api/files/:id/claim` | none | `{ file }` |
 | `POST /api/files/:id/release` | none | `{ file }` |
 | `POST /api/files/:id/trash` | none | `{ file }` |
@@ -389,28 +389,31 @@ answer `not_found` for a page or file that is not the caller's or was deleted.
 | `GET /api/activity` | `keyId`, `action`, `objectId`, `since`, `until` (ISO times), `cursor`, `limit` (default 50) | `{ items: ActivityEntry[], nextCursor }`, newest first |
 
 **Change feed (H9).** An entry is `{ seq, at, action, objectType, objectIds, documentId,
-nodeId, revision, actor, requestId, summary }`. Actions:
+nodeId, revision, actor, requestId, summary }`. Action names follow one scheme,
+`<area>.<past-tense verb>`, and the activity log uses the very same code for the same event
+(migration `0620_activity_names.sql` rewrote older rows). Actions:
 
-- documents: `document.created`, `document.updated`, `document.reviewed`, `document.restored`
-  (a revision was restored), `document.trashed`, `document.restored_from_trash`,
-  `document.deleted`;
-- library (`objectType: "node"`): `node.created`, `node.updated`, `node.moved`,
-  `node.duplicated`, `node.trashed`, `node.restored`, `node.deleted`; `objectIds` are the node
+- documents: `document.created`, `document.restored` (a revision was restored),
+  `document.trashed`, `document.untrashed`, `document.deleted`; a commit made by one kind of
+  operation is named after it, `block.inserted`, `block.edited`, `block.moved`, `block.deleted`,
+  `block.regenerated`, `block.reviewed`, and a commit of several kinds is `document.edited`;
+- library (`objectType: "node"`): `library.created`, `library.updated`, `library.moved`,
+  `library.duplicated`, `library.trashed`, `library.restored`, `library.deleted`; `objectIds` are the node
   (for a delete, everything deleted with it), `nodeId` is the node;
 - files (`objectType: "file"`, or `"page"` with `objectIds: [fileId, pageId]`): `file.uploaded`,
   `file.converted` and `file.failed` (the actor is whoever uploaded the file), `file.retried`,
   `file.renamed`, `file.filed`, `file.unfiled` (also when its place went to the trash or was deleted),
   `file.claimed`, `file.released`, `file.trashed`, `file.restored`, `file.deleted`;
   `transcript.saved`, `transcript.restored`, `transcript.reviewed`;
-- practice (`objectType: "question"`): `question.created` (one entry per call, `objectIds` all the
+- practice (`objectType: "question"`): `question.authored` (one entry per call, `objectIds` all the
   questions), `question.updated`, `question.trashed`, `question.restored`, `question.deleted`;
 - exams (`objectType: "exam"`): `exam.created`, `exam.updated`, `exam.deleted`;
-- concepts (`objectType: "concept"`): `concept.bulk_upserted` (one entry for a whole bulk call, with
+- concepts (`objectType: "concept"`): `concept.upserted` (one entry for a whole bulk call, with
   the counts in the summary), `concept.created`, `concept.updated`, `concept.related`,
-  `concept.merged`, `concept.deleted`, `concept.source_deleted`;
+  `concept.merged`, `concept.deleted`, `concept.unsourced` (a source file was deleted for good);
 - requests (`objectType: "request"`, `requestId` set): `request.created`, `request.edited`,
-  `request.cancelled`, `request.reopened`, `request.claim`, `request.release`,
-  `request.complete`, `request.decline`. A document change made by an agent through a request
+  `request.cancelled`, `request.reopened`, `request.claimed`, `request.released`,
+  `request.completed`, `request.declined`. A document change made by an agent through a request
   carries that `requestId` too.
 
 All of them land in the same feed, in commit order, for the user whose data it is.
@@ -423,10 +426,9 @@ the same transaction as the change, so a failed write leaves none. A batch write
 per document touched.
 
 **Activity log (H10).** One entry per thing an agent did, never for her own work:
-`{ id, at, keyId, keyLabel, action, summary, links }`. `action` is the operation
-(`insert_blocks`, `replace_generated`, ...) or `batch` for documents, `library.created`,
-`library.moved`, ... for the library and the change feed's own codes (`file.uploaded`,
-`transcript.saved`, ...) for files; `summary` is plain words such as `Beta blockers:
+`{ id, at, keyId, keyLabel, action, summary, links }`. `action` is the change feed's
+code for the same event (`block.inserted`, `block.regenerated`, `document.edited`,
+`library.created`, `file.uploaded`, `transcript.saved`, `request.claimed`, ...); `summary` is plain words such as `Beta blockers:
 Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone`, `Created lecture 07 · Beta
 blockers`, `Uploaded beta-blockers.pptx`, `Transcribed page 3 of beta-blockers.pptx` or
 `Filed beta-blockers.pptx under lecture 07 · Beta blockers`; `links` point at the document
@@ -639,7 +641,7 @@ trash. `kind` is `wrong`, `unclear`, `expand`, `more_like_this`, `make_questions
 | `POST /api/requests/:id/reopen` | `{ note? }` (hers; `done` or `declined`) | `{ request }`, `waiting` again, with a `reopens` entry keeping the earlier reply |
 | `POST /api/requests/:id/claim` | `{ ttlSeconds? }` (agent) | `{ request }`, `in_progress` |
 | `POST /api/requests/:id/release` | none (the agent that holds it) | `{ request }`, `waiting` |
-| `POST /api/requests/:id/complete` | `{ reply, links? }` (the agent that holds it) | `{ request }`, `done` |
+| `POST /api/requests/:id/complete` | `{ reply, links?, acknowledgeUnsourced? }` (the agent that holds it) | `{ request }`, `done`; numbers with units in the reply that are not in the request's target, her message or the `links` are refused (`invalid_input`, naming them) unless `acknowledgeUnsourced: true` |
 | `POST /api/requests/:id/decline` | `{ reason }` (any agent when `waiting`; the holder when `in_progress`) | `{ request }`, `declined` |
 
 - **Who may do what.** Creating, editing, cancelling and reopening need her browser session:
@@ -657,7 +659,9 @@ trash. `kind` is `wrong`, `unclear`, `expand`, `more_like_this`, `make_questions
   claiming again renews it. Completing after the claim ran out is `conflict` ("claim it
   again").
 - **Replies.** `reply` has `text`, `links` (up to 50: `node`, `document`, `block`, `question`,
-  `concept` or `source`, each with an optional `label`), `by` and `at`. A decline stores its
+  `concept` or `source`, each with an optional `label`), `by`, `at` and `unsourcedFigures` (true when the
+  agent acknowledged figures its sources do not contain, with them in `unsourcedFigureList`; the app
+  shows "contains figures not found in your notes"; absent on older replies). A decline stores its
   reason as the reply's text. A request closed by the server (what it was about was deleted
   for good) is `declined` with `by: { type: "system" }`.
 - **Edit protection.** `RequestsPort.verifyForEdit(userId, requestId, { documentId, blockId?,
@@ -789,8 +793,9 @@ Reads need any signed-in caller; every changing route needs a write key or a ses
   the canvas in the same transaction: new blocks become unpinned cards (new headings frames),
   deleted blocks' cards and their connectors go, pins stay. Duplicating the library node copies
   the canvas with fresh IDs; deleting it for good deletes it; trashing hides it until restore.
-- **Change feed** (`GET /api/changes`): objects of type `canvas`, actions `canvas.structure_set`,
-  `canvas.changed`, `canvas.placed`, `canvas.arranged`, `canvas.merged` (the document changed),
+- **Change feed** (`GET /api/changes`): objects of type `canvas`, actions `canvas.arranged` (an
+  agent set the structure, or she arranged), `canvas.edited` (an agent's ops), `canvas.placed`
+  (hers), `canvas.synced` (the document changed),
   with the canvas revision. **Activity log**: agent canvas writes in plain words ("Arranged the
   study map for Beta blockers into 4 frames").
 - **Events.** `event: canvas`, `id: <revision>`, `data: ` the whole `{ canvas, blocks,

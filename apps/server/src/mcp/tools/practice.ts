@@ -1,5 +1,4 @@
 import {
-  Citation,
   ConceptId,
   ExamId,
   NodeId,

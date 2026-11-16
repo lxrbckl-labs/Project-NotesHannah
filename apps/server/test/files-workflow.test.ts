@@ -129,6 +129,51 @@ describe("state machine", () => {
   });
 });
 
+describe("filing a file with untranscribed pages", () => {
+  test("an agent is refused with the page numbers, can force with a reason, and may always go back to the inbox; she can always file", async () => {
+    const h = harness();
+    const lecture = h.lecture(h.alice);
+    const bot = h.agent(h.alice, "key_01HZX3K9Q2V7M4N8P6R5T0W1Y1");
+    const { file, pages } = await h.converted(h.alice, undefined, 3);
+    await save(h, bot, (pages[1] as Json).id, "second page");
+    const url = `/api/files/${file.id}/file`;
+
+    const refused = await h.call(bot, "POST", url, { nodeId: lecture });
+    expect(refused.status).toBe(400);
+    expect(refused.body.error.code).toBe("invalid_input");
+    expect(refused.body.error.message).toContain("2 pages without a transcript (page 1, 3)");
+    expect(refused.body.error.hint).toContain('"force": true');
+    expect((await h.call(bot, "GET", `/api/files/${file.id}`)).body.file.nodeId).toBeNull();
+
+    // force alone is not enough; the reason is the point
+    const noReason = await h.call(bot, "POST", url, { nodeId: lecture, force: true });
+    expect(noReason.status).toBe(400);
+    expect(noReason.body.error.message).toContain('"force" needs a short "reason"');
+    const tooShort = await h.call(bot, "POST", url, { nodeId: lecture, force: true, reason: "x" });
+    expect(tooShort.status).toBe(400);
+
+    const forced = await h.call(bot, "POST", url, {
+      nodeId: lecture,
+      force: true,
+      reason: "pages 1 and 3 are blank scans",
+    });
+    expect(forced.status).toBe(200);
+    expect(forced.body.file).toMatchObject({ status: "converted", nodeId: lecture });
+
+    // back to the inbox is never refused, and neither is filing for her
+    expect((await h.call(bot, "POST", url, { nodeId: null })).status).toBe(200);
+    expect((await h.call(h.alice, "POST", url, { nodeId: lecture })).status).toBe(200);
+    // a move of a file that is not fully transcribed is the same call, so the same rule
+    const other = h.lecture(h.alice, "Other");
+    expect((await h.call(bot, "POST", url, { nodeId: other })).status).toBe(400);
+
+    // every page transcribed: an agent files without any ceremony
+    await save(h, bot, (pages[0] as Json).id, "first page");
+    await save(h, bot, (pages[2] as Json).id, "third page");
+    expect((await h.call(bot, "POST", url, { nodeId: other })).status).toBe(200);
+  });
+});
+
 describe("inbox listing", () => {
   test("filters, trash and paging", async () => {
     const h = harness();

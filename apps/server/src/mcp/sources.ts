@@ -72,5 +72,5 @@ export function pagesIfAny(port: FilesPort, auth: AuthContext, f: SourceFile): P
 export function untranscribedWarning(progress: Progress): string {
   if (progress.pages === 0 || progress.missing.length === 0) return "";
   const shown = progress.missing.slice(0, 5).join(", ");
-  return `Warning: ${progress.missing.length} of ${progress.pages} page(s) have no transcript yet (${shown}${progress.missing.length > 5 ? ", …" : ""}). Filing is allowed, but transcribe them with save_transcript so she can read and search them.`;
+  return `Warning: ${progress.missing.length} of ${progress.pages} page(s) have no transcript yet (${shown}${progress.missing.length > 5 ? ", …" : ""}). You forced this filing: transcribe them with save_transcript so she can read and search them.`;
 }

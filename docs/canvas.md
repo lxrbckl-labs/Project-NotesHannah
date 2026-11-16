@@ -350,7 +350,8 @@ routes in [api.md](api.md#canvas)). What differs from the proposal, and why:
 - **MCP.** `CanvasPort` (`createCanvasPort`, `services.canvasPort`): `get` (frames with card previews,
   connectors as "A -[label]-> B", `pinned`/`byHer` flags, no coordinates; `include: "full"` adds the
   structure), `setStructure`, `change`; the writes return `{ ok: false, kind, problems }` instead of
-  throwing. The MCP tools themselves are not written yet.
+  throwing. The MCP tool is `study_map` (get, set_structure, change; docs/mcp.md): one tool rather than the
+  three `canvas_*` tools proposed below, because they share one subject, one input and one rule.
 
 **Proposed originally**, kept for reference:
 
@@ -378,7 +379,7 @@ feed entry and an SSE event.
 | `GET/PUT /api/documents/:id/canvas/layout-cache/:variant` | `{ positions }` (204 when none) |
 | `GET /api/documents/:id/canvas/events` | Server-Sent Events: `event: canvas`, data `LoadedCanvas`, after merges and agent writes |
 
-**MCP** (inside the existing write tool family; read-write keys only for writes):
+**MCP** (as proposed; built as ONE tool, `study_map`, whose actions are `get`, `set_structure` and `change`; read-write keys only for writes):
 
 | Action | Input | Notes |
 |---|---|---|
@@ -393,9 +394,8 @@ rule applies.
 
 ## What is not done
 
-- The MCP tools (`canvas_get`, `canvas_set_structure`, `canvas_change`) over `CanvasPort`; the
-  server side is built and tested (routes, SSE, storage), the web HTTP store is not yet run
-  against it in a browser.
+- The web HTTP store has not yet been run against the server in a browser (the server side and the
+  MCP tool `study_map` are built and tested).
 - Real block renderers (the documents feature's `renderBlock`); images are placeholders.
 - Card resize handles: `PinnedSize` and `place_cards` with `width`/`height` exist, the
   view has no resize gesture yet.

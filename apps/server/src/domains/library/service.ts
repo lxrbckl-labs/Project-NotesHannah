@@ -144,7 +144,7 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
     entry: { action: string; summary: string; node: Row; objectIds?: readonly string[] },
   ): void {
     options.changes?.record(userId, {
-      action: `node.${entry.action}`,
+      action: `library.${entry.action}`,
       objectType: "node",
       objectIds: entry.objectIds ?? [entry.node.id],
       nodeId: entry.node.id,

@@ -63,6 +63,21 @@ const PREVIEW_CHARS = 120;
 const MAX_FEED_BLOCK_IDS = 100;
 const DEFAULT_PAGE = 50;
 
+/**
+ * The activity and change-feed name of a commit made by one kind of operation (`<area>.<past-tense
+ * verb>`); a commit made by several kinds is "document.edited".
+ */
+const OPERATION_ACTIONS: Record<string, string> = {
+  create_document: "document.created",
+  insert_blocks: "block.inserted",
+  update_block: "block.edited",
+  move_blocks: "block.moved",
+  delete_blocks: "block.deleted",
+  replace_generated: "block.regenerated",
+  restore_revision: "document.restored",
+  review: "block.reviewed",
+};
+
 /** What the service needs besides the database and the clock. */
 export interface DocumentsPorts {
   /** Where cited sources are looked up. Default: every source unknown but allowed. */
@@ -1193,13 +1208,14 @@ export function createDocumentsService(
 
     const touched = [...work.touched].slice(0, MAX_FEED_BLOCK_IDS);
     const requestId = [...ctx.requestIds][0] ?? null;
+    const unique = [...new Set(work.operations)];
     const action = work.isNew
       ? "document.created"
       : work.restoredFrom !== null
         ? "document.restored"
-        : work.operations.every((o) => o === "review")
-          ? "document.reviewed"
-          : "document.updated";
+        : unique.length === 1
+          ? (OPERATION_ACTIONS[unique[0] as string] ?? "document.edited")
+          : "document.edited";
     feed.record(ctx.userId, {
       action,
       objectType: "document",
@@ -1220,10 +1236,9 @@ export function createDocumentsService(
           .map((id): ActivityLink => ({ type: "block", id, documentId: row.id })),
         ...[...ctx.requestIds].map((id): ActivityLink => ({ type: "request", id })),
       ];
-      const unique = [...new Set(work.operations)];
       activity.record(ctx.userId, {
         actor: ctx.actor,
-        action: unique.length === 1 ? (unique[0] as string) : "batch",
+        action,
         summary: `${work.title}: ${summary}`,
         links,
         at: ctx.now,
@@ -1455,7 +1470,7 @@ export function createDocumentsService(
     db.transaction(() => {
       for (const row of eachDocOfNodes(userId, nodeIds)) {
         if (repo.untrash(userId, row.id) > 0) {
-          hookEntry(userId, row, "document.restored_from_trash", "restored from the trash", actor);
+          hookEntry(userId, row, "document.untrashed", "restored from the trash", actor);
         }
       }
     })();

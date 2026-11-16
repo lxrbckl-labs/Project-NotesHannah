@@ -370,7 +370,7 @@ describe("a request id lifts protection only when it is verified", () => {
     expect(done.block).toBeDefined();
     // The change is attributed to the agent and says which request it answered.
     const feed = t.changes().filter((c) => c.requestId === request.id);
-    expect(feed.some((c) => c.action === "document.updated")).toBe(true);
+    expect(feed.some((c) => c.action === "block.edited")).toBe(true);
     // Once a request is completed it lifts nothing.
     const second = ask(reviewed);
     t.services.requests.claim(b, second.id);
@@ -608,7 +608,7 @@ describe("plain-words traces for questions, concepts, requests and exams", () =>
     );
     expect(t.activity().length - before).toBe(3);
     // One feed entry for the whole bulk call.
-    const bulk = t.changes().filter((c) => c.action === "concept.bulk_upserted");
+    const bulk = t.changes().filter((c) => c.action === "concept.upserted");
     expect(bulk).toHaveLength(1);
     expect(bulk[0]?.objectIds).toHaveLength(3);
     // Her request is in the feed, not in the log.
@@ -647,10 +647,10 @@ describe("plain-words traces for questions, concepts, requests and exams", () =>
     const actions = t.changes().map((c) => c.action);
     for (const wanted of [
       "request.created",
-      "request.claim",
-      "request.complete",
-      "request.release",
-      "request.decline",
+      "request.claimed",
+      "request.completed",
+      "request.released",
+      "request.declined",
     ]) {
       expect(actions, wanted).toContain(wanted);
     }

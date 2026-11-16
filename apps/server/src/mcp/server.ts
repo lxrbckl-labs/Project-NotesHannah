@@ -18,6 +18,7 @@ import { browseLibrary, changesTool, editLibrary, searchTool } from "./tools/lib
 import { practiceQuestions, studyProgress } from "./tools/practice.js";
 import { requestsTool } from "./tools/requests.js";
 import { SERVER_INSTRUCTIONS, startHere } from "./tools/start-here.js";
+import { studyMap } from "./tools/study-map.js";
 
 export const SERVER_NAME = "notes";
 export const SERVER_VERSION = "1.0.0";
@@ -40,6 +41,7 @@ export function toolsFor(backend: Omit<McpBackend, "library">): ToolDef[] {
     ...(backend.requests ? [requestsTool] : []),
     ...(backend.files ? [sourceFiles, getPage, saveTranscript] : []),
     ...(backend.documents ? [writeDocument, editBlocks] : []),
+    ...(backend.canvas ? [studyMap] : []),
     ...(backend.concepts ? [conceptsTool] : []),
     ...(backend.practice ? [practiceQuestions, studyProgress] : []),
     ...(backend.exams ? [examsTool] : []),

@@ -122,6 +122,7 @@ const PUBLISHED = {
       )
       .max(50)
       .optional(),
+    acknowledgeUnsourced: CompleteRequestInput.shape.acknowledgeUnsourced,
   }),
 };
 
@@ -152,7 +153,7 @@ const EXAMPLES: Record<Action, Record<string, unknown>> = {
 export const requestsTool = defineTool({
   name: "requests",
   title: "Her requests: what she asked agents to do",
-  description: `What she has asked for, left on a lecture, a document, a block, a page, a question or the whole library ("this is wrong", "make me a quiz on this", ...). CHECK THESE FIRST in every session. Actions: "list" (open ones, waiting first, each with what it points at, its path and a preview); "claim" one before working on it (30 minutes, claim again to renew; another agent's claim is refused); "complete" it with a short reply saying what you did and links to what you made or changed; "decline" with a reason when it cannot be done; "release" it if you stop. Her blocks and the questions she wrote are protected from agents: completing her request is the one way to change them, by passing "requestId" to edit_blocks while you hold the claim.`,
+  description: `What she has asked for, left on a lecture, a document, a block, a page, a question or the whole library ("this is wrong", "make me a quiz on this", ...). CHECK THESE FIRST in every session. Actions: "list" (open ones, waiting first, each with what it points at, its path and a preview); "claim" one before working on it (30 minutes, claim again to renew; another agent's claim is refused); "complete" it with a short reply saying what you did and links to what you made or changed (doses and other numbers with units in the reply are checked against the page or block it is about and what you link; figures found nowhere are refused with a warning until you link a source that has them or pass acknowledgeUnsourced: true, which flags the reply for her); "decline" with a reason when it cannot be done; "release" it if you stop. Her blocks and the questions she wrote are protected from agents: completing her request is the one way to change them, by passing "requestId" to edit_blocks while you hold the claim.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -179,6 +180,8 @@ export const requestsTool = defineTool({
       "links[].type":
         '"node" (with nodeId), "document" (documentId), "block" (documentId and blockId), "question" (questionId), "concept" (conceptId) or "source" (fileId, pageId?).',
       "links[].label": "Optional short label, e.g. the block's heading.",
+      acknowledgeUnsourced:
+        'complete: true only when the reply states figures (doses, ranges, decimals) that are not on the pages or blocks it is about or that you linked, because they come from general knowledge. She sees "contains figures not found in your notes".',
       reason: "decline: why it cannot be done, and what she could change.",
     },
   ),
@@ -241,7 +244,7 @@ export const requestsTool = defineTool({
     const said: Record<Exclude<Action, "list">, string> = {
       claim: `Claimed until ${r.claimExpiresAt}:\n${requestLine(r)}\n${nextStep(r)}`,
       release: `Released; it is waiting again:\n${requestLine(r)}`,
-      complete: `Completed; she sees your reply:\n${requestLine(r)}`,
+      complete: `Completed; she sees your reply${r.reply?.unsourcedFigures ? `, flagged "contains figures not found in your notes" (${(r.reply.unsourcedFigureList ?? []).join(", ")})` : ""}:\n${requestLine(r)}`,
       decline: `Declined; she sees your reason:\n${requestLine(r)}`,
     };
     return { text: said[action], structured: { action, request: requestItem(r) } };
@@ -251,7 +254,9 @@ export const requestsTool = defineTool({
 /** get_item on a req_ ID. */
 export function getRequest(ctx: ToolContext, id: string) {
   const r = port(ctx).get(ctx.auth, id);
-  const reply = r.reply ? `\nReply (${r.reply.by.type}, ${r.reply.at}): ${r.reply.text}` : "";
+  const reply = r.reply
+    ? `\nReply (${r.reply.by.type}, ${r.reply.at}): ${r.reply.text}${r.reply.unsourcedFigures ? `\n(Flagged for her: contains figures not found in her notes: ${(r.reply.unsourcedFigureList ?? []).join(", ")}.)` : ""}`
+    : "";
   return {
     text: `Request ${r.id}, created ${r.createdAt}:\n${requestLine(r)}${reply}${r.status === "waiting" ? `\nTo work on it: requests {"action":"claim","requestId":"${r.id}"}.` : ""}`,
     structured: { kind: "request", request: requestItem(r) },
