@@ -1,126 +1,72 @@
-import { AlertDialog, Popover as RadixPopover } from "radix-ui";
-import {
-  type ButtonHTMLAttributes,
-  createContext,
-  forwardRef,
-  type ReactNode,
-  useContext,
-} from "react";
+import { createContext, type ReactNode, type Ref, useContext } from "react";
+import { Button, IconButton } from "../../../components/ui/button";
+import { Tooltip } from "../../../components/ui/tooltip";
+import { cn } from "../../../lib/cn";
 import { Icon, type IconName } from "./icons";
 
-/** Where popovers and dialogs mount: inside the canvas, so its colour tokens apply. */
+/**
+ * Where the canvas's popovers and dialogs mount: inside the canvas root, so the touch guards and
+ * the canvas's stacking stay with them. Colours come from the shared tokens either way.
+ */
 export const PortalContext = createContext<HTMLElement | null>(null);
 
-/** A 44px-tall button with an icon and an accessible name. */
-export const IconButton = forwardRef<
-  HTMLButtonElement,
-  {
-    icon?: IconName;
-    label: string;
-    showLabel?: boolean;
-    pressed?: boolean;
-    danger?: boolean;
-    children?: ReactNode;
-  } & ButtonHTMLAttributes<HTMLButtonElement>
->(function IconButton(
-  { icon, label, showLabel, pressed, danger, children, className, ...rest },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      type="button"
-      className={`nc-btn${danger ? " nc-danger" : ""}${className ? ` ${className}` : ""}`}
-      aria-label={showLabel ? undefined : label}
-      aria-pressed={pressed}
-      title={showLabel ? undefined : label}
-      {...rest}
-    >
-      {icon && <Icon name={icon} />}
-      {showLabel && <span>{label}</span>}
-      {children}
-    </button>
-  );
-});
-
-/** A popover in the canvas chrome style. */
-export function Popover({
-  trigger,
-  children,
-  side = "top",
-  open,
-  onOpenChange,
-  label,
-}: {
-  trigger: ReactNode;
-  children: ReactNode;
-  side?: "top" | "bottom" | "left" | "right";
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  label: string;
-}) {
-  const container = useContext(PortalContext);
-  return (
-    <RadixPopover.Root open={open} onOpenChange={onOpenChange}>
-      <RadixPopover.Trigger asChild>{trigger}</RadixPopover.Trigger>
-      <RadixPopover.Portal container={container}>
-        <RadixPopover.Content
-          side={side}
-          sideOffset={10}
-          collisionPadding={12}
-          className="nc-popover nc-chrome nc-portal"
-          aria-label={label}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          {children}
-        </RadixPopover.Content>
-      </RadixPopover.Portal>
-    </RadixPopover.Root>
-  );
+/** The mount point for the shared Popover, ConfirmDialog and Sheet inside the canvas. */
+export function useCanvasPortal(): HTMLElement | null {
+  return useContext(PortalContext);
 }
 
-/** Ask before something hard to undo. */
-export function ConfirmDialog({
-  open,
-  title,
-  body,
-  confirm,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean;
-  title: string;
-  body: string;
-  confirm: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const container = useContext(PortalContext);
+type ToolButtonProps = {
+  icon?: IconName;
+  label: string;
+  /** Show the label next to the icon (a ghost Button) instead of only as a tooltip. */
+  showLabel?: boolean;
+  pressed?: boolean;
+  danger?: boolean;
+  children?: ReactNode;
+  className?: string;
+  ref?: Ref<HTMLButtonElement>;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label">;
+
+/**
+ * A canvas tool: the shared IconButton with the canvas's line icon and a tooltip, or a ghost
+ * Button with icon and text when `showLabel`. `nc-tool` keeps it 44px on any touch screen, the
+ * large iPad included (the shared button turns compact from 1280px wide).
+ */
+export function ToolButton({
+  icon,
+  label,
+  showLabel,
+  pressed,
+  danger,
+  children,
+  className,
+  ...rest
+}: ToolButtonProps) {
+  if (showLabel)
+    return (
+      <Button
+        variant={danger ? "ghostDanger" : "ghost"}
+        aria-pressed={pressed}
+        className={cn("nc-tool nc-tool-text", className)}
+        {...rest}
+      >
+        {icon && <Icon name={icon} />}
+        <span>{label}</span>
+        {children}
+      </Button>
+    );
   return (
-    <AlertDialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
-      <AlertDialog.Portal container={container}>
-        <AlertDialog.Overlay className="nc-dialog-overlay" />
-        <AlertDialog.Content className="nc-dialog nc-chrome nc-portal">
-          <AlertDialog.Title asChild>
-            <h2>{title}</h2>
-          </AlertDialog.Title>
-          <AlertDialog.Description asChild>
-            <p>{body}</p>
-          </AlertDialog.Description>
-          <div className="nc-dialog-actions">
-            <AlertDialog.Cancel asChild>
-              <button type="button" className="nc-btn">
-                Cancel
-              </button>
-            </AlertDialog.Cancel>
-            <AlertDialog.Action asChild>
-              <button type="button" className="nc-btn nc-primary" onClick={onConfirm}>
-                {confirm}
-              </button>
-            </AlertDialog.Action>
-          </div>
-        </AlertDialog.Content>
-      </AlertDialog.Portal>
-    </AlertDialog.Root>
+    <Tooltip content={label}>
+      <IconButton
+        label={label}
+        pressed={pressed}
+        variant={danger ? "ghostDanger" : "ghost"}
+        className={cn("nc-tool", className)}
+        {...rest}
+      >
+        {icon && <Icon name={icon} />}
+        {children}
+      </IconButton>
+    </Tooltip>
   );
 }

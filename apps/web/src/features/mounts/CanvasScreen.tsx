@@ -1,8 +1,9 @@
 import type { Block } from "@notes/schema";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, Layers } from "lucide-react";
 import { lazy, Suspense, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
+import { segmentItemClass } from "../../components/ui/segmented";
 import { ErrorState, Skeleton } from "../../components/ui/states";
 import { appHttp } from "../../lib/api";
 import type { CanvasStore } from "../canvas";
@@ -85,28 +86,39 @@ export default function CanvasScreen({
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="canvas-screen">
       {/* The way back to the page, always there whatever the canvas's own bar is showing. */}
-      <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-1.5">
+      <header className="flex items-center gap-2 border-b border-border bg-surface px-3 py-1.5 md:px-5">
         <Link
           to={parentId ? `/library/${parentId}` : "/library"}
           aria-label={`Back to the library from ${title}`}
-          className="flex size-10 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+          className="flex size-11 shrink-0 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:size-9"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={20} />
         </Link>
-        <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
-        <Link
-          to={`/doc/${nodeId}`}
-          aria-label="Switch to the page view"
-          className="flex min-h-10 items-center gap-2 rounded-xl border border-border px-3.5 text-sm font-medium hover:bg-surface-muted"
+        <h1 className="min-w-0 flex-1 truncate font-display text-body font-semibold">{title}</h1>
+        {/* The same Page/Canvas pair as the page view, with Canvas current. */}
+        <nav
+          aria-label="View"
+          className="inline-flex shrink-0 gap-1 rounded-card border border-border bg-surface-muted p-1"
         >
-          <BookOpen size={16} aria-hidden />
-          Page view
-        </Link>
-      </div>
+          <Link
+            to={`/doc/${nodeId}`}
+            aria-label="Switch to the page view"
+            className={segmentItemClass(false)}
+          >
+            <BookOpen aria-hidden />
+            Page
+          </Link>
+          <Link to={`/doc/${nodeId}/canvas`} aria-current="page" className={segmentItemClass(true)}>
+            <Layers aria-hidden />
+            Canvas
+          </Link>
+        </nav>
+      </header>
       <div className="min-h-0 flex-1">
         <CanvasView
           store={canvas.data}
           documentId={documentId}
+          hideTitle
           renderBlock={renderBlock}
           onOpenConcept={(id) => navigate(`/concepts/${id}`)}
           onOpenBlock={(blockId) => navigate(`/doc/${nodeId}?block=${blockId}`)}

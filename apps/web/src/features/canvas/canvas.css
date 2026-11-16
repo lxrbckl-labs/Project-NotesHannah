@@ -1,251 +1,65 @@
 /* biome-ignore-all lint/style/noDescendingSpecificity: rules are grouped by component, not by specificity */
-/* Canvas feature styles. Colour tokens are tuned separately for light and
-   dark (not inverted), and every text/background pair meets WCAG AA. */
+/* Canvas layout and structure. Every colour is a shared token (docs/design.md), so the canvas
+   follows the app theme by itself. A card, frame or label with a colour carries data-hue and reads
+   the --tone-* shades; connector hues come from CONNECTOR_HUE, the connecting and drop-target blue
+   from CANVAS_DEFAULT_HUE.connecting (both in lib/roles.ts). Rules here are unlayered, so they win
+   over Tailwind utilities on the same element (used for the 44px touch size of .nc-tool). */
 @import "@xyflow/react/dist/base.css";
-
-.nc-canvas {
-  /* Surface */
-  --nc-bg: var(--color-bg, #f6f5f1);
-  --nc-dot: var(--color-dot, #c9c6bb);
-  --nc-card: var(--color-surface, #ffffff);
-  --nc-card-border: var(--color-border, #dedbd1);
-  --nc-card-shadow: var(
-    --shadow-card,
-    0 1px 2px rgb(28 27 24 / 0.06),
-    0 4px 14px rgb(28 27 24 / 0.07)
-  );
-  --nc-card-shadow-lift: 0 2px 4px rgb(28 27 24 / 0.08), 0 12px 28px rgb(28 27 24 / 0.14);
-  --nc-text: var(--color-text, #1c1b18);
-  --nc-muted: var(--color-text-muted, #5f5d55);
-  --nc-accent: var(--color-accent, #2f6f5e);
-  --nc-accent-contrast: var(--color-accent-contrast, #ffffff);
-  --nc-select: #2f6fdb;
-  --nc-frame-bg: rgb(47 111 94 / 0.035);
-  --nc-frame-border: rgb(28 27 24 / 0.16);
-  --nc-frame-title: #3d3b35;
-  --nc-chrome: rgb(255 255 255 / 0.92);
-  --nc-chrome-border: var(--color-border, #dcdad0);
-  --nc-chrome-hover: var(--color-surface-muted, #efede6);
-  --nc-label-bg: var(--color-surface, #ffffff);
-
-  /* Card tints: background, border, accent (text-safe on the background). */
-  --tint-gray-bg: #f3f2ee;
-  --tint-gray-border: #d3d0c6;
-  --tint-gray-accent: #57544c;
-  --tint-brown-bg: #f6eee6;
-  --tint-brown-border: #ddc5ae;
-  --tint-brown-accent: #74502f;
-  --tint-red-bg: #fdeeed;
-  --tint-red-border: #efc1be;
-  --tint-red-accent: #a1342f;
-  --tint-orange-bg: #fef0e4;
-  --tint-orange-border: #f1c9a2;
-  --tint-orange-accent: #924a0f;
-  --tint-yellow-bg: #fdf5d3;
-  --tint-yellow-border: #e8d283;
-  --tint-yellow-accent: #735c0b;
-  --tint-green-bg: #eaf5ed;
-  --tint-green-border: #b4d9be;
-  --tint-green-accent: #2a6740;
-  --tint-teal-bg: #e5f3f2;
-  --tint-teal-border: #a8d3cf;
-  --tint-teal-accent: #1b625c;
-  --tint-blue-bg: #eaf1fd;
-  --tint-blue-border: #b5cdf1;
-  --tint-blue-accent: #2a559b;
-  --tint-purple-bg: #f1edfc;
-  --tint-purple-border: #cdbfef;
-  --tint-purple-accent: #573c9e;
-  --tint-pink-bg: #fcecf3;
-  --tint-pink-border: #edbdd4;
-  --tint-pink-accent: #962f5b;
-
-  /* Connector kinds. */
-  --edge-leads_to: #4f4c45;
-  --edge-causes: #c2410c;
-  --edge-treats: #15803d;
-  --edge-contrasts: #7c3aed;
-  --edge-part_of: #1d4ed8;
-  --edge-related: #6b6a66;
-
-  /* Stickers. */
-  --st-yellow: #f7c948;
-  --st-red: #e5534b;
-  --st-blue: #4c8df6;
-  --st-green: #3fb27f;
-  --st-ink: #2a2824;
-  --st-paper: #ffffff;
-  --st-pink: #f17fb0;
-  --st-orange: #f59a3c;
-}
-
-:root[data-theme="dark"] .nc-canvas,
-.nc-canvas.nc-dark {
-  --nc-bg: var(--color-bg, #121210);
-  --nc-dot: var(--color-dot, #3a3833);
-  --nc-card: var(--color-surface, #1e1d1a);
-  --nc-card-border: var(--color-border, #3a3832);
-  --nc-card-shadow: var(--shadow-card, 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.35));
-  --nc-card-shadow-lift: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px rgb(0 0 0 / 0.5);
-  --nc-muted: var(--color-text-muted, #a9a79d);
-  --nc-select: #7aa7ff;
-  --nc-frame-bg: rgb(111 193 169 / 0.04);
-  --nc-frame-border: rgb(236 235 228 / 0.16);
-  --nc-frame-title: #d6d4cb;
-  --nc-chrome: rgb(32 31 28 / 0.94);
-  --nc-chrome-border: var(--color-border, #3a3832);
-  --nc-chrome-hover: var(--color-surface-muted, #2c2b27);
-  --nc-label-bg: var(--color-surface, #1e1d1a);
-
-  --tint-gray-bg: #23221f;
-  --tint-gray-border: #47453f;
-  --tint-gray-accent: #cfccc2;
-  --tint-brown-bg: #282019;
-  --tint-brown-border: #5c4531;
-  --tint-brown-accent: #e3c2a2;
-  --tint-red-bg: #2c1b1a;
-  --tint-red-border: #6e3834;
-  --tint-red-accent: #f4aba6;
-  --tint-orange-bg: #2c2017;
-  --tint-orange-border: #714925;
-  --tint-orange-accent: #f6ba87;
-  --tint-yellow-bg: #29261a;
-  --tint-yellow-border: #685b22;
-  --tint-yellow-accent: #ecd47c;
-  --tint-green-bg: #18251c;
-  --tint-green-border: #345c41;
-  --tint-green-accent: #98d5ab;
-  --tint-teal-bg: #152523;
-  --tint-teal-border: #2e5c57;
-  --tint-teal-accent: #93d5cd;
-  --tint-blue-bg: #18202d;
-  --tint-blue-border: #36527d;
-  --tint-blue-accent: #a8c6f4;
-  --tint-purple-bg: #211b2f;
-  --tint-purple-border: #4d3f7a;
-  --tint-purple-accent: #c6b6f2;
-  --tint-pink-bg: #2a1922;
-  --tint-pink-border: #6b3452;
-  --tint-pink-accent: #f1abcb;
-
-  --edge-leads_to: #bdbab0;
-  --edge-causes: #f6a066;
-  --edge-treats: #71d194;
-  --edge-contrasts: #baa0f8;
-  --edge-part_of: #93b6f8;
-  --edge-related: #a3a29b;
-
-  --st-ink: #f1efe8;
-  --st-paper: #2a2925;
-}
 
 .nc-canvas {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--nc-bg);
-  color: var(--nc-text);
+  background: var(--color-bg);
+  color: var(--color-text);
   overscroll-behavior: none;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .nc-canvas .react-flow {
-  --xy-background-color: var(--nc-bg);
-  --xy-edge-stroke: var(--edge-related);
-  --xy-selection-background-color: rgb(47 111 219 / 0.08);
-  --xy-selection-border: 1px solid var(--nc-select);
-  --xy-minimap-background-color: var(--nc-chrome);
-  --xy-minimap-mask-background-color: rgb(120 118 110 / 0.18);
-  --xy-handle-background-color: var(--nc-card);
-  --xy-handle-border-color: var(--nc-select);
-}
-
-/* A tint picks its token's colours. */
-[data-tint="gray"] {
-  --tint-bg: var(--tint-gray-bg);
-  --tint-border: var(--tint-gray-border);
-  --tint-accent: var(--tint-gray-accent);
-}
-[data-tint="brown"] {
-  --tint-bg: var(--tint-brown-bg);
-  --tint-border: var(--tint-brown-border);
-  --tint-accent: var(--tint-brown-accent);
-}
-[data-tint="red"] {
-  --tint-bg: var(--tint-red-bg);
-  --tint-border: var(--tint-red-border);
-  --tint-accent: var(--tint-red-accent);
-}
-[data-tint="orange"] {
-  --tint-bg: var(--tint-orange-bg);
-  --tint-border: var(--tint-orange-border);
-  --tint-accent: var(--tint-orange-accent);
-}
-[data-tint="yellow"] {
-  --tint-bg: var(--tint-yellow-bg);
-  --tint-border: var(--tint-yellow-border);
-  --tint-accent: var(--tint-yellow-accent);
-}
-[data-tint="green"] {
-  --tint-bg: var(--tint-green-bg);
-  --tint-border: var(--tint-green-border);
-  --tint-accent: var(--tint-green-accent);
-}
-[data-tint="teal"] {
-  --tint-bg: var(--tint-teal-bg);
-  --tint-border: var(--tint-teal-border);
-  --tint-accent: var(--tint-teal-accent);
-}
-[data-tint="blue"] {
-  --tint-bg: var(--tint-blue-bg);
-  --tint-border: var(--tint-blue-border);
-  --tint-accent: var(--tint-blue-accent);
-}
-[data-tint="purple"] {
-  --tint-bg: var(--tint-purple-bg);
-  --tint-border: var(--tint-purple-border);
-  --tint-accent: var(--tint-purple-accent);
-}
-[data-tint="pink"] {
-  --tint-bg: var(--tint-pink-bg);
-  --tint-border: var(--tint-pink-border);
-  --tint-accent: var(--tint-pink-accent);
+  --xy-background-color: var(--color-bg);
+  --xy-edge-stroke: var(--hue-gray-solid);
+  --xy-selection-background-color: color-mix(in srgb, var(--color-selection) 8%, transparent);
+  --xy-selection-border: 1px solid var(--color-selection);
+  --xy-minimap-background-color: var(--color-chrome);
+  --xy-handle-background-color: var(--color-surface);
+  --xy-handle-border-color: var(--color-selection);
 }
 
 /* ---- Cards ---- */
 .nc-card {
   position: relative;
   box-sizing: border-box;
-  border-radius: 14px;
-  background: var(--card-bg, var(--nc-card));
-  border: 1px solid var(--card-border, var(--nc-card-border));
-  box-shadow: var(--nc-card-shadow);
-  color: var(--nc-text);
-  font-size: 14px;
-  line-height: 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
   transition:
-    box-shadow 0.15s ease,
-    outline-color 0.15s ease;
+    box-shadow var(--duration-fast) ease,
+    outline-color var(--duration-fast) ease;
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
+.nc-card[data-hue] {
+  background: var(--tone-soft);
+  border-color: var(--tone-border);
+}
 .react-flow__node.selected > .nc-card,
 .react-flow__node:focus-visible > .nc-card {
-  outline-color: var(--nc-select);
-  box-shadow: var(--nc-card-shadow-lift);
+  outline-color: var(--color-selection);
+  box-shadow: var(--shadow-raised);
 }
 .react-flow__node.dragging > .nc-card {
-  box-shadow: var(--nc-card-shadow-lift);
-}
-.nc-card[data-tint] {
-  --card-bg: var(--tint-bg);
-  --card-border: var(--tint-border);
+  box-shadow: var(--shadow-raised);
 }
 .nc-card-body {
   padding: 12px 14px;
@@ -272,11 +86,14 @@
   align-items: center;
   gap: 6px;
   padding: 10px 14px 0;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--tint-accent, var(--nc-muted));
+  color: var(--color-text-muted);
+}
+.nc-card[data-hue] .nc-card-title {
+  color: var(--tone-text);
 }
 .nc-pin-badge {
   position: absolute;
@@ -286,14 +103,14 @@
   height: 20px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
-  background: var(--nc-card);
-  border: 1px solid var(--nc-card-border);
-  color: var(--nc-muted);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
 }
 .nc-card-note {
-  font-size: 15px;
-  line-height: 22px;
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
 }
 .nc-card-note textarea {
   width: 100%;
@@ -312,35 +129,36 @@
   padding: 12px 14px;
   font-weight: 600;
 }
+/* Inverted: the text shade as the fill, the soft shade as the mark (AA both ways). */
 .nc-concept-dot {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: grid;
   place-items: center;
-  background: var(--tint-accent, var(--nc-accent));
-  color: var(--tint-bg, #fff);
+  background: var(--tone-text);
+  color: var(--tone-soft);
   flex: none;
-  font-size: 13px;
+  font-size: var(--text-label);
 }
 .nc-sticker {
   width: 100%;
   height: 100%;
   filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.18));
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 .react-flow__node.selected > .nc-sticker {
-  outline-color: var(--nc-select);
+  outline-color: var(--color-selection);
 }
 .nc-card.nc-connect-source {
-  outline-color: var(--edge-part_of);
+  outline-color: var(--hue-blue-solid);
   outline-style: dashed;
 }
 .nc-dim {
   opacity: 0.28;
-  transition: opacity 0.25s ease;
+  transition: opacity var(--duration-base) ease;
 }
 
 /* ---- Block fallback rendering inside cards ---- */
@@ -349,9 +167,9 @@
 }
 .nc-block h3 {
   margin: 0;
-  font-size: 17px;
-  line-height: 24px;
-  font-weight: 650;
+  font-size: var(--text-title);
+  line-height: var(--text-title--line-height);
+  font-weight: 600;
 }
 .nc-block p {
   margin: 0;
@@ -365,54 +183,54 @@
   margin-top: 2px;
 }
 .nc-callout {
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   padding: 8px 10px 8px 12px;
-  background: var(--tint-bg);
-  border-left: 3px solid var(--tint-accent);
+  background: var(--tone-soft);
+  border-left: 3px solid var(--tone-solid);
 }
 .nc-callout-title {
   display: flex;
   gap: 6px;
   align-items: center;
-  font-weight: 650;
-  color: var(--tint-accent);
+  font-weight: 600;
+  color: var(--tone-text);
   margin-bottom: 2px;
 }
 .nc-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
 }
 .nc-table th,
 .nc-table td {
-  border-bottom: 1px solid var(--nc-card-border);
+  border-bottom: 1px solid var(--color-border);
   padding: 5px 6px;
   text-align: left;
   vertical-align: top;
 }
 .nc-table th {
-  font-weight: 650;
-  color: var(--nc-muted);
-  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
 }
 .nc-drug-name {
-  font-size: 17px;
+  font-size: var(--text-title);
   font-weight: 700;
-  line-height: 24px;
+  line-height: var(--text-title--line-height);
   text-transform: capitalize;
 }
 .nc-drug-class {
-  color: var(--nc-muted);
-  font-size: 13px;
+  color: var(--color-text-muted);
+  font-size: var(--text-label);
 }
 .nc-drug-section {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--nc-muted);
+  color: var(--color-text-muted);
 }
 .nc-chips {
   display: flex;
@@ -420,47 +238,49 @@
   gap: 4px;
   margin-top: 4px;
 }
+/* Not the shared Badge: a Badge truncates to one line, and a chip in a card must wrap to stay
+   whole. Colours are the tone of the enclosing data-hue (gray without one). */
 .nc-chip {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 1px 8px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 20px;
-  background: var(--tint-bg, var(--nc-chrome-hover));
-  color: var(--tint-accent, var(--nc-text));
-  border: 1px solid var(--tint-border, transparent);
+  background: var(--tone-soft);
+  color: var(--tone-text);
+  border: 1px solid var(--tone-border);
 }
 .nc-quote {
-  border-left: 3px solid var(--nc-card-border);
+  border-left: 3px solid var(--color-border);
   padding-left: 10px;
   font-style: italic;
 }
 .nc-muted {
-  color: var(--nc-muted);
+  color: var(--color-text-muted);
 }
 .nc-mark-highlight {
-  border-radius: 3px;
+  border-radius: var(--radius-inline);
   padding: 0 2px;
-  background: var(--tint-bg);
+  background: var(--tone-mark);
 }
 
-/* ---- Frames ---- */
+/* ---- Frames: a soft fill, a hue border and a hue label ---- */
 .nc-frame {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  border-radius: 22px;
-  background: var(--frame-bg, var(--nc-frame-bg));
-  border: 1.5px solid var(--frame-border, var(--nc-frame-border));
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hue-gray-soft) 55%, transparent);
+  border: 1.5px solid var(--color-border-strong);
   transition:
-    opacity 0.25s ease,
-    border-color 0.2s ease;
+    opacity var(--duration-base) ease,
+    border-color var(--duration-base) ease;
+}
+.nc-frame[data-hue] {
+  background: color-mix(in srgb, var(--tone-soft) 55%, transparent);
+  border: 2px solid var(--tone-border);
 }
 .react-flow__node.selected > .nc-frame {
-  border-color: var(--nc-select);
-}
-.nc-frame[data-tint] {
-  --frame-bg: color-mix(in srgb, var(--tint-bg) 55%, transparent);
-  --frame-border: var(--tint-border);
+  border-color: var(--color-selection);
 }
 .nc-frame-head {
   display: flex;
@@ -471,36 +291,51 @@
   cursor: grab;
 }
 .nc-frame-title {
-  font-size: 15px;
-  font-weight: 650;
-  color: var(--tint-accent, var(--nc-frame-title));
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.nc-frame[data-hue] .nc-frame-title {
+  color: var(--tone-text);
+}
+.nc-frame-input {
+  height: 30px;
+  min-width: 0;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-selection);
+  padding: 0 8px;
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+}
+/* Inverted, like the concept dot: the text shade as the fill. */
 .nc-frame-step {
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-grid;
   place-items: center;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
-  background: var(--tint-accent, var(--nc-frame-title));
-  color: var(--tint-bg, var(--nc-bg));
+  background: var(--tone-text);
+  color: var(--tone-soft);
 }
 .nc-frame-active {
   border-width: 2.5px;
-  border-color: var(--nc-accent);
+  border-color: var(--color-accent);
 }
 .nc-drop-target > .nc-frame {
   border-style: dashed;
-  border-color: var(--nc-select);
-  background: rgb(47 111 219 / 0.06);
+  border-color: var(--hue-blue-solid);
+  background: color-mix(in srgb, var(--color-selection) 6%, transparent);
 }
 
-/* ---- Connectors ---- */
+/* ---- Connectors: the line in the hue's solid shade, the label a soft pill ---- */
 .nc-edge-path {
   fill: none;
   stroke-width: 2;
@@ -518,23 +353,27 @@
   position: absolute;
   transform: translate(-50%, -50%);
   pointer-events: all;
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 12.5px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-label);
   font-weight: 600;
   line-height: 20px;
   white-space: nowrap;
-  background: var(--nc-label-bg);
-  color: var(--edge-color);
-  border: 1.5px solid var(--edge-color);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  background: var(--tone-soft);
+  color: var(--tone-text);
+  border: 1.5px solid var(--tone-solid);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
 }
 .nc-edge-label.nc-selected {
-  box-shadow: 0 0 0 3px rgb(47 111 219 / 0.3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-selection) 30%, transparent);
 }
 .nc-edge-dim {
   opacity: 0.2;
+}
+/* Labels stay readable above cards; lines run beneath them. */
+.nc-canvas .react-flow__edgelabel-renderer {
+  z-index: 1000;
 }
 
 /* Handles: visible on hover and selection with a mouse only. */
@@ -542,8 +381,11 @@
   width: 12px;
   height: 12px;
   border-width: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border-color: var(--color-selection);
   opacity: 0;
-  transition: opacity 0.12s ease;
+  transition: opacity var(--duration-fast) ease;
 }
 .nc-canvas.nc-fine .react-flow__node:hover .react-flow__handle,
 .nc-canvas.nc-fine .react-flow__node.selected .react-flow__handle {
@@ -552,365 +394,8 @@
 .nc-canvas.nc-coarse .react-flow__handle {
   pointer-events: none;
 }
-
-/* ---- Chrome: toolbars, panels ---- */
-.nc-chrome {
-  background: var(--nc-chrome);
-  border: 1px solid var(--nc-chrome-border);
-  box-shadow: 0 4px 18px rgb(0 0 0 / 0.1);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  color: var(--nc-text);
-}
-.nc-toolbar {
-  position: absolute;
-  left: 50%;
-  bottom: calc(14px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 5px;
-  border-radius: 16px;
-  z-index: 10;
-  max-width: calc(100% - 24px);
-}
-.nc-sep {
-  width: 1px;
-  height: 26px;
-  background: var(--nc-chrome-border);
-  margin: 0 4px;
-  flex: none;
-}
-.nc-btn {
-  min-width: 44px;
-  height: 44px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  color: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-  flex: none;
-}
-.nc-btn:hover {
-  background: var(--nc-chrome-hover);
-}
-.nc-btn:focus-visible {
-  outline: 2px solid var(--color-accent, var(--nc-select));
-  outline-offset: 2px;
-}
-.nc-btn[aria-pressed="true"] {
-  background: var(--nc-accent);
-  color: var(--nc-accent-contrast);
-}
-.nc-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.nc-btn.nc-danger {
-  color: #b42318;
-}
-:root[data-theme="dark"] .nc-btn.nc-danger,
-.nc-dark .nc-btn.nc-danger {
-  color: #ff9b8f;
-}
-.nc-zoom-label {
-  min-width: 52px;
-  font-variant-numeric: tabular-nums;
-  font-size: 13px;
-}
-.nc-topbar {
-  position: absolute;
-  top: calc(12px + env(safe-area-inset-top));
-  left: calc(12px + env(safe-area-inset-left));
-  right: calc(12px + env(safe-area-inset-right));
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 10;
-  pointer-events: none;
-}
-.nc-topbar > * {
-  pointer-events: auto;
-}
-.nc-title-pill {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 4px 3px 14px;
-  border-radius: 14px;
-  min-width: 0;
-}
-.nc-title-text {
-  font-weight: 650;
-  font-size: 15px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.nc-panel {
-  position: absolute;
-  top: calc(68px + env(safe-area-inset-top));
-  right: calc(12px + env(safe-area-inset-right));
-  width: 300px;
-  max-height: calc(100% - 170px);
-  overflow: auto;
-  border-radius: 16px;
-  padding: 8px;
-  z-index: 11;
-}
-.nc-panel h2 {
-  margin: 6px 8px 8px;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--nc-muted);
-}
-.nc-frame-row {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  border-radius: 10px;
-}
-.nc-frame-row:hover {
-  background: var(--nc-chrome-hover);
-}
-.nc-frame-row > .nc-frame-jump {
-  flex: 1;
-  justify-content: flex-start;
-  text-align: left;
-  min-width: 0;
-}
-.nc-frame-row .nc-frame-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.nc-frame-row input {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid var(--nc-select);
-  padding: 0 8px;
-  background: var(--nc-card);
-  color: inherit;
-  font: inherit;
-}
-.nc-count {
-  margin-left: auto;
-  color: var(--nc-muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.nc-stepbar {
-  position: absolute;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 16px;
-  z-index: 12;
-  max-width: calc(100% - 24px);
-}
-.nc-step-title {
-  padding: 0 8px;
-  font-weight: 650;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.nc-step-count {
-  color: var(--nc-muted);
-  font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  padding-left: 6px;
-}
-.nc-popover {
-  border-radius: 14px;
-  padding: 10px;
-  z-index: 50;
-  min-width: 220px;
-  font-size: 14px;
-}
-.nc-popover label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--nc-muted);
-  margin: 6px 2px 4px;
-}
-.nc-popover input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
-  height: 40px;
-  border-radius: 10px;
-  border: 1px solid var(--nc-chrome-border);
-  padding: 0 10px;
-  background: var(--nc-card);
-  color: inherit;
-  font: inherit;
-}
-.nc-seg {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.nc-seg .nc-btn {
-  height: 36px;
-  min-width: 36px;
-  font-size: 13px;
-  border: 1px solid var(--nc-chrome-border);
-}
-.nc-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 2px solid var(--tint-border);
-  background: var(--tint-bg);
-}
-.nc-swatch-none {
-  background: var(--nc-card);
-  border-color: var(--nc-card-border);
-}
-.nc-sticker-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 56px);
-  gap: 6px;
-}
-.nc-sticker-grid .nc-btn {
-  height: 56px;
-}
-.nc-seltools {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 14px;
-}
-.nc-seltools .nc-btn {
-  height: 40px;
-  min-width: 40px;
-}
-.nc-toast {
-  position: absolute;
-  left: 50%;
-  bottom: calc(80px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 4px 4px 14px;
-  border-radius: 14px;
-  z-index: 20;
-  font-size: 14px;
-  max-width: calc(100% - 24px);
-}
-.nc-arranging {
-  position: absolute;
-  top: calc(70px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  z-index: 12;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.nc-spinner {
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  border: 2px solid var(--nc-chrome-border);
-  border-top-color: var(--nc-accent);
-  animation: nc-spin 0.8s linear infinite;
-}
-@keyframes nc-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.nc-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgb(0 0 0 / 0.35);
-  z-index: 60;
-}
-.nc-dialog {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(420px, calc(100vw - 32px));
-  border-radius: 18px;
-  padding: 20px;
-  z-index: 61;
-}
-.nc-dialog h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
-}
-.nc-dialog p {
-  margin: 0 0 16px;
-  color: var(--nc-muted);
-  line-height: 1.45;
-}
-.nc-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.nc-dialog-actions .nc-btn {
-  border: 1px solid var(--nc-chrome-border);
-}
-.nc-dialog-actions .nc-primary {
-  background: var(--nc-accent);
-  color: var(--nc-accent-contrast);
-  border-color: transparent;
-}
-.nc-canvas .react-flow__minimap {
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid var(--nc-chrome-border);
-  bottom: calc(76px + env(safe-area-inset-bottom));
-}
-.nc-loading {
-  display: grid;
-  place-items: center;
-  height: 100%;
-  color: var(--nc-muted);
-}
-.nc-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .nc-canvas *,
-  .nc-canvas *::before,
-  .nc-canvas *::after {
-    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component transition */
-    transition: none !important;
-    /* biome-ignore lint/complexity/noImportantStyles: as above */
-    animation-duration: 0.01ms !important;
-  }
+.nc-canvas.nc-connecting .react-flow__handle {
+  opacity: 0;
 }
 
 /* Frames take pointer events only on their title bar: the rest pans and marquee-selects. */
@@ -926,28 +411,265 @@
 .nc-canvas .react-flow__node-card.dragging {
   cursor: grabbing;
 }
-.nc-hint {
+
+/* ---- Chrome: translucent floating toolbars and panels. Their layers stay inside the canvas. ---- */
+.nc-chrome {
+  background: var(--color-chrome);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-pop);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--color-text);
+}
+/* 44px on every touch screen, the large iPad included (shared buttons are compact from 1280px). */
+.nc-coarse .nc-tool {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+.nc-toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: var(--radius-card);
+  z-index: var(--z-raised);
+  max-width: calc(100% - 24px);
+}
+/* The phone docks its tools along the bottom edge. */
+.nc-canvas[data-device="phone"] .nc-toolbar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: none;
+  max-width: none;
+  justify-content: space-around;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-width: 1px 0 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+.nc-sep {
+  width: 1px;
+  height: 26px;
+  background: var(--color-border);
+  margin: 0 4px;
+  flex: none;
+}
+.nc-zoom-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: var(--touch-target-compact);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-label);
+  color: var(--color-text-muted);
+}
+.nc-topbar {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  right: calc(12px + env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: var(--z-raised);
+  pointer-events: none;
+}
+.nc-topbar > * {
+  pointer-events: auto;
+}
+.nc-title-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 14px;
+  border-radius: var(--radius-card);
+  min-width: 0;
+}
+.nc-tools-pill {
+  padding-left: 4px;
+}
+.nc-title-text {
+  font-weight: 600;
+  font-size: var(--text-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nc-panel {
   position: absolute;
   top: calc(68px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  width: min(380px, calc(100% - 24px));
+  box-sizing: border-box;
+  max-height: calc(100% - 170px);
+  overflow: auto;
+  border-radius: var(--radius-card);
+  padding: 8px;
+  z-index: calc(var(--z-raised) + 1);
+}
+.nc-panel.nc-panel-phone {
+  top: auto;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  left: 12px;
+  right: 12px;
+  width: auto;
+  max-height: 55%;
+}
+.nc-panel-title {
+  flex: 1;
+  margin: 6px 8px 8px;
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+.nc-frame-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-control);
+}
+.nc-frame-row:hover {
+  background: var(--color-surface-muted);
+}
+.nc-frame-jump {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  text-align: left;
+  font-size: var(--text-ui);
+  cursor: pointer;
+}
+.nc-fine .nc-frame-jump {
+  min-height: var(--touch-target-compact);
+}
+.nc-frame-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nc-count {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+.nc-stepbar {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-card);
+  z-index: calc(var(--z-raised) + 2);
+  max-width: calc(100% - 24px);
+}
+.nc-stepbar.nc-stepbar-inline {
+  position: static;
+  transform: none;
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+.nc-step-text {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+.nc-step-title {
+  padding: 0 8px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.nc-step-count {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-label);
+  padding-left: 6px;
+  white-space: nowrap;
+}
+.nc-stepbar-inline .nc-step-text {
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+.nc-stepbar-inline .nc-step-count {
+  padding-left: 0;
+  font-size: var(--text-caption);
+}
+.nc-stepbar-inline .nc-step-title {
+  padding: 0;
+  max-width: 100%;
+  font-size: var(--text-ui);
+}
+.nc-sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  gap: 6px;
+}
+.nc-seltools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-card);
+}
+.nc-hint,
+.nc-toast {
+  position: absolute;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 4px 4px 14px;
-  border-radius: 14px;
-  z-index: 12;
-  font-size: 14px;
+  border-radius: var(--radius-card);
+  font-size: var(--text-ui);
   max-width: calc(100% - 24px);
+}
+.nc-hint {
+  top: calc(68px + env(safe-area-inset-top));
+  z-index: calc(var(--z-raised) + 2);
+}
+.nc-toast {
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  z-index: var(--z-toast);
+}
+.nc-arranging {
+  position: absolute;
+  top: calc(70px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  z-index: calc(var(--z-raised) + 2);
 }
 .nc-editor {
   position: absolute;
   top: calc(68px + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 10px;
-  z-index: 13;
+  z-index: calc(var(--z-raised) + 3);
   width: min(440px, calc(100% - 24px));
   box-sizing: border-box;
 }
@@ -957,97 +679,29 @@
   align-items: center;
   flex-wrap: wrap;
 }
-.nc-editor input[type="text"] {
-  flex: 1;
+fieldset.nc-editor-row {
+  border: 0;
+  padding: 0;
+  margin-inline: 0;
   min-width: 0;
-  height: 44px;
-  box-sizing: border-box;
-  border-radius: 10px;
-  border: 1px solid var(--nc-chrome-border);
-  padding: 0 12px;
-  background: var(--nc-card);
-  color: inherit;
-  font: inherit;
 }
-.nc-kind {
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1.5px solid var(--edge-color);
-  color: var(--edge-color);
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+.nc-canvas .react-flow__minimap {
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  bottom: calc(76px + env(safe-area-inset-bottom));
 }
-.nc-kind[aria-pressed="true"] {
-  background: var(--edge-color);
-  color: var(--nc-label-bg);
-}
-
-/* Labels stay readable above cards; lines run beneath them. */
-.nc-canvas .react-flow__edgelabel-renderer {
-  z-index: 1000;
-}
-
+/* The attribution mark stays visible. */
 .nc-canvas .react-flow__attribution {
   background: transparent;
   font-size: 10px;
-  opacity: 0.7;
 }
 .nc-canvas .react-flow__attribution a {
-  color: var(--nc-muted);
+  color: var(--color-text-muted);
 }
-.nc-step-count {
-  white-space: nowrap;
-}
-.nc-stepbar.nc-stepbar-inline {
-  position: static;
-  transform: none;
-  flex: 1;
-  min-width: 0;
-  max-width: none;
-}
-
-.nc-step-text {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  flex: 1;
-}
-.nc-stepbar-inline .nc-step-text {
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.15;
-}
-.nc-stepbar-inline .nc-step-count {
-  padding-left: 0;
-  font-size: 11px;
-}
-.nc-stepbar-inline .nc-step-title {
-  padding: 0;
-  max-width: 100%;
-  font-size: 14px;
-}
-.nc-stepbar-inline .nc-btn {
-  min-width: 40px;
-  padding: 0 6px;
-}
-
-.nc-canvas .react-flow__handle {
-  border-radius: 999px;
-  background: var(--nc-card);
-  border-color: var(--nc-select);
-}
-.nc-canvas.nc-connecting .react-flow__handle {
-  opacity: 0;
-}
-.nc-panel {
-  width: min(380px, calc(100% - 24px));
-  box-sizing: border-box;
-}
-.nc-canvas.nc-fine .nc-frame-row .nc-btn:not(.nc-frame-jump) {
-  min-width: 34px;
-  padding: 0 4px;
+.nc-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--color-text-muted);
 }
