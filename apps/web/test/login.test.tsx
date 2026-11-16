@@ -47,7 +47,7 @@ describe("signing in", () => {
     const { user } = await startBackend(false);
     const { router } = renderApp("/login?next=%2F%2Fevil.example");
     await fillAndSubmit(user, MOCK_USERNAME, MOCK_PASSWORD);
-    await screen.findByRole("heading", { name: /Hello, Hannah/ });
+    await screen.findByRole("heading", { level: 1, name: "Library" });
     expect(router.state.location.pathname).toBe("/library");
   });
 
@@ -83,7 +83,7 @@ describe("a session that ends", () => {
   it("sends the person to sign in when the API answers unauthenticated", async () => {
     await startBackend(true);
     const { client, router } = renderApp("/library");
-    await screen.findByRole("heading", { name: /Hello, Hannah/ });
+    await screen.findByRole("heading", { level: 1, name: "Library" });
     await api.logout(); // the server forgets the session (expiry, or signed out elsewhere)
     await client.invalidateQueries({ queryKey: ["nodes"] });
     await waitFor(() => expect(router.state.location.pathname).toBe("/login"));
@@ -93,7 +93,7 @@ describe("a session that ends", () => {
   it("signs out from the sidebar", async () => {
     const { user } = await startBackend(true);
     const { router } = renderApp("/library");
-    await screen.findByRole("heading", { name: /Hello, Hannah/ });
+    await screen.findByRole("heading", { level: 1, name: "Library" });
     const sidebar = screen.getByTestId("sidebar");
     await user.click(within(sidebar).getByRole("button", { name: /Sign out/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/login"));

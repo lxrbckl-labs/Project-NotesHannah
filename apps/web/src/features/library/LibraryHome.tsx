@@ -18,27 +18,17 @@ import { Badge } from "../../components/ui/badge";
 import { Button, buttonClass } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
-import { useMe } from "../auth/useAuth";
 import { UpcomingExamsCard } from "../exams";
 import { useStores } from "../mounts/services";
 import { UploadButton } from "../uploads/UploadButton";
 import { useCourseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
-import { GreetingTitle } from "./GreetingTitle";
 import { LibraryTree } from "./LibraryTree";
 import { NodeTile } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { childrenQuery, useChildren, useFavourites, useRecents } from "./queries";
 import { nodeHref } from "./rules";
 import { useTreeState } from "./treeState";
-
-// The animated dot field behind the greeting is an extra for a mouse: it loads after the first
-// paint, never blocks a tap or a scroll, and the header reads the same without it.
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-}
 
 /** Every folder-like node below the top, found level by level, so "expand all" can open them. */
 async function allExpandable(client: ReturnType<typeof useQueryClient>): Promise<string[]> {
@@ -112,7 +102,6 @@ function useScrollMemory(ready: boolean) {
 }
 
 export function LibraryHome() {
-  const me = useMe();
   const client = useQueryClient();
   const terms = useChildren(null);
   const favourites = useFavourites();
@@ -140,25 +129,21 @@ export function LibraryHome() {
 
   return (
     <Page>
-      <Card
-        as="section"
-        padding="none"
-        aria-label="Welcome"
-        // Solid, like every card: the dotted grid belongs to the page behind, not to cards.
-        className="relative mb-6 overflow-hidden rounded-panel px-5 py-5 md:px-8 md:py-7"
-      >
-        <header className="relative">
-          <p className="text-ui text-text-muted">{greeting()}</p>
-          {me.data ? (
-            <GreetingTitle text={`Hello, ${me.data.displayName}`} />
-          ) : (
-            <h1 className="mt-0.5 font-display text-display font-semibold">Library</h1>
-          )}
-          <p className="mt-1.5 text-ui text-text-muted">
-            All your terms, courses, lectures and files, in one tree.
-          </p>
-        </header>
-      </Card>
+      {/* No greeting card (Alex, 2026-11-16): the page opens on what she had open last. */}
+      <h1 className="mb-5 font-display text-heading font-semibold leading-tight md:text-display">
+        Library
+      </h1>
+
+      <section aria-labelledby="recents-title" className="mb-8">
+        <SectionTitle>
+          <span id="recents-title">Recently opened</span>
+        </SectionTitle>
+        <ItemStrip
+          query={recents}
+          empty="Things you open show up here."
+          icon={<CalendarRange size={18} />}
+        />
+      </section>
 
       <section aria-labelledby="tree-title" className="mb-10">
         <SectionTitle
@@ -223,17 +208,6 @@ export function LibraryHome() {
           query={favourites}
           empty="Star a course or lecture and it will wait for you here."
           icon={<Star size={18} />}
-        />
-      </section>
-
-      <section aria-labelledby="recents-title" className="mb-8">
-        <SectionTitle>
-          <span id="recents-title">Recently opened</span>
-        </SectionTitle>
-        <ItemStrip
-          query={recents}
-          empty="Things you open show up here."
-          icon={<CalendarRange size={18} />}
         />
       </section>
 

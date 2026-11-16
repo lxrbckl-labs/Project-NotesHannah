@@ -29,7 +29,7 @@ const anyH1 = (page: Page) => page.getByRole("heading", { level: 1 }).first();
 // The signed-in screens, each loaded on first use. Add a row here when a route is added to the router:
 // the test below fails until you do.
 const screens: Screen[] = [
-  { pattern: "library", at: () => "/library", ready: h1(/Hello, /) },
+  { pattern: "library", at: () => "/library", ready: h1("Library") },
   { pattern: "library/:nodeId", at: (i) => `/library/${i.courseId}`, ready: h1("Pharmacology II") },
   {
     pattern: "library/:nodeId",

@@ -20,7 +20,7 @@ export async function signInReal(page: Page) {
   await page.getByLabel("Username").fill(username);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: /Hello, / })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Library" })).toBeVisible();
 }
 
 /** Call the real API as the signed-in browser session (same cookie, same Origin rule). */

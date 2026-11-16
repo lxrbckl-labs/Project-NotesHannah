@@ -20,7 +20,7 @@ test("sign in: a wrong password is refused clearly, the right one gets in, signi
   await expect(page.getByRole("alert")).toContainText("username or password is not right");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: /Hello, Hannah/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Library" })).toBeVisible();
 
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();

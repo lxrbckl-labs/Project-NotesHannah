@@ -42,7 +42,7 @@ test("a script that has vanished after a rebuild: the app reloads itself once an
   const seen = watch(page);
   await signInBuilt(page);
   await page.goto("/library");
-  await expect(page.getByRole("heading", { level: 1, name: /Hello, / })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Library" })).toBeVisible();
 
   // The next lazily loaded script (the Trash screen) is not there, once; after the reload the new build has it.
   let refused = 0;
@@ -67,7 +67,7 @@ test("a script that has vanished after a rebuild: the app reloads itself once an
 test("a second failure right after does not reload again", async ({ page }) => {
   await signInBuilt(page);
   await page.goto("/library");
-  await expect(page.getByRole("heading", { level: 1, name: /Hello, / })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Library" })).toBeVisible();
 
   // The file is gone for good (a deploy really broke it): the first failure reloads, the second must not.
   let refused = 0;

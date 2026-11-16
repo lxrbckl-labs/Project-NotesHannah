@@ -54,6 +54,7 @@ On Beta blockers in the demo set, the "Which one" and "Safety" frames overlap ea
 
 - **Scheduled backups on the mini fail**: the 5-minute snapshot and the nightly backup cannot read the external drives until Alex grants `/bin/bash` access to removable volumes at the mini's keyboard. A manual `scripts/backup.sh` works. Failed runs leave unverified snapshot files behind.
 - No way to build a cumulative study guide from several lectures: a block cannot be reused in another document, and nothing assembles one from an exam's coverage.
+- The guide's Figure 1 (library home) still shows the greeting card that was removed on 2026-11-16; retake the figures with `pnpm guide:figures` and regenerate the PDF.
 - Concepts cannot be filtered by course (the server does not record a concept's course).
 - The "to review" count in the navigation covers unverified concepts only, not unverified blocks in documents (the server has no listing for those).
 - Dragging a card out of a frame pins it outside the frame.
