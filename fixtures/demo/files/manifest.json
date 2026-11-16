@@ -1,0 +1,819 @@
+{
+ "files": [
+  {
+   "key": "ans",
+   "file": "PHAR7340-L07-autonomic-nervous-system.pptx",
+   "name": "PHAR 7340 L07 Autonomic nervous system overview.pptx",
+   "pages": [
+    {
+     "text": "Autonomic Nervous System Overview\nPharmacology II (PHAR 7340)\nLecture 7\nAutonomic pharmacology block\n\nSpeaker notes: This block runs for four lectures: this overview, cholinergic drugs, adrenergic agonists and beta blockers. Everything later builds on the receptor tables in this deck.",
+     "flags": []
+    },
+    {
+     "text": "Learning objectives\n• Compare the sympathetic and parasympathetic divisions\n• Name the neurotransmitter and receptor at each synapse\n• Predict organ responses to autonomic stimulation\n• Describe how acetylcholine and norepinephrine are made, released and removed",
+     "flags": []
+    },
+    {
+     "text": "Two divisions\nFeature | Sympathetic | Parasympathetic\nOrigin in the CNS | Thoracolumbar (T1 to L2) | Craniosacral (cranial nerves III, VII, IX, X; S2 to S4)\nLocation of ganglia | Close to the spinal cord (paravertebral chain) | Close to or within the target organ\nPreganglionic fibre | Short | Long\nPostganglionic fibre | Long | Short\nOverall role | Fight or flight | Rest and digest\n\nSpeaker notes: The vagus nerve (cranial nerve X) carries most parasympathetic outflow to the heart, lungs and gut.",
+     "flags": []
+    },
+    {
+     "text": "Autonomic pathways at a glance\nParasympathetic: CNS -> ACh -> ganglion (NN) -> ACh -> Muscarinic receptor (M2, M3)\nSympathetic: CNS -> ACh -> ganglion (NN) -> NE -> Adrenergic receptor (alpha, beta)\nSympathetic: sweat glands: CNS -> ACh -> ganglion (NN) -> ACh -> Muscarinic receptor (M3)\nAdrenal medulla: CNS -> ACh -> Adrenal medulla (NN) -> Epinephrine and NE into the blood\nSomatic motor: CNS -> ACh -> NM receptor: skeletal muscle\n\nSpeaker notes: Read each row left to right: CNS, preganglionic fibre, ganglion, postganglionic fibre, target. Every ganglion uses acetylcholine at nicotinic NN receptors.",
+     "flags": []
+    },
+    {
+     "text": "Neurotransmitters at each synapse\n• All preganglionic neurons release acetylcholine (ACh) onto nicotinic NN receptors\n• Parasympathetic postganglionic neurons release ACh onto muscarinic receptors\n• Most sympathetic postganglionic neurons release norepinephrine (NE) onto adrenergic receptors\n   – Exception: sympathetic fibres to sweat glands release ACh onto muscarinic receptors\n• Adrenal medulla: acts like a ganglion and releases epinephrine (about 80%) and NE into the blood\n• Somatic motor neurons release ACh onto NM receptors of skeletal muscle, with no ganglion\n\nSpeaker notes: The adrenal medulla is the reason a sympathetic surge raises circulating epinephrine.",
+     "flags": []
+    },
+    {
+     "text": "Cholinergic receptors\nReceptor | Type | Main location | Response\nNN (nicotinic, neuronal) | Ligand-gated ion channel | Autonomic ganglia, adrenal medulla | Depolarises the postganglionic neuron; catecholamine release\nNM (nicotinic, muscle) | Ligand-gated ion channel | Neuromuscular junction | Skeletal muscle contraction\nM1 | Gq-coupled | CNS, enteric neurons, gastric glands | Neuronal excitation; gastric acid secretion\nM2 | Gi-coupled | Heart (SA and AV nodes) | Slower heart rate and AV conduction\nM3 | Gq-coupled | Smooth muscle, exocrine glands, vascular endothelium | Contraction, secretion, NO-mediated vasodilation",
+     "flags": []
+    },
+    {
+     "text": "Adrenergic receptors\nReceptor | G protein | Main location | Response\nalpha-1 | Gq | Vascular smooth muscle, iris dilator muscle, bladder sphincter | Vasoconstriction, mydriasis, urinary retention\nalpha-2 | Gi | Presynaptic nerve terminals, CNS | Less NE release; lower sympathetic outflow\nbeta-1 | Gs | Heart, juxtaglomerular cells of the kidney | Higher heart rate and contractility; renin release\nbeta-2 | Gs | Bronchial and vascular smooth muscle, liver, uterus | Bronchodilation, vasodilation, glycogenolysis, uterine relaxation\nbeta-3 | Gs | Adipose tissue, bladder detrusor | Lipolysis; detrusor relaxation\n\nSpeaker notes: Memory hook: Gq contracts (alpha-1, M3), Gs relaxes or stimulates via cAMP (all beta), Gi inhibits (alpha-2, M2).",
+     "flags": []
+    },
+    {
+     "text": "Organ responses\nOrgan | Sympathetic | Parasympathetic\nHeart rate | Increase (beta-1) | Decrease (M2)\nBronchi | Dilate (beta-2) | Constrict, more secretions (M3)\nPupil | Dilate: mydriasis (alpha-1) | Constrict: miosis (M3)\nGI motility | Decrease | Increase\nBladder | Relax detrusor (beta-3), contract sphincter (alpha-1) | Contract detrusor (M3), relax sphincter\nSweat glands | Secretion (muscarinic, sympathetic cholinergic) | No innervation\n\nSpeaker notes: Most organs get both divisions and the parasympathetic tone usually dominates at rest. Blood vessels are mainly sympathetic.",
+     "flags": []
+    },
+    {
+     "text": "Acetylcholine: synthesis to breakdown\n• Choline enters the nerve terminal on a sodium-dependent transporter (blocked by hemicholinium)\n• Choline acetyltransferase joins choline and acetyl-CoA to make ACh\n• VAChT packs ACh into vesicles (blocked by vesamicol)\n• Calcium entry triggers release; botulinum toxin prevents it\n• Acetylcholinesterase splits ACh into choline and acetate in the synaptic cleft",
+     "flags": []
+    },
+    {
+     "text": "Norepinephrine: synthesis to removal\n• Tyrosine to DOPA by tyrosine hydroxylase, the rate-limiting step (blocked by metyrosine)\n• DOPA to dopamine; VMAT moves dopamine into vesicles (blocked by reserpine)\n• Dopamine beta-hydroxylase makes NE inside the vesicle\n• Calcium-triggered release; presynaptic alpha-2 receptors reduce further release\n• Action ends mainly by reuptake through NET (uptake 1), blocked by cocaine and tricyclic antidepressants\n• Broken down by MAO (in the nerve terminal) and COMT\n\nSpeaker notes: Unlike ACh, NE is mostly recycled, not destroyed in the cleft. That is why reuptake blockers raise synaptic NE.",
+     "flags": []
+    },
+    {
+     "text": "Key terms\n• Sympathomimetic: mimics sympathetic stimulation (adrenergic agonist)\n• Sympatholytic: blocks sympathetic effects (adrenergic antagonist)\n• Parasympathomimetic or cholinomimetic: mimics ACh at muscarinic receptors\n• Parasympatholytic or antimuscarinic: blocks ACh at muscarinic receptors\n• Direct-acting drugs bind the receptor; indirect-acting drugs change the amount of transmitter",
+     "flags": []
+    },
+    {
+     "text": "Summary\n• ACh at every ganglion (NN); NE at most sympathetic targets; ACh at parasympathetic targets\n• Receptor subtype predicts the response: learn the receptor tables\n• ACh is destroyed by acetylcholinesterase; NE is mostly taken back up\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ],
+   "hotspots": {
+    "page": 4,
+    "points": {
+     "ganglion0": [
+      0.4988,
+      0.2772
+     ],
+     "target0": [
+      0.8111,
+      0.2772
+     ],
+     "ganglion1": [
+      0.4988,
+      0.4094
+     ],
+     "target1": [
+      0.8111,
+      0.4094
+     ],
+     "ganglion2": [
+      0.4988,
+      0.5416
+     ],
+     "target2": [
+      0.8111,
+      0.5416
+     ],
+     "adrenal": [
+      0.5731,
+      0.6739
+     ],
+     "target3": [
+      0.8111,
+      0.6739
+     ],
+     "target4": [
+      0.8111,
+      0.8061
+     ]
+    }
+   }
+  },
+  {
+   "key": "chol",
+   "file": "PHAR7340-L08-cholinergic-drugs.pptx",
+   "name": "PHAR 7340 L08 Cholinergic agonists and antagonists.pptx",
+   "pages": [
+    {
+     "text": "Cholinergic Agonists and Antagonists\nPharmacology II (PHAR 7340)\nLecture 8\nAutonomic pharmacology block",
+     "flags": []
+    },
+    {
+     "text": "Learning objectives\n• Classify direct agonists, cholinesterase inhibitors and muscarinic antagonists\n• Predict muscarinic and nicotinic effects and toxicity\n• Manage organophosphate and anticholinergic poisoning\n• Match each drug to its main clinical use",
+     "flags": []
+    },
+    {
+     "text": "Direct-acting muscarinic agonists\nDrug | Feature | Main use\nBethanechol | Muscarinic selective; not broken down by acetylcholinesterase | Non-obstructive urinary retention\nPilocarpine | Tertiary amine; also an eye drop | Dry mouth in Sjogren syndrome; glaucoma\nCevimeline | M3 agonist | Dry mouth in Sjogren syndrome\nMethacholine | Inhaled | Bronchial challenge test for asthma\n\nSpeaker notes: Bethanechol must never be used when the bladder or bowel is mechanically obstructed.",
+     "flags": []
+    },
+    {
+     "text": "Muscarinic excess\n• Diarrhoea, urination, miosis\n• Bronchospasm and bronchorrhoea, bradycardia\n• Emesis, lacrimation, salivation, sweating\n• Avoid muscarinic agonists in asthma, peptic ulcer, bradycardia and urinary or GI obstruction\n\nSpeaker notes: Students often remember these with DUMBBELSS or SLUDGE. Both are on the exam review sheet.",
+     "flags": []
+    },
+    {
+     "text": "Cholinesterase inhibitors\nDrug | Type | Use\nNeostigmine | Reversible; quaternary, no CNS entry | Reversal of nondepolarising blockade; myasthenia gravis\nPyridostigmine | Reversible; quaternary | Myasthenia gravis (oral maintenance)\nPhysostigmine | Reversible; tertiary, enters the CNS | Severe anticholinergic toxicity\nDonepezil, rivastigmine, galantamine | Reversible; act in the CNS | Alzheimer disease\nOrganophosphates (malathion, sarin) | Irreversible | Insecticides and nerve agents: poisoning",
+     "flags": []
+    },
+    {
+     "text": "Organophosphate poisoning\n• Muscarinic signs: secretions, bronchospasm, bradycardia, miosis\n• Nicotinic signs: fasciculations, then weakness and paralysis\n• Atropine: repeat and titrate until bronchial secretions are dry\n• Pralidoxime regenerates acetylcholinesterase if given before the enzyme ages\n• Benzodiazepines for seizures\n\nSpeaker notes: Pupil size is a poor end point for atropine. Use drying of bronchial secretions and adequate oxygenation.",
+     "flags": []
+    },
+    {
+     "text": "Muscarinic antagonists\nDrug | Feature | Main use\nAtropine | Non-selective, tertiary | Symptomatic bradycardia; organophosphate poisoning\nScopolamine | Marked CNS effect | Motion sickness (transdermal patch)\nIpratropium | Inhaled, quaternary, short acting | COPD; added to albuterol in acute asthma\nTiotropium | Inhaled, long acting | COPD maintenance\nOxybutynin, tolterodine | Bladder antimuscarinics | Overactive bladder\nGlycopyrrolate | Quaternary, no CNS entry | Reduces secretions around surgery\nBenztropine | Central action | Drug-induced parkinsonism",
+     "flags": []
+    },
+    {
+     "text": "Anticholinergic adverse effects\n• Dry mouth, constipation, urinary retention\n• Blurred vision; can precipitate acute angle-closure glaucoma\n• Tachycardia; reduced sweating with hyperthermia\n• Confusion and delirium, especially in older adults\n• Toxicity: hot, dry, flushed skin, dilated pupils, delirium, urinary retention\n\nSpeaker notes: Strongly anticholinergic drugs are on the Beers list of drugs to avoid in older adults. Watch for cumulative burden from several drugs.",
+     "flags": []
+    },
+    {
+     "text": "Neuromuscular blockers (NM antagonists)\nDrug | Type | Point to know\nSuccinylcholine | Depolarising | Hyperkalaemia; trigger for malignant hyperthermia\nRocuronium | Nondepolarising | Reversed by sugammadex\nVecuronium | Nondepolarising | Reversed by sugammadex\nCisatracurium | Nondepolarising | Hofmann elimination: useful in renal or hepatic failure\n\nSpeaker notes: Neostigmine reverses nondepolarising block and is given with glycopyrrolate to block its muscarinic effects.",
+     "flags": []
+    },
+    {
+     "text": "Doses at a glance\nDrug | Usual adult dose\nBethanechol | 10 to 50 mg PO three or four times daily\nPilocarpine (oral) | 5 mg PO three times daily\nOxybutynin IR | 5 mg PO two or three times daily\nAtropine (symptomatic bradycardia) | 1 mg IV every 3 to 5 minutes, maximum 3 mg\nTiotropium (inhalation capsule) | 18 mcg inhaled once daily\n\nSpeaker notes: Doses are teaching figures for this course. Always check a current reference.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "1 mg IV every 3 to 5 minutes, maximum 3 mg",
+       "note": "Atropine bradycardia dose: check against the current resuscitation guideline."
+      },
+      {
+       "kind": "dose",
+       "quote": "18 mcg inhaled once daily",
+       "note": "Strength differs between tiotropium devices."
+      }
+     ]
+    },
+    {
+     "text": "Clinical pearls\n• Donepezil plus oxybutynin: opposing effects, and a classic prescribing cascade\n• Quaternary amines (neostigmine, glycopyrrolate, ipratropium) do not cross the blood-brain barrier\n• Scopolamine patch: apply behind the ear at least 4 hours before travel",
+     "flags": []
+    },
+    {
+     "text": "Summary\n• Agonists cause SLUDGE-type effects; antagonists cause the opposite\n• Cholinesterase inhibitors raise ACh at both muscarinic and nicotinic sites\n• Atropine for muscarinic toxicity; pralidoxime for organophosphates; physostigmine for severe anticholinergic toxicity\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ]
+  },
+  {
+   "key": "adr",
+   "file": "PHAR7340-L09-adrenergic-agonists.pptx",
+   "name": "PHAR 7340 L09 Adrenergic agonists.pptx",
+   "pages": [
+    {
+     "text": "Adrenergic Agonists\nPharmacology II (PHAR 7340)\nLecture 9\nAutonomic pharmacology block",
+     "flags": []
+    },
+    {
+     "text": "Learning objectives\n• Predict the effects of an agonist from the receptors it activates\n• Compare catecholamines and non-catecholamines\n• Choose an agent for shock, anaphylaxis, asthma and hypotension\n• Name the key adverse effects of each group",
+     "flags": []
+    },
+    {
+     "text": "Catecholamines and non-catecholamines\n• Catecholamines: epinephrine, norepinephrine, dopamine, dobutamine, isoproterenol\n   – Broken down by MAO and COMT: short acting, not given orally\n   – Poor entry into the CNS\n• Non-catecholamines: phenylephrine, ephedrine, pseudoephedrine, albuterol\n   – Not COMT substrates: longer acting, several are oral",
+     "flags": []
+    },
+    {
+     "text": "Receptor selectivity\nDrug | Receptors | Main effect\nEpinephrine | alpha-1, alpha-2, beta-1, beta-2 | Raises heart rate and contractility; bronchodilates; vasoconstricts at high doses\nNorepinephrine | alpha-1, alpha-2, beta-1 (little beta-2) | Strong vasoconstriction; reflex slowing of heart rate is possible\nDopamine | D1, beta-1, alpha-1 (dose dependent) | See the next slide\nDobutamine | Mainly beta-1 | Inotrope: raises contractility\nIsoproterenol | beta-1, beta-2 | Raises heart rate; vasodilates\nPhenylephrine | alpha-1 | Vasoconstriction; reflex bradycardia\nAlbuterol | beta-2 | Bronchodilation\nClonidine | alpha-2 (central) | Lowers sympathetic outflow",
+     "flags": []
+    },
+    {
+     "text": "Dopamine: effect depends on dose\n• Low dose: D1 receptors, renal and mesenteric vasodilation\n• Intermediate dose: beta-1, more contractility and heart rate\n• High dose: alpha-1, vasoconstriction\n• So-called renal-dose dopamine does not protect the kidneys\n\nSpeaker notes: Published cut-offs between the ranges vary. A common teaching version is below about 3, about 3 to 10, and above 10 mcg/kg/min.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "below about 3, about 3 to 10, and above 10 mcg/kg/min",
+       "note": "Dose bands differ between references."
+      }
+     ]
+    },
+    {
+     "text": "Shock and anaphylaxis\n• Septic shock: norepinephrine is the first-choice vasopressor\n• Cardiogenic shock with low output: dobutamine adds contractility\n• Anaphylaxis: epinephrine IM into the anterolateral thigh, first and without delay\n• Antihistamines and corticosteroids are add-ons, never a substitute for epinephrine",
+     "flags": []
+    },
+    {
+     "text": "Beta-2 agonists\nDrug | Action profile | Role\nAlbuterol (SABA) | Onset within minutes, lasts 4 to 6 hours | Reliever (rescue) inhaler\nSalmeterol (LABA) | Lasts about 12 hours, slower onset | Maintenance; never alone in asthma\nFormoterol (LABA) | Fast onset, lasts about 12 hours | Maintenance; with budesonide as reliever too\nTerbutaline | Oral, inhaled or injected | Bronchospasm\n\nSpeaker notes: Adverse effects of beta-2 agonists: tremor, tachycardia, hypokalaemia and hyperglycaemia. In asthma a LABA is always paired with an inhaled corticosteroid.",
+     "flags": []
+    },
+    {
+     "text": "Alpha agonists\n• Phenylephrine (alpha-1): nasal decongestant, hypotension during anaesthesia, mydriasis\n• Pseudoephedrine: oral decongestant, sold behind the counter; can raise blood pressure\n• Oxymetazoline: topical decongestant; rebound congestion if used more than 3 days\n• Midodrine (alpha-1 prodrug): orthostatic hypotension; watch for supine hypertension\n• Clonidine (alpha-2): hypertension, ADHD, withdrawal symptoms; rebound hypertension if stopped suddenly\n• Methyldopa (alpha-2): hypertension in pregnancy",
+     "flags": []
+    },
+    {
+     "text": "Indirect and mixed-acting agents\n• Amphetamine: releases stored NE and dopamine\n• Cocaine: blocks NE reuptake (NET)\n• Ephedrine: direct agonist and releaser (mixed acting)",
+     "flags": []
+    },
+    {
+     "text": "Doses at a glance\nDrug | Setting | Usual adult dose\nEpinephrine | Anaphylaxis | 0.3 to 0.5 mg IM (1 mg/mL) in the thigh; repeat every 5 to 15 minutes if needed\nEpinephrine | Cardiac arrest | 1 mg IV or IO every 3 to 5 minutes\nAlbuterol inhaler | Acute symptoms | 1 to 2 puffs (90 mcg per puff) every 4 to 6 hours as needed\nClonidine | Hypertension | 0.1 mg PO twice daily to start\nMidodrine | Orthostatic hypotension | 2.5 to 10 mg PO three times daily while upright; last dose at least 4 hours before bedtime\n\nSpeaker notes: Teaching figures for this course. The 1 mg/mL strength is for IM use only, never IV push.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "0.3 to 0.5 mg IM (1 mg/mL)",
+       "note": "Concentration matters: 1 mg/mL is the IM strength."
+      },
+      {
+       "kind": "dose",
+       "quote": "0.1 mg PO twice daily",
+       "note": "Check the decimal."
+      }
+     ]
+    },
+    {
+     "text": "Summary\n• Receptor profile predicts the effect\n• Norepinephrine for septic shock; epinephrine IM for anaphylaxis\n• Beta-2 agonists: tremor, tachycardia, low potassium\n• Never stop clonidine abruptly\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ]
+  },
+  {
+   "key": "beta",
+   "file": "PHAR7340-L10-beta-blockers.pptx",
+   "name": "PHAR 7340 L10 Beta blockers.pptx",
+   "pages": [
+    {
+     "text": "Beta-Adrenergic Blockers\nPharmacology II (PHAR 7340)\nLecture 10\nAutonomic pharmacology block",
+     "flags": []
+    },
+    {
+     "text": "Learning objectives\n• Explain how beta blockade lowers heart rate, contractility and blood pressure\n• Classify beta blockers by selectivity and extra properties\n• Name the beta blockers proven in HFrEF\n• Recognise adverse effects, contraindications and interactions",
+     "flags": []
+    },
+    {
+     "text": "Mechanism of action\n• Competitive antagonists at beta receptors\n• Beta-1 blockade: lower heart rate, contractility and AV conduction\n• Less renin release from the kidney\n• Net effect: lower cardiac output, blood pressure and myocardial oxygen demand\n\nSpeaker notes: Because the antagonism is competitive, a large catecholamine surge can partly overcome it.",
+     "flags": []
+    },
+    {
+     "text": "Classification\nGroup | Examples | Key point\nNon-selective (beta-1 and beta-2) | Propranolol, nadolol, timolol | Avoid in asthma\nBeta-1 selective (cardioselective) | Atenolol, metoprolol, bisoprolol, esmolol | Selectivity is lost at high doses\nBeta-1 selective with vasodilation | Nebivolol | Nitric oxide-mediated vasodilation\nMixed alpha-1 and beta | Carvedilol, labetalol | Extra vasodilation from alpha-1 blockade\nIntrinsic sympathomimetic activity | Pindolol, acebutolol | Less slowing of the resting heart rate\n\nSpeaker notes: Cardioselective does not mean cardiac-only.",
+     "flags": []
+    },
+    {
+     "text": "Pharmacokinetic differences\nDrug | Lipid solubility | Elimination | Half-life\nPropranolol | High | Hepatic, large first-pass effect | 3 to 6 h\nMetoprolol | Moderate | Hepatic (CYP2D6) | 3 to 7 h\nAtenolol | Low | Renal | 6 to 7 h\nNadolol | Low | Renal | 20 to 24 h\nEsmolol | Low | Red blood cell esterases | About 9 minutes\nCarvedilol | High | Hepatic (CYP2D6, CYP2C9) | 7 to 10 h\n\nSpeaker notes: Lipophilic agents reach the brain: vivid dreams and sleep disturbance are more common with propranolol. Renally cleared atenolol and nadolol accumulate in kidney disease.",
+     "flags": []
+    },
+    {
+     "text": "Clinical uses\n• Angina and after myocardial infarction\n• HFrEF: only bisoprolol, carvedilol and metoprolol succinate\n• Rate control in atrial fibrillation\n• Hypertension, mainly when there is a compelling indication\n• Propranolol: migraine prevention, essential tremor, symptoms of hyperthyroidism\n• Timolol eye drops for glaucoma",
+     "flags": []
+    },
+    {
+     "text": "Adverse effects\n• Bradycardia, AV block, hypotension\n• Fatigue and reduced exercise tolerance\n• Bronchospasm in asthma, especially with non-selective agents\n• Masks warning signs of hypoglycaemia (tremor, palpitations); sweating still occurs\n• Cold extremities, sexual dysfunction\n• Abrupt withdrawal: rebound tachycardia, angina, even myocardial infarction",
+     "flags": []
+    },
+    {
+     "text": "Contraindications and cautions\n• Severe bradycardia or second- or third-degree heart block without a pacemaker\n• Cardiogenic shock and acutely decompensated heart failure\n• Asthma: avoid non-selective agents; a cardioselective agent at low dose if one is needed\n• Insulin-treated diabetes: warn about masked hypoglycaemia",
+     "flags": []
+    },
+    {
+     "text": "Interactions\n• Verapamil or diltiazem: additive bradycardia and AV block\n• Clonidine: stop the beta blocker first when withdrawing both\n• CYP2D6 inhibitors (fluoxetine, paroxetine) raise metoprolol levels\n• NSAIDs blunt the blood pressure effect",
+     "flags": []
+    },
+    {
+     "text": "Usual starting doses (hypertension)\nDrug | Starting dose | Frequency\nMetoprolol tartrate | 25 to 50 mg | Twice daily\nMetoprolol succinate ER | 25 to 100 mg | Once daily\nAtenolol | 25 to 50 mg | Once daily\nBisoprolol | 2.5 to 5 mg | Once daily\nCarvedilol | 6.25 mg | Twice daily with food\nPropranolol | 40 mg | Twice daily\nNebivolol | 5 mg | Once daily\n\nSpeaker notes: Heart failure doses start much lower and are covered in Pharmacotherapy I. Teaching figures only.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "6.25 mg",
+       "note": "Check the decimal."
+      }
+     ]
+    },
+    {
+     "text": "Counselling\n• Do not stop suddenly: taper over 1 to 2 weeks\n• Take carvedilol with food to reduce dizziness\n• Rise slowly from sitting or lying\n• Check your pulse; report a heart rate that stays below 50",
+     "flags": []
+    },
+    {
+     "text": "Summary\n• Competitive beta antagonists lower heart rate, contractility and renin\n• Selectivity guides the choice but fades at high doses\n• Three are proven in HFrEF: bisoprolol, carvedilol, metoprolol succinate\n• Taper, never stop abruptly\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ]
+  },
+  {
+   "key": "htn",
+   "file": "PHAR7310-L08-hypertension.pptx",
+   "name": "PHAR 7310 L08 Hypertension.pptx",
+   "pages": [
+    {
+     "text": "Hypertension: Diagnosis and Drug Therapy\nPharmacotherapy I (PHAR 7310)\nLecture 8\nCardiovascular module",
+     "flags": []
+    },
+    {
+     "text": "Learning objectives\n• Classify blood pressure using the 2017 ACC/AHA categories\n• Decide when to start drug therapy and what goal to aim for\n• Choose first-line drugs, including for compelling indications\n• Plan monitoring for each first-line class",
+     "flags": []
+    },
+    {
+     "text": "Blood pressure categories (2017 ACC/AHA)\nCategory | Systolic (mm Hg) |  | Diastolic (mm Hg)\nNormal | Below 120 | and | Below 80\nElevated | 120 to 129 | and | Below 80\nStage 1 hypertension | 130 to 139 | or | 80 to 89\nStage 2 hypertension | 140 or higher | or | 90 or higher\n\nSpeaker notes: When systolic and diastolic fall in different categories, use the higher category. A reading above 180/120 mm Hg is a hypertensive crisis.",
+     "flags": []
+    },
+    {
+     "text": "Measuring blood pressure\n• Seated and resting for at least 5 minutes, back supported, feet flat\n• Arm supported at heart level, correct cuff size\n• No caffeine, exercise or smoking for 30 minutes before\n• Average at least 2 readings on at least 2 occasions\n• Confirm with home or ambulatory readings",
+     "flags": []
+    },
+    {
+     "text": "When to start drug therapy\n• Stage 1 with clinical ASCVD or a 10-year ASCVD risk of 10% or more: lifestyle plus a drug\n• Stage 1 with a 10-year risk below 10%: lifestyle first, reassess in 3 to 6 months\n• Stage 2: lifestyle plus a drug\n   – Start two first-line drugs of different classes if BP is more than 20/10 mm Hg above goal\n• Goal for most adults: below 130/80 mm Hg",
+     "flags": []
+    },
+    {
+     "text": "Lifestyle changes\nChange | Approximate fall in systolic BP\nWeight loss | About 1 mm Hg for every kg lost\nDASH eating pattern | About 11 mm Hg\nLess sodium (ideally below 1500 mg a day) | 5 to 6 mm Hg\nMore dietary potassium (3500 to 5000 mg a day) | 4 to 5 mm Hg\nAerobic exercise, 90 to 150 minutes a week | 5 to 8 mm Hg\nAlcohol: at most 2 drinks a day (men) or 1 (women) | About 4 mm Hg\n\nSpeaker notes: Effects are roughly additive and are larger in people who already have hypertension.",
+     "flags": []
+    },
+    {
+     "text": "First-line drug classes\n• Thiazide-type diuretics (chlorthalidone preferred)\n• ACE inhibitors\n• Angiotensin receptor blockers (ARBs)\n• Dihydropyridine calcium channel blockers\n• Black adults without heart failure or CKD: start with a thiazide or a calcium channel blocker\n• Never combine an ACE inhibitor with an ARB\n\nSpeaker notes: Beta blockers are not first line for uncomplicated hypertension. Use them when there is another reason, such as HFrEF or a previous myocardial infarction.",
+     "flags": []
+    },
+    {
+     "text": "Compelling indications\nCondition | Preferred therapy\nHFrEF | Guideline-directed therapy: ARNI, ACE inhibitor or ARB; evidence-based beta blocker; MRA\nCKD with albuminuria | ACE inhibitor or ARB\nDiabetes with albuminuria | ACE inhibitor or ARB\nStable ischaemic heart disease or previous MI | Beta blocker plus ACE inhibitor or ARB\nPregnancy | Labetalol or nifedipine; avoid ACE inhibitors, ARBs and aliskiren",
+     "flags": []
+    },
+    {
+     "text": "First-line classes: adverse effects and monitoring\nClass | Examples | Key adverse effects | Monitor\nThiazide | Chlorthalidone, hydrochlorothiazide | Low potassium and sodium, high uric acid (gout), high glucose | Electrolytes, uric acid\nACE inhibitor | Lisinopril, enalapril | Dry cough, high potassium, angioedema, rise in creatinine | Serum creatinine, potassium\nARB | Losartan, valsartan | High potassium, rise in creatinine; no cough | Serum creatinine, potassium\nDihydropyridine CCB | Amlodipine, nifedipine ER | Ankle oedema, headache, flushing | Blood pressure, oedema\nNon-dihydropyridine CCB | Diltiazem, verapamil | Bradycardia, constipation (verapamil) | Heart rate; avoid in HFrEF",
+     "flags": []
+    },
+    {
+     "text": "Usual starting doses\nDrug | Brand | Starting dose | Usual range\nChlorthalidone | Thalitone | 12.5 mg once daily | 12.5 to 25 mg\nHydrochlorothiazide | Microzide | 12.5 to 25 mg once daily | 25 to 50 mg\nLisinopril | Zestril, Prinivil | 10 mg once daily | 10 to 40 mg\nLosartan | Cozaar | 50 mg once daily | 50 to 100 mg\nValsartan | Diovan | 80 to 160 mg once daily | 80 to 320 mg\nAmlodipine | Norvasc | 5 mg once daily | 2.5 to 10 mg\n\nSpeaker notes: Start lower (for example lisinopril 5 mg) in older adults, in volume depletion or when already on a diuretic. Teaching figures only.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "12.5 mg once daily",
+       "note": "Check the decimal."
+      },
+      {
+       "kind": "drug_name",
+       "quote": "Thalitone",
+       "note": "Brand name: check it is the current brand."
+      }
+     ]
+    },
+    {
+     "text": "Special situations\n• ACE inhibitors, ARBs and aliskiren are fetotoxic: avoid in pregnancy and counsel on contraception\n• History of angioedema with an ACE inhibitor: do not use an ACE inhibitor again\n• Bilateral renal artery stenosis: ACE inhibitors and ARBs can cause acute kidney injury\n• A rise in serum creatinine of up to 30% after starting an ACE inhibitor or ARB is expected",
+     "flags": []
+    },
+    {
+     "text": "Follow-up\n• Recheck monthly until at goal, then every 3 to 6 months\n• Check potassium and creatinine within 2 to 4 weeks of starting or raising an ACE inhibitor, ARB or diuretic\n• Ask about adherence before adding a drug",
+     "flags": [
+      {
+       "kind": "uncertain",
+       "quote": "within 2 to 4 weeks",
+       "note": "Lab timing varies between sources; check what the course expects."
+      }
+     ]
+    },
+    {
+     "text": "Summary\n• Stage 1 is 130/80; the goal is below 130/80 mm Hg for most adults\n• First line: thiazide, ACE inhibitor or ARB, dihydropyridine CCB\n• Compelling indications steer the choice\n• Lifestyle helps every patient\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ]
+  },
+  {
+   "key": "hf",
+   "file": "PHAR7310-L09-heart-failure.pptx",
+   "name": "PHAR 7310 L09 Heart failure (HFrEF).pptx",
+   "pages": [
+    {
+     "text": "Heart Failure with Reduced Ejection Fraction\nPharmacotherapy I (PHAR 7310)\nLecture 9\nCardiovascular module",
+     "flags": []
+    },
+    {
+     "text": "Learning objectives\n• Classify heart failure by ejection fraction, stage and NYHA class\n• Explain why neurohormonal blockade improves survival\n• Build a regimen from the four pillars of guideline-directed therapy\n• Start and titrate each drug safely",
+     "flags": []
+    },
+    {
+     "text": "Heart failure by ejection fraction\nType | LVEF\nHFrEF (reduced) | 40% or less\nHFmrEF (mildly reduced) | 41% to 49%\nHFpEF (preserved) | 50% or more\nHFimpEF (improved) | Was 40% or less, now above 40%",
+     "flags": []
+    },
+    {
+     "text": "Stages and NYHA classes\nACC/AHA stage | Meaning | NYHA class | Meaning\nA | At risk, no structural disease | I | No limitation of activity\nB | Structural disease, never had symptoms | II | Slight limitation; ordinary activity causes symptoms\nC | Structural disease with current or past symptoms | III | Marked limitation; less than ordinary activity causes symptoms\nD | Advanced, symptoms despite maximal therapy | IV | Symptoms at rest\n\nSpeaker notes: Stages only move forward. NYHA class can improve with treatment.",
+     "flags": []
+    },
+    {
+     "text": "Why neurohormonal blockade works\n• A failing heart activates the renin-angiotensin-aldosterone system and the sympathetic nervous system\n• Result: vasoconstriction, salt and water retention, cardiac remodelling\n• Blocking these systems slows remodelling and improves survival\n• Diuretics relieve congestion but do not improve survival",
+     "flags": []
+    },
+    {
+     "text": "The four pillars of guideline-directed therapy\nPillar | Examples | Benefit\nARNI (or ACE inhibitor or ARB) | Sacubitril/valsartan | Lower mortality and fewer HF hospitalisations\nEvidence-based beta blocker | Bisoprolol, carvedilol, metoprolol succinate | Lower mortality\nMineralocorticoid receptor antagonist (MRA) | Spironolactone, eplerenone | Lower mortality\nSGLT2 inhibitor | Dapagliflozin, empagliflozin | Fewer HF hospitalisations and cardiovascular deaths\n\nSpeaker notes: Start all four as soon as possible, at low doses, rather than maximising one drug before adding the next.",
+     "flags": []
+    },
+    {
+     "text": "Starting and target doses\nDrug | Starting dose | Target dose\nSacubitril/valsartan | 49/51 mg twice daily | 97/103 mg twice daily\nLisinopril | 2.5 to 5 mg once daily | 20 to 40 mg once daily\nCarvedilol | 3.125 mg twice daily | 25 mg twice daily (50 mg twice daily if over 85 kg)\nMetoprolol succinate | 12.5 to 25 mg once daily | 200 mg once daily\nBisoprolol | 1.25 mg once daily | 10 mg once daily\nSpironolactone | 12.5 to 25 mg once daily | 25 to 50 mg once daily\nDapagliflozin or empagliflozin | 10 mg once daily | 10 mg once daily\n\nSpeaker notes: Beta blocker doses are doubled no more often than every 2 weeks. Teaching figures only.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "3.125 mg twice daily",
+       "note": "Check the decimal."
+      },
+      {
+       "kind": "dose",
+       "quote": "49/51 mg twice daily",
+       "note": "Combination strength: sacubitril/valsartan."
+      }
+     ]
+    },
+    {
+     "text": "ARNI: sacubitril/valsartan\n• Sacubitril blocks neprilysin, so natriuretic peptides last longer\n• Stop an ACE inhibitor at least 36 hours before the first dose\n• Never use with an ACE inhibitor or after angioedema\n• Watch blood pressure, potassium and renal function\n\nSpeaker notes: The 36-hour gap is there because neprilysin and ACE both break down bradykinin. Together they raise the risk of angioedema.",
+     "flags": []
+    },
+    {
+     "text": "MRA safety\n• Start only if potassium is below 5.0 mEq/L and eGFR is above 30 mL/min/1.73 m2\n• Recheck potassium and renal function within about 1 week, then regularly\n• Spironolactone can cause gynaecomastia; eplerenone rarely does\n• Avoid potassium supplements and salt substitutes unless potassium is low",
+     "flags": [
+      {
+       "kind": "unit",
+       "quote": "5.0 mEq/L",
+       "note": "Check the decimal and the unit."
+      }
+     ]
+    },
+    {
+     "text": "Symptom relief and add-on therapy\n• Loop diuretics for congestion: furosemide, bumetanide, torsemide\n   – Roughly equivalent: furosemide 40 mg PO, furosemide 20 mg IV, bumetanide 1 mg, torsemide 20 mg\n• Hydralazine with isosorbide dinitrate: self-identified Black patients with NYHA III to IV on optimal therapy\n• Ivabradine: sinus rhythm with resting heart rate of 70 or more on a maximally tolerated beta blocker\n• Digoxin: fewer hospitalisations, no survival benefit",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "furosemide 40 mg PO, furosemide 20 mg IV, bumetanide 1 mg, torsemide 20 mg",
+       "note": "Equivalence is approximate."
+      }
+     ]
+    },
+    {
+     "text": "Drugs that worsen HFrEF\n• NSAIDs: salt and water retention, worse renal function\n• Non-dihydropyridine calcium channel blockers (diltiazem, verapamil): negative inotropes\n• Thiazolidinediones (pioglitazone): fluid retention\n• Most antiarrhythmics, except amiodarone and dofetilide",
+     "flags": []
+    },
+    {
+     "text": "Summary\n• HFrEF means an LVEF of 40% or less\n• Four pillars: ARNI, beta blocker, MRA, SGLT2 inhibitor\n• Start low, titrate every 2 weeks, check potassium and renal function\n• Loop diuretics for symptoms only\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ]
+  },
+  {
+   "key": "calc",
+   "file": "PHAR7310-calculations-handout.pdf",
+   "name": "PHAR 7310 Calculations handout 1.pdf",
+   "pages": [
+    {
+     "text": "Calculations Handout 1: Renal Function and Body Weight\nPharmacotherapy I (PHAR 7310) · Practice set for the calculations quiz\nCockcroft-Gault creatinine clearance\nCrCl (mL/min) = [(140 - age) x weight (kg)] / (72 x SCr (mg/dL))\nMultiply by 0.85 for female patients.\nCourse convention for the weight: use ideal body weight (IBW), or actual weight if it is lower. If actual weight is more than 120% of IBW, use adjusted body weight.\nBody weight equations\nIBW (male) = 50 kg + 2.3 kg for each inch over 5 feet\nIBW (female) = 45.5 kg + 2.3 kg for each inch over 5 feet\nAdjusted body weight = IBW + 0.4 x (actual weight - IBW)\nWorked examples\nExample 1. Man, 68 years, 5 ft 10 in, 80 kg, SCr 1.4 mg/dL. IBW = 50 + 2.3 x 10 = 73 kg. Actual weight is 110% of IBW, so use 73 kg. CrCl = (72 x 73) / (72 x 1.4) = 52 mL/min.\nExample 2. Woman, 75 years, 5 ft 4 in, 60 kg, SCr 1.1 mg/dL. IBW = 45.5 + 2.3 x 4 = 54.7 kg. CrCl = (65 x 54.7) / (72 x 1.1) x 0.85 = 38 mL/min.\nExample 3. Man, 50 years, 5 ft 10 in, 120 kg, SCr 1.0 mg/dL. IBW = 73 kg; 120 kg is 164% of IBW, so adjusted weight = 73 + 0.4 x 47 = 91.8 kg. CrCl = (90 x 91.8) / (72 x 1.0) = 115 mL/min.\nSample study material. Not for clinical use.",
+     "flags": [
+      {
+       "kind": "decimal",
+       "quote": "Multiply by 0.85 for female patients.",
+       "note": "Check the decimal."
+      }
+     ]
+    },
+    {
+     "text": "Dosing and Infusion Rates\nWeight-based doses\nWeight (kg) = weight (lb) / 2.2\nDose (mg) = dose per kg (mg/kg) x weight (kg)\nExample 4. Enoxaparin 1 mg/kg SC every 12 hours for a 176 lb patient: 176 / 2.2 = 80 kg, so 80 mg every 12 hours.\nInfusion rates\nRate (mL/hr) = dose per hour / concentration\nExample 5. Heparin 25,000 units in 250 mL (100 units/mL). Order: 18 units/kg/hr for an 80 kg patient. 18 x 80 = 1440 units/hr; 1440 / 100 = 14.4 mL/hr.\nExample 6. Dopamine 400 mg in 250 mL (1600 mcg/mL). Order: 5 mcg/kg/min for a 70 kg patient. 5 x 70 = 350 mcg/min; x 60 = 21,000 mcg/hr; 21,000 / 1600 = 13.1 mL/hr.\nDrip rates\nDrops per minute = volume (mL) x drop factor (gtt/mL) / time (min)\nExample 7. 1000 mL over 8 hours with a 15 gtt/mL set: 1000 x 15 / 480 = 31.25, about 31 gtt/min.\nCheck every answer for size: a heparin rate of 144 mL/hr or a dopamine rate of 1.3 mL/hr should make you stop and recalculate.\nSample study material. Not for clinical use.",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "18 units/kg/hr",
+       "note": "Heparin nomogram rate: check against the protocol in use."
+      }
+     ]
+    },
+    {
+     "text": "Milliequivalents and Pharmacokinetics\nMilliequivalents\nmEq = mg x valence / molecular weight\nExample 8. Potassium chloride (KCl, MW 74.5, valence 1): 1 g = 1000 x 1 / 74.5 = 13.4 mEq.\nExample 9. Sodium chloride 0.9% contains 9 g per litre (MW 58.5): 9000 / 58.5 = 154 mEq of sodium per litre.\nLoading dose and half-life\nLoading dose = Vd x target concentration (divide by F for an oral dose)\nExample 10. Vd 0.5 L/kg, 60 kg patient, target 10 mg/L: 0.5 x 60 x 10 = 300 mg.\nt1/2 = 0.693 / k\nAn elimination rate constant of 0.1 per hour gives a half-life of 6.93 hours. Steady state is reached after about 4 to 5 half-lives.\nRenal dosing reminders\nDrug | Rule taught in this course\nMetformin | Do not start if eGFR is 30 to 45; contraindicated below 30 mL/min/1.73 m2\nEnoxaparin (treatment) | CrCl below 30 mL/min: 1 mg/kg once daily\nSpironolactone (heart failure) | Avoid if eGFR is 30 or below or potassium is 5.0 mEq/L or above\nNitrofurantoin | Avoid in older adults if CrCl is below 30 mL/min\nSample study material. Not for clinical use.",
+     "flags": [
+      {
+       "kind": "decimal",
+       "quote": "t1/2 = 0.693 / k",
+       "note": "0.693 is ln 2."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "top",
+   "file": "top-drugs-brand-generic.pdf",
+   "name": "Top drugs brand and generic.pdf",
+   "pages": [
+    {
+     "text": "Top Drugs: Brand and Generic Names\nSelf-study sheet for Pharmacology II and Pharmacotherapy I · Page 1: cardiovascular\nGeneric | Brand | Class\namlodipine | Norvasc | Dihydropyridine CCB\natenolol | Tenormin | Beta-1 selective blocker\nbumetanide | Bumex | Loop diuretic\ncarvedilol | Coreg | Alpha-1 and beta blocker\nchlorthalidone | Thalitone | Thiazide-type diuretic\nclonidine | Catapres | Central alpha-2 agonist\ndapagliflozin | Farxiga | SGLT2 inhibitor\ndigoxin | Lanoxin | Cardiac glycoside\ndiltiazem | Cardizem | Non-dihydropyridine CCB\nempagliflozin | Jardiance | SGLT2 inhibitor\nenalapril | Vasotec | ACE inhibitor\neplerenone | Inspra | Mineralocorticoid receptor antagonist\nfurosemide | Lasix | Loop diuretic\nhydralazine/isosorbide dinitrate | BiDil | Vasodilator combination\nhydrochlorothiazide | Microzide | Thiazide diuretic\nivabradine | Corlanor | Funny current (If) inhibitor\nlabetalol | Trandate | Alpha-1 and beta blocker\nlisinopril | Zestril, Prinivil | ACE inhibitor\nlosartan | Cozaar | Angiotensin receptor blocker\nmetoprolol succinate | Toprol-XL | Beta-1 selective blocker\nmetoprolol tartrate | Lopressor | Beta-1 selective blocker\nnebivolol | Bystolic | Beta-1 selective blocker, vasodilating\nnifedipine ER | Procardia XL | Dihydropyridine CCB\npropranolol | Inderal LA | Non-selective beta blocker\nsacubitril/valsartan | Entresto | ARNI\nspironolactone | Aldactone | Mineralocorticoid receptor antagonist\nvalsartan | Diovan | Angiotensin receptor blocker\nverapamil | Calan | Non-dihydropyridine CCB\nSample study material. Not for clinical use.",
+     "flags": [
+      {
+       "kind": "drug_name",
+       "quote": "Funny current (If) inhibitor",
+       "note": "Class name: check the spelling of If."
+      }
+     ]
+    },
+    {
+     "text": "Top Drugs: Autonomic and Respiratory\nPage 2: drugs from the autonomic block\nGeneric | Brand | Class\nalbuterol | Ventolin HFA | Short-acting beta-2 agonist\nbethanechol | Urecholine | Muscarinic agonist\ncevimeline | Evoxac | Muscarinic agonist\ndonepezil | Aricept | Cholinesterase inhibitor\nepinephrine auto-injector | EpiPen | Adrenergic agonist\ngalantamine | Razadyne | Cholinesterase inhibitor\nglycopyrrolate | Robinul | Antimuscarinic\nipratropium | Atrovent HFA | Short-acting muscarinic antagonist\noxybutynin | Ditropan XL | Antimuscarinic (bladder)\noxymetazoline | Afrin | Alpha agonist (topical decongestant)\npilocarpine | Salagen | Muscarinic agonist\npseudoephedrine | Sudafed | Sympathomimetic decongestant\npyridostigmine | Mestinon | Cholinesterase inhibitor\nrivastigmine | Exelon | Cholinesterase inhibitor\nsalmeterol | Serevent | Long-acting beta-2 agonist\nscopolamine patch | Transderm Scop | Antimuscarinic\nsugammadex | Bridion | Neuromuscular blockade reversal\ntiotropium | Spiriva | Long-acting muscarinic antagonist\ntolterodine | Detrol | Antimuscarinic (bladder)\nStems worth knowing\n-olol: beta blocker. -pril: ACE inhibitor. -sartan: angiotensin receptor blocker. -dipine: dihydropyridine CCB. -gliflozin: SGLT2 inhibitor. -stigmine: cholinesterase inhibitor.\nSample study material. Not for clinical use.",
+     "flags": []
+    }
+   ],
+   "table": {
+    "cardiovascular": [
+     [
+      "amlodipine",
+      "Norvasc",
+      "Dihydropyridine CCB"
+     ],
+     [
+      "atenolol",
+      "Tenormin",
+      "Beta-1 selective blocker"
+     ],
+     [
+      "bumetanide",
+      "Bumex",
+      "Loop diuretic"
+     ],
+     [
+      "carvedilol",
+      "Coreg",
+      "Alpha-1 and beta blocker"
+     ],
+     [
+      "chlorthalidone",
+      "Thalitone",
+      "Thiazide-type diuretic"
+     ],
+     [
+      "clonidine",
+      "Catapres",
+      "Central alpha-2 agonist"
+     ],
+     [
+      "dapagliflozin",
+      "Farxiga",
+      "SGLT2 inhibitor"
+     ],
+     [
+      "digoxin",
+      "Lanoxin",
+      "Cardiac glycoside"
+     ],
+     [
+      "diltiazem",
+      "Cardizem",
+      "Non-dihydropyridine CCB"
+     ],
+     [
+      "empagliflozin",
+      "Jardiance",
+      "SGLT2 inhibitor"
+     ],
+     [
+      "enalapril",
+      "Vasotec",
+      "ACE inhibitor"
+     ],
+     [
+      "eplerenone",
+      "Inspra",
+      "Mineralocorticoid receptor antagonist"
+     ],
+     [
+      "furosemide",
+      "Lasix",
+      "Loop diuretic"
+     ],
+     [
+      "hydralazine/isosorbide dinitrate",
+      "BiDil",
+      "Vasodilator combination"
+     ],
+     [
+      "hydrochlorothiazide",
+      "Microzide",
+      "Thiazide diuretic"
+     ],
+     [
+      "ivabradine",
+      "Corlanor",
+      "Funny current (If) inhibitor"
+     ],
+     [
+      "labetalol",
+      "Trandate",
+      "Alpha-1 and beta blocker"
+     ],
+     [
+      "lisinopril",
+      "Zestril, Prinivil",
+      "ACE inhibitor"
+     ],
+     [
+      "losartan",
+      "Cozaar",
+      "Angiotensin receptor blocker"
+     ],
+     [
+      "metoprolol succinate",
+      "Toprol-XL",
+      "Beta-1 selective blocker"
+     ],
+     [
+      "metoprolol tartrate",
+      "Lopressor",
+      "Beta-1 selective blocker"
+     ],
+     [
+      "nebivolol",
+      "Bystolic",
+      "Beta-1 selective blocker, vasodilating"
+     ],
+     [
+      "nifedipine ER",
+      "Procardia XL",
+      "Dihydropyridine CCB"
+     ],
+     [
+      "propranolol",
+      "Inderal LA",
+      "Non-selective beta blocker"
+     ],
+     [
+      "sacubitril/valsartan",
+      "Entresto",
+      "ARNI"
+     ],
+     [
+      "spironolactone",
+      "Aldactone",
+      "Mineralocorticoid receptor antagonist"
+     ],
+     [
+      "valsartan",
+      "Diovan",
+      "Angiotensin receptor blocker"
+     ],
+     [
+      "verapamil",
+      "Calan",
+      "Non-dihydropyridine CCB"
+     ]
+    ],
+    "autonomic": [
+     [
+      "albuterol",
+      "Ventolin HFA",
+      "Short-acting beta-2 agonist"
+     ],
+     [
+      "bethanechol",
+      "Urecholine",
+      "Muscarinic agonist"
+     ],
+     [
+      "cevimeline",
+      "Evoxac",
+      "Muscarinic agonist"
+     ],
+     [
+      "donepezil",
+      "Aricept",
+      "Cholinesterase inhibitor"
+     ],
+     [
+      "epinephrine auto-injector",
+      "EpiPen",
+      "Adrenergic agonist"
+     ],
+     [
+      "galantamine",
+      "Razadyne",
+      "Cholinesterase inhibitor"
+     ],
+     [
+      "glycopyrrolate",
+      "Robinul",
+      "Antimuscarinic"
+     ],
+     [
+      "ipratropium",
+      "Atrovent HFA",
+      "Short-acting muscarinic antagonist"
+     ],
+     [
+      "oxybutynin",
+      "Ditropan XL",
+      "Antimuscarinic (bladder)"
+     ],
+     [
+      "oxymetazoline",
+      "Afrin",
+      "Alpha agonist (topical decongestant)"
+     ],
+     [
+      "pilocarpine",
+      "Salagen",
+      "Muscarinic agonist"
+     ],
+     [
+      "pseudoephedrine",
+      "Sudafed",
+      "Sympathomimetic decongestant"
+     ],
+     [
+      "pyridostigmine",
+      "Mestinon",
+      "Cholinesterase inhibitor"
+     ],
+     [
+      "rivastigmine",
+      "Exelon",
+      "Cholinesterase inhibitor"
+     ],
+     [
+      "salmeterol",
+      "Serevent",
+      "Long-acting beta-2 agonist"
+     ],
+     [
+      "scopolamine patch",
+      "Transderm Scop",
+      "Antimuscarinic"
+     ],
+     [
+      "sugammadex",
+      "Bridion",
+      "Neuromuscular blockade reversal"
+     ],
+     [
+      "tiotropium",
+      "Spiriva",
+      "Long-acting muscarinic antagonist"
+     ],
+     [
+      "tolterodine",
+      "Detrol",
+      "Antimuscarinic (bladder)"
+     ]
+    ]
+   }
+  },
+  {
+   "key": "hand",
+   "file": "beta-blockers-handwritten-notes.pdf",
+   "name": "Beta blockers handwritten notes.pdf",
+   "pages": [
+    {
+     "text": "Beta blockers - lec 10   11/3\nMOA: compete w/ NE + epi at B receptors\n  -> lower HR, contractility, renin\nB1 selective (A-M): atenolol, metoprolol,\n  bisoprolol, esmolol\nNon-selective: propranolol, nadolol, timolol\nMixed a1 + B: carvedilol, labetalol\nNebivolol = B1 + NO vasodilation\n* only 3 for HFrEF: carvedilol,\n  metoprolol SUCCINATE, bisoprolol",
+     "flags": [
+      {
+       "kind": "uncertain",
+       "quote": "B1 selective (A-M)",
+       "note": "B1 is my shorthand for beta-1."
+      }
+     ]
+    },
+    {
+     "text": "Side effects\n- bradycardia, AV block, fatigue\n- bronchospasm (non-selective!)\n- masks hypoglycemia (sweating still happens)\n- vivid dreams w/ propranolol (lipophilic)\nNEVER stop abruptly -> taper 1-2 wk\nEsmolol t1/2 ~9 min (IV only)\nAtenolol + nadolol = renal -> adjust in CKD\n+ verapamil/diltiazem = too slow (AV block)",
+     "flags": [
+      {
+       "kind": "decimal",
+       "quote": "Esmolol t1/2 ~9 min",
+       "note": "Approximate value written quickly."
+      }
+     ]
+    },
+    {
+     "text": "Doses to know\nmetoprolol tart 25-50 mg BID\nmetoprolol succ 25-100 mg daily\ncarvedilol 3.125 mg BID in HF, w/ food\npropranolol: migraine, tremor, thyroid\ntimolol drops = glaucoma\nQ for office hrs: why is carvedilol target\n  50 mg BID if >85 kg?",
+     "flags": [
+      {
+       "kind": "dose",
+       "quote": "metoprolol tart 25-50 mg BID",
+       "note": "Hand-copied dose: check against the slide."
+      },
+      {
+       "kind": "dose",
+       "quote": "carvedilol 3.125 mg BID in HF",
+       "note": "Check the decimal."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "board",
+   "file": "whiteboard-htn-first-line.jpg",
+   "name": "Whiteboard first-line HTN drugs.jpg",
+   "pages": [
+    {
+     "text": "1st line HTN drugs (ACC/AHA 2017)\nClass | Example | Watch for\nThiazide | chlorthalidone | low K, high uric acid\nACEi | lisinopril | cough, high K, angioedema\nARB | losartan | high K, no cough\nDHP CCB | amlodipine | ankle edema\nGoal < 130/80 for most adults. Never ACEi + ARB together!",
+     "flags": [
+      {
+       "kind": "uncertain",
+       "quote": "Goal < 130/80",
+       "note": "Units not written on the board (mm Hg)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "card",
+   "file": "index-card-cholinergic-toxidromes.jpg",
+   "name": "Index card toxidromes.jpg",
+   "pages": [
+    {
+     "text": "Cholinergic crisis | Anticholinergic tox\n(organophosphates)\nSLUDGE + bradycardia\nmiosis, bronchorrhea\nTx: atropine + pralidoxime\nhot, dry, red skin\nbig pupils, delirium\nurinary retention\nTx: supportive; physostigmine\nonly in severe cases",
+     "flags": []
+    }
+   ]
+  }
+ ],
+ "footer": "Sample study material. Not for clinical use."
+}
