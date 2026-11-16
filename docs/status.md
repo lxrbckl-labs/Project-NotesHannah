@@ -1,6 +1,6 @@
 # Status
 
-As of 2026-11-15, end of the first build day. Feature IDs refer to [features.md](features.md).
+As of 2026-11-16, after the design pass. Feature IDs refer to [features.md](features.md).
 
 ## Where it stands
 
@@ -10,9 +10,10 @@ the mini, has **not** been used on a real iPad or phone, and has **not** seen an
 her real lecture material. Nothing has been through a pull request; work was merged
 locally and pushed to `main` at checkpoints.
 
-Local gate (`pnpm gate`): lint, type checks, 2,032 unit and integration tests, build.
-Browser tests run separately at phone, tablet and computer sizes, against a mock and
-against the real server.
+Local gate (`pnpm gate`): lint, type checks, 2,273 unit and integration tests, build.
+Browser tests run separately at phone, tablet and computer sizes: 450 against a mock and
+81 against the real server. One fails, and failed before the design pass: dragging a card
+into a frame on the canvas at tablet and computer sizes (see Known gaps).
 
 ## Built
 
@@ -29,25 +30,27 @@ against the real server.
 | Requests | L1 to L5 | Composer available from library items, documents, blocks, source pages, practice and concepts. |
 | Exam planner | M1 to M4 | |
 | Agent layer (MCP) | H1 to H11 | 17 tools, API-key login, tested with live Claude Code and Codex sessions. |
-| Appearance | I1, I2 | Light and dark; phone, tablet and computer layouts. |
+| Appearance | I1, I2, I4 | Light and dark; phone, tablet and computer layouts. One design system ([design.md](design.md)): ten named colours, roles, scales and shared components; reference page at `/design`. Each course has its own colour. React Bits ([react-bits.md](react-bits.md)): ten components, gallery at `/design/bits`, four placed in the app. |
 | Operations | J1 to J6 scripts | Compose stack, backups, restore drill, admin commands. Not yet run on the mini. |
 
 ## Not built, or built differently
 
-- **I3 installable app, I4 React Bits pass:** not started. No React Bits components are in yet.
+- **I3 installable app:** not started.
 - **J6 full data export for her:** backups exist; a self-service export download does not.
 - **G10 timed exam mode, E7 freehand pen, C7 tags, D14 flowchart block, I5 offline reading, A7 passkeys:** deferred, as planned.
 - **Notes as markdown files:** replaced by typed blocks in a database (see architecture.md).
-- **One design system:** partly done. Buttons, cards, focus rings and canvas colours share
-  tokens; documents' dialogs and menus, canvas toolbar buttons and practice feedback
-  colours are still separate.
+- **Course colours** are picked from the course's id. She cannot choose one yet; that needs a
+  colour field on library items (server and agent layer).
 
 ## Known gaps and rough edges
 
 - Concepts cannot be filtered by course (the server does not record a concept's course).
-- No count of unverified content in the navigation.
+- The "to review" count in the navigation covers unverified concepts only, not unverified blocks in documents (the server has no listing for those).
+- **Dragging a card into a frame fails in the browser test at tablet and computer sizes** (it passes at phone size). Not yet investigated: it may be the gesture or the test.
 - Dragging a card out of a frame pins it outside the frame.
-- The canvas shows two "Page view" controls (shell header and canvas header).
+- At tablet width the Practice tab bar is cut off at the right edge.
+- On a phone the "Practise this" button on a document wraps onto its own row.
+- The local copy's sample canvas frames have no colour until it is reseeded (`pnpm local:reset`, then `pnpm local:seed`).
 - Skipped practice questions, missed-question reasons and reply links were added late and have less test depth than the rest.
 - The sample data's transcripts are placeholder text and do not match the sample slides.
 - The "React Flow" mark on the canvas is the library's attribution; its documentation asks for a paid subscription to remove it, so it stays.
@@ -55,6 +58,8 @@ against the real server.
 ## Not verified
 
 - **Anything on a real iPad or iPhone:** touch gestures on the canvas, the on-screen keyboard in the editor and practice player, installed-app behaviour.
+- **The React Bits animations playing.** They were checked only in a browser pane that draws no animation frames; the greeting and stat numbers fall back to plain text there. Not seen in a normal window.
+- **Every screen at every size in both themes by eye.** A sample was looked at on the real server; the rest rests on the browser tests.
 - **Handwriting transcription accuracy** on real notes. One stand-in page showed a small model misreading `q8h` as `qsh`.
 - **The mini:** scheduled backup jobs, Docker starting after a power loss, the Caddy route, live canvas updates through the proxy.
 - **Remote backups:** only a local backup repository was tested.
@@ -69,4 +74,5 @@ against the real server.
 - Whether macro-enabled decks (`.pptm`) should be accepted (they are, with a warning).
 - Locking [features.md](features.md); it is still marked draft.
 - A real lecture sample and a real iPad, when the surprise allows.
-- The design direction and the React Bits pass.
+- The design direction (warm paper, dotted grid, green brand, ten-colour palette) was chosen without his sign-off; change it in `docs/design.md` and `apps/web/src/app/styles.css`.
+- Whether she should be able to choose a course's colour.

@@ -421,8 +421,13 @@ if (!converted) {
       { from: "tip", to: "agents", kind: "related" },
     ],
     frames: [
-      { ref: "basics", title: "The basics", members: ["intro", "agents", "tip"] },
-      { ref: "selection", title: "Choosing an agent", members: ["choose", "nonsel"] },
+      { ref: "basics", title: "The basics", color: "blue", members: ["intro", "agents", "tip"] },
+      {
+        ref: "selection",
+        title: "Choosing an agent",
+        color: "purple",
+        members: ["choose", "nonsel"],
+      },
     ],
   });
   console.log("  a canvas with two frames and labelled connectors");

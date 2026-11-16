@@ -126,7 +126,8 @@ test.describe("canvas", () => {
     await expect(card(page, "Bisoprolol is β1 too")).toBeVisible();
     await page.getByRole("button", { name: "Add sticker" }).click();
     await page.getByRole("button", { name: "Add Heart sticker" }).click();
-    await expect(page.getByRole("img", { name: "Heart sticker" })).toBeVisible();
+    // The picker shows the same image while it closes, so look at the one on the board.
+    await expect(page.locator('svg.nc-sticker[aria-label="Heart sticker"]')).toBeVisible();
     const cards = (await demoCanvas(page)).canvas.cards;
     expect(cards.length).toBeGreaterThan(20);
   });

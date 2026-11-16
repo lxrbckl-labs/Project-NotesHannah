@@ -333,8 +333,8 @@ test("API keys: create one (secret shown once), revoke it; theme sticks", async 
   await page.getByRole("alertdialog").getByRole("button", { name: "Revoke key" }).click();
   await expect(row).toContainText("Revoked");
 
-  await page.getByRole("button", { name: "Dark", exact: true }).click();
+  await page.getByRole("radio", { name: "Dark", exact: true }).click();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByRole("button", { name: "System", exact: true }).click();
+  await page.getByRole("radio", { name: "System", exact: true }).click();
 });

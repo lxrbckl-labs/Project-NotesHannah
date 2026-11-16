@@ -40,7 +40,15 @@ export async function smallTargets(page: Page, min = 44): Promise<string[]> {
     for (const el of document.querySelectorAll<HTMLElement>("button, a[href], input, textarea")) {
       const box = el.getBoundingClientRect();
       if (box.width === 0 || box.height === 0) continue;
-      if (box.height < limit - 0.5)
+      // A shared chip looks 28px tall and takes a larger hit area (.hit-area::after) on touch.
+      let height = box.height;
+      if (el.classList.contains("hit-area")) {
+        const hit = getComputedStyle(el, "::after");
+        if (hit.content !== "none") {
+          height -= Number.parseFloat(hit.top) + Number.parseFloat(hit.bottom);
+        }
+      }
+      if (height < limit - 0.5)
         bad.push(
           `${el.tagName} ${(el.textContent ?? el.getAttribute("aria-label") ?? "").trim().slice(0, 30)} ${Math.round(box.height)}px`,
         );
