@@ -1,14 +1,10 @@
 import {
   type Block,
-  type Canvas,
-  type CanvasOp,
   type Card,
   type ConnectorKind,
-  type Frame,
   framesInOrder,
   newId,
   noteContent,
-  type Rect,
   type Sticker,
 } from "@notes/schema";
 import {
@@ -44,6 +40,18 @@ import {
   frameFamily,
   type ViewState,
 } from "./model/flow";
+import {
+  type Alignment,
+  alignPlacements,
+  connectOps,
+  deepestFrameAt,
+  deleteOps,
+  dropOps,
+  frameDragPlacements,
+  frameFromSelectionOps,
+  freeSpot,
+  newCardOps,
+} from "./model/gestures";
 import { useCanvasModel } from "./model/useCanvasModel";
 import { CardNode } from "./nodes/CardNode";
 import { FrameNode } from "./nodes/FrameNode";
@@ -101,30 +109,6 @@ interface Confirm {
   body: string;
   confirm: string;
   run: () => void;
-}
-
-function deepestFrameAt(
-  canvas: Canvas,
-  frames: Record<string, Rect>,
-  x: number,
-  y: number,
-  exclude?: Set<string>,
-): Frame | null {
-  let best: Frame | null = null;
-  let bestArea = Number.POSITIVE_INFINITY;
-  for (const f of canvas.frames) {
-    if (exclude?.has(f.id)) continue;
-    const r = frames[f.id];
-    if (!r) continue;
-    if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {
-      const area = r.width * r.height;
-      if (area < bestArea) {
-        best = f;
-        bestArea = area;
-      }
-    }
-  }
-  return best;
 }
 
 function CanvasInner({
@@ -261,32 +245,24 @@ function CanvasInner({
   const placeNew = useCallback(
     async (
       card: Omit<Card, "position" | "dimensions" | "origin">,
-      size: { w: number; h: number },
+      size: { width: number; height: number },
       message: string,
     ) => {
       if (!canvas || !layout) return null;
       const c = viewportCenter();
-      // Nudge until it does not sit on another card.
-      let x = Math.round(c.x - size.w / 2);
-      let y = Math.round(c.y - size.h / 2);
-      const taken = Object.values(layout.cards);
-      for (let i = 0; i < 20; i++) {
-        const hit = taken.some(
-          (r) => x < r.x + r.width && r.x < x + size.w && y < r.y + r.height && r.y < y + size.h,
-        );
-        if (!hit) break;
-        x += 28;
-        y += 28;
-      }
-      const full: Card = {
-        ...card,
-        origin: "user",
-        position: { x, y, placedBy: actor, placedAt: now() },
-        dimensions: null,
-      };
-      const frame = deepestFrameAt(canvas, layout.frames, x + size.w / 2, y + size.h / 2);
-      const ops: CanvasOp[] = [{ op: "insert_items", cards: [full], connectors: [], frames: [] }];
-      if (frame) ops.push({ op: "add_to_frame", frame: frame.id, cards: [full.id] });
+      const spot = freeSpot(
+        Object.values(layout.cards),
+        { x: c.x - size.width / 2, y: c.y - size.height / 2 },
+        size,
+      );
+      const { ops, card: full } = newCardOps(
+        canvas,
+        layout.frames,
+        card,
+        { ...spot, ...size },
+        actor,
+        now(),
+      );
       await commit(ops, { message });
       setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === full.id })));
       return full.id;
@@ -297,7 +273,7 @@ function CanvasInner({
   const addNote = useCallback(async () => {
     const id = await placeNew(
       { id: newId("card"), content: noteContent("New note"), size: "small", color: "yellow" },
-      { w: 220, h: 70 },
+      { width: 220, height: 70 },
       "Note added",
     );
     if (id) setEditingId(id);
@@ -307,7 +283,7 @@ function CanvasInner({
     (sticker: Sticker) => {
       void placeNew(
         { id: newId("card"), content: { kind: "sticker", sticker }, size: "auto" },
-        { w: 88, h: 88 },
+        { width: 88, height: 88 },
         "Sticker added",
       );
     },
@@ -316,17 +292,10 @@ function CanvasInner({
 
   const connect = useCallback(
     async (from: string, to: string, kind: ConnectorKind = "related") => {
-      if (from === to) return;
       const id = newId("edge");
-      const ok = await commit([
-        {
-          op: "insert_items",
-          cards: [],
-          frames: [],
-          connectors: [{ id, from, to, kind, direction: "forward", origin: "user" }],
-        },
-      ]);
-      if (ok) {
+      const ops = connectOps(from, to, id, kind);
+      if (ops.length === 0) return;
+      if (await commit(ops)) {
         setSelectedEdges(new Set([id]));
         setEdgeEditor({ id, fresh: true });
       }
@@ -336,45 +305,21 @@ function CanvasInner({
 
   const deleteSelection = useCallback(async () => {
     if (!canvas) return;
-    const ops: CanvasOp[] = [];
-    for (const id of selectedEdges)
-      if (canvas.connectors.some((e) => e.id === id)) ops.push({ op: "remove_connector", id });
-    for (const f of selectedFrames) ops.push({ op: "remove_frame", id: f.id });
-    for (const c of selectedCards) ops.push({ op: "remove_card", id: c.id });
+    const { ops, summary } = deleteOps(canvas, new Set([...selectedIds, ...selectedEdges]));
     if (ops.length === 0) return;
-    const parts: string[] = [];
-    if (selectedCards.length)
-      parts.push(`${selectedCards.length} card${selectedCards.length > 1 ? "s" : ""}`);
-    if (selectedFrames.length)
-      parts.push(
-        `${selectedFrames.length} frame${selectedFrames.length > 1 ? "s" : ""} (cards kept)`,
-      );
-    const edgeCount = ops.filter((o) => o.op === "remove_connector").length;
-    if (edgeCount) parts.push(`${edgeCount} connector${edgeCount > 1 ? "s" : ""}`);
     setEdgeEditor(null);
     setSelectedEdges(new Set());
-    await commit(ops, { message: `Deleted ${parts.join(", ")}` });
-  }, [canvas, commit, selectedCards, selectedEdges, selectedFrames]);
+    await commit(ops, { message: summary });
+  }, [canvas, commit, selectedEdges, selectedIds]);
 
   const makeFrame = useCallback(async () => {
     if (!canvas) return;
-    const members = selectedCards.map((c) => c.id);
-    const parents = new Set(
-      members.map((m) => canvas.frames.find((f) => f.members.includes(m))?.id),
+    const ops = frameFromSelectionOps(
+      canvas,
+      selectedCards.map((c) => c.id),
+      newId("frame"),
     );
-    const parent = parents.size === 1 ? [...parents][0] : undefined;
-    const id = newId("frame");
-    const frame: Frame = {
-      id,
-      title: "New frame",
-      members,
-      order: canvas.frames.length,
-      origin: "user",
-      ...(parent ? { parent } : {}),
-    };
-    await commit([{ op: "insert_items", cards: [], connectors: [], frames: [frame] }], {
-      message: "Frame added. Double-click its title to rename.",
-    });
+    await commit(ops, { message: "Frame added. Double-click its title to rename." });
   }, [canvas, commit, selectedCards]);
 
   const releasePins = useCallback(
@@ -399,36 +344,19 @@ function CanvasInner({
   );
 
   const align = useCallback(
-    (how: "left" | "top" | "center" | "distribute") => {
+    (how: Alignment) => {
       const sel = nodesRef.current.filter((n) => n.selected && n.type === "card");
-      if (sel.length < 2) return;
-      const w = (n: CanvasNode) => n.measured?.width ?? 0;
-      const placements = sel.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }));
-      if (how === "left") {
-        const x = Math.min(...sel.map((n) => n.position.x));
-        for (const p of placements) p.x = x;
-      } else if (how === "top") {
-        const y = Math.min(...sel.map((n) => n.position.y));
-        for (const p of placements) p.y = y;
-      } else if (how === "center") {
-        const cx = sel.reduce((s, n) => s + n.position.x + w(n) / 2, 0) / sel.length;
-        sel.forEach((n, i) => {
-          (placements[i] as { x: number }).x = Math.round(cx - w(n) / 2);
-        });
-      } else {
-        const sorted = [...sel].sort((a, b) => a.position.x - b.position.x);
-        const first = sorted[0] as CanvasNode;
-        const last = sorted[sorted.length - 1] as CanvasNode;
-        const total = sorted.reduce((s, n) => s + w(n), 0);
-        const gap = (last.position.x + w(last) - first.position.x - total) / (sorted.length - 1);
-        let x = first.position.x;
-        for (const n of sorted) {
-          const p = placements.find((q) => q.id === n.id);
-          if (p) p.x = Math.round(x);
-          x += w(n) + Math.max(16, gap);
-        }
-      }
-      model.place(placements);
+      const placements = alignPlacements(
+        sel.map((n) => ({
+          id: n.id,
+          x: n.position.x,
+          y: n.position.y,
+          width: n.measured?.width ?? 0,
+          height: n.measured?.height ?? 0,
+        })),
+        how,
+      );
+      if (placements.length) model.place(placements);
     },
     [model],
   );
@@ -618,49 +546,31 @@ function CanvasInner({
       setDropFrameId(null);
       if (!canvas || !layout) return;
       if (node.type === "frame") {
-        const members = frameDrag.current?.members;
         frameDrag.current = null;
-        if (!members) return;
-        const latest = new Map(nodesRef.current.map((n) => [n.id, n]));
-        const placements = [...members.keys()]
-          .filter((id) => canvas.cards.some((c) => c.id === id))
-          .map((id) => {
-            const n = latest.get(id);
-            return { id, x: Math.round(n?.position.x ?? 0), y: Math.round(n?.position.y ?? 0) };
-          });
-        model.place(placements);
+        const positions = new Map(nodesRef.current.map((n) => [n.id, n.position]));
+        model.place(frameDragPlacements(canvas, node.id, positions));
         return;
       }
       const cards = dragged.filter((n) => n.type === "card");
-      const placements = cards.map((n) => ({
-        id: n.id,
-        x: Math.round(n.position.x),
-        y: Math.round(n.position.y),
-      }));
-      const membership: CanvasOp[] = [];
-      for (const n of cards) {
-        const w = n.measured?.width ?? 0;
-        const h = n.measured?.height ?? 0;
-        const target = deepestFrameAt(
-          canvas,
-          layout.frames,
-          n.position.x + w / 2,
-          n.position.y + h / 2,
-        );
-        const current = canvas.frames.find((f) => f.members.includes(n.id));
-        if (target && target.id !== current?.id)
-          membership.push({ op: "add_to_frame", frame: target.id, cards: [n.id] });
-        else if (!target && current) membership.push({ op: "remove_from_frame", cards: [n.id] });
-      }
-      if (membership.length) {
-        const into = membership.find((o) => o.op === "add_to_frame") as
-          | { frame: string }
-          | undefined;
-        const title = into ? canvas.frames.find((f) => f.id === into.frame)?.title : null;
-        void commit([{ op: "place_cards", placements }, ...membership], {
-          message: title ? `Moved into “${title}”` : "Taken out of its frame",
+      const { ops, into, leftFrame } = dropOps(
+        canvas,
+        layout.frames,
+        cards.map((n) => ({
+          id: n.id,
+          x: n.position.x,
+          y: n.position.y,
+          width: n.measured?.width ?? 0,
+          height: n.measured?.height ?? 0,
+        })),
+      );
+      if (into || leftFrame)
+        void commit(ops, {
+          message: into ? `Moved into “${into.title}”` : "Taken out of its frame",
         });
-      } else model.place(placements);
+      else {
+        const place = ops[0];
+        if (place?.op === "place_cards") model.place(place.placements);
+      }
     },
     [canvas, commit, layout, model],
   );

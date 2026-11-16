@@ -100,14 +100,18 @@ export function diffOps(from: Canvas, to: Canvas): CanvasOp[] {
     .filter((c) => fromCards.has(c.id) && before.has(c.id) && !after.has(c.id))
     .map((c) => c.id);
   if (leaving.length) ops.push({ op: "remove_from_frame", cards: leaving });
-  for (const target of to.frames) {
+  // Take every card out of the frames that change first, then refill them, so
+  // a card moving between two frames is not pulled out again later.
+  const reset = to.frames.filter((target) => {
     const current = fromFrames.get(target.id);
-    if (!current) continue;
-    if (JSON.stringify(current.members) === JSON.stringify(target.members)) continue;
-    const stay = current.members.filter((m) => toCards.has(m));
-    if (stay.length) ops.push({ op: "remove_from_frame", cards: stay });
+    return current && JSON.stringify(current.members) !== JSON.stringify(target.members);
+  });
+  const out = new Set<string>();
+  for (const target of reset)
+    for (const m of fromFrames.get(target.id)?.members ?? []) if (toCards.has(m)) out.add(m);
+  if (out.size) ops.push({ op: "remove_from_frame", cards: [...out] });
+  for (const target of reset)
     if (target.members.length)
       ops.push({ op: "add_to_frame", frame: target.id, cards: target.members });
-  }
   return ops;
 }
