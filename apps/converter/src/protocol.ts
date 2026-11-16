@@ -2,7 +2,24 @@ import type { ConvertErrorCode } from "./errors.js";
 import { FILE_ID, JOB_ID, SHA256, USER_ID } from "./ids.js";
 
 /** FileType values the converter produces (mirrors the schema's FileType). */
-export type ConvertedType = "pdf" | "pptx" | "jpeg" | "png" | "heic";
+export const CONVERTED_TYPES = [
+  "pdf",
+  "pptx",
+  "ppt",
+  "docx",
+  "doc",
+  "odp",
+  "odt",
+  "jpeg",
+  "png",
+  "heic",
+  "webp",
+  "gif",
+  "tiff",
+  "avif",
+  "bmp",
+] as const;
+export type ConvertedType = (typeof CONVERTED_TYPES)[number];
 
 /** queue/pending/<jobId>.json, written by the server. `attempts` is added by the converter. */
 export interface JobFile {

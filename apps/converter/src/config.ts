@@ -20,6 +20,8 @@ export function loadLimits(env: NodeJS.ProcessEnv = process.env) {
     maxZipEntries: num(env, "MAX_ZIP_ENTRIES", 10_000),
     maxXmlEntryBytes: num(env, "MAX_XML_ENTRY_BYTES", 32 * MiB),
     maxPixelsPerImage: num(env, "MAX_PIXELS", 120_000_000),
+    /** All the pages of one multi-page image (TIFF) together; each page is also held to maxPixelsPerImage. */
+    maxTotalPixels: num(env, "MAX_TOTAL_PIXELS", 600_000_000),
     /** Wall clock for one whole conversion, in milliseconds. */
     wallClockMs: num(env, "WALL_CLOCK_MS", 600_000),
     pageLongEdge: num(env, "PAGE_LONG_EDGE", 1568),
@@ -38,6 +40,7 @@ export const LIMIT_ENV_NAMES = [
   "MAX_ZIP_ENTRIES",
   "MAX_XML_ENTRY_BYTES",
   "MAX_PIXELS",
+  "MAX_TOTAL_PIXELS",
   "WALL_CLOCK_MS",
   "PAGE_LONG_EDGE",
   "THUMB_LONG_EDGE",

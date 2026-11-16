@@ -23,6 +23,8 @@ export interface FileRow {
   trashed_at: number | null;
   /** Where it was filed before that node went to the trash (see 0600_integration.sql). */
   parked_node_id: string | null;
+  /** The converter's file-level notes as a JSON array of strings, or null (see 0630_file_types.sql). */
+  conversion_notes: string | null;
 }
 
 export interface PageRow {
@@ -90,6 +92,8 @@ export function toFile(row: FileRow, now: number): SourceFile {
     createdAt: iso(row.created_at),
     updatedAt: iso(row.updated_at),
     trashedAt: isoOrNull(row.trashed_at),
+    conversionNotes:
+      row.conversion_notes === null ? [] : (JSON.parse(row.conversion_notes) as string[]),
   };
 }
 

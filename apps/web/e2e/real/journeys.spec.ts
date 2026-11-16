@@ -209,7 +209,7 @@ test("search finds the transcript and opens the viewer on that page", async ({ p
   await expect(page.locator("mark[data-quote=true]").first()).toHaveText(/etoprolol/i);
 });
 
-test("the picker accepts every type the server reads (HEIC too), and the server's refusals are explained", async ({
+test("the picker accepts every type the server reads (HEIC too), and the server's refusals (an SVG, for one) are explained", async ({
   page,
 }) => {
   await signInReal(page);
@@ -222,15 +222,12 @@ test("the picker accepts every type the server reads (HEIC too), and the server'
     fixture("photo.heic"),
     fixture("text-layer.pdf"),
     fixture("encrypted-userpw.pdf"),
-    fixture("other-office.docx"),
+    fixture("figure.svg"),
   ]);
   const items = page.getByTestId("upload-item");
   await expect(items).toHaveCount(4);
-  await expect(items.filter({ hasText: "other-office.docx" })).toHaveAttribute(
-    "data-status",
-    "error",
-  );
-  await expect(items.filter({ hasText: "other-office.docx" }).getByRole("alert")).toContainText(
+  await expect(items.filter({ hasText: "figure.svg" })).toHaveAttribute("data-status", "error");
+  await expect(items.filter({ hasText: "figure.svg" }).getByRole("alert")).toContainText(
     "not a file type the app can read",
   );
   for (const name of ["photo.heic", "text-layer.pdf", "encrypted-userpw.pdf"]) {

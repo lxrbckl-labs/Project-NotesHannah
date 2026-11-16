@@ -1,7 +1,8 @@
 # The conversion worker
 
-`apps/converter` (`@notes/converter`) turns an uploaded original (PDF, PPTX, JPEG, PNG, HEIC) into numbered
-page images plus the text the file itself carries. It runs as one long-lived, locked-down container. It has no
+`apps/converter` (`@notes/converter`) turns an uploaded original (PDF, PowerPoint, Word, OpenDocument, or a
+JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF or BMP image) into numbered page images plus the text the file itself
+carries. It runs as one long-lived, locked-down container. It has no
 network and no database; the app and the worker talk only through files in a **queue directory** on the data
 volume. This document is the protocol the server follows.
 
@@ -76,6 +77,21 @@ thumbs/0001.webp ...            long edge at most 320 px
 PDF and PPTX pages are rendered to exactly 1568 px on the long edge; photos are only ever shrunk. Pages are
 numbered from 1 with four digits (the limit is 500 pages). A PPTX hidden slide is kept as a page.
 
+How each kind becomes pages:
+
+| Kind | Path |
+|---|---|
+| PDF | poppler renders each page |
+| `pptx`, `ppt`, `odp` | LibreOffice Impress to PDF (hidden slides kept), then poppler. Text and notes come from the slide XML for `pptx`; the others have the PDF's text layer |
+| `docx`, `doc`, `odt` | LibreOffice Writer to PDF, then poppler; native text from the PDF |
+| JPEG, PNG, WebP, AVIF | sharp, one page, EXIF rotation applied |
+| HEIC | libheif (`heif-dec`) to PNG, then sharp |
+| GIF | sharp, first frame only; more than one frame adds the `ANIMATED_FIRST_FRAME` warning (animated WebP and AVIF are treated the same) |
+| TIFF | sharp, every image in the file is a page, held to the page limit before any is decoded |
+| BMP | libvips cannot read it, so netpbm turns it into a PNG (`bmptopnm`, `pnmtopng`), then sharp |
+
+SVG is not accepted: it can carry scripts, so it is refused as an unrecognised type, like any other file.
+
 ## Result files
 
 Success, `queue/done/<jobId>.json`:
@@ -111,9 +127,10 @@ Success, `queue/done/<jobId>.json`:
   so shared pages count more than once); `null` where `/proc` is not available.
 - `attempt` is 1 for a first run, 2 after a crash recovery.
 
-Warning codes: `HIDDEN_SLIDE`, `UNEXTRACTED_OBJECTS` (a chart, SmartArt or embedded object whose text was not
-extracted; it is still in the image), `MACROS_PRESENT` (a VBA project exists; macros are disabled and never
-run), `EXTERNAL_LINKS` (not fetched), `NO_TEXT_LAYER` (per PDF page), `PDF_OWNER_RESTRICTED`,
+Warning codes: `ANIMATED_FIRST_FRAME` (an animated image: only the first frame is shown; the server keeps
+this sentence and `MACROS_PRESENT`'s as the file's `conversionNotes`), `HIDDEN_SLIDE`, `UNEXTRACTED_OBJECTS` (a chart, SmartArt or embedded object whose text was not
+extracted; it is still in the image), `MACROS_PRESENT` (a VBA project or macro storage exists, in a PowerPoint or Word file of any
+format; macros are disabled and never run), `EXTERNAL_LINKS` (not fetched), `NO_TEXT_LAYER` (per PDF page), `PDF_OWNER_RESTRICTED`,
 `PDF_TEXT_RESTRICTED`, `PAGE_COUNT_MISMATCH`, `EXIF_ORIENTATION_APPLIED`, `SLIDE_XML_MISSING`.
 
 Failure, `queue/failed/<jobId>.json`:
@@ -132,14 +149,14 @@ may use to word the message; it is not part of the schema:
 | errorCode | reason | Cause |
 |---|---|---|
 | `unsupported_type` | (none) | Unrecognised content |
-| | `legacy_office` | Old binary `.ppt`/`.doc`/`.xls` (OLE) |
-| | `other_zip` | A zip that is not a PowerPoint package (docx, xlsx, ...) |
-| `encrypted_file` | | Password-protected PDF or Office file |
+| | `legacy_office` | An old binary Office file that is not a PowerPoint or Word document (a `.xls` spreadsheet, or an OLE file with neither stream) |
+| | `other_zip` | A zip that is not a PowerPoint, Word or OpenDocument file (a spreadsheet, an archive) |
+| `encrypted_file` | | Password-protected PDF or Office file (`.docx`/`.pptx` in an `EncryptedPackage`, a `.doc` with its encrypted flag, a `.ppt` with `EncryptedSummary`) |
 | `corrupt_file` | | Damaged, truncated, empty, or a zip whose entries do not match their headers |
 | `too_many_pages` | | More than 500 pages or slides |
 | `too_large` | `file_too_large` | Original over 200 MiB |
 | | `decompression_bomb` | A zip that inflates past 600 MiB or has over 10,000 entries |
-| | `pixel_bomb` | An image over 120 million pixels |
+| | `pixel_bomb` | An image over 120 million pixels (read from the header before decoding, for every format; a BMP header is read by the worker itself), or the pages of one TIFF together over 600 million |
 | `conversion_failed` | `timeout` | Over the wall clock (10 minutes) |
 | | `memory_limit` | Over 2 GiB resident, killed by the watchdog |
 | | `resource_limit` | Killed by a signal (out of memory in the container, CPU time) |
@@ -201,11 +218,21 @@ The child reports its outcome in a file in its scratch directory, not on stdout,
 it. Logs go to stdout as one JSON object per line (`ts`, `level`, `msg`, ids, counts, timings); file contents and
 names are never logged.
 
-Detection is by content only: JPEG, PNG, PDF (`%PDF-` in the first 1 KiB), HEIC (`ftyp` brands), a zip that
-contains `ppt/presentation.xml` with a PowerPoint content type (presentation, slideshow, template, macro-enabled
-or not), and old OLE files (told apart: `EncryptedPackage` means password protected, otherwise legacy). Every
-zip entry is inflated into a counter before LibreOffice sees the file, so the real decompressed size is known;
-header sizes are not trusted.
+Detection is by content only: JPEG, PNG, PDF (`%PDF-` in the first 1 KiB), `ftyp` brands (`avif`/`avis` is
+AVIF and is checked before HEIC, because AVIF also lists the generic `mif1`), WebP (`RIFF....WEBP`), GIF
+(`GIF87a`/`GIF89a`), classic TIFF (either byte order; BigTIFF is not offered), BMP (`BM` plus a real DIB header
+size, two letters alone are no proof), a zip (`ppt/presentation.xml` with a PowerPoint content type, or
+`word/document.xml` with a Word one, templates and macro-enabled ones included, or an OpenDocument `mimetype`
+entry for presentations and text), and old OLE files, told apart by reading the directory of streams
+(`PowerPoint Document`, `WordDocument`, `EncryptedPackage`, `Workbook`; a Word file's encrypted flag is read from
+its header). Every zip entry is inflated into a counter before LibreOffice sees the file, so the real
+decompressed size is known; header sizes are not trusted. The server reads the same things at upload (a test in
+each package checks both against the same fixtures) and the types must agree: the server refuses a result whose
+`type` differs from the upload's.
+
+Macro-enabled files follow the policy `.pptm` always had: accepted, macros disabled at the highest security level
+and never run, `MACROS_PRESENT` warning. Word files get the same (`.docm`, `.dotm`, and an old `.doc` with a macro
+storage).
 
 ## Configuration
 
@@ -218,7 +245,7 @@ Environment variables (empty means the default):
 | `MAX_PAGES` | 500 | Most pages or slides (schema `UPLOAD_LIMITS.maxPages`) |
 | `WALL_CLOCK_MS` | 600000 | One conversion's time limit |
 | `CHILD_RSS_MB` | 2048 | One conversion's memory limit |
-| `MAX_ZIP_UNCOMPRESSED_BYTES`, `MAX_ZIP_ENTRIES`, `MAX_XML_ENTRY_BYTES`, `MAX_PIXELS` | 600 MiB, 10000, 32 MiB, 120000000 | Bomb limits |
+| `MAX_ZIP_UNCOMPRESSED_BYTES`, `MAX_ZIP_ENTRIES`, `MAX_XML_ENTRY_BYTES`, `MAX_PIXELS`, `MAX_TOTAL_PIXELS` | 600 MiB, 10000, 32 MiB, 120000000, 600000000 | Bomb limits (`MAX_TOTAL_PIXELS` is all the pages of one TIFF together) |
 | `PAGE_LONG_EDGE`, `THUMB_LONG_EDGE`, `WEBP_QUALITY`, `RENDER_CONCURRENCY` | 1568, 320, 80, 2 | Output |
 | `POLL_MS`, `HEARTBEAT_MS`, `SETTLE_MS`, `MAX_ATTEMPTS`, `KILL_GRACE_MS` | 1000, 5000, 2000, 2, 15000 | Queue timing |
 
@@ -251,10 +278,12 @@ guarantee, since events do not reliably cross bind mounts from macOS.
 
 `deploy/converter.Dockerfile`, built from the repository root, two stages: Node 25 (trixie slim) installs and
 compiles, `pnpm deploy --prod` assembles production dependencies only; the runtime stage is Debian trixie slim
-(arm64) with LibreOffice Impress headless, poppler, libheif with libde265 (`heif-dec`, since sharp's prebuilt
-binaries cannot decode HEVC), util-linux (`prlimit`), and the Liberation, Carlito, Caladea, Noto and DejaVu
-fonts, plus the Node binary. Pages are rasterised by poppler (PPTX goes through LibreOffice to PDF first),
-encoded by sharp. Versions are recorded in every result's `toolVersions`.
+(arm64) with LibreOffice Impress and Writer headless (decks, and Word and OpenDocument text), poppler, libheif with
+libde265 (`heif-dec`, since sharp's prebuilt binaries cannot decode HEVC), netpbm (`bmptopnm`, `pnmtopng`: sharp's
+libvips has no BMP reader, and netpbm is small, long established and pulls in only a few libraries), util-linux
+(`prlimit`), and the Liberation, Carlito, Caladea, Noto and DejaVu fonts, plus the Node binary. Pages are rasterised
+by poppler (Office files go through LibreOffice to PDF first), encoded by sharp. sharp's own prebuilt libvips reads
+JPEG, PNG, WebP, GIF, TIFF and AVIF (its libheif has an AV1 decoder, not HEVC); nothing more was needed for those. Versions are recorded in every result's `toolVersions`.
 
 ## Testing
 
@@ -268,4 +297,11 @@ encoded by sharp. Versions are recorded in every result's `toolVersions`.
   that nothing is written outside `pages/` and `queue/`, and the sandbox. It also restarts the container for
   the limit cases, a SIGTERM, and crash recovery. Not part of `pnpm gate` (needs Docker; CI runs only on
   request).
+- `apps/converter/test/formats.test.ts`: the image formats through the real pipeline (sniffing, one page,
+  a multi-page TIFF, an animated GIF, a sideways WebP) and the limits of every new decoder: a real file under a
+  lowered pixel limit for WebP, GIF, AVIF and TIFF, and hand-made files that declare 20000 x 20000 (BMP, TIFF) or
+  60000 x 60000 (GIF) with no pixel data at all, which can only be refused as a pixel bomb if the size is read
+  before decoding. BMP conversion and the office formats need netpbm and LibreOffice, so they run in the image
+  through `integration.sh`, whose fixtures cover every type (and the same hand-made bombs, the total-pixel and
+  page limits for TIFF, `.ppt` and Word).
 - Fixtures and their expected outcomes: `fixtures/README.md`, `fixtures/expectations.json`.

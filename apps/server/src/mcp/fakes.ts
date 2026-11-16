@@ -95,6 +95,7 @@ export function fakeFiles(options: FakeFilesOptions = {}) {
       createdAt: at,
       updatedAt: at,
       trashedAt: null,
+      conversionNotes: [],
     });
     const pageIds: string[] = [];
     if (converted) {

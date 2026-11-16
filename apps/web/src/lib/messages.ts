@@ -1,5 +1,6 @@
 import { type FileStatus, type SourceFile, UPLOAD_LIMITS } from "@notes/schema";
 import { describeError, isApiError } from "./api";
+import { UPLOAD_TYPES_WORDS } from "./fileTypes";
 
 /** What each status means, in plain words, for the inbox and the tree. */
 export const STATUS_INFO: Record<FileStatus, { label: string; words: string }> = {
@@ -27,8 +28,7 @@ const FAILURE_WORDS: Record<string, string> = {
   encrypted_file: "This file is password protected. Remove the password and upload it again.",
   corrupt_file:
     "This file looks damaged and could not be read. Export it again and upload the new copy.",
-  unsupported_type:
-    "This is not a file type the app can read. Use PDF, PowerPoint (.pptx), JPEG, PNG or HEIC.",
+  unsupported_type: `This is not a file type the app can read. Use ${UPLOAD_TYPES_WORDS}. Export anything else as a PDF.`,
   too_many_pages: "This file has more than 500 pages. Split it into smaller files.",
   too_large: "This file is too large.",
   conversion_failed:
@@ -55,7 +55,7 @@ export function uploadFailure(error: unknown): { message: string; hint?: string 
       case "unsupported_type":
         return {
           message: "That is not a file type the app can read.",
-          hint: "Use PDF, PowerPoint (.pptx), JPEG, PNG or HEIC. Export other documents as PDF.",
+          hint: `Use ${UPLOAD_TYPES_WORDS}. Export other documents (a spreadsheet, an SVG) as a PDF.`,
         };
       case "network":
         return { message: "The connection dropped.", hint: "Check it and press Retry." };

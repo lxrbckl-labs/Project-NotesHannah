@@ -161,9 +161,10 @@ with zipfile.ZipFile(f"{OUT}/lecture.pptx") as src, zipfile.ZipFile(f"{OUT}/zipb
 # pixel bomb: 20000 x 20000 1-bit PNG (400 Mpixel, ~50 KB on disk)
 Image.new("1", (20000, 20000), 1).save(f"{OUT}/pixelbomb.png", "PNG", optimize=True)
 
-with zipfile.ZipFile(f"{OUT}/other-office.docx", "w") as z:
-    z.writestr("[Content_Types].xml", '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
-    z.writestr("word/document.xml", "<w:document xmlns:w='x'/>")
+# a spreadsheet package: a real Office zip, but not something the app turns into pages
+with zipfile.ZipFile(f"{OUT}/other-office.xlsx", "w") as z:
+    z.writestr("[Content_Types].xml", '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>')
+    z.writestr("xl/workbook.xml", "<workbook xmlns='x'/>")
 open(f"{OUT}/plain-text.pdf", "w").write("This is just a text file with a pdf extension.\n")
 
 # password-protected PPTX (OLE EncryptedPackage), via msoffcrypto-tool
@@ -262,4 +263,80 @@ def lying_zip(path):
     assert patched >= 2, patched
     open(path, "wb").write(data)
 lying_zip(f"{OUT}/lying-zip-header.pptx")
+
+# ================================================================ more coursework formats
+
+# ---------------------------------------------------------------- more image types (one figure, drawn from scratch)
+def figure(n, w=1200, h=800):
+    im = Image.new("RGB", (w, h), (252, 251, 246)); d = ImageDraw.Draw(im)
+    f = ImageFont.load_default(size=40); small = ImageFont.load_default(size=26)
+    d.text((60, 30), f"Figure {n}: plasma concentration over time", fill=(20, 20, 90), font=f)
+    d.line((120, h - 120, w - 80, h - 120), fill="black", width=4); d.line((120, h - 120, 120, 130), fill="black", width=4)
+    d.text((w // 2 - 60, h - 80), "Time (h)", fill="black", font=small); d.text((20, 100), "Conc.", fill="black", font=small)
+    pts = [(120 + i * 12, h - 120 - int((h - 300) * (i / 25) * (0.5 ** (i / (8 + n * 2))) * 2.2)) for i in range(0, 90)]
+    d.line(pts, fill=(200 - n * 40, 60 + n * 50, 60), width=6)
+    d.text((w - 420, 160), f"dose {n * 25} mg, oral", fill=(20, 20, 90), font=small)
+    return im
+fig1, fig2, fig3 = figure(1), figure(2), figure(3)
+fig1.save(f"{OUT}/figure.webp", "WEBP", quality=85)
+fig1.convert("P", palette=Image.ADAPTIVE).save(f"{OUT}/figure.gif")
+fig1.save(f"{OUT}/figure.avif", "AVIF", quality=70)
+fig1.save(f"{OUT}/figure.bmp", "BMP")
+fig2.convert("P", palette=Image.ADAPTIVE, colors=64).save(f"{OUT}/figure-8bit.bmp", "BMP")
+# three scanned pages in one TIFF
+fig1.save(f"{OUT}/scan-3pages.tiff", "TIFF", save_all=True, append_images=[fig2, fig3], compression="tiff_lzw")
+# an animation: only its first frame is kept, and the viewer says so
+frames = [figure(k).convert("P", palette=Image.ADAPTIVE, colors=64) for k in (1, 2, 3)]
+frames[0].save(f"{OUT}/animated.gif", save_all=True, append_images=frames[1:], duration=400, loop=0)
+# a phone shot as WebP, stored sideways with EXIF orientation 6
+paper_photo(1200, 1600).transpose(Image.ROTATE_90).save(f"{OUT}/photo-exif6.webp", "WEBP", quality=85, exif=ex3)
+# damaged
+b = open(f"{OUT}/figure.webp", "rb").read(); open(f"{OUT}/truncated.webp", "wb").write(b[: len(b) // 2])
+b = open(f"{OUT}/scan-3pages.tiff", "rb").read(); open(f"{OUT}/truncated.tiff", "wb").write(b[: len(b) // 3])
+# SVG can carry scripts, so it is refused by content
+open(f"{OUT}/figure.svg", "w").write('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><title>Figure</title><script>alert(1)</script><rect width="200" height="100" fill="#ccd"/><text x="10" y="50">Figure</text></svg>\n')
+# not an image at all, named like one
+open(f"{OUT}/plain-text.webp", "w").write("This is just a text file with a webp extension.\n")
+
+# ---------------------------------------------------------------- Word handout, then the old and OpenDocument forms of the decks
+from docx import Document
+from docx.shared import Inches as DInches
+def build_docx(path):
+    doc = Document()
+    doc.add_heading("Anticoagulants: study handout", level=1)
+    doc.add_paragraph("This handout covers warfarin and the direct oral anticoagulants. All figures are teaching values.")
+    for t in ["Warfarin: vitamin K antagonist, target INR 2.0-3.0", "Apixaban: factor Xa inhibitor, twice daily", "Reversal differs for each agent"]:
+        doc.add_paragraph(t, style="List Bullet")
+    tbl = doc.add_table(rows=3, cols=3); tbl.style = "Table Grid"
+    for r, row in enumerate([["Drug", "Target", "Monitoring"], ["Warfarin", "Vitamin K cycle", "INR"], ["Apixaban", "Factor Xa", "Renal function"]]):
+        for c, cell in enumerate(row): tbl.cell(r, c).text = cell
+    doc.add_picture(chart_png(), width=DInches(4.5))
+    doc.add_page_break()
+    doc.add_heading("Counselling points", level=2)
+    doc.add_paragraph("Keep vitamin K intake steady. Report bleeding, black stools or a fall with a head strike.")
+    doc.save(path)
+build_docx(f"{OUT}/handout.docx")
+HANDOUT_TEXT = ["Anticoagulants: study handout", "Counselling points"]
+json.dump(HANDOUT_TEXT, open(f"{OUT}/handout.expected.json", "w"))
+with zipfile.ZipFile(f"{OUT}/handout.docx") as zin, zipfile.ZipFile(f"{OUT}/macro.docm", "w", zipfile.ZIP_DEFLATED) as zout:
+    blob = bytes([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) + bytes(504) + b"Attribute VB_Name = \"Module1\"\nSub AutoOpen()\nEnd Sub\n" + bytes(2000)
+    for item in zin.infolist():
+        data = zin.read(item.filename)
+        if item.filename == "[Content_Types].xml":
+            data = data.decode().replace("application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml", "application/vnd.ms-word.document.macroEnabled.main+xml").replace("</Types>", '<Override PartName="/word/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/></Types>').encode()
+        if item.filename == "word/_rels/document.xml.rels":
+            data = data.decode().replace("</Relationships>", '<Relationship Id="rIdVba1" Type="http://schemas.microsoft.com/office/2006/relationships/vbaProject" Target="vbaProject.bin"/></Relationships>').encode()
+        zout.writestr(item.filename, data)
+    zout.writestr("word/vbaProject.bin", blob)
+with open(f"{OUT}/handout.docx", "rb") as f_in, open(f"{OUT}/encrypted.docx", "wb") as f_out:
+    OOXMLFile(f_in).encrypt("secret", f_out)
+
+# LibreOffice writes the old binary and OpenDocument forms. Done in a scratch directory so its helper files stay out of OUT.
+conv = "/tmp/lo-convert"; shutil.rmtree(conv, ignore_errors=True); os.makedirs(conv)
+def lo_convert(src, target, filt=None):
+    subprocess.run(["soffice", "-env:UserInstallation=file:///tmp/lo-profile", "--headless", "--convert-to", filt or target, "--outdir", conv, src], check=True, capture_output=True)
+lo_convert(f"{OUT}/handout.docx", "doc:MS Word 97"); lo_convert(f"{OUT}/handout.docx", "odt")
+lo_convert(f"{OUT}/lecture.pptx", "ppt:MS PowerPoint 97"); lo_convert(f"{OUT}/lecture.pptx", "odp")
+for name in ("handout.doc", "handout.odt", "lecture.ppt", "lecture.odp"): shutil.copy(f"{conv}/{name}", f"{OUT}/{name}")
+shutil.rmtree(conv, ignore_errors=True)
 print(sorted(os.listdir(OUT)))

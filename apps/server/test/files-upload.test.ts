@@ -5,7 +5,6 @@ import { UPLOAD_LIMITS } from "@notes/schema";
 import { describe, expect, test } from "vitest";
 import { sanitizeFileName } from "../src/domains/files/names.js";
 import {
-  DOCX,
   HEIC,
   harness,
   JPEG,
@@ -78,17 +77,24 @@ describe("browser upload", () => {
     });
     expect(res.status).toBe(415);
     expect(res.body.error.code).toBe("unsupported_type");
-    expect(res.body.error.hint).toMatch(/PDF, PPTX, JPEG, PNG or HEIC/);
+    expect(res.body.error.hint).toMatch(
+      /PDF, PowerPoint .* JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF or BMP/,
+    );
     expect(listDir(join(h.dir, "tmp"))).toEqual([]);
     expect(h.converter.pending()).toEqual([]);
     expect(listDir(join(h.dir, "originals"))).toEqual([]);
   });
 
-  test("a PNG named .pdf is a png; a docx (zip without a presentation) and an empty file are refused", async () => {
+  test("a PNG named .pdf is a png; a spreadsheet package, a plain zip and an empty file are refused", async () => {
     const h = harness();
     const png = await h.upload(h.alice, PNG, "scan.pdf");
     expect(png.type).toBe("png");
-    for (const data of [DOCX, Buffer.alloc(0), zip({ "a.txt": "hi" })]) {
+    const sheet = zip({
+      "[Content_Types].xml":
+        '<Types><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>',
+      "xl/workbook.xml": "<workbook/>",
+    });
+    for (const data of [sheet, Buffer.alloc(0), zip({ "a.txt": "hi" })]) {
       const m = multipart([{ name: "file", filename: "x.pptx", data }]);
       const res = await h.send(h.alice, "POST", "/api/uploads", {
         body: m.body,

@@ -9,7 +9,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/converter.Dockerfile
-    image: notes-converter
+    image: ${CONVERTER_IMAGE:-notes-converter}
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
@@ -40,6 +40,8 @@ services:
       # Optional overrides, empty means the built-in default (see docs/converter.md).
       MAX_INPUT_BYTES: "${MAX_INPUT_BYTES:-}"
       MAX_PAGES: "${MAX_PAGES:-}"
+      MAX_PIXELS: "${MAX_PIXELS:-}"
+      MAX_TOTAL_PIXELS: "${MAX_TOTAL_PIXELS:-}"
       WALL_CLOCK_MS: "${WALL_CLOCK_MS:-}"
       CHILD_RSS_MB: "${CHILD_RSS_MB:-}"
       POLL_MS: "${POLL_MS:-}"

@@ -16,11 +16,17 @@ proposed for after the first release. See [architecture.md](architecture.md) for
 
 ## B. Upload and inbox
 
-- **B1** File picker upload, several files at once: PDF, PPTX, JPEG, PNG, HEIC.
+- **B1** File picker upload, several files at once. Accepted, read from the content and never from the
+  name: PDF; slides (PowerPoint .pptx, .pptm, .ppsx, .ppt; OpenDocument .odp); Word handouts (.docx, .docm,
+  .doc; OpenDocument .odt); and images: JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF, BMP. Every one becomes
+  page images: a TIFF gives one page per image in it, a GIF, WebP or AVIF animation keeps its first frame
+  (the viewer's file details say so). SVG (it can carry scripts) and spreadsheets are refused with a message
+  that says what to send instead. The viewer's "Download original" returns the file exactly as uploaded, as
+  an attachment.
 - **B2** Agent upload links, batch-capable.
 - **B3** Inbox list with a status per file: uploaded, converted, transcribed, filed, failed.
 - **B4** Sandboxed conversion to page images; originals kept untouched.
-- **B5** Native text pulled from PPTX and PDF, including speaker notes.
+- **B5** Native text pulled from PPTX, PDF and Word or OpenDocument files, including speaker notes (PPTX). Photos have none.
 - **B6** Limits and clear errors: size, page count, password-protected files.
 - **B7** Retry a failed upload or conversion.
 - **B8** *Later:* resumable uploads.

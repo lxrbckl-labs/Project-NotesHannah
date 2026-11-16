@@ -223,12 +223,222 @@
       }
     },
     {
-      "file": "other-office.docx",
+      "file": "other-office.xlsx",
       "phase": "default",
       "expect": {
         "ok": false,
         "errorCode": "unsupported_type",
         "reason": "other_zip"
+      }
+    },
+    {
+      "file": "figure.webp",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "webp",
+        "pageCount": 1,
+        "noText": true,
+        "portrait": false
+      }
+    },
+    {
+      "file": "photo-exif6.webp",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "webp",
+        "pageCount": 1,
+        "noText": true,
+        "portrait": true,
+        "upright": true,
+        "warningCodes": ["EXIF_ORIENTATION_APPLIED@-"]
+      }
+    },
+    {
+      "file": "figure.gif",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "gif",
+        "pageCount": 1,
+        "noText": true
+      }
+    },
+    {
+      "file": "animated.gif",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "gif",
+        "pageCount": 1,
+        "noText": true,
+        "warningCodes": ["ANIMATED_FIRST_FRAME@-"]
+      }
+    },
+    {
+      "file": "scan-3pages.tiff",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "tiff",
+        "pageCount": 3,
+        "noText": true
+      }
+    },
+    {
+      "file": "figure.avif",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "avif",
+        "pageCount": 1,
+        "noText": true
+      }
+    },
+    {
+      "file": "figure.bmp",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "bmp",
+        "pageCount": 1,
+        "noText": true
+      }
+    },
+    {
+      "file": "figure-8bit.bmp",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "bmp",
+        "pageCount": 1,
+        "noText": true
+      }
+    },
+    {
+      "file": "handout.docx",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "docx",
+        "pageCount": 2,
+        "allHaveText": true,
+        "textIncludes": {
+          "1": ["Anticoagulants: study handout", "warfarin"],
+          "2": ["Counselling points"]
+        }
+      }
+    },
+    {
+      "file": "macro.docm",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "docx",
+        "pageCount": 2,
+        "allHaveText": true,
+        "textIncludes": {
+          "1": ["Anticoagulants: study handout", "warfarin"],
+          "2": ["Counselling points"]
+        },
+        "warningCodes": ["MACROS_PRESENT@-"]
+      }
+    },
+    {
+      "file": "handout.doc",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "doc",
+        "pageCount": 2,
+        "allHaveText": true,
+        "textIncludes": {
+          "1": ["Anticoagulants: study handout", "warfarin"],
+          "2": ["Counselling points"]
+        }
+      }
+    },
+    {
+      "file": "handout.odt",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "odt",
+        "pageCount": 2,
+        "allHaveText": true,
+        "textIncludes": {
+          "1": ["Anticoagulants: study handout", "warfarin"],
+          "2": ["Counselling points"]
+        }
+      }
+    },
+    {
+      "file": "lecture.ppt",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "ppt",
+        "pageCount": 12,
+        "allHaveText": true,
+        "textIncludes": {
+          "1": ["Beta-Adrenergic Antagonists"],
+          "12": ["Summary"]
+        }
+      }
+    },
+    {
+      "file": "lecture.odp",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "odp",
+        "pageCount": 12,
+        "allHaveText": true,
+        "textIncludes": {
+          "1": ["Beta-Adrenergic Antagonists"],
+          "12": ["Summary"]
+        }
+      }
+    },
+    {
+      "file": "encrypted.docx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "encrypted_file"
+      }
+    },
+    {
+      "file": "truncated.webp",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "truncated.tiff",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "plain-text.webp",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "unsupported_type"
+      }
+    },
+    {
+      "file": "figure.svg",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "unsupported_type"
       }
     },
     {
@@ -276,6 +486,133 @@
         "WALL_CLOCK_MS": "1200"
       },
       "label": "limit-wall-clock"
+    },
+    {
+      "file": "figure.webp",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_PIXELS": "100000"
+      },
+      "label": "limit-pixels"
+    },
+    {
+      "file": "figure.gif",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_PIXELS": "100000"
+      },
+      "label": "limit-pixels"
+    },
+    {
+      "file": "animated.gif",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_PIXELS": "100000"
+      },
+      "label": "limit-pixels"
+    },
+    {
+      "file": "figure.avif",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_PIXELS": "100000"
+      },
+      "label": "limit-pixels"
+    },
+    {
+      "file": "figure.bmp",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_PIXELS": "100000"
+      },
+      "label": "limit-pixels"
+    },
+    {
+      "file": "scan-3pages.tiff",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_PIXELS": "100000"
+      },
+      "label": "limit-pixels"
+    },
+    {
+      "file": "scan-3pages.tiff",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      },
+      "env": {
+        "MAX_TOTAL_PIXELS": "2000000"
+      },
+      "label": "limit-total-pixels"
+    },
+    {
+      "file": "scan-3pages.tiff",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_many_pages"
+      },
+      "env": {
+        "MAX_PAGES": "2"
+      },
+      "label": "limit-pages-tiff"
+    },
+    {
+      "file": "lecture.ppt",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_many_pages"
+      },
+      "env": {
+        "MAX_PAGES": "5"
+      },
+      "label": "limit-pages"
+    },
+    {
+      "file": "handout.docx",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_many_pages"
+      },
+      "env": {
+        "MAX_PAGES": "1"
+      },
+      "label": "limit-pages-word"
     }
   ]
 }

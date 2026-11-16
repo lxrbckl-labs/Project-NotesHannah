@@ -13,6 +13,7 @@ import { Link } from "react-router";
 import { Button, IconButton } from "../../components/ui/button";
 import { ActionMenu, ContextActions, type MenuEntry } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
+import { FILE_TYPE_SHORT } from "../../lib/fileTypes";
 import { formatAgo } from "../../lib/format";
 import { failureWords, STATUS_INFO } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
@@ -132,6 +133,7 @@ export function FileRow({
           )}
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-muted">
             <FileStatusBadge status={file.status} />
+            <span>{FILE_TYPE_SHORT[file.type]}</span>
             {pages ? <span>{pages}</span> : null}
             <span>{formatAgo(file.createdAt)}</span>
             {showPlace ? (

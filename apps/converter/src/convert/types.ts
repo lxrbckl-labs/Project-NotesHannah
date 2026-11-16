@@ -1,3 +1,5 @@
+import type { ConvertedType } from "../protocol.js";
+
 export interface Warning {
   code: string;
   message: string;
@@ -17,7 +19,7 @@ export interface PageResult {
   speakerNotes: string | null;
 }
 
-export type DetectedType = "pptx" | "pdf" | "jpeg" | "png" | "heic";
+export type DetectedType = ConvertedType;
 
 export interface PipelineResult {
   type: DetectedType;

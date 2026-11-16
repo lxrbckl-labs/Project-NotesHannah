@@ -25,8 +25,23 @@ Stand-in files for the converter's tests. All content is made up (no third-party
 | `truncated.pptx`, `junkxml.pptx`, `corrupt.pdf`, `truncated.jpg` | damaged |
 | `zipbomb.pptx`, `lying-zip-header.pptx`, `pixelbomb.png` | 700 MB of zeros in a zip; the same with a header that lies about the size; 20000 x 20000 PNG |
 | `toomany-501pages.pdf` | one page over the 500-page limit |
-| `other-office.docx`, `plain-text.pdf` | not a presentation; text with a `.pdf` name |
+| `other-office.xlsx`, `plain-text.pdf` | a spreadsheet package (not a format the app takes); text with a `.pdf` name |
+| `figure.webp`, `figure.gif`, `animated.gif`, `figure.avif`, `figure.bmp`, `figure-8bit.bmp` | one drawn figure in each image format; the animated GIF has 3 frames and keeps the first; the second BMP is palette-based |
+| `scan-3pages.tiff` | three pages in one TIFF |
+| `photo-exif6.webp` | a phone shot as WebP, stored sideways with EXIF orientation 6 |
+| `handout.docx`, `handout.doc`, `handout.odt` (+ `handout.expected.json`) | the same two-page Word handout in three formats (the old and OpenDocument ones are written by LibreOffice) |
+| `lecture.ppt`, `lecture.odp` | the lecture deck as an old PowerPoint file and as OpenDocument |
+| `macro.docm` | the handout carrying an inert `vbaProject.bin` part, with the macro-enabled content type |
+| `encrypted.docx` | the handout, password protected |
+| `truncated.webp`, `truncated.tiff` | damaged |
+| `plain-text.webp` | text with a `.webp` name |
+| `figure.svg` | an SVG with a script: refused by content |
 
 The converter never sees a file name (originals are stored under their SHA-256), so "lying extension" cases
 reduce to the content cases above. Too-large and a few other cases are made at run time by the integration
-script (a sparse 201 MiB file, an empty file, a legacy `.ppt` header, random bytes).
+script (a sparse 201 MiB file, an empty file, an OLE header with no streams, random bytes, and BMP, TIFF and GIF files
+that declare a huge picture but hold no pixels).
+
+The generator writes everything again with `build.sh`. The newer files above were added to `generated/` from
+a run of the generator without touching the older files, so their bytes (and the history of this folder) stayed as
+they were; running `build.sh` rewrites all of them.

@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { loadLimits } from "../src/config.js";
 import { CONVERT_ERROR_CODES } from "../src/errors.js";
 import { FILE_ID, JOB_FILE, JOB_ID, SHA256, USER_ID } from "../src/ids.js";
-import { InvalidJobError, validateJob } from "../src/protocol.js";
+import { CONVERTED_TYPES, InvalidJobError, validateJob } from "../src/protocol.js";
 import { FILE, JOB, USER } from "./helpers.js";
 
 describe("agreement with the schema package", () => {
@@ -16,7 +16,7 @@ describe("agreement with the schema package", () => {
     expect(l.maxPages).toBe(UPLOAD_LIMITS.maxPages);
   });
   test("the produced types are the schema FileTypes", () => {
-    expect([...FileType.options].sort()).toEqual(["heic", "jpeg", "pdf", "png", "pptx"]);
+    expect([...FileType.options].sort()).toEqual([...CONVERTED_TYPES].sort());
   });
   test("the id patterns accept the ids the schema generates", () => {
     for (let i = 0; i < 200; i++) {

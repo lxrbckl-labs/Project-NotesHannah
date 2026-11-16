@@ -19,13 +19,15 @@ COPY apps/converter apps/converter
 RUN pnpm --filter @notes/converter build
 RUN pnpm --filter @notes/converter --prod --legacy deploy /out
 
-# ---- runtime: Debian trixie slim with LibreOffice Impress, poppler, libheif and the font packs.
+# ---- runtime: Debian trixie slim with LibreOffice Impress and Writer (decks and Word handouts), poppler,
+# libheif, netpbm (BMP: libvips cannot decode it) and the font packs.
 FROM debian:trixie-slim
 ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      libreoffice-impress libreoffice-core libreoffice-common \
+      libreoffice-impress libreoffice-writer libreoffice-core libreoffice-common \
       poppler-utils \
       libheif-examples libheif-plugin-libde265 \
+      netpbm \
       util-linux \
       fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea \
       fonts-noto-core fonts-dejavu-core \

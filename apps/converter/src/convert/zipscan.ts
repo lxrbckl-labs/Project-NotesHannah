@@ -7,6 +7,8 @@ export interface ZipScan {
   declaredBytes: number;
   actualBytes: number;
   contentTypesXml: string;
+  /** The `mimetype` entry of an OpenDocument package (empty for other zips). */
+  mimetype: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export function scanZip(path: string, limits: Limits): Promise<ZipScan> {
         let declared = 0;
         let actual = 0;
         let contentTypesXml = "";
+        let mimetype = "";
         const fail = (e: ConvertError) => {
           zip.close();
           reject(e);
@@ -51,7 +54,13 @@ export function scanZip(path: string, limits: Limits): Promise<ZipScan> {
           fail(new ConvertError("corrupt_file", `zip read error: ${e.message}`)),
         );
         zip.on("end", () =>
-          resolve({ entries, declaredBytes: declared, actualBytes: actual, contentTypesXml }),
+          resolve({
+            entries,
+            declaredBytes: declared,
+            actualBytes: actual,
+            contentTypesXml,
+            mimetype,
+          }),
         );
         zip.on("entry", (entry: yauzl.Entry) => {
           entries.push(entry.fileName);
@@ -90,7 +99,7 @@ export function scanZip(path: string, limits: Limits): Promise<ZipScan> {
               );
               return;
             }
-            const keep = entry.fileName === "[Content_Types].xml";
+            const keep = entry.fileName === "[Content_Types].xml" || entry.fileName === "mimetype";
             const chunks: Buffer[] = [];
             stream.on("data", (d: Buffer) => {
               actual += d.length;
@@ -111,7 +120,11 @@ export function scanZip(path: string, limits: Limits): Promise<ZipScan> {
               fail(new ConvertError("corrupt_file", `zip entry ${entry.fileName}: ${e3.message}`)),
             );
             stream.on("end", () => {
-              if (keep) contentTypesXml = Buffer.concat(chunks).toString("utf8");
+              if (keep) {
+                const text = Buffer.concat(chunks).toString("utf8");
+                if (entry.fileName === "mimetype") mimetype = text.slice(0, 200);
+                else contentTypesXml = text;
+              }
               zip.readEntry();
             });
           });

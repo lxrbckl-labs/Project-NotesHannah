@@ -27,6 +27,7 @@ import { ContextActions, type MenuEntry } from "../../components/ui/menu";
 import { MiddleTruncate } from "../../components/ui/middle-truncate";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { SLIDE_TYPES, TEXT_TYPES } from "../../lib/fileTypes";
 import type { Hue } from "../../lib/hues";
 import { IN_PROGRESS } from "../../lib/messages";
 import { FILE_STATUS_HUE } from "../../lib/roles";
@@ -233,8 +234,8 @@ const STATUS_LABEL: Record<SourceFile["status"], string> = {
 };
 
 export function FileTypeIcon({ type, size = 17 }: { type: SourceFile["type"]; size?: number }) {
-  if (type === "pptx") return <Presentation size={size} aria-hidden />;
-  if (type === "pdf") return <FileText size={size} aria-hidden />;
+  if (SLIDE_TYPES.has(type)) return <Presentation size={size} aria-hidden />;
+  if (TEXT_TYPES.has(type)) return <FileText size={size} aria-hidden />;
   return <ImageIcon size={size} aria-hidden />;
 }
 

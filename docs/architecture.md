@@ -63,7 +63,8 @@ calculations, case-based questions, recall (flashcards, fill-in-the-blank), matc
 ## Flow
 
 1. **Upload** into an inbox. Two routes, same destination:
-   - browser file picker (PDF, PPTX, JPEG, PNG, HEIC); no third-party integrations;
+   - browser file picker (PDF, PowerPoint, Word, OpenDocument, and JPEG, PNG, HEIC, WebP, GIF, TIFF,
+     AVIF, BMP images; see features.md B1); no third-party integrations;
    - agent upload: an MCP tool returns short-lived single-use upload links, and the local
      agent sends files to them with a shell command. Batch-capable.
 2. **Convert** each file to per-page images in a locked-down throwaway container.

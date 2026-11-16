@@ -143,10 +143,20 @@ is `not_found`.
   (`UPLOAD_LIMITS.maxBytes`, or the ticket's declared size) is enforced while streaming;
   past it the upload is aborted with `too_large` and nothing is left behind. A declared
   `Content-Length` over the cap is refused before any byte is read.
-- The type is read from the content (PDF, JPEG, PNG, HEIC by magic bytes; PPTX is a ZIP
-  whose `[Content_Types].xml` declares a presentation and which holds
-  `ppt/presentation.xml`). Anything else is `unsupported_type`, whatever the name or
-  `Content-Type` says. The original is stored at `originals/<userId>/<sha256>`; identical
+- The type is read from the content, never from the name or `Content-Type`. Magic bytes give
+  `pdf`, `jpeg`, `png`, `heic`, `webp`, `gif`, `tiff` (classic, either byte order), `avif` and
+  `bmp` (the header must have a real DIB size). A ZIP is looked into: `[Content_Types].xml`
+  declaring a presentation (`pptx`, which also covers slide shows, templates and macro-enabled
+  files) or a Word document (`docx`, covering templates and macro-enabled files), or an
+  OpenDocument `mimetype` entry (`odp`, `odt`). An old binary Office file (OLE) is told apart by
+  the streams in its directory: `PowerPoint Document` is `ppt`, `WordDocument` is `doc`.
+  Anything else is `unsupported_type` (415) whatever the name says, with a `hint` listing what
+  can be sent. That includes SVG (it can carry scripts), spreadsheets, a password-protected
+  Office file (the message says to remove the password) and a zip that is none of the above.
+  The stored `type` is one of `pdf pptx ppt docx doc odp odt jpeg png heic webp gif tiff avif bmp`
+  (`FileType` in `@notes/schema`). Macro-enabled Word and PowerPoint files are accepted the way
+  `.pptm` always was: they are stored as `docx`/`pptx`, macros are never run, and the file's
+  `conversionNotes` carry a line saying so. The original is stored at `originals/<userId>/<sha256>`; identical
   content from the same user is stored once, and each upload still gets its own
   `SourceFile`.
 - `originalName` is display text only: control characters, bidi marks and `/ \ : * ? " < > |`
@@ -179,9 +189,20 @@ is `not_found`.
 | `POST /api/files/:id/trash` | none | `{ file }` |
 | `POST /api/files/:id/restore` | none | `{ file }` |
 | `DELETE /api/files/:id` | none | `204`; browser session only, and only from the trash |
-| `GET /api/files/:id/original` | `download=true` | the original bytes |
+| `GET /api/files/:id/original` | `download=true` | the original bytes, byte for byte (see below) |
 | `GET /api/files/:id/pages` | | `{ items: Page[] }` in page order |
 | `GET /api/converter/status` | | `{ converter: ConverterStatus }` |
+
+**Originals** are sent with the stored content type for the file's `type`, `X-Content-Type-Options:
+nosniff`, `ETag` (the content hash) and range support, and need the owner's session or key
+(another user's file is `not_found`). Only a PDF, JPEG or PNG can be shown inline (and only without
+`download=true`); every other type, such as Word, OpenDocument, TIFF, GIF or WebP, is always
+`Content-Disposition: attachment`, so an uploaded file never runs in the app's origin. The web
+app's "Download original" always asks for `download=true`.
+
+`SourceFile.conversionNotes` is a list of plain sentences about the file as a whole, taken from the
+converter's warnings that have no page number: an animated image kept to its first frame, macros
+that were not run. It is empty for most files and is replaced each time the file is converted.
 
 `inbox=true` means not yet filed: live files whose status is not `filed` (so it includes
 failed ones and ones still being transcribed). `trashed=true` lists the trash instead of
