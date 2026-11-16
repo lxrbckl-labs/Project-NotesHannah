@@ -79,7 +79,7 @@ export function InboxPage() {
               </UploadButton>
             }
           >
-            Upload slides, PDFs or photos of handwritten notes.{" "}
+            Upload slides, PDFs, Word handouts or photos of handwritten notes.{" "}
             {fine ? "You can also drop files here." : ""}
           </EmptyState>
         ) : (

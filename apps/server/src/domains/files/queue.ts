@@ -98,6 +98,30 @@ function removeQuietly(path: string): void {
   }
 }
 
+/**
+ * The converter's warnings that are about the whole file (no page number), as short plain sentences for
+ * the file's details: an animated GIF kept to its first frame, macros that were not run. Per-page
+ * warnings (no text layer, a hidden slide) are left out; the page shows those itself.
+ */
+export function fileNotes(warnings: unknown[] | undefined): string[] {
+  const notes: string[] = [];
+  for (const w of warnings ?? []) {
+    if (typeof w !== "object" || w === null) continue;
+    const { message, page } = w as { message?: unknown; page?: unknown };
+    if (typeof message !== "string" || page !== undefined) continue;
+    const clean = message
+      .replace(/\p{Cc}+/gu, " ")
+      .trim()
+      .slice(0, 298);
+    if (clean === "") continue;
+    // Shown as a sentence in the file's details.
+    const text = `${clean.charAt(0).toUpperCase()}${clean.slice(1)}${/[.!?]$/.test(clean) ? "" : "."}`;
+    if (!notes.includes(text)) notes.push(text);
+    if (notes.length >= 10) break;
+  }
+  return notes;
+}
+
 function describe(code: ErrorCode): string {
   switch (code) {
     case "unsupported_type":
@@ -287,8 +311,16 @@ export function createQueue(ctx: QueueContext) {
       }
       db.prepare(
         `UPDATE source_files SET status = 'converted', page_count = ?, error_code = NULL,
-           error_message = NULL, updated_at = ? WHERE id = ?`,
-      ).run(result.pageCount, t, file.id);
+           error_message = NULL, conversion_notes = ?, updated_at = ? WHERE id = ?`,
+      ).run(
+        result.pageCount,
+        (() => {
+          const notes = fileNotes(result.warnings);
+          return notes.length > 0 ? JSON.stringify(notes) : null;
+        })(),
+        t,
+        file.id,
+      );
       db.prepare("UPDATE conversion_jobs SET state = 'done', finished_at = ? WHERE id = ?").run(
         t,
         job.id,

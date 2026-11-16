@@ -14,7 +14,7 @@ workflow uses is rejected until the org's `DOCKERHUB_TOKEN` is renewed. **Its sc
 her real lecture material. Nothing has been through a pull request; work was merged
 locally and pushed to `main` at checkpoints.
 
-Local gate (`pnpm gate`): lint, type checks, 2,273 unit and integration tests, build.
+Local gate (`pnpm gate`): lint, type checks, 2,464 unit and integration tests (one skipped: BMP conversion needs netpbm, which only the converter image has), build.
 Browser tests run separately at phone, tablet and computer sizes, in three suites: against a mock,
 against the real server, and against the built app as it is deployed (`pnpm e2e:built`). `pnpm gate:full`
 runs the gate and all three; `pnpm smoke <address>` checks a live site after a redeploy. The long-failing
@@ -26,7 +26,7 @@ On Beta blockers in the demo set, the "Which one" and "Safety" frames overlap ea
 | Area | Features | Notes |
 |---|---|---|
 | Accounts | A1 to A6 | No sign-up page; accounts by admin command. Lockout with a trusted-device bypass. |
-| Upload and inbox | B1 to B7 | Type detected from content. Converter is a locked-down container with no network. |
+| Upload and inbox | B1 to B7 | Type detected from content. Converter is a locked-down container with no network. Takes PDF, PowerPoint (.pptx, .ppt), Word (.docx, .doc), OpenDocument (.odp, .odt) and JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF, BMP images; SVG and spreadsheets are refused. A multi-page TIFF is one page per image; an animated image keeps its first frame and the file details say so. |
 | Library | C1 to C6, C8 | The library home is the whole tree on one page, with her files as leaves. |
 | Documents and blocks | D1 to D13 | 16 block types, editor (Tiptap), outline, revision history. Typing shortcuts at the start of a paragraph (`# `, `- `, `1. `, `[] `, `> `, `!! `, `?? `, `---`). A lecture page lists the notes she started under it, and a new document opens ready to type. A formatting ribbon (style menu, marks, colours, lists, insert, shortcut help) shows whenever she edits, from tablet width up; on a phone the same tools sit above the keyboard. Wide tables scroll sideways. No font, size or alignment: the schema has no fields for them. |
 | References | O | Outside references tied to what she studies ([references.md](references.md)): PharmGuides built in as a trusted reference (search, section links), her own saved references linked to courses and lectures, a reference chip on blocks apart from the slide chips, agents told to check trusted references and label what comes from them (MCP tool `references`, 18 tools). The app links out and stores no outside content; "keep a copy" is not built. |
@@ -67,6 +67,7 @@ On Beta blockers in the demo set, the "Which one" and "Safety" frames overlap ea
 - **Anything on a real iPad or iPhone:** touch gestures on the canvas, the on-screen keyboard in the editor and practice player, installed-app behaviour.
 - **The React Bits animations playing.** They were checked only in a browser pane that draws no animation frames; the greeting and stat numbers fall back to plain text there. Not seen in a normal window.
 - **Every screen at every size in both themes by eye.** A sample was looked at on the real server; the rest rests on the browser tests.
+- **The new upload formats on a real device and with her real files:** WebP, GIF, TIFF, AVIF, BMP, Word and the old Office formats were tested with generated files only (in the converter image and in a browser against the real server), not from an iPad or phone picker, and not with scanner or camera output.
 - **Handwriting transcription accuracy** on real notes. One stand-in page showed a small model misreading `q8h` as `qsh`.
 - **The mini:** scheduled backup jobs (failing, see Known gaps), Docker starting after a power loss (reboot test not run), live canvas updates through the proxy, signing in and uploading on the live site.
 - **Remote backups:** only a local backup repository was tested.

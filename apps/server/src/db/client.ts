@@ -48,13 +48,27 @@ export function migrate(db: Db, dir: string = MIGRATIONS_DIR): string[] {
   for (const name of files) {
     if (done.has(name)) continue;
     const sql = readFileSync(join(dir, name), "utf8");
-    db.transaction(() => {
-      db.exec(sql);
-      db.prepare("INSERT INTO _migrations (name, applied_at) VALUES (?, ?)").run(
-        name,
-        new Date().toISOString(),
-      );
-    })();
+    // A file that rebuilds a table other tables point at must run with foreign keys off (the pragma cannot
+    // change inside a transaction), or dropping the old table cascades into its children. It opts in with
+    // a first line of `-- migrate: foreign_keys off`, and the whole database is checked before keys go on.
+    const rebuild = /^--\s*migrate:\s*foreign_keys off\s*$/.test(sql.split("\n", 1)[0] ?? "");
+    if (rebuild) db.pragma("foreign_keys = OFF");
+    try {
+      db.transaction(() => {
+        db.exec(sql);
+        if (rebuild) {
+          const broken = db.pragma("foreign_key_check") as unknown[];
+          if (broken.length > 0)
+            throw new Error(`${name} left ${broken.length} broken foreign keys`);
+        }
+        db.prepare("INSERT INTO _migrations (name, applied_at) VALUES (?, ?)").run(
+          name,
+          new Date().toISOString(),
+        );
+      })();
+    } finally {
+      if (rebuild) db.pragma("foreign_keys = ON");
+    }
     applied.push(name);
   }
   return applied;

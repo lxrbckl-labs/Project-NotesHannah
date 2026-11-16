@@ -24,6 +24,7 @@ import {
   type FilesDeps,
   type FilesService,
   type FilesServiceOptions,
+  INLINE_CONTENT_TYPES,
   type StoredFile,
 } from "./service.js";
 import type { Received } from "./sink.js";
@@ -312,7 +313,7 @@ export function filesRoutes(
   app.get("/api/files/:id/original", requireAuth, (c) => {
     const stored = files.originalFile(getAuth(c), c.req.param("id"));
     const q = parse(DownloadQuery, c.req.query(), { download: "true" });
-    const inline = stored.contentType !== CONTENT_PPTX && !q.download;
+    const inline = INLINE_CONTENT_TYPES.has(stored.contentType) && !q.download;
     return sendFile(c, stored, { disposition: inline ? "inline" : "attachment", ranges: true });
   });
 
@@ -407,5 +408,3 @@ export function filesRoutes(
 
   return app;
 }
-
-const CONTENT_PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation";

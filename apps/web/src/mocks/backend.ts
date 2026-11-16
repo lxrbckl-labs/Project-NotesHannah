@@ -25,6 +25,7 @@ import {
   UpdateReferenceInput,
   type User,
 } from "@notes/schema";
+import { SLIDE_TYPES, TEXT_TYPES, UPLOAD_TYPES_WORDS } from "../lib/fileTypes";
 import {
   MOCK_PASSWORD,
   MOCK_USERNAME,
@@ -411,7 +412,7 @@ export function createMockBackend(options: MockOptions = {}) {
               : "This file could not be read; it looks damaged.";
       } else {
         f.status = "converted";
-        f.pageCount = f.type === "jpeg" || f.type === "png" || f.type === "heic" ? 1 : 6;
+        f.pageCount = SLIDE_TYPES.has(f.type) || TEXT_TYPES.has(f.type) ? 6 : 1;
         pages.push(...makePages(f));
         recompute(f);
       }
@@ -441,10 +442,20 @@ export function createMockBackend(options: MockOptions = {}) {
 
   const TYPES: Array<[RegExp, FileType]> = [
     [/\.pdf$/i, "pdf"],
-    [/\.pptx$/i, "pptx"],
+    [/\.(pptx|pptm|ppsx)$/i, "pptx"],
+    [/\.(ppt|pps)$/i, "ppt"],
+    [/\.(docx|docm)$/i, "docx"],
+    [/\.doc$/i, "doc"],
+    [/\.odp$/i, "odp"],
+    [/\.odt$/i, "odt"],
     [/\.jpe?g$/i, "jpeg"],
     [/\.png$/i, "png"],
     [/\.hei[cf]$/i, "heic"],
+    [/\.webp$/i, "webp"],
+    [/\.gif$/i, "gif"],
+    [/\.tiff?$/i, "tiff"],
+    [/\.avif$/i, "avif"],
+    [/\.bmp$/i, "bmp"],
   ];
 
   /** The multipart upload, or (tests, where jsdom files cannot cross into fetch) `{ name, size, nodeId }` as JSON. */
@@ -465,7 +476,7 @@ export function createMockBackend(options: MockOptions = {}) {
     if (!type) {
       fail(
         "unsupported_type",
-        "That is not a PDF, PowerPoint (.pptx), JPEG, PNG or HEIC file.",
+        `That is not a file type the app can read. Use ${UPLOAD_TYPES_WORDS}.`,
         "Export the document as a PDF and upload that.",
       );
     }
@@ -490,6 +501,7 @@ export function createMockBackend(options: MockOptions = {}) {
       createdAt: at,
       updatedAt: at,
       trashedAt: null,
+      conversionNotes: [],
     };
     files.unshift(f);
     tick();

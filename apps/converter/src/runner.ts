@@ -21,6 +21,7 @@ export function limitsToEnv(l: Limits): Record<string, string> {
     MAX_ZIP_ENTRIES: String(l.maxZipEntries),
     MAX_XML_ENTRY_BYTES: String(l.maxXmlEntryBytes),
     MAX_PIXELS: String(l.maxPixelsPerImage),
+    MAX_TOTAL_PIXELS: String(l.maxTotalPixels),
     WALL_CLOCK_MS: String(l.wallClockMs),
     PAGE_LONG_EDGE: String(l.pageLongEdge),
     THUMB_LONG_EDGE: String(l.thumbLongEdge),

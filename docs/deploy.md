@@ -7,7 +7,7 @@ What runs: two containers from `deploy/docker-compose.yml`, configured by `deplo
 
 | | `app` | `converter` |
 |---|---|---|
-| Does | web app, API, SQLite | PPTX/PDF/HEIC to page images (LibreOffice, poppler, libheif) |
+| Does | web app, API, SQLite | PDF, Office and OpenDocument files and images to page images (LibreOffice, poppler, libheif, netpbm) |
 | Network | one private network, published on `127.0.0.1:<APP_PORT>` only | none |
 | Root filesystem | read-only (`/tmp` is a 64 MB tmpfs) | read-only (`/tmp` is a 1 GB `noexec` tmpfs) |
 | User, capabilities | `10001:10001`, all dropped, `no-new-privileges` | same |

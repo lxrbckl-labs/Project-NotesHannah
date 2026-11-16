@@ -18,8 +18,18 @@ const REGISTRY = `<?xml version="1.0" encoding="UTF-8"?>
 </oor:items>
 `;
 
-export async function pptxToPdf(
-  inputPptx: string,
+/** Slides and handouts LibreOffice turns into a PDF: Impress for decks, Writer for text documents. */
+export type OfficeKind = "pptx" | "ppt" | "odp" | "docx" | "doc" | "odt";
+
+const isDeck = (kind: OfficeKind) => kind === "pptx" || kind === "ppt" || kind === "odp";
+
+/**
+ * Convert one document to a PDF in `scratch/lo-out`. The copy keeps a proper extension for its kind
+ * (LibreOffice picks its import filter partly from it), though the kind itself was decided from content.
+ */
+export async function officeToPdf(
+  inputFile: string,
+  kind: OfficeKind,
   scratch: string,
   deadline: Deadline,
 ): Promise<string> {
@@ -28,8 +38,9 @@ export async function pptxToPdf(
   await mkdir(path.join(profile, "user"), { recursive: true });
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(profile, "user", "registrymodifications.xcu"), REGISTRY);
-  const filter =
-    'pdf:impress_pdf_Export:{"ExportHiddenSlides":{"type":"boolean","value":"true"},"ExportNotesPages":{"type":"boolean","value":"false"}}';
+  const filter = isDeck(kind)
+    ? 'pdf:impress_pdf_Export:{"ExportHiddenSlides":{"type":"boolean","value":"true"},"ExportNotesPages":{"type":"boolean","value":"false"}}'
+    : "pdf:writer_pdf_Export";
   const res = await run(
     deadline,
     "soffice",
@@ -46,7 +57,7 @@ export async function pptxToPdf(
       filter,
       "--outdir",
       outDir,
-      inputPptx,
+      inputFile,
     ],
     { env: { PATH: process.env.PATH ?? "", HOME: scratch, LANG: "C.UTF-8", TMPDIR: scratch } },
   );
@@ -54,7 +65,7 @@ export async function pptxToPdf(
   if (produced.length !== 1) {
     throw new ConvertError(
       "corrupt_file",
-      `LibreOffice could not convert the presentation (exit ${res.code}): ${cleanMessage(res.stderr)}`,
+      `LibreOffice could not convert the ${isDeck(kind) ? "presentation" : "document"} (exit ${res.code}): ${cleanMessage(res.stderr)}`,
     );
   }
   const [only] = produced;

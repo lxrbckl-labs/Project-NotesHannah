@@ -2,10 +2,11 @@ import { copyFile, mkdir, stat } from "node:fs/promises";
 import path from "node:path";
 import type { Limits } from "../config.js";
 import { ConvertError } from "../errors.js";
-import { isPresentationContentTypes, oleIsEncryptedPackage, sniffFile } from "./detect.js";
+import { isPresentationContentTypes, isWordContentTypes, odfKind, sniffFile } from "./detect.js";
 import { Deadline } from "./exec.js";
-import { heicToPng, openPhoto, pngBufferToSharp, writePage } from "./image.js";
-import { pptxToPdf } from "./libreoffice.js";
+import { bmpToPng, heicToPng, openPhoto, pngBufferToSharp, writePage } from "./image.js";
+import { type OfficeKind, officeToPdf } from "./libreoffice.js";
+import { readOle } from "./ole.js";
 import { hasTextLayer, pdfInfo, pdfText, renderPage } from "./pdf.js";
 import { extractPptxText, type SlideText } from "./pptx.js";
 import type { DetectedType, PageResult, PipelineResult, Warning } from "./types.js";
@@ -125,6 +126,28 @@ async function convertPdfFile(
   return pages;
 }
 
+/** Word documents, ODF files and old binary Office files: no slide XML to read, the PDF is the whole story. */
+async function convertOffice(
+  ctx: Ctx,
+  kind: OfficeKind,
+  macros: boolean,
+  scanned: { entries: string[] } | null,
+): Promise<PageResult[]> {
+  const { timer, warnings, scratch, deadline } = ctx;
+  if (
+    macros ||
+    scanned?.entries.some((e) => /vbaProject\.bin$/i.test(e) || /^(Basic|Scripts)\//.test(e))
+  )
+    warnings.push({
+      code: "MACROS_PRESENT",
+      message: "file contains macros; they are disabled and were not run",
+    });
+  const work = path.join(scratch, `input.${kind}`);
+  await copyFile(ctx.input, work);
+  const pdf = await timer.stage("libreoffice", () => officeToPdf(work, kind, scratch, deadline));
+  return convertPdfFile(ctx, pdf);
+}
+
 async function convertPptx(ctx: Ctx, macroEnabled: boolean): Promise<PageResult[]> {
   const { limits: lim, timer, warnings, scratch, deadline } = ctx;
   const scan = await timer.stage("zipscan", () => scanZip(ctx.input, lim));
@@ -161,37 +184,74 @@ async function convertPptx(ctx: Ctx, macroEnabled: boolean): Promise<PageResult[
   }
   const work = path.join(scratch, "input.pptx");
   await copyFile(ctx.input, work);
-  const pdf = await timer.stage("libreoffice", () => pptxToPdf(work, scratch, deadline));
+  const pdf = await timer.stage("libreoffice", () => officeToPdf(work, "pptx", scratch, deadline));
   return convertPdfFile(ctx, pdf, text.slides);
 }
 
-async function convertPhoto(ctx: Ctx, type: "jpeg" | "png" | "heic"): Promise<PageResult[]> {
+type PhotoType = "jpeg" | "png" | "heic" | "webp" | "gif" | "tiff" | "avif" | "bmp";
+
+async function convertPhoto(ctx: Ctx, type: PhotoType): Promise<PageResult[]> {
   const { limits: lim, timer, warnings } = ctx;
   let file = ctx.input;
   if (type === "heic")
     file = await timer.stage("heic-decode", () =>
       heicToPng(ctx.input, ctx.scratch, lim, ctx.deadline),
     );
-  const { img, exifOrientation, width, height } = await timer.stage("decode", () =>
-    openPhoto(file, lim),
-  );
-  if (exifOrientation && exifOrientation > 1)
-    warnings.push({
-      code: "EXIF_ORIENTATION_APPLIED",
-      message: `EXIF orientation ${exifOrientation} applied (source ${width}x${height})`,
-    });
-  const { image } = await timer.stage("encode", () => writePage(ctx.outDir, 1, img, lim));
-  return [
-    {
-      index: 1,
+  if (type === "bmp")
+    file = await timer.stage("bmp-decode", () =>
+      bmpToPng(ctx.input, ctx.scratch, lim, ctx.deadline),
+    );
+  const first = await timer.stage("decode", () => openPhoto(file, lim));
+  // A TIFF is a stack of images and each becomes a page; for every other format more than one image means
+  // an animation, of which only the first frame is kept.
+  let count = 1;
+  if (first.pages > 1) {
+    if (type === "tiff") {
+      count = first.pages;
+      if (count > lim.maxPages)
+        throw new ConvertError("too_many_pages", `${count} pages (limit ${lim.maxPages})`);
+    } else {
+      warnings.push({
+        code: "ANIMATED_FIRST_FRAME",
+        message: `animated image with ${first.pages} frames; only the first frame is shown`,
+      });
+    }
+  }
+  const pages: PageResult[] = [];
+  let pixels = 0;
+  for (let i = 0; i < count; i++) {
+    const n = i + 1;
+    const shot =
+      i === 0
+        ? first
+        : await timer.stage("decode", () =>
+            openPhoto(file, lim, { page: i, pixelBudget: lim.maxTotalPixels - pixels }),
+          );
+    pixels += shot.width * shot.height;
+    if (pixels > lim.maxTotalPixels)
+      throw new ConvertError(
+        "too_large",
+        `the pages together are over ${lim.maxTotalPixels} pixels`,
+        "pixel_bomb",
+      );
+    if (shot.exifOrientation && shot.exifOrientation > 1)
+      warnings.push({
+        code: "EXIF_ORIENTATION_APPLIED",
+        message: `EXIF orientation ${shot.exifOrientation} applied (source ${shot.width}x${shot.height})`,
+        ...(count > 1 ? { page: n } : {}),
+      });
+    const { image } = await timer.stage("encode", () => writePage(ctx.outDir, n, shot.img, lim));
+    pages.push({
+      index: n,
       width: image.width,
       height: image.height,
       bytes: image.bytes,
       hasTextLayer: false,
       nativeText: null,
       speakerNotes: null,
-    },
-  ];
+    });
+  }
+  return pages;
 }
 
 /** Convert one untrusted file to page images plus native text. Throws ConvertError for every expected failure. */
@@ -215,34 +275,64 @@ export async function runPipeline(req: PipelineRequest): Promise<PipelineResult>
   const sniffed = await timer.stage("detect", () => sniffFile(req.input));
   let type: DetectedType;
   let macroEnabled = false;
+  let zipScan: { entries: string[] } | null = null;
   switch (sniffed) {
     case "pdf":
     case "jpeg":
     case "png":
     case "heic":
+    case "webp":
+    case "gif":
+    case "tiff":
+    case "avif":
+    case "bmp":
       type = sniffed;
       break;
-    case "ole":
-      if (await oleIsEncryptedPackage(req.input))
+    case "ole": {
+      const ole = await timer.stage("ole-detect", () => readOle(req.input));
+      if (ole.kind === "encrypted")
         throw new ConvertError("encrypted_file", "Office file is password protected");
-      throw new ConvertError(
-        "unsupported_type",
-        "legacy Office binary format (.ppt/.doc/.xls) is not supported; export as PPTX or PDF",
-        "legacy_office",
-      );
-    case "zip": {
-      const scan = await timer.stage("zipscan-detect", () => scanZip(req.input, req.limits));
-      const kind = scan.entries.includes("ppt/presentation.xml")
-        ? isPresentationContentTypes(scan.contentTypesXml)
-        : { ok: false, macroEnabled: false };
-      if (!kind.ok)
+      if (ole.kind === "spreadsheet")
         throw new ConvertError(
           "unsupported_type",
-          "zip container is not a PowerPoint presentation",
+          "spreadsheets are not supported; export the sheet as PDF",
+          "legacy_office",
+        );
+      if (ole.kind !== "ppt" && ole.kind !== "doc")
+        throw new ConvertError(
+          "unsupported_type",
+          "old Office file that is not a PowerPoint or Word document",
+          "legacy_office",
+        );
+      type = ole.kind;
+      macroEnabled = ole.macros;
+      break;
+    }
+    case "zip": {
+      const scan = await timer.stage("zipscan-detect", () => scanZip(req.input, req.limits));
+      zipScan = scan;
+      const deck = scan.entries.includes("ppt/presentation.xml")
+        ? isPresentationContentTypes(scan.contentTypesXml)
+        : { ok: false, macroEnabled: false };
+      const word = scan.entries.includes("word/document.xml")
+        ? isWordContentTypes(scan.contentTypesXml)
+        : { ok: false, macroEnabled: false };
+      const odf = scan.mimetype !== "" ? odfKind(scan.mimetype) : null;
+      if (deck.ok) {
+        macroEnabled = deck.macroEnabled;
+        type = "pptx";
+      } else if (word.ok) {
+        macroEnabled = word.macroEnabled;
+        type = "docx";
+      } else if (odf) {
+        type = odf;
+      } else {
+        throw new ConvertError(
+          "unsupported_type",
+          "zip container is not a PowerPoint presentation, Word document or OpenDocument file",
           "other_zip",
         );
-      macroEnabled = kind.macroEnabled;
-      type = "pptx";
+      }
       break;
     }
     default:
@@ -255,6 +345,8 @@ export async function runPipeline(req: PipelineRequest): Promise<PipelineResult>
   let pages: PageResult[];
   if (type === "pptx") pages = await convertPptx(ctx, macroEnabled);
   else if (type === "pdf") pages = await convertPdfFile(ctx, req.input);
+  else if (type === "ppt" || type === "doc" || type === "docx" || type === "odp" || type === "odt")
+    pages = await convertOffice(ctx, type, macroEnabled, zipScan);
   else pages = await convertPhoto(ctx, type);
   warnings.sort((a, b) => (a.page ?? 0) - (b.page ?? 0));
   return { type, pages, warnings, timings: { ...timer.stages, total: timer.total() } };

@@ -8,6 +8,7 @@ import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { api, originalUrl, pageImageUrl } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { FILE_TYPE_LABELS, formatBytes } from "../../lib/fileTypes";
 import { formatDate } from "../../lib/format";
 import { failureWords, IN_PROGRESS, STATUS_INFO } from "../../lib/messages";
 import { useLayout } from "../../lib/useMedia";
@@ -104,28 +105,37 @@ export function SourceViewer({
         </EmptyState>
       ) : (
         <>
-          <Thumbnails pages={list} currentId={page.id} onPick={go} />
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              aria-label="Previous page"
-              disabled={index <= 0}
-              onClick={() => go(list[index - 1])}
-            >
-              <ChevronLeft size={18} aria-hidden />
-              <span className="hidden sm:inline">Previous</span>
-            </Button>
-            <p className="text-sm text-text-muted" aria-live="polite" data-testid="page-position">
-              Page {page.index} of {list.length}
-            </p>
-            <Button
-              aria-label="Next page"
-              disabled={index >= list.length - 1}
-              onClick={() => go(list[index + 1])}
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight size={18} aria-hidden />
-            </Button>
-          </div>
+          {/* One page (a photo, a single image): no strip of one thumbnail and no pager to nowhere. */}
+          {list.length > 1 ? (
+            <>
+              <Thumbnails pages={list} currentId={page.id} onPick={go} />
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  aria-label="Previous page"
+                  disabled={index <= 0}
+                  onClick={() => go(list[index - 1])}
+                >
+                  <ChevronLeft size={18} aria-hidden />
+                  <span className="hidden sm:inline">Previous</span>
+                </Button>
+                <p
+                  className="text-sm text-text-muted"
+                  aria-live="polite"
+                  data-testid="page-position"
+                >
+                  Page {page.index} of {list.length}
+                </p>
+                <Button
+                  aria-label="Next page"
+                  disabled={index >= list.length - 1}
+                  onClick={() => go(list[index + 1])}
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight size={18} aria-hidden />
+                </Button>
+              </div>
+            </>
+          ) : null}
           {layout === "phone" ? (
             <PhonePanes
               key={page.id}
@@ -168,11 +178,22 @@ function ViewerHeader({
           {file.originalName}
         </h1>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
-          <span className="uppercase">{file.type}</span>
-          {file.pageCount ? <span>{file.pageCount} pages</span> : null}
+          {file.pageCount ? (
+            <span>
+              {file.pageCount} {file.pageCount === 1 ? "page" : "pages"}
+            </span>
+          ) : null}
           <FileStatusBadge status={file.status} />
           <span>Uploaded {formatDate(file.createdAt)}</span>
         </p>
+        <div data-testid="file-details" className="mt-1.5 text-sm text-text-muted">
+          <p>
+            Original: {FILE_TYPE_LABELS[file.type]}, {formatBytes(file.bytes)}
+          </p>
+          {file.conversionNotes.map((note) => (
+            <p key={note}>{note}</p>
+          ))}
+        </div>
         <p className="mt-1.5 text-sm">
           {file.nodeId && placePath ? (
             <>

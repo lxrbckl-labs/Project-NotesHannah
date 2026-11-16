@@ -1,4 +1,4 @@
-import { mkdir, readdir } from "node:fs/promises";
+import { mkdir, open, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import sharp, { type Sharp } from "sharp";
 import type { Limits } from "../config.js";
@@ -54,26 +54,48 @@ export async function writePage(
   };
 }
 
-/** Open a JPEG/PNG file with decode limits; EXIF orientation is applied by rotate() with no argument. */
+/**
+ * Open an image file with decode limits; EXIF orientation is applied by rotate() with no argument.
+ * `page` picks one image of a multi-image file (TIFF); `pixelBudget` is what is left for all the pages of one
+ * file together. The size is read from the header and refused before any pixel is decoded.
+ */
 export async function openPhoto(
   file: string,
   lim: Limits,
-): Promise<{ img: Sharp; exifOrientation: number | null; width: number; height: number }> {
+  opts: { page?: number; pixelBudget?: number } = {},
+): Promise<{
+  img: Sharp;
+  exifOrientation: number | null;
+  width: number;
+  height: number;
+  /** Images or frames in the file (more than one: a multi-page TIFF or an animation). */
+  pages: number;
+}> {
+  const page = opts.page ?? 0;
   try {
-    const probe = sharp(file, { limitInputPixels: false, failOn: "error" });
+    const probe = sharp(file, { limitInputPixels: false, failOn: "error", page });
     const meta = await probe.metadata();
     if (!meta.width || !meta.height)
       throw new ConvertError("corrupt_file", "image has no dimensions");
-    if (meta.width * meta.height > lim.maxPixelsPerImage)
+    // For a multi-page file libvips reports the height of the whole stack, so use the page height.
+    const height = meta.pageHeight ?? meta.height;
+    if (meta.width * height > lim.maxPixelsPerImage)
       throw new ConvertError(
         "too_large",
-        `image is ${meta.width}x${meta.height} (limit ${lim.maxPixelsPerImage} pixels)`,
+        `image is ${meta.width}x${height} (limit ${lim.maxPixelsPerImage} pixels)`,
+        "pixel_bomb",
+      );
+    if (opts.pixelBudget !== undefined && meta.width * height > opts.pixelBudget)
+      throw new ConvertError(
+        "too_large",
+        `the pages together are over ${lim.maxTotalPixels} pixels`,
         "pixel_bomb",
       );
     const img = sharp(file, {
       limitInputPixels: lim.maxPixelsPerImage,
       failOn: "error",
       sequentialRead: true,
+      page,
     }).rotate();
     // Force a full decode now so a truncated file fails here, not halfway through writing.
     await img.clone().resize(8, 8, { fit: "inside" }).raw().toBuffer();
@@ -81,7 +103,8 @@ export async function openPhoto(
       img,
       exifOrientation: meta.orientation ?? null,
       width: meta.width,
-      height: meta.height,
+      height,
+      pages: meta.pages ?? 1,
     };
   } catch (e) {
     if (e instanceof ConvertError) throw e;
@@ -90,6 +113,56 @@ export async function openPhoto(
       throw new ConvertError("too_large", cleanMessage(msg), "pixel_bomb");
     throw new ConvertError("corrupt_file", `image decode failed: ${cleanMessage(msg)}`);
   }
+}
+
+/** Width and height a BMP header declares, or null when the header is too short or odd. */
+export function bmpDimensions(head: Buffer): { width: number; height: number } | null {
+  if (head.length < 26) return null;
+  const dib = head.readUInt32LE(14);
+  if (dib === 12) return { width: head.readUInt16LE(18), height: head.readUInt16LE(20) };
+  // A negative height only means the rows are stored top-down.
+  return { width: Math.abs(head.readInt32LE(18)), height: Math.abs(head.readInt32LE(22)) };
+}
+
+/**
+ * BMP: libvips cannot read it, so netpbm (bmptopnm, then pnmtopng) turns it into a PNG first. The size in the
+ * header is checked before either tool runs, so a huge declared size is refused without decoding anything.
+ */
+export async function bmpToPng(
+  file: string,
+  scratch: string,
+  lim: Limits,
+  deadline: Deadline,
+): Promise<string> {
+  const fh = await open(file, "r");
+  let head: Buffer;
+  try {
+    head = Buffer.alloc(32);
+    const { bytesRead } = await fh.read(head, 0, 32, 0);
+    head = head.subarray(0, bytesRead);
+  } finally {
+    await fh.close();
+  }
+  const dims = bmpDimensions(head);
+  if (!dims || dims.width < 1 || dims.height < 1)
+    throw new ConvertError("corrupt_file", "BMP header has no usable size");
+  if (dims.width * dims.height > lim.maxPixelsPerImage)
+    throw new ConvertError(
+      "too_large",
+      `BMP is ${dims.width}x${dims.height} (limit ${lim.maxPixelsPerImage} pixels)`,
+      "pixel_bomb",
+    );
+  const env = { PATH: process.env.PATH ?? "", HOME: scratch, TMPDIR: scratch, LANG: "C.UTF-8" };
+  const pnm = path.join(scratch, "bmp-decoded.pnm");
+  const png = path.join(scratch, "bmp-decoded.png");
+  const dec = await run(deadline, "bmptopnm", [file], { env, stdoutTo: pnm });
+  if (dec.code !== 0)
+    throw new ConvertError("corrupt_file", `bmptopnm failed: ${cleanMessage(dec.stderr)}`);
+  const enc = await run(deadline, "pnmtopng", [pnm], { env, stdoutTo: png });
+  await rm(pnm, { force: true });
+  if (enc.code !== 0)
+    throw new ConvertError("corrupt_file", `pnmtopng failed: ${cleanMessage(enc.stderr)}`);
+  return png;
 }
 
 /** HEIC: libheif (with libde265 for HEVC) decodes to PNG; sharp's prebuilt binaries cannot decode HEVC. */

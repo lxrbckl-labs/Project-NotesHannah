@@ -342,7 +342,7 @@ export const SECTIONS: GuideSection[] = [
     blocks: [
       {
         kind: "p",
-        text: "You can upload PDFs, PowerPoint files (.pptx), and photos in JPEG, PNG or HEIC format. HEIC is what an iPhone or iPad camera makes, so photos of handwritten notes work straight from the camera or photo library. You can choose several files at once. On a computer you can also drag files onto a page.",
+        text: "You can upload PDFs, PowerPoint slides (.pptx or the older .ppt), Word handouts (.docx or .doc), OpenDocument slides and documents (.odp and .odt), and pictures in JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF or BMP format. HEIC is what an iPhone or iPad camera makes, so photos of handwritten notes work straight from the camera or photo library. A TIFF with several pages becomes several pages, and an animated GIF shows only its first frame. You can choose several files at once. On a computer you can also drag files onto a page.",
       },
       {
         kind: "list",
@@ -380,7 +380,7 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "note",
         tone: "tip",
-        text: "Files with a password, files over 500 pages, and other file types are refused with a message that says what to do.",
+        text: "Files with a password, files over 500 pages, and other file types (spreadsheets and SVG drawings, for example) are refused with a message that says what to do. Export those as a PDF and upload that.",
       },
     ],
   },

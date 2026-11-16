@@ -3,7 +3,8 @@ import { type FileHandle, open, unlink } from "node:fs/promises";
 import { type FileType, newId } from "@notes/schema";
 import { AppError } from "../../http/errors.js";
 import { ensureDir, resolveInside, type Storage, tmpDir } from "../../storage/storage.js";
-import { isPresentationZip, SNIFF_BYTES, sniffHeader } from "./detect.js";
+import { classifyZip, SNIFF_BYTES, sniffHeader } from "./detect.js";
+import { readOle } from "./ole.js";
 
 export interface Received {
   /** Staged file under tmp/; the caller moves it into place or removes it. */
@@ -13,8 +14,13 @@ export interface Received {
   type: FileType;
 }
 
-export const SUPPORTED_TYPES_HINT =
-  "Send a PDF, PPTX, JPEG, PNG or HEIC file. The type is read from the file's content, not its name.";
+/** What may be uploaded, in words (also the first line of every refusal's hint). */
+export const SUPPORTED_TYPES_WORDS =
+  "PDF, PowerPoint (.pptx, .ppt), Word (.docx, .doc), OpenDocument (.odp, .odt), JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF or BMP";
+
+export const SUPPORTED_TYPES_HINT = `Send a ${SUPPORTED_TYPES_WORDS} file. The type is read from the file's content, not its name. Export anything else (a spreadsheet, an SVG) as a PDF.`;
+
+const NOT_SUPPORTED = `This file is not a ${SUPPORTED_TYPES_WORDS}.`;
 
 export function unsupported(detail: string): AppError {
   return new AppError("unsupported_type", detail, { hint: SUPPORTED_TYPES_HINT });
@@ -38,7 +44,7 @@ export class UploadSink {
   private hash: Hash = createHash("sha256");
   private count = 0;
   private head = Buffer.alloc(0);
-  private sniffed: FileType | "zip" | null = null;
+  private sniffed: FileType | "zip" | "ole" | null = null;
   private path = "";
   private closed = false;
 
@@ -64,7 +70,7 @@ export class UploadSink {
       ]);
       this.sniffed = sniffHeader(this.head);
       if (this.sniffed === null && this.head.length >= SNIFF_BYTES) {
-        throw unsupported("This file is not a PDF, PPTX, JPEG, PNG or HEIC.");
+        throw unsupported(NOT_SUPPORTED);
       }
     }
     this.hash.update(chunk);
@@ -80,21 +86,33 @@ export class UploadSink {
     try {
       const type = this.sniffed ?? sniffHeader(this.head);
       if (type === null) {
-        throw unsupported(
-          this.count === 0
-            ? "The upload is empty."
-            : "This file is not a PDF, PPTX, JPEG, PNG or HEIC.",
-        );
+        throw unsupported(this.count === 0 ? "The upload is empty." : NOT_SUPPORTED);
       }
       await this.handle?.sync();
       await this.handle?.close();
       this.handle = null;
       let final: FileType;
       if (type === "zip") {
-        if (!(await isPresentationZip(this.path))) {
-          throw unsupported("This ZIP archive is not a PowerPoint presentation.");
+        const kind = await classifyZip(this.path);
+        if (kind === null) {
+          throw unsupported(
+            "This ZIP archive is not a PowerPoint, Word or OpenDocument file (spreadsheets and other archives are not supported).",
+          );
         }
-        final = "pptx";
+        final = kind;
+      } else if (type === "ole") {
+        const ole = await readOle(this.path);
+        if (ole.kind === "encrypted") {
+          throw unsupported(
+            "This Office file is password protected. Remove the password and upload it again.",
+          );
+        }
+        if (ole.kind !== "ppt" && ole.kind !== "doc") {
+          throw unsupported(
+            "This old Office file is not a PowerPoint or Word document (spreadsheets are not supported).",
+          );
+        }
+        final = ole.kind;
       } else final = type;
       this.closed = true;
       return { path: this.path, sha256: this.hash.digest("hex"), bytes: this.count, type: final };

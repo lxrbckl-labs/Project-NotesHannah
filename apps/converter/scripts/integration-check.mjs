@@ -69,6 +69,73 @@ function runtimeCases() {
           ]),
         ),
     },
+    // Files that declare a huge picture but hold no pixels: only a size check made before decoding refuses
+    // them as a pixel bomb (a decoder that started would fail them as damaged).
+    {
+      file: "@huge.bmp",
+      phase: "default",
+      expect: { ok: false, errorCode: "too_large", reason: "pixel_bomb" },
+      make: (p) => {
+        const b = Buffer.alloc(54);
+        b.write("BM");
+        b.writeUInt32LE(54, 2);
+        b.writeUInt32LE(54, 10);
+        b.writeUInt32LE(40, 14);
+        b.writeInt32LE(20_000, 18);
+        b.writeInt32LE(20_000, 22);
+        b.writeUInt16LE(1, 26);
+        b.writeUInt16LE(24, 28);
+        return writeFile(p, b);
+      },
+    },
+    {
+      file: "@huge.tiff",
+      phase: "default",
+      expect: { ok: false, errorCode: "too_large", reason: "pixel_bomb" },
+      make: (p) => {
+        const entries = [
+          [256, 4, 20_000],
+          [257, 4, 20_000],
+          [258, 3, 8],
+          [259, 3, 1],
+          [262, 3, 1],
+          [273, 4, 200],
+          [277, 3, 1],
+          [278, 4, 20_000],
+          [279, 4, 400_000_000],
+        ];
+        const b = Buffer.alloc(8 + 2 + entries.length * 12 + 4);
+        b.write("II");
+        b.writeUInt16LE(42, 2);
+        b.writeUInt32LE(8, 4);
+        b.writeUInt16LE(entries.length, 8);
+        entries.forEach(([tag, type, value], i) => {
+          const at = 10 + i * 12;
+          b.writeUInt16LE(tag, at);
+          b.writeUInt16LE(type, at + 2);
+          b.writeUInt32LE(1, at + 4);
+          b.writeUInt32LE(value, at + 8);
+        });
+        return writeFile(p, b);
+      },
+    },
+    {
+      file: "@huge.gif",
+      phase: "default",
+      expect: { ok: false, errorCode: "too_large", reason: "pixel_bomb" },
+      make: (p) => {
+        const b = Buffer.alloc(13 + 14);
+        b.write("GIF89a");
+        b.writeUInt16LE(60_000, 6);
+        b.writeUInt16LE(60_000, 8);
+        b[13] = 0x2c;
+        b.writeUInt16LE(60_000, 13 + 5);
+        b.writeUInt16LE(60_000, 13 + 7);
+        b[13 + 10] = 2;
+        b[13 + 12] = 0x3b;
+        return writeFile(p, b);
+      },
+    },
     {
       file: "@garbage.bin",
       phase: "default",
@@ -408,12 +475,17 @@ if (cmd === "prepare") await prepare(args[0], args[1], args[2]);
 else if (cmd === "verify") await verify(args[0], args[1]);
 else if (cmd === "status") await status(args[0], args[1]);
 else if (cmd === "limits-labels") {
-  for (const c of expectations.cases.filter((x) => x.phase === "limits"))
+  // One container restart per label: cases that share a label share its environment.
+  const seen = new Set();
+  for (const c of expectations.cases.filter((x) => x.phase === "limits")) {
+    if (seen.has(c.label)) continue;
+    seen.add(c.label);
     console.log(
       `${c.label}\t${Object.entries(c.env)
         .map(([k, v]) => `${k}=${v}`)
         .join(" ")}`,
     );
+  }
 } else {
   console.error("usage: integration-check.mjs prepare|verify|status|limits-labels ...");
   process.exit(64);

@@ -152,4 +152,23 @@ describe("source viewer", () => {
     const link = await screen.findByRole("link", { name: /Download original/ });
     expect(link).toHaveAttribute("href", `/api/files/${file.id}/original?download=true`);
   });
+
+  it("shows a single image as one page with its details and no strip or pager", async () => {
+    await startBackend();
+    const files = await api.allFiles();
+    const photo = files.find((f) => f.originalName === "Whiteboard photo.jpeg");
+    if (!photo) throw new Error("seed");
+    await renderReady(`/files/${photo.id}`);
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Whiteboard photo.jpeg" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: "Page 1" })).toBeInTheDocument();
+    // one page: nothing to pick between
+    expect(screen.queryByRole("navigation", { name: "Pages" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("page-position")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next page" })).not.toBeInTheDocument();
+    // the file details name the original type and size
+    expect(screen.getByTestId("file-details")).toHaveTextContent(/Original: JPEG photo, /);
+    expect(screen.getByText("1 page")).toBeInTheDocument();
+  });
 });

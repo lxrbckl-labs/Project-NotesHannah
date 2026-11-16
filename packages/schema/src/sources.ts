@@ -2,8 +2,29 @@ import { z } from "zod";
 import { Actor, ErrorCode, Timestamp } from "./common.js";
 import { FileId, NodeId, PageId, TranscriptId, UploadId, UserId } from "./ids.js";
 
-/** File types accepted on upload. Detected from content, never from the extension. */
-export const FileType = z.enum(["pdf", "pptx", "jpeg", "png", "heic"]);
+/**
+ * File types accepted on upload. Detected from content, never from the extension.
+ * Slides and handouts become pages through LibreOffice (`pptx` also covers macro-enabled and show/template
+ * files, `docx` covers Word templates and macro-enabled files); photos become one page, a TIFF one page per
+ * image in it. SVG is not accepted: it can carry scripts.
+ */
+export const FileType = z.enum([
+  "pdf",
+  "pptx",
+  "ppt",
+  "docx",
+  "doc",
+  "odp",
+  "odt",
+  "jpeg",
+  "png",
+  "heic",
+  "webp",
+  "gif",
+  "tiff",
+  "avif",
+  "bmp",
+]);
 export type FileType = z.infer<typeof FileType>;
 
 export const UPLOAD_LIMITS = {
@@ -55,6 +76,11 @@ export const SourceFile = z.object({
   createdAt: Timestamp,
   updatedAt: Timestamp,
   trashedAt: Timestamp.nullable(),
+  /**
+   * What the converter wants her to know about the file as a whole, in plain words: an animated image
+   * kept to its first frame, macros that were not run. Empty for most files.
+   */
+  conversionNotes: z.array(z.string().max(300)).max(10),
 });
 export type SourceFile = z.infer<typeof SourceFile>;
 

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createWriteStream } from "node:fs";
 import { ConvertError } from "../errors.js";
 
 const MAX_CAPTURE = 64 * 1024 * 1024;
@@ -27,7 +28,12 @@ export function run(
   deadline: Deadline,
   cmd: string,
   args: string[],
-  opts: { env?: NodeJS.ProcessEnv; cwd?: string } = {},
+  opts: {
+    env?: NodeJS.ProcessEnv;
+    cwd?: string;
+    /** Send stdout to this file instead of holding it in memory (for tools that print an image). */
+    stdoutTo?: string;
+  } = {},
 ): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const budget = deadline.remaining();
@@ -36,6 +42,12 @@ export function run(
       cwd: opts.cwd,
       stdio: ["ignore", "pipe", "pipe"],
       detached: true, // own process group so LibreOffice's oosplash/soffice.bin children die too
+    });
+    const sink = opts.stdoutTo ? createWriteStream(opts.stdoutTo, { mode: 0o600 }) : null;
+    // A write error (disk full, directory gone) must not escape as an unhandled event and kill the child.
+    let sinkError: Error | null = null;
+    sink?.on("error", (e) => {
+      sinkError = e;
     });
     const out: Buffer[] = [];
     let outBytes = 0;
@@ -53,6 +65,10 @@ export function run(
       kill();
     }, budget);
     child.stdout.on("data", (d: Buffer) => {
+      if (sink) {
+        sink.write(d);
+        return;
+      }
       outBytes += d.length;
       if (outBytes > MAX_CAPTURE) {
         kill();
@@ -72,6 +88,17 @@ export function run(
     child.on("close", (code, signal) => {
       clearTimeout(timer);
       kill(); // reap any stragglers in the group
+      sink?.end();
+      if (sinkError) {
+        reject(
+          new ConvertError(
+            "conversion_failed",
+            `cannot write ${cmd}'s output: ${(sinkError as Error).message}`,
+            "internal",
+          ),
+        );
+        return;
+      }
       if (timedOut) {
         reject(new ConvertError("conversion_failed", `${cmd} exceeded the time limit`, "timeout"));
         return;

@@ -100,6 +100,7 @@ export function seedLibrary(userId: string): SeedResult {
       createdAt: SEEDED_AT,
       updatedAt: SEEDED_AT,
       trashedAt: null,
+      conversionNotes: [],
     };
     files.push(f);
     return f;

@@ -45,7 +45,7 @@ test.describe("uploads and the inbox", () => {
     const chooser = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: "Upload files" }).first().click();
     await (await chooser).setFiles([
-      { name: "report.docx", mimeType: "application/zip", buffer: Buffer.from("PK") },
+      { name: "figure.svg", mimeType: "image/svg+xml", buffer: Buffer.from("<svg/>") },
     ]);
     const item = page.getByTestId("upload-item");
     await expect(item).toHaveAttribute("data-status", "error");

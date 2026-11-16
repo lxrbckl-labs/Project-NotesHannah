@@ -42,24 +42,54 @@ function controlled() {
 }
 
 describe("the file picker", () => {
-  it("offers PDF, PPTX, JPEG, PNG and HEIC by extension and by type", () => {
-    for (const ext of [".pdf", ".pptx", ".jpg", ".jpeg", ".png", ".heic", ".heif"]) {
+  it("offers every coursework format by extension and by type, and not SVG or spreadsheets", () => {
+    for (const ext of [
+      ".pdf",
+      ".pptx",
+      ".ppt",
+      ".odp",
+      ".docx",
+      ".doc",
+      ".odt",
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".heic",
+      ".heif",
+      ".webp",
+      ".gif",
+      ".tif",
+      ".tiff",
+      ".avif",
+      ".bmp",
+    ]) {
       expect(ACCEPT_EXTENSIONS).toContain(ext);
     }
     expect(ACCEPT_MIME).toEqual(
       expect.arrayContaining([
         "application/pdf",
+        "application/msword",
+        "application/vnd.ms-powerpoint",
         "image/jpeg",
         "image/png",
         "image/heic",
         "image/heif",
+        "image/webp",
+        "image/gif",
+        "image/tiff",
+        "image/avif",
+        "image/bmp",
       ]),
     );
     expect(ACCEPT.split(",")).toContain(
       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     );
-    // nothing outside what the server detects: no .docx, .ppt, .txt
-    expect(ACCEPT).not.toMatch(/\.docx|\.ppt,|\.txt|image\/\*|\*\/\*/);
+    expect(ACCEPT.split(",")).toContain(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    );
+    // nothing outside what the server detects: no spreadsheets, SVG (it can carry scripts) or text, and
+    // no wildcard that would admit them
+    expect(ACCEPT).not.toMatch(/\.xlsx?|\.svg|svg\+xml|\.txt|image\/\*|\*\/\*/);
   });
 });
 
@@ -155,7 +185,7 @@ describe("uploads in the app", () => {
     await screen.findByRole("heading", { level: 1, name: "Inbox" });
     const before = (await screen.findAllByTestId("file-row")).length;
     fireEvent.change(screen.getByTestId("upload-input"), {
-      target: { files: [file("report.docx")] },
+      target: { files: [file("figure.svg")] },
     });
     const alert = await screen.findByRole("alert", {}, { timeout: 5000 });
     expect(alert).toHaveTextContent(/not a file type the app can read/);

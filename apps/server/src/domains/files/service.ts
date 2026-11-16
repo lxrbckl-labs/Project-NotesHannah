@@ -151,10 +151,30 @@ export interface StoredFile {
 export const CONTENT_TYPES: Record<FileType, string> = {
   pdf: "application/pdf",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ppt: "application/vnd.ms-powerpoint",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  doc: "application/msword",
+  odp: "application/vnd.oasis.opendocument.presentation",
+  odt: "application/vnd.oasis.opendocument.text",
   jpeg: "image/jpeg",
   png: "image/png",
   heic: "image/heic",
+  webp: "image/webp",
+  gif: "image/gif",
+  tiff: "image/tiff",
+  avif: "image/avif",
+  bmp: "image/bmp",
 };
+
+/**
+ * Types a browser may show straight from `/original` (plain page images and PDFs). Everything else, and
+ * every `?download=true`, is sent as an attachment, so an uploaded file never runs in the app's origin.
+ */
+export const INLINE_CONTENT_TYPES: ReadonlySet<string> = new Set([
+  CONTENT_TYPES.pdf,
+  CONTENT_TYPES.jpeg,
+  CONTENT_TYPES.png,
+]);
 
 const DEFAULT_LIMIT = 50;
 const EXAMPLE_NODE_ID = "nod_01HZX3K9Q2V7M4N8P6R5T0W1YB";

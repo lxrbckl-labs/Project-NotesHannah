@@ -17,7 +17,9 @@ compose_file="$repo/deploy/docker-compose.converter.yml"
 check="$here/integration-check.mjs"
 work="$(mktemp -d "${TMPDIR:-/tmp}/notes-converter-it.XXXXXX")"
 export DATA_DIR="$work/data"
-export COMPOSE_PROJECT_NAME=notes-converter-it
+export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-notes-converter-it}"
+# Set CONVERTER_IMAGE to build and test under another tag, so a shared notes-converter image is not retagged.
+export CONVERTER_IMAGE="${CONVERTER_IMAGE:-notes-converter}"
 export POLL_MS="${POLL_MS:-200}" HEARTBEAT_MS="${HEARTBEAT_MS:-1000}"
 dc() { docker compose -f "$compose_file" "$@"; }
 fail=0
@@ -35,7 +37,7 @@ chmod -R 777 "$DATA_DIR"   # the converter runs as uid 10001; the server side of
 
 note "build"
 time dc build
-echo "image size: $(docker image inspect notes-converter --format '{{.Size}}' | awk '{printf "%.0f MB on disk\n", $1/1048576}')"
+echo "image size: $(docker image inspect "$CONVERTER_IMAGE" --format '{{.Size}}' | awk '{printf "%.0f MB on disk\n", $1/1048576}')"
 
 wait_for_results() { # waits until every dropped job has a result
   local deadline=$((SECONDS + ${1:-900})) line
