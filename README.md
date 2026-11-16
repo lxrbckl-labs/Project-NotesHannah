@@ -30,11 +30,29 @@ Served at `notes.hannahporras.app`, from a Docker container on the Mac mini behi
 
 ## Development
 
-Requires Node 25 and pnpm 10 (see `.nvmrc`). Copy `.env.example` to `.env` to change defaults.
+Requires Node 25 and pnpm 10 (see `.nvmrc`).
+
+### Quick start, dev mode
 
 ```sh
-pnpm install            # install the workspace
-pnpm dev                # server on :3000, web on :5173 (proxies /api and /mcp to the server)
+pnpm install
+cp .env.example .env     # defaults: server :3000, web :5173, APP_ORIGIN=http://localhost:5173
+pnpm --filter @notes/server admin init-storage --create-dir   # once: marks DATA_DIR as the storage drive
+pnpm --filter @notes/server admin create-user hannah --generate   # once: prints a password, once
+pnpm dev                 # server on :3000, web on :5173 (proxies /api and /mcp to the server)
+```
+
+The web app has no sign-in screen yet; sign in over the API to check that it works:
+`curl -i -X POST localhost:3000/api/auth/login -H 'Origin: http://localhost:5173' -H
+'content-type: application/json' -d '{"username":"hannah","password":"<the printed one>"}'`.
+The server refuses to start without the
+storage marker (`init-storage`) and refuses state-changing browser requests whose `Origin` is not
+`APP_ORIGIN`, so keep `APP_ORIGIN` equal to the address in the browser's address bar. Relative
+paths in `.env` (`DATA_DIR`, `DB_PATH`) are relative to `apps/server`, where the commands run; the
+data lands in `apps/server/data/` (git-ignored). Uploaded files wait in `converting` until the
+converter worker is running; it is not part of this quick start.
+
+```sh
 pnpm test               # unit tests in every package
 pnpm gate               # lint + typecheck + test + build: run before every commit
 pnpm format             # apply Biome formatting and safe fixes
@@ -46,11 +64,30 @@ Layout: `apps/web` (React, Vite, Tailwind 4), `apps/server` (Hono: API, MCP endp
 files), `apps/converter` (file conversion worker), `packages/schema` (shared Zod schema),
 `deploy/` (Dockerfile and compose file), `fixtures/` (test material).
 
-Container, from the repository root:
+### Quick start, Docker
+
+The image runs in production mode: it needs `APP_ORIGIN`, a data directory that holds the
+storage marker, and a user. The database lives on a named volume (`notes-db`), the data
+directory is a bind mount. From the repository root:
 
 ```sh
 docker build -f deploy/Dockerfile -t notes-app .
-docker run --rm -p 3000:3000 notes-app && curl localhost:3000/healthz
-# or, with a named volume for the database and a bind mount for DATA_DIR:
-PORT=3000 DATA_DIR=./data docker compose -f deploy/docker-compose.yml up --build
+
+export APP_ORIGIN=http://localhost:3000     # the address you will open in the browser
+export DATA_DIR="$PWD/data/storage"         # absolute: Compose resolves relative paths against deploy/
+mkdir -p "$DATA_DIR"
+
+# once, in one-off containers (the server will not start before the first one)
+docker compose -f deploy/docker-compose.yml run --rm app node dist/cli/admin.js init-storage
+docker compose -f deploy/docker-compose.yml run --rm app node dist/cli/admin.js create-user hannah --generate
+
+docker compose -f deploy/docker-compose.yml up -d
+curl localhost:3000/healthz                 # {"ok":true,"version":"0.0.0"}
 ```
+
+Set `PORT` too if 3000 is taken (and put the same port in `APP_ORIGIN`). `docker run notes-app`
+on its own stops at once with `APP_ORIGIN: Required in production`. In production mode the
+session cookie is `Secure`, so sign in from a browser that accepts it over `http://localhost`
+(Chrome and Firefox) or put https in front, as Caddy does on the Mac mini. `docker compose -f
+deploy/docker-compose.yml down -v` removes the container and the database volume; the data
+directory stays.
