@@ -3,6 +3,7 @@ import { type Config, loadConfig } from "../src/config.js";
 import { createTestDatabase, type Db } from "../src/db/client.js";
 import { type Argon2Params, PasswordHasher } from "../src/domains/accounts/passwords.js";
 import { insertUser } from "../src/domains/accounts/users.js";
+import type { Services } from "../src/services.js";
 
 /** Cheap Argon2id parameters so tests run fast. Never use outside tests. */
 export const TEST_ARGON2: Argon2Params = { memoryCost: 256, timeCost: 1, parallelism: 1 };
@@ -35,13 +36,20 @@ export interface TestResponse {
 }
 
 export function makeTestApp(
-  options: { env?: Record<string, string>; hasher?: PasswordHasher; db?: Db } = {},
+  options: {
+    env?: Record<string, string>;
+    hasher?: PasswordHasher;
+    db?: Db;
+    /** Build the domain services over the test's database, config and clock (as `index.ts` does). */
+    services?: (deps: { config: Config; db: Db; now: () => number }) => Services;
+  } = {},
 ) {
   const clock = new Clock();
   const db = options.db ?? createTestDatabase();
   const config: Config = loadConfig({ NODE_ENV: "test", ...options.env });
   const hasher = options.hasher ?? new PasswordHasher(TEST_ARGON2);
-  const app = createApp(config, { db, now: clock.now, hasher });
+  const services = options.services?.({ config, db, now: clock.now });
+  const app = createApp(config, { db, now: clock.now, hasher, ...(services ? { services } : {}) });
 
   async function request(path: string, opts: RequestOptions = {}): Promise<TestResponse> {
     const method = opts.method ?? (opts.body !== undefined ? "POST" : "GET");
@@ -93,7 +101,7 @@ export function makeTestApp(
     return { res, cookies };
   }
 
-  return { app, db, clock, config, hasher, request, addUser, signIn };
+  return { app, db, clock, config, hasher, services, request, addUser, signIn };
 }
 
 export function errorCode(body: unknown): string | undefined {
