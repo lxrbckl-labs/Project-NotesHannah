@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react";
 import { Link } from "react-router";
 import {
   GUIDE_BYLINE,
@@ -256,10 +257,27 @@ function QuickReferencePage() {
 }
 
 /** The whole guide as a booklet. */
+/**
+ * The running-head rules are built from the section titles, so they cannot live in the CSS file. The
+ * server's content policy refuses a <style> element, so they are added as a stylesheet object instead,
+ * which the policy allows, and taken away again when the page is left.
+ */
+function usePageRules() {
+  useLayoutEffect(() => {
+    if (typeof CSSStyleSheet === "undefined" || !("replaceSync" in CSSStyleSheet.prototype)) return;
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(PAGE_RULES);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    return () => {
+      document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== sheet);
+    };
+  }, []);
+}
+
 export function GuidePrintPage() {
+  usePageRules();
   return (
     <div className="guide-doc gp">
-      <style>{PAGE_RULES}</style>
       <Cover />
       <Contents />
       <ShowcasePages />

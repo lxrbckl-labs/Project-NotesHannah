@@ -158,9 +158,10 @@ function Shell() {
             layout === "phone" && "px-safe pb-24",
           )}
         >
-          {/* On a phone the page, not the dotted background, slides when she changes tab. */}
+          {/* On a phone the page, not the dotted background, slides when she changes tab. Full height, so a
+              screen that fills the pane (the canvas) still has a height to fill. */}
           {layout === "phone" ? (
-            <div className="vt-page">
+            <div className="vt-page h-full">
               <Outlet />
             </div>
           ) : (
