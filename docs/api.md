@@ -61,7 +61,7 @@ These three routes accept a browser session only, never an API key.
 | `GET /api/trash` | `cursor`, `limit` | list of trashed `NodeWithLinks` (top-most trashed item of each subtree) |
 | `GET /api/recents` | `limit` | list of recently opened or changed `NodeWithLinks` |
 | `GET /api/favourites` | | list of `NodeWithLinks` |
-| `GET /api/search` | `q`, `cursor`, `limit` | `{ items: SearchHit[], nextCursor }` |
+| `GET /api/search` | `q`, `kinds`, `cursor`, `limit` | `{ items: SearchHit[], nextCursor }`: see [Search](#search) |
 
 Rules the server enforces (and reports with `invalid_input` or `conflict`, a hint and a
 valid example):
@@ -73,8 +73,19 @@ valid example):
 - Trashing a node trashes everything under it; restoring brings it all back. Restoring
   into a trashed parent is refused.
 
-`SearchHit` is `{ kind: "node", node: NodeWithLinks, snippet: string }` for now; more
-kinds are added as transcripts and documents arrive.
+Trashing, restoring, deleting and duplicating a node carry through to what hangs off it:
+
+- **Documents** of the node and of everything under it are hidden on trash (they answer
+  `not_found`, drop out of search and read as trashed in the reverse lookup), come back
+  with all their blocks and revisions on restore, are removed on permanent delete, and are
+  deep-copied on duplicate (new document and block IDs, citations included).
+- **Source files** filed under the node or anything under it go **back to the inbox,
+  unfiled** (status `transcribed` or `converted` again): they are never trashed or deleted
+  as a side effect, and their original, pages and transcripts are untouched. When the node
+  came back from the trash they are filed there again, unless they were filed somewhere
+  else in the meantime. After a permanent delete they simply stay in the inbox.
+
+All of this happens in the same transaction as the library change.
 
 ## Files, pages and inbox
 
@@ -222,15 +233,37 @@ with `conversion_failed` and is withdrawn from the queue.
   and expiry. The same `/image` route then needs no other credential, so an agent's shell can
   `curl` the page. A wrong or expired signature is `forbidden`.
 
-`TranscriptHit` (search, exported from the service for the library domain's search route) is
+`TranscriptHit` (what the files service returns to the unified search) is
 `{ kind: "transcript", pageId, pageIndex, fileId, fileName, nodeId, transcriptId, snippet }`.
-Search covers the current revision of each page of live files.
-| `POST /api/files/:id/retry` | none | `{ file }` |
-| `POST /api/files/:id/file` | `{ nodeId }` | `{ file }` (file it under a lecture or folder) |
-| `GET /api/files/:id/original` | | the original bytes |
-| `GET /api/files/:id/pages` | | `{ items: Page[] }` |
-| `GET /api/pages/:id/image` | `size=page` or `thumb` | the page image |
-| `GET /api/pages/:id/transcript` | | `{ transcript: Transcript | null }` |
+It covers the current revision of each page of live files; [Search](#search) turns it into a
+`page` hit.
+
+## Search
+
+`GET /api/search?q=beta&kinds=node,page&limit=20` finds things in three places at once and
+returns `{ items: SearchHit[], nextCursor }` (`SearchHit` is in `@notes/schema`):
+
+| `kind` | Matches | Fields |
+|---|---|---|
+| `node` | the **name** of a library item (sections excluded) | `node: NodeWithLinks`, `snippet` |
+| `page` | the **current transcript** of a page of a live file | `pageId`, `pageIndex` (1-based), `fileId`, `fileName`, `nodeId` (null while in the inbox), `transcriptId`, `snippet` |
+| `block` | the **text of a block** of a live document | `documentId`, `nodeId`, `documentTitle`, `blockId`, `blockType`, `snippet` |
+
+- `kinds` is a comma-separated subset of `node,page,block`; leave it out for all three. An
+  unknown or empty list is `invalid_input`. `limit` is 1 to 100 (default 50).
+- **Words** are matched as prefixes, all of them, case and accents ignored.
+- **Ranking.** Each kind is ranked by the full-text engine on its own; the lists are merged by
+  reciprocal rank: a hit at position `r` of its kind scores `weight / (3 + r)`, with weights
+  node 1.5, block 1, page 0.9. So the best name match comes first, then the best block and
+  the best page, then the next name matches, and so on; a name match outranks a block, which
+  outranks a raw transcript page. Within a kind the engine's order stands.
+- **One cursor.** `nextCursor` is opaque and covers all kinds; pass it back unchanged with the
+  same `q` and `kinds`. Pages never repeat or skip a hit while nothing changes.
+- **Trash.** Trashed library items, documents in the trash (including those under a trashed
+  node) and pages of files in the trash are not found, and are found again after a restore.
+  A file taken back to the inbox because its place was trashed is still found, with
+  `nodeId: null`.
+- Everything is scoped to the caller.
 
 ## Documents
 
@@ -309,6 +342,17 @@ A document whose library node is in the trash is `not_found` too, and returns on
 `pageIndex`, `quoteStillPresent` (null when unknown) and `currentTranscriptRevision`. Status
 is computed on every read; nothing in a block is rewritten when a source is trashed.
 
+`quoteStillPresent` is true when the quote occurs, whitespace-normalised (runs of spaces and
+line breaks count as one space), in the page's **current transcript**, its **native text** (the
+text layer of a PDF or slide) or its **speaker notes**; so slide text can be cited before the
+page is transcribed. It is false when the page has such text and the quote is in none of it,
+and null while the page has no text at all. A page that does not belong to the cited file, or
+to the caller, does not exist (`source_deleted`). A new citation by an agent is refused when
+the page is missing or trashed or the quote is `false`; a `null` is let through.
+
+The reverse lookups (`GET /api/pages/:pageId/citations`, `GET /api/files/:fileId/citations`)
+answer `not_found` for a page or file that is not the caller's or was deleted.
+
 ## Activity and changes
 
 | Method and path | Query | Returns |
@@ -317,9 +361,23 @@ is computed on every read; nothing in a block is rewritten when a source is tras
 | `GET /api/activity` | `keyId`, `action`, `objectId`, `since`, `until` (ISO times), `cursor`, `limit` (default 50) | `{ items: ActivityEntry[], nextCursor }`, newest first |
 
 **Change feed (H9).** An entry is `{ seq, at, action, objectType, objectIds, documentId,
-nodeId, revision, actor, requestId, summary }`. Actions: `document.created`,
-`document.updated`, `document.reviewed`, `document.restored` (a revision was restored),
-`document.trashed`, `document.restored_from_trash`, `document.deleted`. The cursor is the last
+nodeId, revision, actor, requestId, summary }`. Actions:
+
+- documents: `document.created`, `document.updated`, `document.reviewed`, `document.restored`
+  (a revision was restored), `document.trashed`, `document.restored_from_trash`,
+  `document.deleted`;
+- library (`objectType: "node"`): `node.created`, `node.updated`, `node.moved`,
+  `node.duplicated`, `node.trashed`, `node.restored`, `node.deleted`; `objectIds` are the node
+  (for a delete, everything deleted with it), `nodeId` is the node;
+- files (`objectType: "file"`, or `"page"` with `objectIds: [fileId, pageId]`): `file.uploaded`,
+  `file.converted` and `file.failed` (the actor is whoever uploaded the file), `file.retried`,
+  `file.filed`, `file.unfiled` (also when its place went to the trash or was deleted),
+  `file.claimed`, `file.released`, `file.trashed`, `file.restored`, `file.deleted`;
+  `transcript.saved`, `transcript.restored`, `transcript.reviewed`.
+
+All of them land in the same feed, in commit order, for the user whose data it is.
+
+The cursor is the last
 `seq` seen; `nextCursor` never moves backwards and is returned even when `items` is empty, so
 a poller simply stores it and sends it next time. `seq` strictly increases in commit order
 (one sequence shared by all users, so one user's numbers have gaps). Entries are written in
@@ -328,7 +386,13 @@ per document touched.
 
 **Activity log (H10).** One entry per thing an agent did, never for her own work:
 `{ id, at, keyId, keyLabel, action, summary, links }`. `action` is the operation
-(`insert_blocks`, `replace_generated`, ...) or `batch`; `summary` is plain words such as
-`Beta blockers: Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone`; `links` point at
-the document (with its library `nodeId`), up to 15 of the blocks, and the request when one
-was named. `objectId` filters on any of those IDs.
+(`insert_blocks`, `replace_generated`, ...) or `batch` for documents, `library.created`,
+`library.moved`, ... for the library and the change feed's own codes (`file.uploaded`,
+`transcript.saved`, ...) for files; `summary` is plain words such as `Beta blockers:
+Regenerated: wrote 3 blocks, removed 5, left 2 of hers alone`, `Created lecture 07 · Beta
+blockers`, `Uploaded beta-blockers.pptx`, `Transcribed page 3 of beta-blockers.pptx` or
+`Filed beta-blockers.pptx under lecture 07 · Beta blockers`; `links` point at the document
+(with its library `nodeId`), up to 15 of the blocks and the request when one was named, or at
+the `node`, `file` and `page`. `objectId` filters on any of those IDs. Conversion results
+(done by the converter, not an agent) and the knock-on effects of trashing a node are in the
+change feed only.

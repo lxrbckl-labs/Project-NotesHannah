@@ -157,6 +157,25 @@ so anything the screen can do, an agent can do.
 - Rejected writes explain the rule and show a valid example.
 - Stateless HTTP; calls kept short; long work through job IDs.
 
+## Server composition
+
+`apps/server/src/services.ts` builds one instance of each domain service and wires them
+together; the web routes, the queue watcher and the MCP layer all take that `Services` object
+(`library`, `files`, `documents`, `changes`, `activity`, `search`, `sources`).
+
+- The domains do not import each other's code. They meet through small ports passed in at
+  composition: the library takes a listener (`trashed`, `restored`, `deleted`, `duplicated`)
+  that the composition root points at the documents and files hooks; the files and library
+  services take the change feed and the activity port; the documents domain takes a
+  `SourceLookup` that `src/adapters/file-sources.ts` answers from the files tables.
+- Library hooks run inside the library's transaction, so a trash either carries through to
+  documents and files or does not happen.
+- Source files under a trashed or deleted node return to the inbox, unfiled; they are never
+  deleted as a side effect. Trashing remembers the old place, so a restore files them there
+  again.
+- Search is one service over three domains' own full-text searches, merged by rank, with one
+  cursor.
+
 ## Front end
 
 - React web app, installable to the home screen. Computer, tablet and phone are all
