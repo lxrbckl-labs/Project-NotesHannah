@@ -92,6 +92,47 @@ calculations, case-based questions, recall (flashcards, fill-in-the-blank), matc
 - **Structured layer:** typed concepts and relationships (drug, class, mechanism, target,
   indication, adverse effect, interaction) extracted during transcription.
 
+### Library structure (what she sees)
+
+Decided 2026-11-15. A predictable spine of term, course, lecture, with the same sections
+in every course.
+
+```
+Library
+├─ Fall 2026
+│  └─ Pharmacology II
+│     ├─ Sources        her uploads, grouped by lecture
+│     ├─ Lectures       one merged note per lecture (slides + handwriting)
+│     ├─ Study guides   by topic
+│     ├─ Practice       question sets and flashcards
+│     └─ Exams          Exam 2 → covers lectures 5 to 9
+├─ Concepts             drugs and classes, across all courses
+├─ Inbox
+├─ Requests
+└─ Trash
+```
+
+- Every new course gets the same sections automatically, so agents always know where
+  things go.
+- Sources stay separate from generated material.
+- Each item lives in one place and appears elsewhere as a link. An exam is a view over
+  lectures; a concept page gathers mentions from every course. Neither holds copies.
+- Lectures are numbered and dated ("07 · Beta blockers · Oct 14") and sort in teaching order.
+- She can add, rename and move folders freely. Permanent IDs mean a move never breaks a
+  citation or a link.
+- Four levels at most. On a phone a course opens to a home screen with its sections.
+
+### Storage on disk
+
+- The folder tree lives in the database, not as real folders. Renames and moves never
+  touch a file.
+- Uploaded originals are stored once, under a fingerprint of their content, and never
+  modified.
+- Page images sit beside their original, numbered by page.
+- Each user has their own top-level directory.
+- Documents, blocks, revisions and citations are database rows. (This replaces the
+  earlier idea of notes as markdown files in real folders.)
+
 ### Transcription safeguards
 
 - Keep the verbatim reading beside the normalised value; never silently correct.

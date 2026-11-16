@@ -26,12 +26,18 @@ Check current versions of each library against its documentation before scaffold
 ## Proposed repository layout
 
 ```
-apps/web        React app
-apps/server     Hono server: API, MCP endpoint, static files
-apps/converter  file conversion worker
-packages/schema Zod definitions shared by all three
-docs/           this documentation
+apps/web         React app, organised by feature: library, documents, practice,
+                 canvas, concepts, requests, exams
+apps/server      Hono server, organised by domain; the MCP tools are a thin layer
+                 over the same services the web API uses
+apps/converter   file conversion worker
+packages/schema  Zod definitions shared by all three
+deploy/          compose file, Caddy block, backup and restore scripts
+fixtures/        stand-in decks and handwritten pages for tests
+docs/            this documentation
 ```
+
+Organising by feature keeps each parallel worker inside its own folder.
 
 ## Still open
 
