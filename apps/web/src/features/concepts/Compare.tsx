@@ -105,8 +105,8 @@ export function Compare() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <Card className="grid gap-4">
         <div>
-          <h2 className="font-display text-lg font-semibold">Compare drugs side by side</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 className="font-display text-title font-semibold">Compare drugs side by side</h2>
+          <p className="mt-1 text-ui text-text-muted">
             Choose at least two drugs, or add a whole class, then the things to compare.
           </p>
         </div>
@@ -126,19 +126,19 @@ export function Compare() {
           />
         </div>
         {classNote ? (
-          <p role="status" className="text-sm text-text-muted">
+          <p role="status" className="text-ui text-text-muted">
             {classNote}
           </p>
         ) : null}
         <div>
-          <p className="mb-1.5 text-sm font-medium">
+          <p className="mb-1.5 text-ui font-medium">
             Drugs{" "}
             <span className="font-normal text-text-muted">
               ({drugs.length} of {CONCEPT_LIMITS.compareConcepts})
             </span>
           </p>
           {drugs.length === 0 ? (
-            <p className="text-sm text-text-muted">None yet.</p>
+            <p className="text-ui text-text-muted">None yet.</p>
           ) : (
             <ul className="flex flex-wrap gap-1.5" data-testid="compare-drugs">
               {drugs.map((d) => (
@@ -155,7 +155,7 @@ export function Compare() {
           )}
         </div>
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium">What to compare</legend>
+          <legend className="mb-1.5 text-ui font-medium">What to compare</legend>
           <div className="flex flex-wrap gap-2">
             {ATTRIBUTES.map((a) => {
               const on = attributes.includes(a);
@@ -163,7 +163,7 @@ export function Compare() {
                 <label
                   key={a}
                   className={cn(
-                    "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-sm font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
+                    "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-pill border px-3.5 text-ui font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
                     on ? "border-accent bg-accent-soft text-accent" : "border-border bg-bg",
                   )}
                 >
@@ -179,7 +179,7 @@ export function Compare() {
             })}
           </div>
         </fieldset>
-        <label className="inline-flex min-h-11 items-center gap-2.5 text-sm">
+        <label className="inline-flex min-h-11 items-center gap-2.5 text-ui">
           <input
             type="checkbox"
             className="size-4 accent-(--color-accent)"
@@ -197,7 +197,7 @@ export function Compare() {
             <Table2 size={16} aria-hidden /> Build table
           </Button>
           {!canBuild ? (
-            <span className="ml-3 text-sm text-text-muted">
+            <span className="ml-3 text-ui text-text-muted">
               {drugs.length < 2 ? "Pick at least two drugs." : "Pick something to compare."}
             </span>
           ) : null}
@@ -216,7 +216,7 @@ export function Compare() {
               Leave a request to add this to a study guide
             </Button>
             {notice ? (
-              <span role="status" className="text-sm text-accent" data-testid="compare-notice">
+              <span role="status" className="text-ui text-accent" data-testid="compare-notice">
                 {notice}
               </span>
             ) : null}
@@ -251,18 +251,18 @@ export function Compare() {
 export function ComparisonTable({ result }: { result: ComparisonResult }) {
   return (
     <section
-      className="relative max-w-full overflow-x-auto rounded-3xl border border-border bg-surface shadow-card"
+      className="relative max-w-full overflow-x-auto rounded-card border border-border bg-surface shadow-card"
       // biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area needs the keyboard
       tabIndex={0}
       aria-label="Comparison table, scrolls sideways"
       data-testid="comparison"
     >
-      <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
+      <table className="w-full min-w-max border-separate border-spacing-0 text-ui">
         <thead>
           <tr>
             <th
               scope="col"
-              className="sticky left-0 z-10 border-b border-r border-border bg-surface-muted px-4 py-3 text-left font-semibold"
+              className="sticky left-0 z-(--z-raised) border-b border-r border-border bg-surface-muted px-4 py-3 text-left font-semibold"
             >
               Drug
             </th>
@@ -282,7 +282,7 @@ export function ComparisonTable({ result }: { result: ComparisonResult }) {
             <tr key={row.concept.id} data-testid="compare-row">
               <th
                 scope="row"
-                className="sticky left-0 z-10 border-b border-r border-border bg-surface px-4 py-3 text-left align-top font-semibold"
+                className="sticky left-0 z-(--z-raised) border-b border-r border-border bg-surface px-4 py-3 text-left align-top font-semibold"
               >
                 <ConceptLink id={row.concept.id}>{row.concept.name}</ConceptLink>
               </th>
@@ -307,7 +307,7 @@ export function ComparisonTable({ result }: { result: ComparisonResult }) {
                             v.text
                           )}
                           {v.inheritedFrom ? (
-                            <span className="ml-1.5 text-xs text-text-muted">
+                            <span className="ml-1.5 text-caption text-text-muted">
                               from {v.inheritedFrom.name}
                             </span>
                           ) : null}

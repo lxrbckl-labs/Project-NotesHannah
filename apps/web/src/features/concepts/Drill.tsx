@@ -1,9 +1,10 @@
 import type { BrandGenericPair } from "@notes/schema";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, CircleCheck, CircleX, RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
+import { FEEDBACK_HUE } from "../../lib/roles";
 import {
   answerDone,
   attempt,
@@ -64,8 +65,8 @@ function DrillGame({ pairs, rng }: { pairs: BrandGenericPair[]; rng?: Rng }) {
     return (
       <Card className="grid gap-4">
         <div>
-          <h2 className="font-display text-lg font-semibold">Brand and generic drill</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 className="font-display text-title font-semibold">Brand and generic drill</h2>
+          <p className="mt-1 text-ui text-text-muted">
             A short round of {ROUND_SIZE}. Tap a name on the left, then its partner on the right.
           </p>
         </div>
@@ -84,16 +85,16 @@ function DrillGame({ pairs, rng }: { pairs: BrandGenericPair[]; rng?: Rng }) {
                 data-testid={`mode-${m.mode}`}
                 onClick={() => setMode(m.mode)}
                 className={cn(
-                  "min-h-11 rounded-2xl border px-4 py-3 text-left transition-colors disabled:opacity-50",
+                  "min-h-14 rounded-card border px-4 py-3 text-left transition-colors duration-(--duration-instant) disabled:opacity-50",
                   on
                     ? "border-accent bg-accent-soft"
                     : "border-border bg-bg hover:border-border-strong",
                 )}
               >
-                <span className={cn("block text-sm font-semibold", on && "text-accent")}>
+                <span className={cn("block text-ui font-semibold", on && "text-accent")}>
                   {m.label}
                 </span>
-                <span className="mt-0.5 block text-xs text-text-muted">{m.hint}</span>
+                <span className="mt-0.5 block text-caption text-text-muted">{m.hint}</span>
               </button>
             );
           })}
@@ -117,10 +118,10 @@ function DrillGame({ pairs, rng }: { pairs: BrandGenericPair[]; rng?: Rng }) {
     return (
       <Card className="grid gap-4">
         <div data-testid="drill-results">
-          <h2 className="font-display text-xl font-semibold">
+          <h2 className="font-display text-title font-semibold">
             {firstTry} of {total} right on the first try
           </h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-1 text-ui text-text-muted">
             {missed.length === 0
               ? "Every pair was right straight away."
               : "These ones need another look."}
@@ -131,7 +132,7 @@ function DrillGame({ pairs, rng }: { pairs: BrandGenericPair[]; rng?: Rng }) {
             {missed.map((i) => (
               <li
                 key={i.id}
-                className="rounded-2xl border border-border bg-bg px-3.5 py-2.5 text-sm"
+                className="rounded-card border border-border bg-bg px-3.5 py-2.5 text-ui"
               >
                 <span className="font-medium">{i.prompt}</span>{" "}
                 <span className="text-text-muted">goes with</span>{" "}
@@ -201,6 +202,7 @@ function Board({
   const [pickedAnswer, setPickedAnswer] = useState<string | null>(null);
   const [wrong, setWrong] = useState<{ prompt: string; answer: string } | null>(null);
   const [message, setMessage] = useState("Pick a name on the left.");
+  const [verdict, setVerdict] = useState<"correct" | "incorrect" | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
 
@@ -212,10 +214,12 @@ function Board({
     setPickedAnswer(null);
     if (result.correct && item) {
       setMessage(`Correct: ${item.prompt} goes with ${item.answer}.`);
+      setVerdict("correct");
       setWrong(null);
       if (isFinished(result.round)) timer.current = setTimeout(() => onFinish(result.round), 700);
     } else if (item) {
       setMessage("Not quite. Try another pair.");
+      setVerdict("incorrect");
       setWrong({ prompt: promptId, answer });
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => setWrong(null), 700);
@@ -226,12 +230,14 @@ function Board({
     if (round.matched.includes(id)) return;
     if (pickedAnswer) return settle(id, pickedAnswer);
     setPickedPrompt(pickedPrompt === id ? null : id);
+    setVerdict(null);
     setMessage("Now pick its partner on the right.");
   };
   const tapAnswer = (answer: string) => {
     if (answerDone(round, answer)) return;
     if (pickedPrompt) return settle(pickedPrompt, answer);
     setPickedAnswer(pickedAnswer === answer ? null : answer);
+    setVerdict(null);
     setMessage("Now pick the name it goes with on the left.");
   };
 
@@ -240,10 +246,10 @@ function Board({
     <Card className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold">
+          <h2 className="font-display text-title font-semibold">
             {again ? "Missed ones again" : DRILL_MODES.find((m) => m.mode === mode)?.label}
           </h2>
-          <p className="text-sm text-text-muted" data-testid="drill-progress">
+          <p className="text-ui text-text-muted" data-testid="drill-progress">
             {done} of {round.items.length} matched
           </p>
         </div>
@@ -254,10 +260,16 @@ function Board({
       <p
         role="status"
         aria-live="polite"
-        className="min-h-6 text-sm font-medium"
+        data-hue={verdict ? FEEDBACK_HUE[verdict] : undefined}
+        className={cn(
+          "flex min-h-11 items-center gap-2 rounded-control px-3 text-ui font-medium",
+          verdict ? "bg-tone-soft text-tone-text" : "text-text",
+        )}
         data-testid="drill-message"
       >
-        {message}
+        {verdict === "correct" ? <CircleCheck size={18} aria-hidden className="shrink-0" /> : null}
+        {verdict === "incorrect" ? <CircleX size={18} aria-hidden className="shrink-0" /> : null}
+        <span>{message}</span>
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-0 md:gap-x-6" data-testid="drill-board">
         <ul className="grid content-start gap-2" aria-label="Names">
@@ -320,16 +332,24 @@ function Tile({
       aria-pressed={state === "selected"}
       aria-disabled={state === "matched"}
       onClick={onClick}
+      data-hue={
+        state === "matched"
+          ? FEEDBACK_HUE.correct
+          : state === "wrong"
+            ? FEEDBACK_HUE.incorrect
+            : undefined
+      }
       className={cn(
-        "flex min-h-12 w-full items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-left text-sm font-medium leading-snug transition-colors",
+        "flex min-h-14 w-full items-center justify-between gap-2 rounded-card border px-3 py-2 text-left text-body font-medium leading-snug transition-colors duration-(--duration-instant)",
         state === "idle" && "border-border bg-bg hover:border-border-strong",
         state === "selected" && "border-accent bg-accent-soft text-accent",
-        state === "matched" && "border-transparent bg-(--cx-green-bg) text-(--cx-green-fg)",
-        state === "wrong" && "cx-nudge border-danger bg-danger-soft text-danger",
+        state === "matched" && "border-tone-border bg-tone-soft text-tone-text",
+        state === "wrong" && "cx-nudge border-tone-border bg-tone-soft text-tone-text",
       )}
     >
       <span className="min-w-0 break-words">{children}</span>
-      {state === "matched" ? <Check size={16} aria-label="matched" className="shrink-0" /> : null}
+      {state === "matched" ? <Check size={18} aria-label="matched" className="shrink-0" /> : null}
+      {state === "wrong" ? <X size={18} aria-label="not a match" className="shrink-0" /> : null}
     </button>
   );
 }

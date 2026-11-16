@@ -2,9 +2,14 @@ import type { ConceptSummary, ConceptType } from "@notes/schema";
 import { CONCEPT_TYPE_INFO, CONCEPT_TYPES } from "@notes/schema";
 import { BookMarked, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { Chip } from "../../components/ui/badge";
+import { Card } from "../../components/ui/card";
 import { inputClass } from "../../components/ui/field";
+import { PageHeader } from "../../components/ui/page-header";
+import { Tab, TabList, TabPanel, Tabs } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
+import { CONCEPT_TYPE_HUE } from "../../lib/roles";
 import { Compare } from "./Compare";
 import { Drill } from "./Drill";
 import { Finder } from "./Finder";
@@ -16,8 +21,8 @@ import { useAsync, useDebounced } from "./ui/hooks";
 import { ConceptLink, TypeBadge } from "./ui/parts";
 import "./concepts.css";
 
-type Tab = "browse" | "find" | "compare" | "drill";
-const TABS: Array<{ id: Tab; label: string }> = [
+type TabId = "browse" | "find" | "compare" | "drill";
+const TABS: Array<{ id: TabId; label: string }> = [
   { id: "browse", label: "Browse" },
   { id: "find", label: "Ask a question" },
   { id: "compare", label: "Compare" },
@@ -51,59 +56,40 @@ export function ConceptsIndex({
   drillRng,
   ...navigation
 }: ConceptsIndexProps) {
-  const initial = (search.get("tab") as Tab | null) ?? "browse";
-  const [tab, setTab] = useState<Tab>(TABS.some((t) => t.id === initial) ? initial : "browse");
+  const initial = (search.get("tab") as TabId | null) ?? "browse";
+  const [tab, setTab] = useState<TabId>(TABS.some((t) => t.id === initial) ? initial : "browse");
   return (
     <ConceptsProvider store={store} context={{ openSource, openNode }} navigation={navigation}>
       <div
         className="mx-auto w-full max-w-6xl px-4 pb-16 pt-4 md:px-8 md:pt-8"
         data-testid="concepts-index"
       >
-        <h1 className="font-display text-2xl font-semibold md:text-3xl">Concepts</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Drugs, classes and mechanisms from all your courses, in one place.
-        </p>
-        <div
-          role="tablist"
-          aria-label="Concept tools"
-          className="-mx-1 mt-4 flex gap-1 overflow-x-auto px-1 pb-1"
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              id={`cx-tab-${t.id}`}
-              aria-selected={tab === t.id}
-              aria-controls={`cx-panel-${t.id}`}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "min-h-11 shrink-0 rounded-full px-4 text-sm font-medium transition-colors",
-                tab === t.id
-                  ? "bg-accent text-accent-contrast"
-                  : "text-text-muted hover:bg-surface-muted",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div
-          role="tabpanel"
-          id={`cx-panel-${tab}`}
-          aria-labelledby={`cx-tab-${tab}`}
-          className="mt-4"
-        >
-          {tab === "browse" ? (
+        <PageHeader
+          title="Concepts"
+          description="Drugs, classes and mechanisms from all your courses, in one place."
+          className="mb-4"
+        />
+        <Tabs value={tab} onValueChange={setTab} look="pill">
+          <TabList label="Concept tools" className="-mx-1 px-1 pb-1">
+            {TABS.map((t) => (
+              <Tab key={t.id} value={t.id} className="px-3.5">
+                {t.label}
+              </Tab>
+            ))}
+          </TabList>
+          <TabPanel value="browse">
             <Browse />
-          ) : tab === "find" ? (
+          </TabPanel>
+          <TabPanel value="find">
             <Finder />
-          ) : tab === "compare" ? (
+          </TabPanel>
+          <TabPanel value="compare">
             <Compare />
-          ) : (
+          </TabPanel>
+          <TabPanel value="drill">
             <Drill rng={drillRng} />
-          )}
-        </div>
+          </TabPanel>
+        </Tabs>
       </div>
     </ConceptsProvider>
   );
@@ -165,7 +151,7 @@ function Browse() {
           data-testid="concept-search"
         />
       </div>
-      <fieldset className="-mx-1 m-0 flex min-w-0 flex-wrap gap-1.5 border-0 px-1 py-0">
+      <fieldset className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
         <legend className="sr-only">Filter by type</legend>
         <TypeFilter
           active={type === null}
@@ -176,6 +162,7 @@ function Browse() {
         {CONCEPT_TYPES.filter((t) => counts.has(t)).map((t) => (
           <TypeFilter
             key={t}
+            type={t}
             active={type === t}
             onClick={() => setType(type === t ? null : t)}
             label={CONCEPT_TYPE_INFO[t].label}
@@ -202,7 +189,7 @@ function Browse() {
         <div className="grid gap-5" data-testid="concept-list">
           {grouped.map(([letter, items]) => (
             <section key={letter} aria-label={`Names starting with ${letter}`}>
-              <h2 className="mb-1.5 px-1 font-display text-sm font-semibold text-text-muted">
+              <h2 className="mb-1.5 px-1 font-display text-ui font-semibold text-text-muted">
                 {letter}
               </h2>
               <ConceptRows items={items} />
@@ -211,7 +198,7 @@ function Browse() {
         </div>
       ) : (
         <div data-testid="concept-list">
-          <p className="mb-2 px-1 text-sm text-text-muted">
+          <p className="mb-2 px-1 text-ui text-text-muted">
             {pluralise(rows.length, "match", "matches")}
           </p>
           <ConceptRows items={rows} />
@@ -222,28 +209,20 @@ function Browse() {
 }
 
 function TypeFilter({
+  type,
   active,
   onClick,
   label,
   count,
 }: {
+  type?: ConceptType;
   active: boolean;
   onClick: () => void;
   label: string;
-  count?: number;
+  count?: number | undefined;
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "min-h-11 rounded-full border px-3.5 text-sm font-medium xl:min-h-9",
-        active
-          ? "border-accent bg-accent-soft text-accent"
-          : "border-border bg-surface text-text-muted hover:border-border-strong",
-      )}
-    >
+    <Chip hue={type ? CONCEPT_TYPE_HUE[type] : undefined} pressed={active} onClick={onClick}>
       {label}
       {count !== undefined ? (
         <>
@@ -251,7 +230,7 @@ function TypeFilter({
           <span className="ml-1 opacity-80">{count}</span>
         </>
       ) : null}
-    </button>
+    </Chip>
   );
 }
 
@@ -259,10 +238,12 @@ function ConceptRows({ items }: { items: ConceptSummary[] }) {
   return (
     <ul className="grid gap-1.5 xl:grid-cols-3">
       {items.map((c) => (
-        <li
+        <Card
+          as="li"
           key={c.id}
           data-testid="concept-row"
-          className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2 shadow-card"
+          padding="none"
+          className="flex min-h-14 items-center justify-between gap-3 px-4 py-2"
         >
           <span className="min-w-0">
             <ConceptLink id={c.id} className="block truncate py-1.5">
@@ -271,7 +252,7 @@ function ConceptRows({ items }: { items: ConceptSummary[] }) {
             {c.reviewStatus === "unverified" ? <span className="sr-only">Unverified</span> : null}
           </span>
           <TypeBadge type={c.type} />
-        </li>
+        </Card>
       ))}
     </ul>
   );

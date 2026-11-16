@@ -2,23 +2,21 @@ import type { Citation, CitationStatus, ConceptSummary, ConceptType, Inline } fr
 import { CONCEPT_TYPE_INFO, citationKey } from "@notes/schema";
 import { Search, X } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useState } from "react";
+import { Badge } from "../../../components/ui/badge";
+import { IconButton } from "../../../components/ui/button";
+import { Card as SharedCard } from "../../../components/ui/card";
 import { inputClass } from "../../../components/ui/field";
 import { cn } from "../../../lib/cn";
+import { CONCEPT_TYPE_HUE } from "../../../lib/roles";
 import { useConcepts } from "./context";
 import { useDebounced } from "./hooks";
-import { TONE_CLASS, toneOf } from "./tone";
 
+/** The concept's type in its hue; the words always say it, the colour only helps. */
 export function TypeBadge({ type, className }: { type: ConceptType; className?: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium",
-        TONE_CLASS[toneOf(type)],
-        className,
-      )}
-    >
+    <Badge hue={CONCEPT_TYPE_HUE[type]} className={cn("shrink-0", className)}>
       {CONCEPT_TYPE_INFO[type].label}
-    </span>
+    </Badge>
   );
 }
 
@@ -48,7 +46,7 @@ export function CiteChip({
         openSource({ fileId: citation.fileId, pageId: citation.pageId, quote: citation.quote });
       }}
       className={cn(
-        "cx-hit inline-flex max-w-full items-center truncate rounded-full border px-2 py-px align-baseline text-xs font-medium transition-colors",
+        "hit-area inline-flex max-w-full items-center truncate rounded-pill border px-2 py-px align-baseline text-caption font-medium transition-colors duration-(--duration-instant)",
         deleted
           ? "border-border bg-surface-muted text-text-muted line-through"
           : "border-transparent bg-accent-soft text-accent hover:border-accent",
@@ -122,7 +120,7 @@ export function RichSummary({
   statuses?: Map<string, CitationStatus>;
 }) {
   return (
-    <p className="text-base leading-relaxed text-text">
+    <p className="text-body leading-relaxed text-text">
       {text.map((item, i) => {
         const key = i;
         if ("cite" in item) {
@@ -197,7 +195,7 @@ export function ConceptPicker({
   const shown = (items ?? []).filter((c) => !exclude.includes(c.id)).slice(0, 12);
   return (
     <div className="relative">
-      <label className="mb-1.5 block text-sm font-medium" htmlFor={`${listId}-in`}>
+      <label className="mb-1.5 block text-ui font-medium" htmlFor={`${listId}-in`}>
         {label}
       </label>
       <div className="relative">
@@ -229,19 +227,19 @@ export function ConceptPicker({
         <ul
           id={listId}
           aria-label={`${label} suggestions`}
-          className="absolute inset-x-0 z-20 mt-1.5 max-h-72 overflow-y-auto rounded-2xl border border-border bg-surface p-1.5 shadow-pop"
+          className="absolute inset-x-0 z-(--z-sticky) mt-1.5 max-h-72 overflow-y-auto rounded-card border border-border bg-surface p-1.5 shadow-pop"
         >
           {items === null ? (
-            <li className="px-3 py-2 text-sm text-text-muted">Looking…</li>
+            <li className="px-3 py-2 text-ui text-text-muted">Looking…</li>
           ) : shown.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-text-muted">Nothing matches that.</li>
+            <li className="px-3 py-2 text-ui text-text-muted">Nothing matches that.</li>
           ) : (
             shown.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
                   data-testid="picker-option"
-                  className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl px-3 text-left text-sm hover:bg-surface-muted"
+                  className="flex min-h-11 w-full items-center justify-between gap-2 rounded-control px-3 text-left text-ui hover:bg-surface-muted"
                   onClick={() => {
                     onPick(c);
                     setQ("");
@@ -265,6 +263,7 @@ export function ConceptPicker({
   );
 }
 
+/** A removable chip (a chosen drug). The shared Chip is a button, so this stays local. */
 export function Chip({
   children,
   onRemove,
@@ -275,17 +274,17 @@ export function Chip({
   removeLabel?: string;
 }) {
   return (
-    <span className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-surface-muted pl-3 pr-1 text-sm">
+    <span className="inline-flex min-h-9 items-center gap-1 rounded-pill border border-border bg-surface-muted pl-3 pr-1 text-label font-medium">
       {children}
       {onRemove ? (
-        <button
-          type="button"
-          aria-label={removeLabel ?? "Remove"}
+        <IconButton
+          size="sm"
+          label={removeLabel ?? "Remove"}
           onClick={onRemove}
-          className="inline-flex size-8 items-center justify-center rounded-full text-text-muted hover:bg-border"
+          className="rounded-pill"
         >
           <X size={14} />
-        </button>
+        </IconButton>
       ) : (
         <span className="pr-2" />
       )}
@@ -295,13 +294,8 @@ export function Chip({
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <section
-      className={cn(
-        "rounded-3xl border border-border bg-surface p-4 shadow-card md:p-5",
-        className,
-      )}
-    >
+    <SharedCard as="section" className={className}>
       {children}
-    </section>
+    </SharedCard>
   );
 }

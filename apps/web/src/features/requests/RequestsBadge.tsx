@@ -12,7 +12,7 @@ export function RequestsBadge({ store, className }: { store: RequestsStore; clas
       role="status"
       aria-label={`${count} request${count === 1 ? "" : "s"} need${count === 1 ? "s" : ""} a look`}
       className={cn(
-        "inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums text-accent-contrast",
+        "inline-flex min-w-5 items-center justify-center rounded-pill bg-accent px-1.5 text-caption font-semibold tabular-nums text-accent-contrast",
         className,
       )}
     >

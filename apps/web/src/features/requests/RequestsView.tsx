@@ -1,9 +1,12 @@
 import { Inbox, Info, MessageCirclePlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Chip } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Notice } from "../../components/ui/notice";
+import { PageHeader } from "../../components/ui/page-header";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { describeError } from "../../lib/api";
-import { cn } from "../../lib/cn";
+import { REQUEST_STATUS_HUE } from "../../lib/roles";
 import {
   baselineSeen,
   FILTER_LABEL,
@@ -20,8 +23,6 @@ import type { RequestsViewProps, StudyRequestWithContext } from "./types";
 import { RequestsProvider, useRequestsEnv } from "./ui/context";
 import { CancelDialog, EditRequestDialog, ReopenDialog } from "./ui/dialogs";
 import { useRequests } from "./ui/hooks";
-import { Note } from "./ui/parts";
-import "./requests.css";
 
 const FILTERS: Filter[] = ["all", ...STATUS_ORDER];
 
@@ -112,69 +113,57 @@ function Screen() {
       className="mx-auto w-full max-w-6xl px-4 pb-16 pt-4 md:px-8 md:pt-8"
       data-testid="requests"
     >
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-semibold md:text-3xl">Requests</h1>
-          <p className="mt-1 max-w-xl text-sm text-text-muted">
-            Notes you leave for an agent: fix this, explain that, make questions.
-          </p>
-        </div>
-        <Button variant="primary" data-testid="new-request" onClick={() => setComposing(true)}>
-          <MessageCirclePlus size={17} aria-hidden /> New request
-        </Button>
-      </header>
+      <PageHeader
+        title="Requests"
+        description="Notes you leave for an agent: fix this, explain that, make questions."
+        className="mb-4"
+        actions={
+          <Button variant="primary" data-testid="new-request" onClick={() => setComposing(true)}>
+            <MessageCirclePlus size={17} aria-hidden /> New request
+          </Button>
+        }
+      />
 
-      <div className="mt-4 max-w-2xl">
-        <Note icon={<Info size={16} aria-hidden />}>{HONEST_NOTE}</Note>
-      </div>
+      <Notice tone="accent" icon={<Info size={18} />} className="max-w-2xl">
+        {HONEST_NOTE}
+      </Notice>
 
       {notice ? (
-        <p
-          role={notice.bad ? "alert" : "status"}
+        <div
+          role={notice.bad ? undefined : "status"}
           data-testid="notice"
-          className={cn(
-            "mt-3 max-w-2xl rounded-2xl px-3.5 py-3 text-sm",
-            notice.bad ? "bg-danger-soft text-danger" : "bg-surface-muted text-text",
-          )}
+          className="mt-3 max-w-2xl"
         >
-          {notice.text}
-        </p>
+          <Notice tone={notice.bad ? "danger" : "neutral"} icon={notice.bad ? undefined : null}>
+            {notice.text}
+          </Notice>
+        </div>
       ) : null}
 
       <div className="mt-5 xl:grid xl:grid-cols-[13rem_minmax(0,1fr)] xl:gap-8">
         <nav
           aria-label="Filter requests by status"
-          className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8 xl:sticky xl:top-6 xl:mx-0 xl:flex-col xl:self-start xl:overflow-visible xl:px-0 xl:pb-0"
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 py-2.5 md:-mx-8 md:px-8 xl:sticky xl:top-6 xl:mx-0 xl:flex-col xl:self-start xl:overflow-visible xl:px-0 xl:py-0"
         >
           {FILTERS.map((f) => {
-            const active = filter === f;
             const n = countFor(f);
             return (
-              <button
+              <Chip
                 key={f}
-                type="button"
-                aria-pressed={active}
+                hue={f === "all" ? undefined : REQUEST_STATUS_HUE[f]}
+                pressed={filter === f}
                 data-testid={`filter-${f}`}
                 onClick={() => setFilter(f)}
-                className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors xl:min-h-9 xl:rounded-xl xl:border-transparent xl:px-3",
-                  active
-                    ? "border-accent bg-accent text-accent-contrast xl:bg-accent-soft xl:text-accent"
-                    : "border-border-strong bg-surface text-text hover:bg-surface-muted xl:bg-transparent",
-                )}
+                className="shrink-0 xl:w-full xl:justify-between"
               >
                 <span>{f === "all" ? "All" : FILTER_LABEL[f]}</span>
                 {n !== null ? (
-                  <span
-                    className={cn(
-                      "text-xs tabular-nums",
-                      active ? "opacity-90" : "text-text-muted",
-                    )}
-                  >
-                    {n}
-                  </span>
+                  <>
+                    {" "}
+                    <span className="ml-1 tabular-nums opacity-80">{n}</span>
+                  </>
                 ) : null}
-              </button>
+              </Chip>
             );
           })}
         </nav>

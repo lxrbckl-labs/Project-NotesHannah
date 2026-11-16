@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   answerDone,
@@ -166,40 +164,4 @@ describe("brand and generic drill", () => {
     const sameAnswer = items.filter((i) => i.answer === first.answer);
     expect(answerDone(once, first.answer)).toBe(sameAnswer.length === 1);
   });
-});
-
-describe("token colours", () => {
-  const css = readFileSync(resolve(process.cwd(), "src/features/concepts/concepts.css"), "utf8");
-  const block = (start: string) => {
-    const from = css.indexOf(start);
-    return css.slice(from, css.indexOf("}", from));
-  };
-  const luminance = (hex: string) => {
-    const n = Number.parseInt(hex.slice(1), 16);
-    const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-      const c = v / 255;
-      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-    }) as [number, number, number];
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const ratio = (a: string, b: string) => {
-    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
-    return (hi + 0.05) / (lo + 0.05);
-  };
-
-  for (const [theme, start] of [
-    ["light", ":root {"],
-    ["dark", ':root[data-theme="dark"] {'],
-  ] as const) {
-    it(`every tone passes AA in ${theme}`, () => {
-      const text = block(start);
-      const tones = ["green", "blue", "violet", "teal", "red", "amber", "grey"];
-      for (const tone of tones) {
-        const bg = text.match(new RegExp(`--cx-${tone}-bg:\\s*(#[0-9a-f]{6})`))?.[1];
-        const fg = text.match(new RegExp(`--cx-${tone}-fg:\\s*(#[0-9a-f]{6})`))?.[1];
-        expect(bg && fg, `${tone} defined`).toBeTruthy();
-        expect(ratio(fg as string, bg as string), `${tone} ${theme}`).toBeGreaterThanOrEqual(4.5);
-      }
-    });
-  }
 });

@@ -1,6 +1,7 @@
 import type { RequestKind, RequestTarget, StudyRequest } from "@notes/schema";
 import { MessageCirclePlus } from "lucide-react";
 import { useState } from "react";
+import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/cn";
 import { RequestComposer } from "./RequestComposer";
 import type { SubmitRequest } from "./types";
@@ -36,21 +37,17 @@ export function AskButton({
   const about = targetLabel ? `${label} an agent about ${targetLabel}` : `${label} an agent`;
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="ghostAccent"
         data-testid="ask-button"
         aria-label={iconOnly || label === "Ask" ? about : undefined}
         title={about}
         onClick={() => setOpen(true)}
-        className={cn(
-          "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-medium text-accent transition-colors hover:bg-accent-soft active:bg-accent-soft xl:min-h-9",
-          iconOnly && "size-11 px-0 xl:size-9",
-          className,
-        )}
+        className={cn("gap-1.5 px-3", iconOnly && "size-11 px-0 xl:size-9", className)}
       >
         <MessageCirclePlus size={17} aria-hidden />
         {iconOnly ? null : <span>{label}</span>}
-      </button>
+      </Button>
       <RequestComposer
         open={open}
         onOpenChange={setOpen}

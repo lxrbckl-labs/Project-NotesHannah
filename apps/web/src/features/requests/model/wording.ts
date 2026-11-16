@@ -49,23 +49,6 @@ export function filterStatuses(filter: Filter): RequestStatus[] | undefined {
   return filter === "all" ? undefined : [filter];
 }
 
-export type StatusTone = "neutral" | "accent" | "success" | "danger";
-
-export function statusTone(status: RequestStatus): StatusTone {
-  switch (status) {
-    case "waiting":
-      return "neutral";
-    case "in_progress":
-      return "accent";
-    case "done":
-      return "success";
-    case "declined":
-      return "danger";
-    case "cancelled":
-      return "neutral";
-  }
-}
-
 /** What she may do to a request in this status (her side of the state machine). */
 export function actionsFor(status: RequestStatus): {
   edit: boolean;
