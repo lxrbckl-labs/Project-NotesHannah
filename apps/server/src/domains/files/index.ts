@@ -5,6 +5,7 @@ export {
   CONTENT_TYPES,
   createFilesService,
   type FilesDeps,
+  type FilesListener,
   type FilesService,
   type FilesServiceOptions,
   type ListFilesOptions,

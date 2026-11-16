@@ -338,11 +338,11 @@ describe("mounted in the real app", () => {
       body: {
         nodeIds: [nodeId],
         questions: [
-          fx.mc({
-            fileId: newId("file"),
-            pageId: newId("page"),
-            quote: "Lorvanol lowers heart rate.",
-          }),
+          // General knowledge: the composed app checks cited pages against the real files tables.
+          fx.mc(
+            { fileId: newId("file"), pageId: newId("page"), quote: "unused" },
+            { sources: [], generalKnowledge: true },
+          ),
         ],
       },
     });

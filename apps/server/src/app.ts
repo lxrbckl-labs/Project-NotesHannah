@@ -8,7 +8,7 @@ import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { activityRoutes } from "./domains/activity/index.js";
-import { conceptsRoutes, nameCheckerFromEnv } from "./domains/concepts/index.js";
+import { conceptsRoutes } from "./domains/concepts/index.js";
 import { documentsRoutes } from "./domains/documents/index.js";
 import { examsRoutes } from "./domains/exams/index.js";
 import { filesRoutes } from "./domains/files/index.js";
@@ -55,7 +55,7 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
     hasher: options.hasher ?? new PasswordHasher(),
   };
   // One instance of each domain service, shared by every route (and by the MCP layer).
-  const services = options.services ?? createServices(deps);
+  const services = options.services ?? createServices(deps, {});
   // Have the dummy hash ready so the first unknown-username sign-in is not faster.
   void deps.hasher.warmUp();
 
@@ -81,14 +81,11 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/", filesRoutes(deps, {}, services.files));
   app.route("/api", documentsRoutes(deps, {}, services.documents));
   app.route("/api", activityRoutes(deps, services));
-  app.route("/api", practiceRoutes(deps));
-  app.route("/api", examsRoutes(deps));
-  app.route("/api", requestsRoutes(deps));
+  app.route("/api", practiceRoutes(deps, services.practice));
+  app.route("/api", examsRoutes(deps, services.exams));
+  app.route("/api", requestsRoutes(deps, {}, services.requests));
   // The drug-name check is off unless RXNORM_CHECK=1 (see docs/concepts.md).
-  app.route(
-    "/api",
-    conceptsRoutes(deps, { nameChecker: nameCheckerFromEnv(db, process.env, deps.now) }),
-  );
+  app.route("/api", conceptsRoutes(deps, {}, services.concepts));
   // The agent front door: POST /mcp (API key only) and GET /agents.txt.
   app.route("/", mcpRoutes(deps, services));
 

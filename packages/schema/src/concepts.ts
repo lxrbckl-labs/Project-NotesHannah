@@ -219,6 +219,18 @@ export function editDistance(a: string, b: string): number {
   return prev[b.length] as number;
 }
 
+/** Whether two strings are at most one edit apart (insert, delete or change a letter), in one linear pass. */
+export function withinOneEdit(a: string, b: string): boolean {
+  if (a === b) return true;
+  const la = a.length;
+  const lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+  let i = 0;
+  while (i < la && i < lb && a[i] === b[i]) i++;
+  if (la === lb) return a.slice(i + 1) === b.slice(i + 1);
+  return la > lb ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+}
+
 export type DuplicateReason = "alias_match" | "salt_variant" | "close_spelling";
 
 /** Something that might be the same concept as a new one. Always a suggestion; nothing merges by itself. */
@@ -238,6 +250,8 @@ export interface DuplicateCandidate {
   aliases: readonly string[];
   /** Generic and brand names of a drug, which count as aliases here. */
   extraNames?: readonly string[];
+  /** `normalizeName(name)`, when the caller already has it (the database keeps it). */
+  nameKey?: string;
 }
 
 /**
@@ -257,9 +271,9 @@ export function suggestDuplicates(
   const out: DuplicateSuggestion[] = [];
   for (const other of others) {
     if (other.id === subject.selfId || other.type !== subject.type) continue;
-    const otherKey = normalizeName(other.name);
+    const otherKey = other.nameKey ?? normalizeName(other.name);
     if (otherKey === myKey) continue; // the same concept, not a suggestion
-    const names = [other.name, ...other.aliases, ...(other.extraNames ?? [])].map(normalizeName);
+    const names = [otherKey, ...[...other.aliases, ...(other.extraNames ?? [])].map(normalizeName)];
     let found: DuplicateSuggestion | null = null;
     if (names.some((n) => mine.has(n))) {
       found = {
@@ -269,7 +283,11 @@ export function suggestDuplicates(
         reason: "alias_match",
         explanation: `"${subject.name}" is already a name or alias of "${other.name}".`,
       };
-    } else if (names.some((n) => saltlessName(n) === mySaltless && mySaltless.length > 0)) {
+    } else if (
+      // saltlessName only drops trailing words, so an equal one starts the name: test that first.
+      mySaltless.length > 0 &&
+      names.some((n) => n.startsWith(mySaltless) && saltlessName(n) === mySaltless)
+    ) {
       found = {
         conceptId: other.id,
         name: other.name,
@@ -277,10 +295,7 @@ export function suggestDuplicates(
         reason: "salt_variant",
         explanation: `"${subject.name}" and "${other.name}" differ only by a salt or release form. They may be one drug; check before merging.`,
       };
-    } else if (
-      myKey.length >= 6 &&
-      names.some((n) => n.length >= 6 && editDistance(n, myKey) <= 1)
-    ) {
+    } else if (myKey.length >= 6 && names.some((n) => n.length >= 6 && withinOneEdit(n, myKey))) {
       found = {
         conceptId: other.id,
         name: other.name,

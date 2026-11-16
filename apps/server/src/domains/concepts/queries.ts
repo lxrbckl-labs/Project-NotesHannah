@@ -231,16 +231,7 @@ export function createConceptQueries(deps: QueryDeps) {
   function suggestionsFor(userId: string, subject: Concept, limit = 5): DuplicateSuggestion[] {
     return suggestDuplicates(
       { type: subject.type, name: subject.name, aliases: subject.aliases, selfId: subject.id },
-      repo.conceptsOfType(userId, subject.type).map((c) => ({
-        id: c.id,
-        type: c.type,
-        name: c.name,
-        aliases: c.aliases,
-        extraNames: [
-          ...(c.drug?.genericName ? [c.drug.genericName] : []),
-          ...(c.drug?.brandNames ?? []),
-        ],
-      })),
+      repo.duplicateCandidates(userId, subject.type),
     ).slice(0, limit);
   }
 
@@ -248,12 +239,18 @@ export function createConceptQueries(deps: QueryDeps) {
   function search(
     userId: string,
     text: string,
-    options: { type?: ConceptType | undefined; limit?: number | undefined } = {},
+    options: {
+      type?: ConceptType | undefined;
+      limit?: number | undefined;
+      /** Skip this many best matches (the unified search pages with it). */
+      offset?: number | undefined;
+    } = {},
   ): ConceptSummary[] {
     const key = normalizeName(text);
     const tokens = key.split(" ").filter(Boolean).slice(0, 8);
     if (tokens.length === 0) return [];
     const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const offset = Math.max(options.offset ?? 0, 0);
     const match = tokens.map((t) => `"${t.replaceAll('"', '""')}"*`).join(" ");
     const rows = db
       .prepare(
@@ -262,7 +259,7 @@ export function createConceptQueries(deps: QueryDeps) {
          WHERE concepts_fts MATCH ? AND c.user_id = ?${options.type ? " AND c.type = ?" : ""}
          ORDER BY rank LIMIT ?`,
       )
-      .all(match, userId, ...(options.type ? [options.type] : []), limit * 3) as Array<
+      .all(match, userId, ...(options.type ? [options.type] : []), (offset + limit) * 3) as Array<
       ConceptRow & { rank: number }
     >;
     const score = (row: ConceptRow): number => {
@@ -274,7 +271,7 @@ export function createConceptQueries(deps: QueryDeps) {
     return rows
       .map((row, index) => ({ row, index, score: score(row) }))
       .sort((a, b) => a.score - b.score || a.index - b.index)
-      .slice(0, limit)
+      .slice(offset, offset + limit)
       .map(({ row }) => summaryOf(toConcept(row)));
   }
 

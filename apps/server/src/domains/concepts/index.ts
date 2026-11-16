@@ -8,6 +8,7 @@ export {
   type FakeDrugNameChecker,
   type NameCheckCache,
   type NameCheckOutcome,
+  nameCheckerFromConfig,
   nameCheckerFromEnv,
   type RateLimiter,
   type RxNavOptions,

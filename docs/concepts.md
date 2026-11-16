@@ -103,8 +103,9 @@ second), times out after five seconds, and rests for a minute after any failure.
 30 days, keyed by the normalised name.
 
 Code: `DrugNameChecker` (one method, `check(name)`), `createFakeDrugNameChecker` for tests,
-`createRxNavChecker` for the real client, `nameCheckerFromEnv(db, env)` which returns the real
-client with the database cache only when `RXNORM_CHECK=1`. The tests of the real client run
+`createRxNavChecker` for the real client, `nameCheckerFromConfig(db, config)` which returns the real
+client with the database cache only when `config.RXNORM_CHECK` (the validated `RXNORM_CHECK=1` of
+`config.ts`, documented in `.env.example`; `nameCheckerFromEnv` reads the raw environment). The tests of the real client run
 against responses recorded once in `apps/server/test/concepts-rxnav-fixtures.json`; no test
 touches the network.
 
@@ -141,17 +142,13 @@ Decisions where the design was silent:
 - **Result links** are not checked against the library: an agent may link to anything it
   names. The reply is text for her, not a contract.
 
-## For the integrator
+## How it is wired
 
-- `apps/server/src/app.ts` mounts `requestsRoutes(deps)` and `conceptsRoutes(deps, ...)` with
-  defaults that read the library, documents and files tables directly (`createDbTargetLookup`,
-  `createDbConceptMentions`). Pass shared adapters when the real services exist: a
-  `ConceptSources` (the same object as the documents lane's `SourceLookup` works), a
-  `ConceptQuestions` over practice, a question lookup for requests.
-- Call `requests.verifyForEdit` before the documents lane lets a `requestId` lift protection
-  (today it trusts any ID).
-- Call the hooks from the library and files routes: `requests.onNodeTrashed/Restored/Deleted`,
-  `onFilesTrashed/Restored/Deleted`, `onQuestionsDeleted`, and `concepts.onSourceDeleted`
-  (returns which concepts and relations cited the deleted file; nothing is rewritten).
-- Config: `RXNORM_CHECK=1` (read from the environment by `nameCheckerFromEnv`; add it to
-  `config.ts` if you want it validated there).
+`apps/server/src/services.ts` builds the concepts service once with: the files-backed source
+lookup (citations are checked like block citations: the page must exist, must not be in the trash,
+and the quote must be in the page's transcript, native text or speaker notes); mentions through the
+`block_concepts` index (migration 0611, kept by triggers on the documents' blocks); questions through
+the practice tables (`adapters/practice-links.ts`); and the drug-name check when `RXNORM_CHECK=1`.
+Files being deleted call `concepts.onSourceDeleted`; requests get the node, file, question and
+document hooks. Concepts have no `requestId` that lifts protection: an agent never rewrites a concept
+she wrote or reviewed, request or not.

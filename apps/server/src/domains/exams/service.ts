@@ -4,6 +4,7 @@ import type { Db } from "../../db/client.js";
 import type { AuthContext } from "../../http/auth-context.js";
 import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
+import { leaveTrace, plural, type Trace } from "../activity/trace.js";
 import {
   type CoverageStats,
   createPracticeService,
@@ -11,7 +12,7 @@ import {
   localDay,
   type PracticeService,
 } from "../practice/service.js";
-import { loadTree, type Tree } from "../practice/tree.js";
+import { loadTree, nodeWords, type Tree } from "../practice/tree.js";
 import { createExamsRepo, type ExamRow } from "./repo.js";
 
 const DEFAULT_LIMIT = 50;
@@ -72,7 +73,7 @@ export interface ExamDetail extends ExamView {
   progress: ExamProgress;
 }
 
-export interface ExamsPorts {
+export interface ExamsPorts extends Trace {
   /** Share the practice service of the rest of the app. Default: a new one over the same database. */
   practice?: PracticeService;
 }
@@ -234,6 +235,15 @@ export function createExamsService(deps: Pick<ServerDeps, "db" | "now">, ports: 
         updated_at: now,
       });
       repo.setCoverage(id, auth.userId, nodeIds);
+      leaveTrace(ports, auth.userId, auth.actor, {
+        action: "exam.created",
+        objectType: "exam",
+        objectIds: [id],
+        nodeId: input.courseId,
+        summary: `Added the exam "${input.title}" on ${input.date} for ${nodeWords(
+          tree.nodes.get(input.courseId),
+        )}, covering ${plural(nodeIds.length, "item")}`,
+      });
     })();
     return detail(liveRow(auth.userId, id), tree);
   }
@@ -343,6 +353,19 @@ export function createExamsService(deps: Pick<ServerDeps, "db" | "now">, ports: 
         updated_at: nowIso(),
       });
       if (nodeIds) repo.setCoverage(id, auth.userId, nodeIds);
+      const changed = [
+        input.title !== undefined && input.title !== row.title ? `renamed to "${input.title}"` : "",
+        input.date !== undefined && input.date !== row.exam_date ? `moved to ${input.date}` : "",
+        nodeIds ? `now covers ${plural(nodeIds.length, "item")}` : "",
+        input.notes !== undefined && input.notes !== row.notes ? "notes changed" : "",
+      ].filter(Boolean);
+      leaveTrace(ports, auth.userId, auth.actor, {
+        action: "exam.updated",
+        objectType: "exam",
+        objectIds: [id],
+        nodeId: row.course_node_id,
+        summary: `Changed the exam "${row.title}": ${changed.join(", ") || "no visible change"}`,
+      });
     })();
     return detail(liveRow(auth.userId, id), tree);
   }
@@ -355,8 +378,15 @@ export function createExamsService(deps: Pick<ServerDeps, "db" | "now">, ports: 
         hint: "An agent can create and change exams; ask her to delete one.",
       });
     }
-    liveRow(auth.userId, id);
+    const row = liveRow(auth.userId, id);
     repo.delete(auth.userId, id);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "exam.deleted",
+      objectType: "exam",
+      objectIds: [id],
+      nodeId: row.course_node_id,
+      summary: `Deleted the exam "${row.title}" (${row.exam_date})`,
+    });
   }
 
   // ---- node hooks (the integrator calls these from the library routes) ----

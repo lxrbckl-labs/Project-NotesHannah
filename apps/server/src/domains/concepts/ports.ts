@@ -143,22 +143,23 @@ export function createFakeConceptMentions(): FakeConceptMentions {
 }
 
 /**
- * Finds mentions by reading the documents lane's `blocks` table. Block data is
- * stored as compact JSON, so a mention is the text `"concept":"con_…"`.
- * Personal-scale: one LIKE per concept ID, no extra index to keep in step.
+ * Finds mentions through the `block_concepts` index (migration 0611), which triggers keep
+ * in step with the documents lane's `blocks` table.
  */
 export function createDbConceptMentions(db: Db): ConceptMentions {
   const find = db.prepare(
     `SELECT b.id AS block_id, b.document_id, b.data, d.title, d.node_id, d.trashed_at
-     FROM blocks b JOIN documents d ON d.id = b.document_id
-     WHERE b.user_id = ? AND b.data LIKE ? ESCAPE '\\' ORDER BY d.title, b.position LIMIT 200`,
+     FROM block_concepts bc
+     JOIN blocks b ON b.seq = bc.block_seq
+     JOIN documents d ON d.id = b.document_id
+     WHERE bc.user_id = ? AND bc.concept_id = ? ORDER BY d.title, b.position LIMIT 200`,
   );
   return {
     mentions(userId, conceptIds) {
       const out: MentionedIn[] = [];
       const seen = new Set<string>();
       for (const id of conceptIds) {
-        const rows = find.all(userId, `%"concept":"${id}"%`) as Array<{
+        const rows = find.all(userId, id) as Array<{
           block_id: string;
           document_id: string;
           data: string;

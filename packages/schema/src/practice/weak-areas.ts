@@ -53,7 +53,7 @@ function tally(
     { attempts: number; correct: number; score: number; questions: Set<string> }
   >();
   for (const { keys, attempt } of rows) {
-    for (const key of new Set(keys)) {
+    for (const key of keys) {
       let s = acc.get(key);
       if (!s) {
         s = { attempts: 0, correct: 0, score: 0, questions: new Set() };
@@ -107,7 +107,17 @@ export function weakAreas(
     minQuestions: options.minQuestions ?? 3,
     weakBelow: options.weakBelow ?? 0.7,
   };
-  const byId = new Map(labels.map((l) => [l.questionId, l]));
+  // Each question's keys once, without repeats: an attempt then costs one pass over them.
+  const byId = new Map(
+    labels.map((l) => [
+      l.questionId,
+      {
+        tags: [...new Set(l.tags)],
+        conceptIds: [...new Set(l.conceptIds)],
+        nodeIds: [...new Set(l.nodeIds)],
+      },
+    ]),
+  );
   const totals = {
     tag: new Map<string, number>(),
     concept: new Map<string, number>(),

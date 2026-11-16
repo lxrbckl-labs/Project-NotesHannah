@@ -46,6 +46,7 @@ import { AppError } from "../../http/errors.js";
 import { type ActivityLink, type ActivityPort, createActivityLog } from "../activity/activity.js";
 import { type ChangeFeed, createChangeFeed } from "../activity/changes.js";
 import { createLibraryService, type LibraryService } from "../library/index.js";
+import type { RequestsPort } from "../requests/service.js";
 import {
   conflictRevision,
   forbiddenWrite,
@@ -73,6 +74,14 @@ export interface DocumentsPorts {
   activity?: ActivityPort;
   /** Newest revisions to keep per document (plus revision 1). Default 200. */
   revisionCap?: number;
+  /**
+   * Decides whether a `requestId` really lifts the protection of her blocks: it must be a
+   * request this very key has claimed, still live, and about this document or this block.
+   * Without it (isolated tests) any `requestId` is accepted.
+   */
+  requests?: RequestsPort;
+  /** Told, inside the same transaction, when documents are removed for good (their node was deleted). */
+  onDocumentsDeleted?: (userId: string, documentIds: readonly string[]) => void;
 }
 
 export type OperationInput<K extends WriterOperation> = z.input<(typeof WRITER_OPERATIONS)[K]>;
@@ -626,18 +635,51 @@ export function createDocumentsService(
   }
 
   /** An agent may not overwrite or delete blocks she wrote, edited or reviewed, without her request. */
+  /** Why a request does not let this key change this block: the rules, in words, to teach from. */
+  function requestRefusal(
+    requestId: string,
+    documentId: string,
+    blockIds: readonly string[],
+  ): string {
+    return `Request ${requestId} does not let you change ${
+      blockIds.length === 1 ? `block ${blockIds[0]}` : `blocks ${blockIds.join(", ")}`
+    } of document ${documentId}. A request lifts her protection only when it is one you claimed with this very API key (POST /api/requests/${requestId}/claim, and the claim has not run out), it is still in progress, and it is about this document, or about exactly this block (a request on one block never covers another block or a whole-document operation).`;
+  }
+
+  /** Whether the request really covers these protected blocks of the document (any request, when no port is wired). */
+  function requestCovers(ctx: Ctx, requestId: string, documentId: string, block: Block): boolean {
+    if (!ports.requests) return true;
+    if (ctx.auth.actor.type !== "agent") return false;
+    return ports.requests.verifyForEdit(ctx.userId, requestId, {
+      documentId,
+      blockId: block.id,
+      keyId: ctx.auth.actor.keyId,
+    });
+  }
+
   function guardOverwrite(
     ctx: Ctx,
     operation: WriterOperation,
     blocks: readonly Block[],
     requestId: string | undefined,
+    documentId: string,
   ): void {
     if (requestId) ctx.requestIds.add(requestId);
     if (!ctx.isAgent) return;
+    // A request is only as good as the check on it: it counts for the blocks it really covers.
+    const covers = (block: Block) =>
+      requestId !== undefined && requestCovers(ctx, requestId, documentId, block);
     const refused = blocks
-      .map((block) => ({ block, decision: canAgentOverwrite(block, { requestId }) }))
+      .map((block) => ({
+        block,
+        decision: canAgentOverwrite(block, { requestId: covers(block) ? requestId : undefined }),
+      }))
       .filter((r) => !r.decision.allowed);
     if (refused.length === 0) return;
+    if (requestId !== undefined) {
+      const unlifted = refused.map((r) => r.block.id);
+      throw forbiddenWrite(operation, requestRefusal(requestId, documentId, unlifted));
+    }
     const first = refused[0];
     if (refused.length === 1 && first && !first.decision.allowed) {
       throw forbiddenWrite(
@@ -827,7 +869,7 @@ export function createDocumentsService(
     const at = work.blocks.findIndex((b) => b.id === input.blockId);
     const existing = work.blocks[at];
     if (at < 0 || !existing) throw notFoundBlock(work.row.id, [input.blockId]);
-    guardOverwrite(ctx, "update_block", [existing], input.requestId);
+    guardOverwrite(ctx, "update_block", [existing], input.requestId, work.row.id);
 
     let next: BlockInput;
     if (input.mode === "replace") {
@@ -940,7 +982,7 @@ export function createDocumentsService(
     const missing = input.blockIds.filter((id) => !work.blocks.some((b) => b.id === id));
     if (missing.length > 0) throw notFoundBlock(work.row.id, missing);
     const doomed = work.blocks.filter((b) => input.blockIds.includes(b.id));
-    guardOverwrite(ctx, "delete_blocks", doomed, input.requestId);
+    guardOverwrite(ctx, "delete_blocks", doomed, input.requestId, work.row.id);
     work.blocks = work.blocks.filter((b) => !input.blockIds.includes(b.id));
     note(work, "delete_blocks", `Deleted ${plural(doomed.length, "block")}`, input.blockIds);
     return {
@@ -964,18 +1006,44 @@ export function createDocumentsService(
     );
     // When she regenerates herself nothing is protected from her: her own request stands in.
     const requestId = input.requestId ?? (ctx.isAgent ? undefined : "user");
+    // With a request, protected blocks it does not really cover stay protected (and are reported as skipped).
+    const heldBack: SkippedBlock[] = [];
+    let scope: readonly string[] | undefined = input.scope;
+    if (ctx.isAgent && input.requestId !== undefined && ports.requests) {
+      const asked = input.scope ?? work.blocks.map((b) => b.id);
+      const protectedBlocks = work.blocks.filter(
+        (b) => asked.includes(b.id) && !canAgentOverwrite(b, { requestId: undefined }).allowed,
+      );
+      const refused = protectedBlocks.filter(
+        (b) => !requestCovers(ctx, input.requestId as string, work.row.id, b),
+      );
+      if (protectedBlocks.length > 0 && refused.length === protectedBlocks.length) {
+        throw forbiddenWrite(
+          "replace_generated",
+          requestRefusal(
+            input.requestId,
+            work.row.id,
+            refused.map((b) => b.id),
+          ),
+        );
+      }
+      for (const b of refused) {
+        const d = canAgentOverwrite(b, { requestId: undefined });
+        if (!d.allowed) heldBack.push({ blockId: b.id, type: b.type, reason: d.reason });
+      }
+      scope = asked.filter((id) => !refused.some((b) => b.id === id));
+    }
     const plan = planRegeneration(work.blocks, input.blocks, {
       actor: ctx.actor,
       now: ctx.now,
       requestId,
-      ...(input.scope ? { scope: input.scope } : {}),
+      ...(scope ? { scope } : {}),
     });
     checkSize(plan.blocks.length);
-    const skipped: SkippedBlock[] = plan.skipped.map((s) => ({
-      blockId: s.blockId,
-      type: s.type,
-      reason: s.reason,
-    }));
+    const skipped: SkippedBlock[] = [
+      ...plan.skipped.map((s) => ({ blockId: s.blockId, type: s.type, reason: s.reason })),
+      ...heldBack,
+    ];
     if (plan.written.length > 0 || plan.removed.length > 0) {
       work.blocks = plan.blocks;
       note(
@@ -1378,10 +1446,13 @@ export function createDocumentsService(
     actor: Actor = hookActor(userId),
   ) {
     db.transaction(() => {
+      const gone: string[] = [];
       for (const row of eachDocOfNodes(userId, nodeIds)) {
         hookEntry(userId, row, "document.deleted", "deleted for good", actor);
         repo.deleteDoc(userId, row.id);
+        gone.push(row.id);
       }
+      if (gone.length > 0) ports.onDocumentsDeleted?.(userId, gone);
     })();
   }
 

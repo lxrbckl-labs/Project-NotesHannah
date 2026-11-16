@@ -35,6 +35,7 @@ import {
 import type { AuthContext } from "../../http/auth-context.js";
 import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
+import { leaveTrace, plural, type Trace } from "../activity/trace.js";
 import type { DrugNameChecker } from "./namecheck.js";
 import {
   type ConceptMentions,
@@ -47,7 +48,7 @@ import {
 import { createConceptQueries } from "./queries.js";
 import { type ConceptsRepo, createConceptsRepo, summaryOf } from "./repo.js";
 
-export interface ConceptsPorts {
+export interface ConceptsPorts extends Trace {
   /** Where cited pages are looked up. Default: every source unknown but allowed. */
   sources?: ConceptSources;
   /** Where concepts are mentioned in documents. Default: read the documents lane's blocks table. */
@@ -195,6 +196,12 @@ export function createConceptsService(
           message: `The page ${citation.pageId} of file ${citation.fileId} does not exist, so it cannot be cited. Copy fileId and pageId from the source page you read.`,
           example: CONCEPT_EXAMPLES.concept.citations[0],
         });
+      } else if (info.trashed) {
+        out.push({
+          path: `${path}[${index}]`,
+          message: "The cited file is in the trash. Restore it, or cite another page.",
+          example: CONCEPT_EXAMPLES.concept.citations[0],
+        });
       } else if (info.quoteFound === false) {
         out.push({
           path: `${path}[${index}].quote`,
@@ -315,7 +322,7 @@ export function createConceptsService(
     };
   }
 
-  function createConcept(
+  function createConceptRaw(
     auth: AuthContext,
     raw: unknown,
   ): { concept: Concept; suggestions: DuplicateSuggestion[] } {
@@ -358,7 +365,7 @@ export function createConceptsService(
     );
   }
 
-  function updateConcept(auth: AuthContext, id: string, raw: unknown): Concept {
+  function updateConceptRaw(auth: AuthContext, id: string, raw: unknown): Concept {
     const current = need(auth.userId, id);
     const parsed = UpdateConceptInput.safeParse(raw);
     if (!parsed.success) {
@@ -451,7 +458,7 @@ export function createConceptsService(
     return next;
   }
 
-  function deleteConcept(auth: AuthContext, id: string): void {
+  function deleteConceptRaw(auth: AuthContext, id: string): void {
     if (auth.via !== "session") {
       throw new AppError("forbidden", "Only she can delete a concept.", {
         hint: "To fold a duplicate into another concept, merge it: POST /api/concepts/<keepId>/merge.",
@@ -530,7 +537,7 @@ export function createConceptsService(
     };
   }
 
-  function createRelation(auth: AuthContext, raw: unknown): Relation {
+  function createRelationRaw(auth: AuthContext, raw: unknown): Relation {
     const valid = validateRelationInput(raw, { writer: writerOf(auth) });
     if (!valid.ok) throw problemsError(valid.problems);
     const input = valid.value;
@@ -735,7 +742,7 @@ export function createConceptsService(
     return { next, protectedFields };
   }
 
-  function bulkUpsert(auth: AuthContext, raw: unknown): BulkUpsertResult {
+  function bulkUpsertRaw(auth: AuthContext, raw: unknown): BulkUpsertResult {
     const parsed = BulkUpsertInput.safeParse(raw);
     if (!parsed.success) {
       throw new AppError(
@@ -1085,7 +1092,7 @@ export function createConceptsService(
 
   // ---- merge --------------------------------------------------------------------------------------------
 
-  function merge(auth: AuthContext, keepId: string, mergeId: string): MergeResult {
+  function mergeRaw(auth: AuthContext, keepId: string, mergeId: string): MergeResult {
     const keep = need(auth.userId, keepId);
     const gone = need(auth.userId, mergeId);
     if (keep.id === gone.id) {
@@ -1203,6 +1210,103 @@ export function createConceptsService(
     })();
   }
 
+  // ---- traces: what each change leaves in the feed and (for agents) the activity log --------------
+
+  const nameOf = (userId: string, id: string): string =>
+    repo.concept(userId, id)?.name ?? "a concept";
+  const kindWords = (type: string) => type.replaceAll("_", " ");
+
+  function createConcept(auth: AuthContext, raw: unknown) {
+    const made = createConceptRaw(auth, raw);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "concept.created",
+      objectType: "concept",
+      objectIds: [made.concept.id],
+      summary: `Added the ${kindWords(made.concept.type)} "${made.concept.name}"`,
+    });
+    return made;
+  }
+
+  function updateConcept(auth: AuthContext, id: string, raw: unknown): Concept {
+    const next = updateConceptRaw(auth, id, raw);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "concept.updated",
+      objectType: "concept",
+      objectIds: [next.id],
+      summary: `Changed the ${kindWords(next.type)} "${next.name}"`,
+    });
+    return next;
+  }
+
+  function deleteConcept(auth: AuthContext, id: string): void {
+    const before = need(auth.userId, id);
+    deleteConceptRaw(auth, id);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "concept.deleted",
+      objectType: "concept",
+      objectIds: [before.id],
+      summary: `Deleted the ${kindWords(before.type)} "${before.name}"`,
+    });
+  }
+
+  function createRelation(auth: AuthContext, raw: unknown): Relation {
+    const made = createRelationRaw(auth, raw);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "concept.related",
+      objectType: "concept",
+      objectIds: [made.from, made.to, made.id],
+      summary: `Linked "${nameOf(auth.userId, made.from)}" to "${nameOf(auth.userId, made.to)}" (${kindWords(made.type)})`,
+    });
+    return made;
+  }
+
+  function merge(auth: AuthContext, keepId: string, mergeId: string): MergeResult {
+    const folded = nameOf(auth.userId, mergeId);
+    const done = mergeRaw(auth, keepId, mergeId);
+    leaveTrace(ports, auth.userId, auth.actor, {
+      action: "concept.merged",
+      objectType: "concept",
+      objectIds: [done.concept.id, done.mergedId],
+      summary: `Merged "${folded}" into "${done.concept.name}" (${plural(done.relationsMoved, "relation")} moved)`,
+    });
+    return done;
+  }
+
+  /** One entry for the whole call, with the counts, however many concepts and relations it carried. */
+  function bulkUpsert(auth: AuthContext, raw: unknown): BulkUpsertResult {
+    const result = bulkUpsertRaw(auth, raw);
+    if (result.applied) {
+      const count = (list: ReadonlyArray<{ action: string }>, action: string) =>
+        list.filter((r) => r.action === action).length;
+      const parts = [
+        `${plural(count(result.concepts, "created"), "concept")} added`,
+        `${count(result.concepts, "updated")} updated`,
+        `${plural(count(result.relations, "created"), "relation")} added`,
+        `${count(result.relations, "updated")} updated`,
+      ];
+      const unchanged = count(result.concepts, "unchanged") + count(result.relations, "unchanged");
+      if (unchanged > 0) parts.push(`${unchanged} unchanged`);
+      if (result.problems.length > 0)
+        parts.push(`${plural(result.problems.length, "problem")} reported`);
+      const touched = [
+        ...result.concepts.flatMap((c) => (c.id && c.action !== "unchanged" ? [c.id] : [])),
+        ...result.relations.flatMap((r) => (r.id && r.action !== "unchanged" ? [r.id] : [])),
+      ];
+      if (touched.length > 0) {
+        leaveTrace(ports, auth.userId, auth.actor, {
+          action: "concept.bulk_upserted",
+          objectType: "concept",
+          objectIds: touched,
+          summary: `Updated the concept map: ${parts.join(", ")}`,
+          links: touched
+            .slice(0, 15)
+            .map((id) => ({ type: id.startsWith("rel_") ? "relation" : "concept", id })),
+        });
+      }
+    }
+    return result;
+  }
+
   // ---- hooks -----------------------------------------------------------------------------------------------
 
   const hooks = {
@@ -1279,6 +1383,8 @@ export function createConceptsService(
     idle,
     ...hooks,
     ...bindQueries(queries),
+    /** The same search for a user ID instead of a caller, with `offset` (the unified search pages with it). */
+    searchConcepts: queries.search,
     suggestionsFor: (auth: AuthContext, id: string) =>
       suggestionsFor(auth.userId, need(auth.userId, id)),
     relationTypesBetween,

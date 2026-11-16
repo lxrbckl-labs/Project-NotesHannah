@@ -179,7 +179,9 @@ export function createDbTargetLookup(db: Db, options: DbTargetLookupOptions = {}
     "SELECT id, node_id, original_name, trashed_at FROM source_files WHERE id = ? AND user_id = ?",
   );
   const page = db.prepare(
-    "SELECT idx, native_text FROM pages WHERE id = ? AND file_id = ? AND user_id = ?",
+    `SELECT p.idx, p.native_text, t.text AS transcript
+     FROM pages p LEFT JOIN transcripts t ON t.id = p.transcript_id
+     WHERE p.id = ? AND p.file_id = ? AND p.user_id = ?`,
   );
 
   function nodeInfo(userId: string, nodeId: string): TargetInfo {
@@ -265,11 +267,11 @@ export function createDbTargetLookup(db: Db, options: DbTargetLookupOptions = {}
           let name = f.original_name;
           if (target.pageId) {
             const p = page.get(target.pageId, f.id, userId) as
-              | { idx: number; native_text: string | null }
+              | { idx: number; native_text: string | null; transcript: string | null }
               | undefined;
             if (!p) return NO_TARGET;
             name = `${f.original_name}, page ${p.idx}`;
-            preview = previewOf(p.native_text);
+            preview = previewOf(p.transcript) ?? previewOf(p.native_text);
           }
           return {
             exists: true,
