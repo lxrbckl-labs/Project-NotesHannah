@@ -1,5 +1,8 @@
-"""Generate all S5 test fixtures from scratch (made-up content, no third-party material). Output: /out"""
-import io, json, os, random, struct, sys, zipfile, zlib
+"""Generate every converter test fixture from scratch (made-up content, no third-party material).
+
+Run through fixtures/generator/build.sh (needs Docker). Output: the directory given as argv[1] (default /out).
+"""
+import io, json, os, random, shutil, struct, subprocess, sys, zipfile, zlib
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
@@ -86,7 +89,7 @@ def text_pdf(path, pages):
         c.showPage()
     c.save()
 text_pdf(f"{OUT}/text-layer.pdf", 5)
-text_pdf(f"{OUT}/toomany-301pages.pdf", 301)
+text_pdf(f"{OUT}/toomany-501pages.pdf", 501)
 
 def handwriting_page(n, w=1700, h=2200):
     im = Image.new("RGB", (w, h), (250, 247, 238)); d = ImageDraw.Draw(im)
@@ -102,8 +105,8 @@ def handwriting_page(n, w=1700, h=2200):
         pts = [(random.randint(100, w - 100), random.randint(900, h - 100)) for _ in range(6)]
         d.line(pts, fill=(25, 35, 120), width=5)
     return im
-pages = [handwriting_page(i) for i in range(1, 5)]
-pages[0].save(f"{OUT}/image-only.pdf", save_all=True, append_images=pages[1:], resolution=150)
+pages = [handwriting_page(i).resize((1275, 1650), Image.LANCZOS) for i in range(1, 5)]
+pages[0].save(f"{OUT}/image-only.pdf", save_all=True, append_images=pages[1:], resolution=150, quality=55)
 
 pdf = pikepdf.open(f"{OUT}/text-layer.pdf")
 pdf.save(f"{OUT}/encrypted-userpw.pdf", encryption=pikepdf.Encryption(user="secret", owner="owner"))
@@ -127,7 +130,17 @@ up2 = paper_photo(1600, 2000)
 stored2 = up2.transpose(Image.ROTATE_180)  # orientation 3 = rotate 180
 ex2 = Image.Exif(); ex2[0x0112] = 3
 stored2.save(f"{OUT}/photo-exif3.png", "PNG", exif=ex2)
-paper_photo(2000, 2600).save(f"{OUT}/photo-for-heic.png", "PNG")
+# HEIC via heif-enc (x265). photo.heic is stored upright. photo-rotated.heic is stored sideways with an `irot`
+# transform box (like an iPhone portrait shot): heif-enc turns the JPEG's EXIF orientation into irot.
+paper_photo(1500, 2000).save(f"{OUT}/_photo-for-heic.png", "PNG")
+subprocess.run(["heif-enc", "-q", "50", f"{OUT}/_photo-for-heic.png", "-o", f"{OUT}/photo.heic"], check=True)
+small = paper_photo(1200, 1600).transpose(Image.ROTATE_90)
+ex3 = Image.Exif(); ex3[0x0112] = 6
+small.save(f"{OUT}/_photo-sideways.jpg", "JPEG", quality=85, exif=ex3)
+subprocess.run(["heif-enc", "-q", "50", f"{OUT}/_photo-sideways.jpg", "-o", f"{OUT}/photo-rotated.heic"], check=True)
+info = subprocess.run(["heif-info", f"{OUT}/photo-rotated.heic"], capture_output=True, text=True).stdout
+assert "angle (ccw): " in info, "heif-enc did not write a rotation box:\n" + info
+os.remove(f"{OUT}/_photo-for-heic.png"); os.remove(f"{OUT}/_photo-sideways.jpg")
 b = open(f"{OUT}/photo-exif6.jpg", "rb").read(); open(f"{OUT}/truncated.jpg", "wb").write(b[: len(b) // 3])
 
 # ---------------------------------------------------------------- bad / hostile files
@@ -153,20 +166,100 @@ with zipfile.ZipFile(f"{OUT}/other-office.docx", "w") as z:
     z.writestr("word/document.xml", "<w:document xmlns:w='x'/>")
 open(f"{OUT}/plain-text.pdf", "w").write("This is just a text file with a pdf extension.\n")
 
-# lying extensions
-import shutil
-shutil.copy(f"{OUT}/lecture.pptx", f"{OUT}/lies-pptx-named.pdf")
-shutil.copy(f"{OUT}/photo-exif3.png", f"{OUT}/lies-png-named.jpg")
-shutil.copy(f"{OUT}/text-layer.pdf", f"{OUT}/lies-pdf-named.pptx")
-
 # password-protected PPTX (OLE EncryptedPackage), via msoffcrypto-tool
-import msoffcrypto
+from msoffcrypto.format.ooxml import OOXMLFile
 with open(f"{OUT}/lecture.pptx", "rb") as f_in, open(f"{OUT}/encrypted.pptx", "wb") as f_out:
-    msoffcrypto.OfficeFile(f_in)  # sanity: library import works
-try:
-    from msoffcrypto.format.ooxml import OOXMLFile
-    with open(f"{OUT}/lecture.pptx", "rb") as f_in, open(f"{OUT}/encrypted.pptx", "wb") as f_out:
-        OOXMLFile(f_in).encrypt("secret", f_out)
-except Exception as e:
-    print("could not build encrypted pptx:", e); os.path.exists(f"{OUT}/encrypted.pptx") and os.remove(f"{OUT}/encrypted.pptx")
+    OOXMLFile(f_in).encrypt("secret", f_out)
+
+# ---------------------------------------------------------------- visual deck: gradient, chart, grouped (SmartArt-like) shapes
+from pptx.chart.data import CategoryChartData
+from pptx.enum.chart import XL_CHART_TYPE
+from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
+
+VISUAL = [
+  dict(title="Gradient background", lines=["Slide with a two-colour gradient fill", "White text on a dark gradient must stay readable"], notes="Gradient test: the background is a linear gradient, not an image."),
+  dict(title="Chart slide", chart=True, lines=["Heart rate falls with dose"], notes="Chart test: a native column chart with a title and category labels."),
+  dict(title="Pathway as grouped shapes", group=["Receptor", "G-protein", "Adenylyl cyclase", "cAMP"], lines=["Grouped shapes stand in for SmartArt"], notes="Group test: four boxes with arrows between them, one group nested inside another."),
+  dict(title="Plain closing slide", lines=["Nothing special here"], notes=None),
+]
+json.dump(VISUAL, open(f"{OUT}/deck-visual.expected.json", "w"), indent=1)
+
+def build_visual(path):
+    prs = Presentation(); prs.slide_width = Inches(13.333); prs.slide_height = Inches(7.5)
+    for i, s in enumerate(VISUAL):
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        t = slide.shapes.title; t.left, t.top, t.width, t.height = Inches(0.7), Inches(0.4), Inches(11.9), Inches(1.2)
+        t.text_frame.text = s["title"]
+        if i == 0:
+            fill = slide.background.fill; fill.gradient(); fill.gradient_angle = 35
+            st = fill.gradient_stops; st[0].color.rgb = RGBColor(0x10, 0x20, 0x60); st[1].color.rgb = RGBColor(0x60, 0x20, 0x90)
+            for r_ in t.text_frame.paragraphs[0].runs: r_.font.color.rgb = RGBColor(255, 255, 255)
+        tb = slide.shapes.add_textbox(Inches(0.7), Inches(5.9), Inches(11.9), Inches(1.0)); tb.text_frame.word_wrap = True
+        for j, line in enumerate(s["lines"]):
+            p = tb.text_frame.paragraphs[0] if j == 0 else tb.text_frame.add_paragraph()
+            r_ = p.add_run(); r_.text = line; r_.font.size = Pt(24)
+            if i == 0: r_.font.color.rgb = RGBColor(255, 255, 255)
+        if s.get("chart"):
+            cd = CategoryChartData(); cd.categories = ["0 mg", "40 mg", "80 mg", "120 mg"]; cd.add_series("Heart rate (bpm)", (78, 70, 62, 55))
+            gf = slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(1.5), Inches(1.8), Inches(10), Inches(4), cd)
+            gf.chart.has_title = True; gf.chart.chart_title.text_frame.text = "Heart rate by propranolol dose"
+        if s.get("group"):
+            outer = slide.shapes.add_group_shape(); inner = outer.shapes.add_group_shape()
+            for k, label in enumerate(s["group"]):
+                host = inner if k >= 2 else outer
+                box = host.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.9 + k * 3.0), Inches(2.6), Inches(2.4), Inches(1.4))
+                box.text_frame.text = label
+                box.fill.solid(); box.fill.fore_color.rgb = RGBColor(0x2E + k * 20, 0x75, 0xB6)
+                if k:
+                    host.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(0.9 + (k - 1) * 3.0 + 2.4), Inches(3.3), Inches(0.9 + k * 3.0), Inches(3.3))
+        if s.get("notes"): slide.notes_slide.notes_text_frame.text = s["notes"]
+    prs.save(path)
+build_visual(f"{OUT}/deck-visual.pptx")
+
+# ---------------------------------------------------------------- macro-carrying decks (the payload is inert junk: no macro is ever run)
+def with_macro_part(src, dst, macro_enabled_main):
+    # An OLE-looking blob: the header magic then filler. LibreOffice must neither run it nor choke on it.
+    blob = bytes([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) + bytes(504) + b"Attribute VB_Name = \"Module1\"\nSub AutoOpen()\nEnd Sub\n" + bytes(2000)
+    with zipfile.ZipFile(src) as zin, zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "[Content_Types].xml":
+                t = data.decode()
+                t = t.replace("</Types>", '<Override PartName="/ppt/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/></Types>')
+                if macro_enabled_main:
+                    t = t.replace("application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml", "application/vnd.ms-powerpoint.presentation.macroEnabled.main+xml")
+                data = t.encode()
+            if item.filename == "ppt/_rels/presentation.xml.rels":
+                data = data.decode().replace("</Relationships>", '<Relationship Id="rIdVba1" Type="http://schemas.microsoft.com/office/2006/relationships/vbaProject" Target="vbaProject.bin"/></Relationships>').encode()
+            zout.writestr(item.filename, data)
+        zout.writestr("ppt/vbaProject.bin", blob)
+with_macro_part(f"{OUT}/deck-visual.pptx", f"{OUT}/macro.pptx", False)
+with_macro_part(f"{OUT}/deck-visual.pptx", f"{OUT}/macro.pptm", True)
+
+# ---------------------------------------------------------------- lying zip header: declares 1 KB uncompressed, inflates to 700 MB
+def lying_zip(path):
+    tmp = path + ".honest"
+    with zipfile.ZipFile(f"{OUT}/lecture.pptx") as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        for i in src.infolist(): z.writestr(i.filename, src.read(i.filename))
+        with z.open("ppt/media/bomb.bin", "w", force_zip64=True) as w:
+            chunk = bytes(1024 * 1024)
+            for _ in range(700): w.write(chunk)
+    data = bytearray(open(tmp, "rb").read()); os.remove(tmp)
+    name = b"ppt/media/bomb.bin"
+    patched = 0
+    # Patch the uncompressed size (and the zip64 extra field's copy) in the local header and the central directory.
+    for sig, size_off, name_off in ((b"PK\x03\x04", 22, 30), (b"PK\x01\x02", 24, 46)):
+        pos = 0
+        while (pos := data.find(sig, pos)) != -1:
+            nlen = struct.unpack_from("<H", data, pos + (26 if sig == b"PK\x03\x04" else 28))[0]
+            if bytes(data[pos + name_off: pos + name_off + nlen]) == name:
+                struct.pack_into("<I", data, pos + size_off, 1024); patched += 1
+                elen = struct.unpack_from("<H", data, pos + (28 if sig == b"PK\x03\x04" else 30))[0]
+                ex = pos + name_off + nlen
+                if elen >= 12 and struct.unpack_from("<H", data, ex)[0] == 1:
+                    struct.pack_into("<Q", data, ex + 4, 1024)
+            pos += 4
+    assert patched >= 2, patched
+    open(path, "wb").write(data)
+lying_zip(f"{OUT}/lying-zip-header.pptx")
 print(sorted(os.listdir(OUT)))

@@ -1,0 +1,281 @@
+{
+  "version": 1,
+  "note": "Expected converter outcome per fixture in fixtures/generated. Read by apps/converter/scripts/integration-check.mjs. A warning code '@N' means on page N, '@-' on no particular page.",
+  "cases": [
+    {
+      "file": "lecture.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pptx",
+        "pageCount": 12,
+        "oracle": "lecture.expected.json",
+        "warningCodes": ["HIDDEN_SLIDE@11"],
+        "allHaveText": true
+      }
+    },
+    {
+      "file": "deck-visual.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pptx",
+        "pageCount": 4,
+        "oracle": "deck-visual.expected.json",
+        "warningCodes": ["UNEXTRACTED_OBJECTS@2"],
+        "textIncludes": {
+          "1": ["Gradient background", "two-colour gradient"],
+          "2": ["Chart slide", "Heart rate falls with dose"],
+          "3": ["Receptor", "G-protein", "Adenylyl cyclase", "cAMP", "Pathway as grouped shapes"],
+          "4": ["Nothing special here"]
+        },
+        "notes": {
+          "1": "Gradient test: the background is a linear gradient, not an image.",
+          "2": "Chart test: a native column chart with a title and category labels.",
+          "3": "Group test: four boxes with arrows between them, one group nested inside another.",
+          "4": null
+        }
+      }
+    },
+    {
+      "file": "macro.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pptx",
+        "pageCount": 4,
+        "warningCodes": ["MACROS_PRESENT@-"],
+        "textIncludes": {
+          "3": ["Receptor", "cAMP"]
+        }
+      }
+    },
+    {
+      "file": "macro.pptm",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pptx",
+        "pageCount": 4,
+        "warningCodes": ["MACROS_PRESENT@-"],
+        "textIncludes": {
+          "3": ["Receptor", "cAMP"]
+        }
+      }
+    },
+    {
+      "file": "text-layer.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pdf",
+        "pageCount": 5,
+        "allHaveText": true,
+        "textIncludes": {
+          "3": ["Warfarin inhibits vitamin K epoxide reductase (page 3)"]
+        }
+      }
+    },
+    {
+      "file": "image-only.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pdf",
+        "pageCount": 4,
+        "noText": true
+      }
+    },
+    {
+      "file": "encrypted-ownerpw-only.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "pdf",
+        "pageCount": 5,
+        "warningCodes": ["PDF_OWNER_RESTRICTED@-"]
+      }
+    },
+    {
+      "file": "photo-exif6.jpg",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "jpeg",
+        "pageCount": 1,
+        "upright": true,
+        "portrait": true
+      }
+    },
+    {
+      "file": "photo-exif3.png",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "png",
+        "pageCount": 1,
+        "upright": true,
+        "portrait": true
+      }
+    },
+    {
+      "file": "photo.heic",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "heic",
+        "pageCount": 1,
+        "upright": true,
+        "portrait": true
+      }
+    },
+    {
+      "file": "photo-rotated.heic",
+      "phase": "default",
+      "expect": {
+        "ok": true,
+        "type": "heic",
+        "pageCount": 1,
+        "upright": true,
+        "portrait": true
+      }
+    },
+    {
+      "file": "toomany-501pages.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_many_pages"
+      }
+    },
+    {
+      "file": "encrypted-userpw.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "encrypted_file"
+      }
+    },
+    {
+      "file": "encrypted.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "encrypted_file"
+      }
+    },
+    {
+      "file": "truncated.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "junkxml.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "corrupt.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "truncated.jpg",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "zipbomb.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "decompression_bomb"
+      }
+    },
+    {
+      "file": "lying-zip-header.pptx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "corrupt_file"
+      }
+    },
+    {
+      "file": "pixelbomb.png",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "pixel_bomb"
+      }
+    },
+    {
+      "file": "other-office.docx",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "unsupported_type",
+        "reason": "other_zip"
+      }
+    },
+    {
+      "file": "plain-text.pdf",
+      "phase": "default",
+      "expect": {
+        "ok": false,
+        "errorCode": "unsupported_type"
+      }
+    },
+    {
+      "file": "photo-exif6.jpg",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_large",
+        "reason": "file_too_large"
+      },
+      "env": {
+        "MAX_INPUT_BYTES": "100000"
+      },
+      "label": "limit-input-bytes"
+    },
+    {
+      "file": "lecture.pptx",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "too_many_pages"
+      },
+      "env": {
+        "MAX_PAGES": "5"
+      },
+      "label": "limit-pages"
+    },
+    {
+      "file": "lecture.pptx",
+      "phase": "limits",
+      "expect": {
+        "ok": false,
+        "errorCode": "conversion_failed",
+        "reason": "timeout"
+      },
+      "env": {
+        "WALL_CLOCK_MS": "1200"
+      },
+      "label": "limit-wall-clock"
+    }
+  ]
+}

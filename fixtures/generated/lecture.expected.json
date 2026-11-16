@@ -1,0 +1,123 @@
+[
+  {
+    "title": "Beta-Adrenergic Antagonists",
+    "bullets": ["Pharmacology 301, Lecture 7", "Cardiovascular block"],
+    "notes": "Welcome. Today: how beta-blockers work, who gets them, and why they are not interchangeable."
+  },
+  {
+    "title": "Learning objectives",
+    "bullets": [
+      "Name the beta receptor subtypes and their tissues",
+      "Explain the mechanism of beta blockade",
+      "Classify agents by selectivity",
+      "List major adverse effects and contraindications"
+    ],
+    "notes": "Objectives map to the exam blueprint. Spend most time on selectivity."
+  },
+  {
+    "title": "Receptor subtypes",
+    "table": [
+      ["Receptor", "Main location", "Effect of stimulation"],
+      ["beta-1", "Heart, kidney", "Raises heart rate and contractility"],
+      ["beta-2", "Bronchi, vascular smooth muscle", "Relaxation, bronchodilation"],
+      ["beta-3", "Adipose tissue", "Lipolysis"]
+    ],
+    "notes": null
+  },
+  {
+    "title": "Mechanism of action",
+    "bullets": [
+      "Competitive antagonism at beta receptors",
+      "Lower cAMP in cardiac myocytes",
+      ["Reduced heart rate and contractility", 1],
+      ["Reduced renin release", 1],
+      "Net effect: lower cardiac output and blood pressure"
+    ],
+    "image": true,
+    "notes": "Draw the cAMP pathway on the board. Stress that antagonism is competitive, so high catecholamine levels can overcome it."
+  },
+  {
+    "title": "Classification by selectivity",
+    "table": [
+      ["Class", "Examples", "Note"],
+      ["Non-selective", "Propranolol, nadolol", "Block beta-1 and beta-2"],
+      ["Cardioselective", "Metoprolol, atenolol", "Selectivity lost at high doses"],
+      ["Mixed alpha/beta", "Carvedilol, labetalol", "Add vasodilation"]
+    ],
+    "notes": "Cardioselective does not mean cardiac-only."
+  },
+  {
+    "title": "Pharmacokinetics",
+    "bullets": [
+      "Propranolol: extensive first-pass metabolism",
+      "Atenolol: renal elimination, t½ about 6-7 h",
+      "Therapeutic range often quoted as 50-100 µg/mL for older assays",
+      "Lipophilic agents cross the blood-brain barrier"
+    ],
+    "font": "Arial",
+    "notes": "Lipophilicity explains the sleep disturbance and vivid dreams reported with propranolol."
+  },
+  {
+    "title": "Clinical uses",
+    "bullets": [
+      "Hypertension",
+      "Angina and post-myocardial infarction",
+      "Heart failure with reduced ejection fraction",
+      "Arrhythmia rate control",
+      "Migraine prophylaxis; essential tremor"
+    ],
+    "font": "Calibri",
+    "notes": null
+  },
+  {
+    "title": "Adverse effects",
+    "bullets": [
+      "Bradycardia and AV block",
+      "Bronchospasm in asthma with non-selective agents",
+      "Fatigue, cold extremities",
+      "Masked hypoglycaemia in insulin-treated diabetes",
+      "Abrupt withdrawal: rebound tachycardia"
+    ],
+    "notes": "Never stop abruptly. Taper over one to two weeks."
+  },
+  {
+    "title": "Interactions to know",
+    "bullets": [
+      "Verapamil or diltiazem: additive AV block",
+      "Insulin: masked hypoglycaemia symptoms",
+      "NSAIDs: blunted antihypertensive effect",
+      "Clonidine: rebound hypertension on withdrawal"
+    ],
+    "font": "Cambria",
+    "notes": null
+  },
+  {
+    "title": "Dosing at a glance",
+    "table": [
+      ["Drug", "Usual daily dose", "Frequency"],
+      ["Metoprolol tartrate", "50-200 mg", "Twice daily"],
+      ["Atenolol", "25-100 mg", "Once daily"],
+      ["Propranolol", "40-320 mg", "Divided doses"],
+      ["Carvedilol", "6.25-25 mg", "Twice daily with food"]
+    ],
+    "notes": "Doses are teaching figures only, not a prescribing reference."
+  },
+  {
+    "title": "Case discussion (hidden)",
+    "bullets": [
+      "68-year-old with COPD and new hypertension",
+      "Which beta-blocker, if any, and why?"
+    ],
+    "hidden": true,
+    "notes": "Hidden slide: use only if time allows. Expected answer: cardioselective agent at a low dose, with monitoring."
+  },
+  {
+    "title": "Summary",
+    "bullets": [
+      "Competitive beta antagonists reduce cardiac work",
+      "Selectivity guides choice, but is dose dependent",
+      "Taper, never stop abruptly"
+    ],
+    "notes": "Questions before the quiz."
+  }
+]

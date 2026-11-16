@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Gradient background",
+    "lines": [
+      "Slide with a two-colour gradient fill",
+      "White text on a dark gradient must stay readable"
+    ],
+    "notes": "Gradient test: the background is a linear gradient, not an image."
+  },
+  {
+    "title": "Chart slide",
+    "chart": true,
+    "lines": ["Heart rate falls with dose"],
+    "notes": "Chart test: a native column chart with a title and category labels."
+  },
+  {
+    "title": "Pathway as grouped shapes",
+    "group": ["Receptor", "G-protein", "Adenylyl cyclase", "cAMP"],
+    "lines": ["Grouped shapes stand in for SmartArt"],
+    "notes": "Group test: four boxes with arrows between them, one group nested inside another."
+  },
+  {
+    "title": "Plain closing slide",
+    "lines": ["Nothing special here"],
+    "notes": null
+  }
+]

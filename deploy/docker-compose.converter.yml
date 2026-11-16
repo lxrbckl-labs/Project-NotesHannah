@@ -1,0 +1,71 @@
+# The conversion worker, locked down. It has no network and talks to the app only through files:
+# jobs arrive in a queue directory, results leave in the same place. Include it next to the app:
+#   DATA_DIR=/Volumes/NVME1/notes docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.converter.yml up -d
+# or run it alone:
+#   DATA_DIR=./data docker compose -f deploy/docker-compose.converter.yml up -d --build
+# DATA_DIR must hold originals/, pages/ and queue/{pending,processing,done,failed}/ (see docs/converter.md).
+services:
+  converter:
+    build:
+      context: ..
+      dockerfile: deploy/converter.Dockerfile
+    image: notes-converter
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+
+    # Lockdown
+    network_mode: none # no interfaces but loopback; nothing to reach, nothing reaches it
+    read_only: true # root filesystem is immutable
+    user: "${CONVERTER_USER:-10001:10001}" # non-root; must be able to write pages/ and queue/ (see docs)
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    ipc: none
+    tmpfs:
+      # Scratch for conversions. Counts against the memory limit; noexec so nothing dropped there can run.
+      - /tmp:rw,noexec,nosuid,nodev,size=1g,mode=1777
+
+    # Resource limits (one conversion at a time)
+    mem_limit: 3g
+    memswap_limit: 3g # no swap
+    cpus: 2
+    pids_limit: 256
+    ulimits:
+      nofile: { soft: 1024, hard: 1024 }
+      core: 0
+      fsize: 2147483648
+
+    environment:
+      DATA_DIR: /data
+      # Optional overrides, empty means the built-in default (see docs/converter.md).
+      MAX_INPUT_BYTES: "${MAX_INPUT_BYTES:-}"
+      MAX_PAGES: "${MAX_PAGES:-}"
+      WALL_CLOCK_MS: "${WALL_CLOCK_MS:-}"
+      CHILD_RSS_MB: "${CHILD_RSS_MB:-}"
+      POLL_MS: "${POLL_MS:-}"
+      HEARTBEAT_MS: "${HEARTBEAT_MS:-}"
+
+    # Three separate mounts: originals can only be read, pages and queue can be written, nothing else is visible.
+    volumes:
+      - type: bind
+        source: "${DATA_DIR:?set DATA_DIR to the data directory}/originals"
+        target: /data/originals
+        read_only: true
+      - type: bind
+        source: "${DATA_DIR}/pages"
+        target: /data/pages
+      - type: bind
+        source: "${DATA_DIR}/queue"
+        target: /data/queue
+
+    healthcheck:
+      # Healthy while the heartbeat file has been touched in the last 30 seconds.
+      test:
+        - CMD
+        - /usr/local/bin/node
+        - -e
+        - "const s=require('fs').statSync('/data/queue/heartbeat');process.exit(Date.now()-s.mtimeMs<30000?0:1)"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

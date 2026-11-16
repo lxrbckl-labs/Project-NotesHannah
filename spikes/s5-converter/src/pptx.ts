@@ -67,7 +67,7 @@ function paragraphText(p: XNode): string {
 function txBodyParagraphs(txBody: XNode): Paragraph[] {
   const res: Paragraph[] = [];
   for (const p of findAll(kids(txBody), "a:p")) {
-    const text = paragraphText(p).replace(/\u000b/g, "\n");
+    const text = paragraphText(p).replaceAll("\u000b", "\n");
     const pPr = find(kids(p), "a:pPr");
     const level = pPr ? Number(attr(pPr, "lvl") ?? 0) || 0 : 0;
     if (text.trim() !== "") res.push({ level, text });
