@@ -7,7 +7,7 @@
  * Usage (from apps/server): npx tsx scripts/mcp-live-check.probe.ts [claude|codex]
  */
 import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
@@ -115,3 +115,4 @@ if (agent === "codex") {
 }
 console.log(`${agent} (shape ${mode}):\n${out.trim()}`);
 server.close();
+rmSync(work, { recursive: true, force: true });
