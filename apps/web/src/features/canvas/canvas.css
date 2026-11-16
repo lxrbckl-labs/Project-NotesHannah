@@ -542,8 +542,7 @@
   transition: opacity 0.12s ease;
 }
 .nc-canvas.nc-fine .react-flow__node:hover .react-flow__handle,
-.nc-canvas.nc-fine .react-flow__node.selected .react-flow__handle,
-.nc-canvas.nc-fine.nc-connecting .react-flow__handle {
+.nc-canvas.nc-fine .react-flow__node.selected .react-flow__handle {
   opacity: 1;
 }
 .nc-canvas.nc-coarse .react-flow__handle {
@@ -1005,4 +1004,46 @@
   flex: 1;
   min-width: 0;
   max-width: none;
+}
+
+.nc-step-text {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+.nc-stepbar-inline .nc-step-text {
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+.nc-stepbar-inline .nc-step-count {
+  padding-left: 0;
+  font-size: 11px;
+}
+.nc-stepbar-inline .nc-step-title {
+  padding: 0;
+  max-width: 100%;
+  font-size: 14px;
+}
+.nc-stepbar-inline .nc-btn {
+  min-width: 40px;
+  padding: 0 6px;
+}
+
+.nc-canvas .react-flow__handle {
+  border-radius: 999px;
+  background: var(--nc-card);
+  border-color: var(--nc-select);
+}
+.nc-canvas.nc-connecting .react-flow__handle {
+  opacity: 0;
+}
+.nc-panel {
+  width: min(380px, calc(100% - 24px));
+  box-sizing: border-box;
+}
+.nc-canvas.nc-fine .nc-frame-row .nc-btn:not(.nc-frame-jump) {
+  min-width: 34px;
+  padding: 0 4px;
 }

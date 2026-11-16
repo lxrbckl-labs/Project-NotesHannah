@@ -296,6 +296,7 @@ function CanvasInner({
       const ops = connectOps(from, to, id, kind);
       if (ops.length === 0) return;
       if (await commit(ops)) {
+        setNodes((ns) => ns.map((n) => (n.selected ? { ...n, selected: false } : n)));
         setSelectedEdges(new Set([id]));
         setEdgeEditor({ id, fresh: true });
       }
@@ -760,6 +761,7 @@ function CanvasInner({
       data-testid="canvas-view"
       data-device={device.device}
       data-ready={model.status === "ready" && layout ? "true" : "false"}
+      data-layout-ms={model.layoutMs !== null ? Math.round(model.layoutMs) : undefined}
     >
       <PortalContext.Provider value={portal}>
         <CanvasActionsContext.Provider value={actions}>
@@ -833,124 +835,127 @@ function CanvasInner({
                 style={{ width: 180, height: 120 }}
               />
             )}
-            {!touchMulti && !connectMode && (singleCard || selectedCards.length > 1) && (
-              <NodeToolbar
-                nodeId={selectedCards.map((c) => c.id)}
-                isVisible={!dragging.current}
-                position={Position.Top}
-                offset={12}
-              >
-                <div className="nc-seltools nc-chrome" data-testid="selection-toolbar">
-                  {singleCard ? (
-                    <>
-                      {singleCard.content.kind === "block" && (
-                        <>
+            {!touchMulti &&
+              !connectMode &&
+              !edgeEditor &&
+              (singleCard || selectedCards.length > 1) && (
+                <NodeToolbar
+                  nodeId={selectedCards.map((c) => c.id)}
+                  isVisible={!dragging.current}
+                  position={Position.Top}
+                  offset={12}
+                >
+                  <div className="nc-seltools nc-chrome" data-testid="selection-toolbar">
+                    {singleCard ? (
+                      <>
+                        {singleCard.content.kind === "block" && (
+                          <>
+                            <IconButton
+                              icon="read"
+                              label={readingId === singleCard.id ? "Stop reading" : "Read here"}
+                              pressed={readingId === singleCard.id}
+                              onClick={() =>
+                                setReadingId((r) => (r === singleCard.id ? null : singleCard.id))
+                              }
+                            />
+                            <IconButton
+                              icon="open"
+                              label="Open in page"
+                              onClick={() =>
+                                singleCard.content.kind === "block" &&
+                                onOpenBlock?.(singleCard.content.blockIds[0] as string)
+                              }
+                            />
+                          </>
+                        )}
+                        {singleCard.content.kind === "note" && (
                           <IconButton
-                            icon="read"
-                            label={readingId === singleCard.id ? "Stop reading" : "Read here"}
-                            pressed={readingId === singleCard.id}
+                            icon="edit"
+                            label="Edit note"
+                            onClick={() => setEditingId(singleCard.id)}
+                          />
+                        )}
+                        <IconButton
+                          icon="connect"
+                          label="Connect from here"
+                          onClick={() => {
+                            setConnectMode(true);
+                            setConnectSource(singleCard.id);
+                          }}
+                        />
+                        {singleCard.content.kind !== "sticker" && (
+                          <ColorPicker
+                            value={singleCard.color}
+                            onPick={(color) =>
+                              void commit([
+                                { op: "update_card", id: singleCard.id, patch: { color } },
+                              ])
+                            }
+                            trigger={<IconButton icon="palette" label="Colour" />}
+                          />
+                        )}
+                        {canvas?.frames.some((f) => f.members.includes(singleCard.id)) && (
+                          <IconButton
+                            icon="ungroup"
+                            label="Take out of frame"
                             onClick={() =>
-                              setReadingId((r) => (r === singleCard.id ? null : singleCard.id))
+                              void commit([{ op: "remove_from_frame", cards: [singleCard.id] }], {
+                                message: "Taken out of its frame",
+                              })
                             }
                           />
-                          <IconButton
-                            icon="open"
-                            label="Open in page"
-                            onClick={() =>
-                              singleCard.content.kind === "block" &&
-                              onOpenBlock?.(singleCard.content.blockIds[0] as string)
-                            }
-                          />
-                        </>
-                      )}
-                      {singleCard.content.kind === "note" && (
+                        )}
+                      </>
+                    ) : (
+                      <>
                         <IconButton
-                          icon="edit"
-                          label="Edit note"
-                          onClick={() => setEditingId(singleCard.id)}
+                          icon="alignLeft"
+                          label="Align left edges"
+                          onClick={() => align("left")}
                         />
-                      )}
-                      <IconButton
-                        icon="connect"
-                        label="Connect from here"
-                        onClick={() => {
-                          setConnectMode(true);
-                          setConnectSource(singleCard.id);
-                        }}
-                      />
-                      {singleCard.content.kind !== "sticker" && (
-                        <ColorPicker
-                          value={singleCard.color}
-                          onPick={(color) =>
-                            void commit([
-                              { op: "update_card", id: singleCard.id, patch: { color } },
-                            ])
-                          }
-                          trigger={<IconButton icon="palette" label="Colour" />}
-                        />
-                      )}
-                      {canvas?.frames.some((f) => f.members.includes(singleCard.id)) && (
                         <IconButton
-                          icon="ungroup"
-                          label="Take out of frame"
-                          onClick={() =>
-                            void commit([{ op: "remove_from_frame", cards: [singleCard.id] }], {
-                              message: "Taken out of its frame",
-                            })
-                          }
+                          icon="alignTop"
+                          label="Align top edges"
+                          onClick={() => align("top")}
                         />
-                      )}
-                    </>
-                  ) : (
-                    <>
+                        <IconButton
+                          icon="alignCenter"
+                          label="Centre in a column"
+                          onClick={() => align("center")}
+                        />
+                        <IconButton
+                          icon="distribute"
+                          label="Space evenly"
+                          onClick={() => align("distribute")}
+                        />
+                        <IconButton
+                          icon="frame"
+                          label="Frame these cards"
+                          onClick={() => void makeFrame()}
+                        />
+                        <IconButton
+                          icon="focus"
+                          label="Zoom to selection"
+                          onClick={zoomToSelection}
+                        />
+                      </>
+                    )}
+                    {pinnedSelected.length > 0 && (
                       <IconButton
-                        icon="alignLeft"
-                        label="Align left edges"
-                        onClick={() => align("left")}
+                        icon="unpin"
+                        label="Release to automatic layout"
+                        onClick={() => releasePins(pinnedSelected)}
                       />
-                      <IconButton
-                        icon="alignTop"
-                        label="Align top edges"
-                        onClick={() => align("top")}
-                      />
-                      <IconButton
-                        icon="alignCenter"
-                        label="Centre in a column"
-                        onClick={() => align("center")}
-                      />
-                      <IconButton
-                        icon="distribute"
-                        label="Space evenly"
-                        onClick={() => align("distribute")}
-                      />
-                      <IconButton
-                        icon="frame"
-                        label="Frame these cards"
-                        onClick={() => void makeFrame()}
-                      />
-                      <IconButton
-                        icon="focus"
-                        label="Zoom to selection"
-                        onClick={zoomToSelection}
-                      />
-                    </>
-                  )}
-                  {pinnedSelected.length > 0 && (
+                    )}
                     <IconButton
-                      icon="unpin"
-                      label="Release to automatic layout"
-                      onClick={() => releasePins(pinnedSelected)}
+                      icon="trash"
+                      label="Delete"
+                      danger
+                      onClick={() => void deleteSelection()}
                     />
-                  )}
-                  <IconButton
-                    icon="trash"
-                    label="Delete"
-                    danger
-                    onClick={() => void deleteSelection()}
-                  />
-                </div>
-              </NodeToolbar>
-            )}
+                  </div>
+                </NodeToolbar>
+              )}
             {singleFrame && !touchMulti && (
               <NodeToolbar nodeId={singleFrame.id} position={Position.Top} offset={8} align="start">
                 <div className="nc-seltools nc-chrome" data-testid="frame-toolbar">

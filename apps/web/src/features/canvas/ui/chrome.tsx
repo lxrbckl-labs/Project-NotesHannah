@@ -380,14 +380,16 @@ export function StepBar({
       data-testid="step-bar"
     >
       <IconButton icon="left" label="Previous frame" onClick={onPrev} disabled={index <= 0} />
-      <span className="nc-step-count" aria-live="polite">
-        {index + 1} / {total}
-      </span>
-      <span className="nc-step-title" data-testid="step-title">
-        {title}
+      <span className="nc-step-text">
+        <span className="nc-step-count" aria-live="polite">
+          {index + 1} / {total}
+        </span>
+        <span className="nc-step-title" data-testid="step-title">
+          {title}
+        </span>
       </span>
       <IconButton icon="right" label="Next frame" onClick={onNext} disabled={index >= total - 1} />
-      <span className="nc-sep" />
+      {!inline && <span className="nc-sep" />}
       <IconButton icon={exitIcon} label={exitLabel} onClick={onExit} />
     </nav>
   );
