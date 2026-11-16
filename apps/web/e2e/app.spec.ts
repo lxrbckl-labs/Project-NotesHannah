@@ -56,7 +56,7 @@ test.describe("library", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "07 · Beta blockers · Oct 14" }),
     ).toBeVisible();
-    await expect(page.getByText("No notes of your own yet")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes" })).toBeVisible();
     const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
     await expect(crumbs.getByRole("link", { name: "Pharmacology II" })).toBeVisible();
     await crumbs.getByRole("link", { name: "Fall 2026" }).click();

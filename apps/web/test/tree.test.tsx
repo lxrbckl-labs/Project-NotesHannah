@@ -182,7 +182,7 @@ describe("creating in the library", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "07 · Beta blockers · Oct 14" }),
     ).toBeInTheDocument();
-    expect(await screen.findByText("No notes of your own yet")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Your notes" })).toBeInTheDocument();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     await waitFor(() =>
       expect(within(crumbs).getByRole("link", { name: "Pharmacology II" })).toBeInTheDocument(),
