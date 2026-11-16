@@ -96,6 +96,9 @@ export interface CanvasViewProps {
 }
 
 /** The canvas view of a document (E1–E6). Mount it full-bleed inside the shell. */
+/** Below this zoom the text of a card is too small to read comfortably. */
+const READABLE_ZOOM = 0.7;
+
 export function CanvasView(props: CanvasViewProps) {
   return (
     <ReactFlowProvider>
@@ -704,8 +707,19 @@ function CanvasInner({
   useEffect(() => {
     if (fitted.current || !layout || nodes.length === 0 || activeFrame) return;
     fitted.current = true;
-    requestAnimationFrame(() => void flowRef.current?.fitView({ padding }));
-  }, [activeFrame, layout, nodes.length, padding]);
+    requestAnimationFrame(() => {
+      const flow = flowRef.current;
+      if (!flow) return;
+      // A whole map that would be drawn too small to read (a portrait tablet) opens on its first
+      // frame instead, or as large as is readable; "Whole map" shows all of it.
+      void flow.fitView({ padding }).then(() => {
+        if (phone || flow.getZoom() >= READABLE_ZOOM) return;
+        const first = frames[0];
+        if (first) void flow.fitView({ nodes: [{ id: first.id }], padding, maxZoom: 1.2 });
+        else void flow.fitView({ padding, minZoom: READABLE_ZOOM });
+      });
+    });
+  }, [activeFrame, frames, layout, nodes.length, padding, phone]);
 
   // ---- Render ------------------------------------------------------------------
   if (model.status === "error")
@@ -1242,7 +1256,7 @@ function CanvasInner({
                   label="Zoom in"
                   onClick={() => flowRef.current?.zoomIn({ duration })}
                 />
-                <IconButton icon="fit" label="Zoom to fit (Shift+1)" onClick={fitAll} />
+                <IconButton icon="fit" label="Whole map (Shift+1)" onClick={fitAll} />
                 <IconButton
                   icon="focus"
                   label="Zoom to selection (Shift+2)"

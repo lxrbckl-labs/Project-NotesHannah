@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 /**
  * Screenshots of the documents feature's main states, in both themes, for
- * review. Writes apps/web/screenshots/documents/<project>-<state>-<theme>.png.
+ * review. Writes apps/web/screenshots-out/documents/<project>-<state>-<theme>.png.
  * Run with DOC_SHOTS=1 (skipped otherwise, to keep the e2e run quick).
  */
 
@@ -11,7 +11,7 @@ test.skip(!process.env.DOC_SHOTS, "set DOC_SHOTS=1 to capture screenshots");
 test.setTimeout(120_000);
 
 const THEMES = ["light", "dark"] as const;
-const DIR = "screenshots/documents";
+const DIR = "screenshots-out/documents";
 
 async function open(page: Page, theme: string, extra = "") {
   await page.emulateMedia({ colorScheme: theme as "light" | "dark", reducedMotion: "reduce" });

@@ -5,6 +5,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Page } from "../../components/Page";
 import { EmptyState, Skeleton } from "../../components/ui/states";
 import { appHttp } from "../../lib/api";
+import { setFirstLoadCountsAsSeen } from "../requests/model/wording";
 import { SourceViewer } from "../sources/SourceViewer";
 import {
   CONTRACT,
@@ -13,6 +14,7 @@ import {
   loadFeature,
   type MountContext,
 } from "./modules";
+import { useModuleNavigation } from "./navigation";
 
 const BLURB: Record<FeatureKey, string> = {
   documents: "Study guides and notes you can read and edit will open here.",
@@ -21,6 +23,7 @@ const BLURB: Record<FeatureKey, string> = {
   practiceSession: "A practice session will run here.",
   exams: "Your exams, their dates and what each one covers will be listed here.",
   requests: "Things you ask an agent to make for you will be listed here.",
+  conceptsIndex: "Drugs and drug classes, gathered from all your courses, will be browsed here.",
   concepts: "Drugs and drug classes, gathered from all your courses, will open here.",
 };
 
@@ -62,6 +65,7 @@ function Loaded({ feature }: { feature: LoadedFeature }) {
   const navigate = useNavigate();
   const { Root, createStore } = feature;
   const store = useMemo(() => createStore(appHttp), [createStore]);
+  const moduleNavigation = useModuleNavigation();
   const context: MountContext = {
     params,
     search,
@@ -74,7 +78,7 @@ function Loaded({ feature }: { feature: LoadedFeature }) {
     openNode: (nodeId) => navigate(`/library/${nodeId}`),
     SourceViewer,
   };
-  return <Root store={store} {...context} />;
+  return <Root store={store} {...context} {...moduleNavigation} />;
 }
 
 export const DocumentsMount = () => <Mount feature="documents" />;
@@ -82,5 +86,9 @@ export const CanvasMount = () => <Mount feature="canvas" />;
 export const PracticeMount = () => <Mount feature="practice" />;
 export const PracticeSessionMount = () => <Mount feature="practiceSession" />;
 export const ExamsMount = () => <Mount feature="exams" />;
+// A device that has never opened Requests starts with its existing answers marked as seen.
+setFirstLoadCountsAsSeen(true);
+
 export const RequestsMount = () => <Mount feature="requests" />;
 export const ConceptsMount = () => <Mount feature="concepts" />;
+export const ConceptsIndexMount = () => <Mount feature="conceptsIndex" />;

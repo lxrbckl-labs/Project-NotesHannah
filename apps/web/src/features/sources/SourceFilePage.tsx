@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { useParams, useSearchParams } from "react-router";
 import { Page } from "../../components/Page";
 import { useBack } from "../../lib/useBack";
+import { AskButton } from "../mounts/ask";
 import { SourceViewer } from "./SourceViewer";
 
 /** `/files/:fileId?page=<pageId>&quote=<text>`: the viewer as a screen. */
@@ -19,6 +20,17 @@ export function SourceFilePage() {
       >
         <ArrowLeft size={18} aria-hidden /> Back
       </button>
+      <div className="mb-3 flex justify-end">
+        <AskButton
+          target={{
+            type: "source",
+            fileId,
+            ...(params.get("page") ? { pageId: params.get("page") as string } : {}),
+          }}
+          label="this source"
+          text="Ask an agent about this page"
+        />
+      </div>
       <SourceViewer
         fileId={fileId}
         pageId={params.get("page") ?? undefined}

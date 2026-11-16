@@ -80,7 +80,7 @@ interface Seed {
   status: RequestStatus;
   /** Minutes before now the request was left. */
   ago: number;
-  reply?: { text: string; links?: RequestLink[]; minutesAfter: number };
+  reply?: { text: string; links?: RequestLink[]; minutesAfter: number; unsourced?: string[] };
   reopens?: Array<{
     note: string;
     ago: number;
@@ -137,6 +137,7 @@ const SEEDS: Seed[] = [
     status: "done",
     ago: 60 * 30,
     reply: {
+      unsourced: ["40 mg daily"],
       minutesAfter: 25,
       text: "Rewrote the card in plainer words: beta-2 receptors keep the airways open, so blocking them can trigger bronchospasm. Metoprolol blocks mostly beta-1, so it is less likely to, though selectivity fades at higher doses. Added a worked comparison and a source.",
       links: [
@@ -266,6 +267,9 @@ export function seedRequests(now: number): StudyRequestWithContext[] {
           ? {
               text: s.reply.text,
               links: s.reply.links ?? [],
+              ...(s.reply.unsourced
+                ? { unsourcedFigures: true, unsourcedFigureList: s.reply.unsourced }
+                : {}),
               by: { type: "agent", keyId: `key_${pad(7)}`, label: "Study agent" },
               at: answeredAt,
             }

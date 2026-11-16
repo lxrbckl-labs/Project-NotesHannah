@@ -276,6 +276,156 @@ if (!converted) {
     notes: "Beta blockers and dosing.",
   });
   console.log("  an exam planned in 12 days");
+
+  // ---- concepts, requests and a canvas: the rest of what an agent leaves behind -----------------
+  const guideId = guide.documentId ?? guide.document?.id ?? guide.id;
+  const [, bBeta, bList, , bTitrate, , bNonSel] = guide.blockIds;
+  const concepts = await asAgent("POST", "/concepts/bulk", {
+    concepts: [
+      {
+        type: "drug_class",
+        name: "beta blockers",
+        citations: [c1],
+        summary:
+          "Drugs that block beta-adrenergic receptors, lowering heart rate and blood pressure.",
+      },
+      {
+        type: "drug",
+        name: "metoprolol",
+        drug: { brandNames: ["Lopressor"] },
+        citations: [c2],
+        summary: "A cardioselective beta-1 blocker, started at 50 mg twice a day.",
+      },
+      { type: "drug", name: "atenolol", drug: { brandNames: ["Tenormin"] }, citations: [c2] },
+      { type: "drug", name: "propranolol", drug: { brandNames: ["Inderal"] }, citations: [c2] },
+      { type: "drug", name: "verapamil", generalKnowledge: true },
+      { type: "mechanism", name: "beta-1 receptor blockade", citations: [c2] },
+      { type: "adverse_effect", name: "bradycardia", generalKnowledge: true },
+      { type: "adverse_effect", name: "bronchoconstriction", citations: [c2] },
+      { type: "indication", name: "hypertension", generalKnowledge: true },
+      { type: "monitoring_parameter", name: "heart rate", citations: [c1] },
+    ],
+    relations: [
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "drug_class", name: "beta blockers" },
+        type: "belongs_to_class",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "atenolol" },
+        to: { type: "drug_class", name: "beta blockers" },
+        type: "belongs_to_class",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "propranolol" },
+        to: { type: "drug_class", name: "beta blockers" },
+        type: "belongs_to_class",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "mechanism", name: "beta-1 receptor blockade" },
+        type: "has_mechanism",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "adverse_effect", name: "bradycardia" },
+        type: "causes_adverse_effect",
+        generalKnowledge: true,
+      },
+      {
+        from: { type: "drug", name: "propranolol" },
+        to: { type: "adverse_effect", name: "bronchoconstriction" },
+        type: "causes_adverse_effect",
+        citations: [c2],
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "indication", name: "hypertension" },
+        type: "treats",
+        generalKnowledge: true,
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "drug", name: "verapamil" },
+        type: "interacts_with",
+        interaction: { severity: "major", effect: "additive bradycardia and AV block" },
+        generalKnowledge: true,
+      },
+      {
+        from: { type: "drug", name: "metoprolol" },
+        to: { type: "monitoring_parameter", name: "heart rate" },
+        type: "monitored_by",
+        citations: [c1],
+      },
+    ],
+    partial: true,
+  });
+  console.log(
+    `  ${concepts.concepts?.length ?? 0} concepts and their relations written by an agent`,
+  );
+  const metoprolol = concepts.concepts?.find((x) => x.name === "metoprolol");
+
+  // One request still waiting, and one an agent answered with links she can follow.
+  await call("POST", "/requests", {
+    target: { type: "block", documentId: guideId, blockId: bTitrate },
+    kind: "unclear",
+    message: "Why titrate to heart rate rather than a fixed dose?",
+  });
+  const done = (
+    await call("POST", "/requests", {
+      target: { type: "block", documentId: guideId, blockId: bBeta },
+      kind: "expand",
+      message: "Add the usual starting dose for metoprolol.",
+    })
+  ).request;
+  await asAgent("POST", `/requests/${done.id}/claim`, {});
+  const links = [
+    { type: "block", documentId: guideId, blockId: bBeta, label: "The beta blockers paragraph" },
+  ];
+  const firstQuestion = (await call("GET", "/practice/questions?limit=1")).items?.[0];
+  if (firstQuestion)
+    links.push({ type: "question", questionId: firstQuestion.id, label: "A practice question" });
+  await asAgent("POST", `/requests/${done.id}/complete`, {
+    reply: "Added the usual starting dose (50 mg twice a day) and a question to check it.",
+    links,
+  });
+  console.log("  one request waiting, one answered with links");
+
+  // A canvas with frames and labelled connectors.
+  const cards = [
+    { ref: "intro", content: { kind: "block", blockIds: [bBeta] } },
+    { ref: "agents", content: { kind: "block", blockIds: [bList] } },
+    { ref: "choose", content: { kind: "block", blockIds: [bTitrate] } },
+    { ref: "nonsel", content: { kind: "block", blockIds: [bNonSel] } },
+    { ref: "tip", content: { kind: "note", text: "Think: -olol = beta blocker" }, color: "yellow" },
+    ...(metoprolol
+      ? [
+          {
+            ref: "metoprolol",
+            content: { kind: "concept", conceptId: metoprolol.id, label: "metoprolol" },
+          },
+        ]
+      : []),
+  ];
+  await asAgent("PUT", `/documents/${guideId}/canvas/structure`, {
+    documentId: guideId,
+    cards,
+    connectors: [
+      { from: "intro", to: "agents", label: "two groups", kind: "leads_to" },
+      { from: "agents", to: "choose", label: "so choose by", kind: "leads_to" },
+      { from: "agents", to: "nonsel", label: "but also", kind: "related" },
+      { from: "tip", to: "agents", kind: "related" },
+    ],
+    frames: [
+      { ref: "basics", title: "The basics", members: ["intro", "agents", "tip"] },
+      { ref: "selection", title: "Choosing an agent", members: ["choose", "nonsel"] },
+    ],
+  });
+  console.log("  a canvas with two frames and labelled connectors");
 }
 
 console.log(`\nSeeded. Sign in at ${appOrigin} as ${credentials.username}.`);

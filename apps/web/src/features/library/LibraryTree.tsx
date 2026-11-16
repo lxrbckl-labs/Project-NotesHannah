@@ -24,6 +24,7 @@ import {
 import { useMatch, useNavigate } from "react-router";
 import { Badge } from "../../components/ui/field";
 import { ContextActions, type MenuEntry } from "../../components/ui/menu";
+import { MiddleTruncate } from "../../components/ui/middle-truncate";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { IN_PROGRESS } from "../../lib/messages";
@@ -35,7 +36,7 @@ import { fileLeafDragProps, useInboxDrop, useRowDnd } from "./dnd";
 import { useFileActions } from "./fileActions";
 import { InlineName } from "./InlineName";
 import { NodeIcon } from "./NodeIcon";
-import { nodeTitle } from "./NodeRow";
+import { lectureParts, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
 import { type Destination, isPending, nodeHref, toDestination } from "./rules";
@@ -602,12 +603,22 @@ function TreeItem({
           }}
         />
       ) : (
-        <span
-          id={titleId}
-          title={nodeTitle(node)}
-          className="ml-1.5 min-w-0 flex-1 line-clamp-2 break-words md:truncate"
-        >
-          {nodeTitle(node)}
+        <span id={titleId} className="ml-1.5 flex min-w-0 flex-1 items-baseline gap-2">
+          {node.kind === "lecture" ? (
+            <>
+              <span className="sr-only">{nodeTitle(node)}</span>
+              <span aria-hidden className="flex min-w-0 flex-1 items-baseline gap-2">
+                <MiddleTruncate text={lectureParts(node).text} />
+                {lectureParts(node).date ? (
+                  <span className="shrink-0 text-xs text-text-muted">
+                    {lectureParts(node).date}
+                  </span>
+                ) : null}
+              </span>
+            </>
+          ) : (
+            <span className="line-clamp-2 min-w-0 break-words md:truncate">{nodeTitle(node)}</span>
+          )}
         </span>
       )}
     </div>

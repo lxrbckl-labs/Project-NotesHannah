@@ -18,6 +18,15 @@ export function nodeTitle(node: NodeWithLinks): string {
   return node.kind === "lecture" ? lectureLabel(node.name, node.lecture) : node.name;
 }
 
+/** A lecture's name with its number, and its date apart (shown small and trailing in a tree). */
+export function lectureParts(node: NodeWithLinks): { text: string; date: string | null } {
+  if (node.kind !== "lecture") return { text: node.name, date: null };
+  const lecture = node.lecture;
+  const text = lectureLabel(node.name, lecture ? { ...lecture, date: null } : null);
+  const full = lectureLabel(node.name, lecture);
+  return { text, date: lecture?.date ? full.slice(text.length).replace(/^ · /, "") : null };
+}
+
 export function nodeMeta(node: NodeWithLinks): string {
   const kind = node.section ? "Section" : KIND_NAME[node.kind];
   if (node.kind === "document") return kind;

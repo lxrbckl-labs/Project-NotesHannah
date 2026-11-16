@@ -241,6 +241,13 @@ export function practiceRoutes(
     });
   });
 
+  app.post("/practice/sessions/:id/skip", requireWrite, requireSession, async (c) => {
+    const body = parse(RevealInput, await readBody(c, { position: 0 }), { position: 0 });
+    return c.json({
+      session: service.skipQuestion(getAuth(c), sid(c.req.param("id")), body.position),
+    });
+  });
+
   app.post("/practice/sessions/:id/finish", requireWrite, requireSession, (c) => {
     return c.json(service.finishSession(getAuth(c), sid(c.req.param("id"))));
   });

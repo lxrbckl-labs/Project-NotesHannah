@@ -87,7 +87,12 @@ export function InsertMenu({
   const items = useMemo(() => filterTypes(query), [query]);
   const [index, setIndex] = useState(0);
   const panel = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{
+    top: number;
+    left: number;
+    maxHeight: number;
+    width?: number;
+  } | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on a new query
   useEffect(() => setIndex(0), [query]);
@@ -119,8 +124,28 @@ export function InsertMenu({
       document.querySelector(`[data-block-id="${state.blockId}"]`)?.getBoundingClientRect() ??
       null;
     if (!anchor) return;
-    const vh = window.visualViewport?.height ?? window.innerHeight;
+    const vv = window.visualViewport;
+    const vh = vv?.height ?? window.innerHeight;
     const width = Math.min(300, window.innerWidth - 24);
+    if (window.innerWidth < 768 && state.source === "slash") {
+      // On a phone the line being typed must stay in view: the menu docks above the format bar
+      // (and the keyboard), short, and the line scrolls into the space left above it.
+      const maxHeight = Math.min(232, Math.round(vh * 0.34));
+      const dockTop = (vv?.offsetTop ?? 0) + vh - 64 - maxHeight;
+      setPos({ top: dockTop, left: 12, maxHeight, width: window.innerWidth - 24 });
+      requestAnimationFrame(() => {
+        const block = document.querySelector(`[data-block-id="${state.blockId}"]`);
+        if (!block) return;
+        const delta = block.getBoundingClientRect().bottom - (dockTop - 16);
+        if (delta <= 0) return;
+        let scroller: HTMLElement | null = block.parentElement;
+        while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) {
+          scroller = scroller.parentElement;
+        }
+        (scroller ?? document.scrollingElement)?.scrollBy({ top: delta, behavior: "instant" });
+      });
+      return;
+    }
     const below = vh - anchor.bottom - 12;
     const above = anchor.top - 12;
     const placeBelow = below >= 260 || below >= above;
@@ -128,7 +153,7 @@ export function InsertMenu({
     const left = Math.max(12, Math.min(anchor.left, window.innerWidth - width - 12));
     const top = placeBelow ? anchor.bottom + 6 : anchor.top - 6 - maxHeight;
     setPos({ top, left, maxHeight });
-  }, [state.anchor, state.blockId, sheet]);
+  }, [state.anchor, state.blockId, state.source, sheet]);
 
   useEffect(() => {
     panel.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({ block: "nearest" });
@@ -219,7 +244,12 @@ export function InsertMenu({
       ref={panel}
       data-testid="insert-menu"
       className="doc-portal doc-root doc-anim-pop fixed z-50 flex w-[min(300px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-border bg-surface text-text shadow-[var(--doc-pop-shadow)]"
-      style={{ top: pos.top, left: pos.left, maxHeight: pos.maxHeight }}
+      style={{
+        top: pos.top,
+        left: pos.left,
+        maxHeight: pos.maxHeight,
+        ...(pos.width ? { width: pos.width } : {}),
+      }}
     >
       {searchField}
       <div className="min-h-0 overflow-y-auto">{list}</div>

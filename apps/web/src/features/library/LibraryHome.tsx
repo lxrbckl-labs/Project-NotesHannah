@@ -1,6 +1,14 @@
 import type { NodeWithLinks } from "@notes/schema";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, ChevronsDownUp, ChevronsUpDown, Plus, Star, Trash2 } from "lucide-react";
+import {
+  CalendarRange,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Lightbulb,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Page, SectionTitle } from "../../components/Page";
@@ -205,6 +213,13 @@ export function LibraryHome() {
         />
       </section>
 
+      <Link
+        to="/concepts"
+        data-testid="home-concepts-link"
+        className="mr-2 inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
+      >
+        <Lightbulb size={16} aria-hidden /> Concepts
+      </Link>
       <Link
         to="/trash"
         className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"

@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Button as ShellButton } from "../../../components/ui/button";
 
 /**
  * Small UI primitives for the documents feature, built on Radix and the
@@ -32,25 +33,44 @@ const VARIANTS: Record<Variant, string> = {
   outline: "border border-border bg-surface text-text hover:bg-surface-muted",
 };
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+const SHELL_VARIANT = {
+  primary: "primary",
+  ghost: "ghost",
+  danger: "danger",
+  outline: "secondary",
+} as const;
+
+export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, never> {
   variant?: Variant;
   size?: "sm" | "md";
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "subtle", size = "md", className, type = "button", ...rest },
+  { variant = "subtle", size = "md", className, ...rest },
   ref,
 ) {
+  // The shell's button for the shared looks; "subtle" (a soft grey fill) stays the module's own.
+  if (variant === "subtle") {
+    return (
+      <ShellButton
+        ref={ref}
+        variant="ghost"
+        className={cx(
+          "whitespace-nowrap bg-surface-muted hover:bg-[var(--doc-gray-hl)]",
+          size === "sm" && "min-h-8 px-2.5 text-[13px] pointer-coarse:min-h-11",
+          className,
+        )}
+        {...rest}
+      />
+    );
+  }
   return (
-    <button
+    <ShellButton
       ref={ref}
-      type={type}
+      variant={SHELL_VARIANT[variant]}
       className={cx(
-        "inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-xl font-medium transition-colors disabled:pointer-events-none disabled:opacity-45",
-        size === "sm"
-          ? "min-h-8 px-2.5 text-[13px] pointer-coarse:min-h-11 pointer-coarse:px-3"
-          : "min-h-10 px-3.5 text-sm pointer-coarse:min-h-11",
-        VARIANTS[variant],
+        "whitespace-nowrap",
+        size === "sm" && "min-h-8 px-2.5 text-[13px] pointer-coarse:min-h-11",
         className,
       )}
       {...rest}

@@ -89,6 +89,19 @@ describe("the missed-questions notebook", () => {
     expect(env.service.notebook(env.she).counts.total).toBe(0);
   });
 
+  it("says why a calculation is there, from the grader's note on the last wrong answer", () => {
+    const id = make("calculation", lecture(0));
+    take(id, false);
+    const item = env.service.notebook(env.she).items[0];
+    expect(item).toHaveProperty("reason");
+    expect(typeof item?.reason === "string" || item?.reason === null).toBe(true);
+    // a multiple choice miss names the option she picked
+    const mc = make("multiple_choice", lecture(0));
+    take(mc, false);
+    const entry = env.service.notebook(env.she).items.find((i) => i.questionId === mc);
+    expect(entry?.reason).toBeTruthy();
+  });
+
   it("a calculation needs two right answers in a row to leave", () => {
     const id = make("calculation", lecture(0));
     take(id, false);

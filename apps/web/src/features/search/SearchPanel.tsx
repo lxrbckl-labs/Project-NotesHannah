@@ -43,7 +43,7 @@ export function hitHref(hit: SearchHit, q: string): string {
   }
   if (hit.kind === "block") return `/doc/${hit.nodeId}?block=${hit.blockId}`;
   if (hit.kind === "question") {
-    return hit.nodeId ? `/library/${hit.nodeId}?question=${hit.questionId}` : "/practice";
+    return `/question/${hit.questionId}`;
   }
   return `/concepts/${hit.conceptId}`;
 }

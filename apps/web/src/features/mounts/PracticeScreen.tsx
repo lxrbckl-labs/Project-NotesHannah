@@ -8,6 +8,7 @@ import {
   type SessionScope,
   type SourceCitation,
 } from "../practice";
+import { useAsk } from "./ask";
 import { useStores } from "./services";
 
 const VIEWS: PracticeView[] = ["start", "cards", "notebook", "weak", "exams"];
@@ -18,6 +19,7 @@ function PracticeScreen({ route }: { route: "practice" | "exams" | "session" }) 
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const pickNodes = usePickNodes();
+  const ask = useAsk();
   const [active, setActive] = useState(false);
   const blocker = useBlocker(() => active);
   const sessionId = route === "session" ? location.pathname.split("/").pop() : undefined;
@@ -62,6 +64,9 @@ function PracticeScreen({ route }: { route: "practice" | "exams" | "session" }) 
         onViewChange={onViewChange}
         onActiveChange={setActive}
         onOpenSource={openSource}
+        onAskQuestion={(questionId) =>
+          ask({ target: { type: "question", questionId }, label: "this question" })
+        }
         initialSessionId={sessionId}
         autoStart={autoStart}
       />

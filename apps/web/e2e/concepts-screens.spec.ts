@@ -3,8 +3,8 @@ import { resolve } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { openDemo, pick } from "./concepts-helpers";
 
-/** Screenshots of every main state: screenshots/concepts/<size>-<theme>/<state>.png (not assertions). */
-const ROOT = resolve(import.meta.dirname, "../screenshots/concepts");
+/** Screenshots of every main state: screenshots-out/concepts/<size>-<theme>/<state>.png (not assertions). */
+const ROOT = resolve(import.meta.dirname, "../screenshots-out/concepts");
 
 for (const theme of ["light", "dark"] as const) {
   test.describe(theme, () => {

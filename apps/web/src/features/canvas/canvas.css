@@ -5,14 +5,18 @@
 
 .nc-canvas {
   /* Surface */
-  --nc-bg: #f6f5f1;
-  --nc-dot: #c9c6bb;
-  --nc-card: #ffffff;
-  --nc-card-border: #dedbd1;
-  --nc-card-shadow: 0 1px 2px rgb(28 27 24 / 0.06), 0 4px 14px rgb(28 27 24 / 0.07);
+  --nc-bg: var(--color-bg, #f6f5f1);
+  --nc-dot: var(--color-dot, #c9c6bb);
+  --nc-card: var(--color-surface, #ffffff);
+  --nc-card-border: var(--color-border, #dedbd1);
+  --nc-card-shadow: var(
+    --shadow-card,
+    0 1px 2px rgb(28 27 24 / 0.06),
+    0 4px 14px rgb(28 27 24 / 0.07)
+  );
   --nc-card-shadow-lift: 0 2px 4px rgb(28 27 24 / 0.08), 0 12px 28px rgb(28 27 24 / 0.14);
   --nc-text: var(--color-text, #1c1b18);
-  --nc-muted: #5f5d55;
+  --nc-muted: var(--color-text-muted, #5f5d55);
   --nc-accent: var(--color-accent, #2f6f5e);
   --nc-accent-contrast: var(--color-accent-contrast, #ffffff);
   --nc-select: #2f6fdb;
@@ -20,9 +24,9 @@
   --nc-frame-border: rgb(28 27 24 / 0.16);
   --nc-frame-title: #3d3b35;
   --nc-chrome: rgb(255 255 255 / 0.92);
-  --nc-chrome-border: #dcdad0;
-  --nc-chrome-hover: #efede6;
-  --nc-label-bg: #ffffff;
+  --nc-chrome-border: var(--color-border, #dcdad0);
+  --nc-chrome-hover: var(--color-surface-muted, #efede6);
+  --nc-label-bg: var(--color-surface, #ffffff);
 
   /* Card tints: background, border, accent (text-safe on the background). */
   --tint-gray-bg: #f3f2ee;
@@ -77,21 +81,21 @@
 
 :root[data-theme="dark"] .nc-canvas,
 .nc-canvas.nc-dark {
-  --nc-bg: #121210;
-  --nc-dot: #3a3833;
-  --nc-card: #1e1d1a;
-  --nc-card-border: #3a3832;
-  --nc-card-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.35);
+  --nc-bg: var(--color-bg, #121210);
+  --nc-dot: var(--color-dot, #3a3833);
+  --nc-card: var(--color-surface, #1e1d1a);
+  --nc-card-border: var(--color-border, #3a3832);
+  --nc-card-shadow: var(--shadow-card, 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.35));
   --nc-card-shadow-lift: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px rgb(0 0 0 / 0.5);
-  --nc-muted: #a9a79d;
+  --nc-muted: var(--color-text-muted, #a9a79d);
   --nc-select: #7aa7ff;
   --nc-frame-bg: rgb(111 193 169 / 0.04);
   --nc-frame-border: rgb(236 235 228 / 0.16);
   --nc-frame-title: #d6d4cb;
   --nc-chrome: rgb(32 31 28 / 0.94);
-  --nc-chrome-border: #3a3832;
-  --nc-chrome-hover: #2c2b27;
-  --nc-label-bg: #1e1d1a;
+  --nc-chrome-border: var(--color-border, #3a3832);
+  --nc-chrome-hover: var(--color-surface-muted, #2c2b27);
+  --nc-label-bg: var(--color-surface, #1e1d1a);
 
   --tint-gray-bg: #23221f;
   --tint-gray-border: #47453f;
@@ -599,8 +603,8 @@
   background: var(--nc-chrome-hover);
 }
 .nc-btn:focus-visible {
-  outline: 2px solid var(--nc-select);
-  outline-offset: 1px;
+  outline: 2px solid var(--color-accent, var(--nc-select));
+  outline-offset: 2px;
 }
 .nc-btn[aria-pressed="true"] {
   background: var(--nc-accent);

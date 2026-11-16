@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { signIn } from "./helpers";
 
 /**
- * Captures the main screens at the project's size in light and dark into screenshots/.
+ * Captures the main screens at the project's size in light and dark into screenshots-out/shell/ (git-ignored).
  * Run on its own with `pnpm exec playwright test screenshots`.
  */
 
@@ -18,7 +18,7 @@ async function shot(page: Page, folder: string, name: string) {
   const height = Math.min(base.height + extra, 2600);
   await page.setViewportSize({ width: base.width, height });
   await page.waitForTimeout(150);
-  await page.screenshot({ path: `screenshots/${folder}/${name}.png` });
+  await page.screenshot({ path: `screenshots-out/shell/${folder}/${name}.png` });
   await page.setViewportSize(base);
 }
 

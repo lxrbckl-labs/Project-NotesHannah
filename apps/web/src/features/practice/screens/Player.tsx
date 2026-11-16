@@ -20,6 +20,7 @@ export interface PlayerProps {
   onExit: () => void;
   onFinished: (results: SessionResults) => void;
   onOpenSource?: (citation: SourceCitation) => void;
+  onAskQuestion?: ((questionId: string) => void) | undefined;
   /** True while a session is on screen, so the shell can guard its own navigation. */
   onActiveChange?: (active: boolean) => void;
 }
@@ -32,6 +33,7 @@ export function Player({
   onExit,
   onFinished,
   onOpenSource,
+  onAskQuestion,
   onActiveChange,
 }: PlayerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -325,6 +327,7 @@ export function Player({
                 outcome={outcome}
                 type={current.type}
                 onOpenSource={onOpenSource}
+                onAsk={onAskQuestion ? () => onAskQuestion(current.questionId) : undefined}
               />
             </div>
           )}

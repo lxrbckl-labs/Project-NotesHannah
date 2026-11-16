@@ -1,5 +1,7 @@
+import type { Block } from "@notes/schema";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BookOpen } from "lucide-react";
+import { lazy, Suspense, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
 import { ErrorState, Skeleton } from "../../components/ui/states";
 import { appHttp } from "../../lib/api";
@@ -7,10 +9,13 @@ import type { CanvasStore } from "../canvas";
 import { CanvasView, HttpCanvasStore, MemoryCanvasStore } from "../canvas";
 import { useStores } from "./services";
 
+const CanvasBlock = lazy(() => import("./CanvasBlocks"));
+
 /**
- * The canvas of a document. The canvas server does not exist yet, so the canvas is derived from the
- * real document's blocks (`deriveCanvas`) and the cards she pins are kept in this browser. As soon
- * as `GET /api/documents/:id/canvas` answers, the HTTP store takes over, with no change here.
+ * The canvas of a document. The server's canvas (`GET /api/documents/:id/canvas`, with live updates)
+ * is used whenever it answers; the in-browser fallback (derived from the blocks, pins kept in this
+ * browser) only serves an older server. Its cards draw their blocks with the documents module's own
+ * read-only renderers, loaded lazily so the canvas bundle does not pull in the editor.
  */
 export default function CanvasScreen({
   documentId,
@@ -45,6 +50,31 @@ export default function CanvasScreen({
     },
   });
 
+  // The document's blocks, for numbering citations the same way the page does.
+  const document = useQuery({
+    queryKey: ["canvas-document", documentId],
+    queryFn: () => stores.documents.loadDocument(documentId),
+  });
+  const doc = document.data;
+  const renderBlock = useCallback(
+    (block: Block) =>
+      doc ? (
+        <Suspense fallback={<Skeleton className="h-10" />}>
+          <CanvasBlock
+            block={block}
+            document={doc}
+            store={stores.documents}
+            onOpenConcept={(id) => navigate(`/concepts/${id}`)}
+            onOpenQuestion={(id) => navigate(`/question/${id}`)}
+            onOpenCitation={(blockId) => navigate(`/doc/${nodeId}?block=${blockId}`)}
+          />
+        </Suspense>
+      ) : (
+        <Skeleton className="h-10" />
+      ),
+    [doc, stores.documents, navigate, nodeId],
+  );
+
   if (canvas.isPending) return <Skeleton className="m-6 h-64" />;
   if (canvas.isError)
     return (
@@ -77,6 +107,8 @@ export default function CanvasScreen({
         <CanvasView
           store={canvas.data}
           documentId={documentId}
+          renderBlock={renderBlock}
+          onOpenConcept={(id) => navigate(`/concepts/${id}`)}
           onSwitchToPage={() => navigate(`/doc/${nodeId}`)}
           onOpenBlock={(blockId) => navigate(`/doc/${nodeId}?block=${blockId}`)}
         />

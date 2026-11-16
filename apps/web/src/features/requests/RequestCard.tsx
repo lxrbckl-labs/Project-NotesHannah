@@ -1,4 +1,4 @@
-import { ChevronDown, Pencil, RotateCcw, X } from "lucide-react";
+import { ChevronDown, Pencil, RotateCcw, TriangleAlert, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/cn";
@@ -121,6 +121,21 @@ export function RequestCard({
           <p className="whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere]">
             {reply.text}
           </p>
+          {reply.unsourcedFigures ? (
+            <p
+              data-testid="unsourced-figures"
+              className="mt-2.5 flex items-start gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-muted"
+            >
+              <TriangleAlert size={16} aria-hidden className="mt-0.5 shrink-0 text-accent" />
+              <span>
+                Contains figures not found in your notes
+                {reply.unsourcedFigureList?.length
+                  ? `: ${reply.unsourcedFigureList.join(", ")}`
+                  : ""}
+                . Worth double-checking.
+              </span>
+            </p>
+          ) : null}
           {reply.links.length > 0 ? (
             <div className="mt-3">
               <p className="mb-1.5 text-xs text-text-muted">Changed or made for you</p>

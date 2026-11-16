@@ -12,10 +12,10 @@ import {
 } from "./practice-helpers";
 
 /**
- * Captures the main states into screenshots/practice/ at phone, tablet (portrait and landscape)
+ * Captures the main states into screenshots-out/practice/ at phone, tablet (portrait and landscape)
  * and computer sizes, in both themes. Run on demand: `pnpm exec playwright test practice-screenshots`.
  */
-const OUT = "screenshots/practice";
+const OUT = "screenshots-out/practice";
 test.skip(!process.env.PRACTICE_SHOTS, "set PRACTICE_SHOTS=1 to regenerate the screenshots");
 
 const TYPES = [

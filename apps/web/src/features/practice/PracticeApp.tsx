@@ -30,6 +30,8 @@ export interface PracticeAppProps {
   pickNodes: PickNodes;
   /** Open a cited source page (called with the citation from a result). */
   onOpenSource?: (citation: SourceCitation) => void;
+  /** Ask an agent about the question on screen (the shell opens its request composer). */
+  onAskQuestion?: ((questionId: string) => void) | undefined;
   /** Controlled view; omit to let the module keep it. */
   view?: PracticeView;
   onViewChange?: (view: PracticeView) => void;
@@ -56,6 +58,7 @@ export function PracticeApp({
   currentNodeId,
   pickNodes,
   onOpenSource,
+  onAskQuestion,
   view: controlledView,
   onViewChange,
   onActiveChange,
@@ -128,6 +131,7 @@ export function PracticeApp({
         store={store}
         sessionId={mode.sessionId}
         onOpenSource={onOpenSource}
+        onAskQuestion={onAskQuestion}
         onActiveChange={onActiveChange}
         onExit={() => {
           bump();
