@@ -1,0 +1,163 @@
+/* Practice feature styles: feedback colours, a few animations. Layout uses Tailwind utilities. */
+:root {
+  --pr-correct: #1b6b43;
+  --pr-correct-bg: #e6f3ec;
+  --pr-correct-border: #9fd0b5;
+  --pr-wrong: #a3342b;
+  --pr-wrong-bg: #fbeceb;
+  --pr-wrong-border: #e2aaa5;
+  --pr-partial: #8a5a00;
+  --pr-partial-bg: #fbf1dc;
+  --pr-partial-border: #e5c98a;
+  --pr-accent-soft: #e2efeb;
+  --pr-shadow: 0 1px 2px rgb(28 27 24 / 6%), 0 4px 16px rgb(28 27 24 / 5%);
+  --pr-link-1: #2f6f5e;
+  --pr-link-2: #8a4f9e;
+  --pr-link-3: #b05f1a;
+  --pr-link-4: #2b6aa8;
+  --pr-link-5: #a33a62;
+  --pr-link-6: #5d6b1d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pr-correct: #84d6a9;
+    --pr-correct-bg: #14291f;
+    --pr-correct-border: #2f6a4b;
+    --pr-wrong: #f2a29a;
+    --pr-wrong-bg: #2d1a18;
+    --pr-wrong-border: #7a3a34;
+    --pr-partial: #eec06a;
+    --pr-partial-bg: #2b2210;
+    --pr-partial-border: #6e5420;
+    --pr-accent-soft: #1b2b27;
+    --pr-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+    --pr-link-1: #6fc1a9;
+    --pr-link-2: #c79be0;
+    --pr-link-3: #f0a35a;
+    --pr-link-4: #7db4ec;
+    --pr-link-5: #ee94b4;
+    --pr-link-6: #bccb6a;
+  }
+}
+
+:root[data-theme="dark"] {
+  --pr-correct: #84d6a9;
+  --pr-correct-bg: #14291f;
+  --pr-correct-border: #2f6a4b;
+  --pr-wrong: #f2a29a;
+  --pr-wrong-bg: #2d1a18;
+  --pr-wrong-border: #7a3a34;
+  --pr-partial: #eec06a;
+  --pr-partial-bg: #2b2210;
+  --pr-partial-border: #6e5420;
+  --pr-accent-soft: #1b2b27;
+  --pr-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+  --pr-link-1: #6fc1a9;
+  --pr-link-2: #c79be0;
+  --pr-link-3: #f0a35a;
+  --pr-link-4: #7db4ec;
+  --pr-link-5: #ee94b4;
+  --pr-link-6: #bccb6a;
+}
+
+.pr-root {
+  --pr-top: env(safe-area-inset-top, 0px);
+  --pr-bottom: env(safe-area-inset-bottom, 0px);
+  color: var(--color-text);
+}
+
+.pr-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow: var(--pr-shadow);
+}
+
+.pr-ok {
+  color: var(--pr-correct);
+  background: var(--pr-correct-bg);
+  border-color: var(--pr-correct-border);
+}
+.pr-bad {
+  color: var(--pr-wrong);
+  background: var(--pr-wrong-bg);
+  border-color: var(--pr-wrong-border);
+}
+.pr-part {
+  color: var(--pr-partial);
+  background: var(--pr-partial-bg);
+  border-color: var(--pr-partial-border);
+}
+
+.pr-focus:focus-visible,
+.pr-root :where(button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Flip card */
+.pr-flip {
+  perspective: 1200px;
+}
+.pr-flip-inner {
+  display: grid;
+  transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.pr-flip[data-flipped="true"] .pr-flip-inner {
+  transform: rotateY(180deg);
+}
+.pr-flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.pr-flip-face {
+  grid-area: 1 / 1;
+}
+.pr-flip-back {
+  transform: rotateY(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-flip-inner {
+    transition: none;
+  }
+}
+
+.pr-fade {
+  animation: pr-fade 0.25s ease-out both;
+}
+.pr-rise {
+  animation: pr-rise 0.3s ease-out both;
+}
+@keyframes pr-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pr-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-fade,
+  .pr-rise {
+    animation: none;
+  }
+}
+
+.pr-num {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  background: var(--pr-accent-soft);
+  border-radius: 6px;
+  padding: 0 4px;
+}
+
+.pr-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
