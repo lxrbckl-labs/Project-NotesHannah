@@ -14,6 +14,7 @@ import { authenticate } from "./http/authenticate.js";
 import type { ServerDeps } from "./http/deps.js";
 import { AppError, handleError } from "./http/errors.js";
 import { originCheck, securityHeaders } from "./http/security.js";
+import { mcpRoutes } from "./mcp/index.js";
 
 export const SCHEMA_VERSION_IN_USE = SCHEMA_VERSION;
 
@@ -59,6 +60,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/api", keyRoutes(deps));
   // Library routes carry their full /api paths.
   app.route("/", libraryRoutes(db));
+  // The agent front door: POST /mcp (API key only) and GET /agents.txt.
+  app.route("/", mcpRoutes(deps));
 
   // Unknown API-ish paths are ApiError 404s, never the SPA shell.
   for (const prefix of ["/api", "/mcp"]) {
