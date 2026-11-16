@@ -172,10 +172,11 @@ export function Case({
                     onChange={() => undefined}
                     {...(reveal ? { reveal: () => reveal(i) } : {})}
                   />
-                  {r && p.type !== "flashcard" && p.type !== "free_response" && (
-                    <FeedbackLines result={r} />
-                  )}
-                  {r && !r.correct && p.type !== "flashcard" && p.type !== "free_response" && (
+                  {r &&
+                    p.type !== "flashcard" &&
+                    p.type !== "free_response" &&
+                    p.type !== "calculation" && <FeedbackLines result={r} />}
+                  {r && !r.correct && p.type === "calculation" && (
                     <p className="text-[0.95rem]">
                       <span className="font-medium">Correct answer: </span>
                       {r.correctAnswer.text}

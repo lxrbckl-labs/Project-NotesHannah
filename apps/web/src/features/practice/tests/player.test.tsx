@@ -51,7 +51,7 @@ test("one question at a time: answer, feedback with sources, next, then results"
   await user.click(screen.getByTestId("submit"));
   expect((await screen.findByTestId("feedback")).dataset.correct).toBe("false");
   expect(screen.getByTestId("announcer")).toHaveTextContent(/Not quite. Correct answer:/);
-  expect(screen.getByTestId("correct-answer")).toBeInTheDocument();
+  expect(screen.getByTestId("feedback")).toHaveTextContent(/The correct answer is/);
   expect(wrong).toBeDefined();
   expect(screen.getByTestId("notebook-note")).toHaveTextContent(/notebook/i);
   await user.click(screen.getByRole("button", { name: "See results" }));

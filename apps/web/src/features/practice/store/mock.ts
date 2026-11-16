@@ -675,7 +675,7 @@ export function createMockStore(options: MockOptions = {}): MockPracticeStore {
         const seed = last?.variantSeed ?? 0;
         let promptText: string;
         if (q.type === "calculation") promptText = practice.instantiateCalculation(q, seed).prompt;
-        else promptText = practice.questionText(q);
+        else promptText = practice.questionText(q).replace(/\{\{\d+\}\}/g, "___");
         const bad = last?.result.feedback.find((f) => !f.correct);
         const node = nodeOf(nodesOf(q.id)[0] as string);
         return {

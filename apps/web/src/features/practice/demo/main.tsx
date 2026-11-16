@@ -17,11 +17,15 @@ import { Button } from "../ui/primitives";
 const params = new URLSearchParams(window.location.search);
 const STORAGE_KEY = "notes-practice-demo";
 
+// ?fresh=1 forgets saved state once per browser tab, so a reload afterwards still resumes.
 if (params.get("fresh") === "1") {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    if (!sessionStorage.getItem("demo-fresh-done")) {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.setItem("demo-fresh-done", "1");
+    }
   } catch {
-    // ignore
+    // storage unavailable: nothing to forget
   }
 }
 const theme = params.get("theme");

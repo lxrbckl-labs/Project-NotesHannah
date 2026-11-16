@@ -17,6 +17,7 @@
   --pr-link-4: #2b6aa8;
   --pr-link-5: #a33a62;
   --pr-link-6: #5d6b1d;
+  --pr-link-ink: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +39,7 @@
     --pr-link-4: #7db4ec;
     --pr-link-5: #ee94b4;
     --pr-link-6: #bccb6a;
+    --pr-link-ink: #14130f;
   }
 }
 
@@ -59,6 +61,7 @@
   --pr-link-4: #7db4ec;
   --pr-link-5: #ee94b4;
   --pr-link-6: #bccb6a;
+  --pr-link-ink: #14130f;
 }
 
 .pr-root {

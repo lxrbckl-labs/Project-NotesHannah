@@ -467,6 +467,6 @@ describe("case", () => {
     expect(screen.getAllByText(/^Part \d of 3$/)).toHaveLength(3);
     expect(screen.getAllByText("Not quite").length).toBeGreaterThan(0);
     expect(container.textContent).toContain("A slow pulse and a low-normal pressure");
-    expect(screen.getAllByText(/Correct answer:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Not correct|You chose/).length).toBeGreaterThan(0);
   });
 });

@@ -39,6 +39,10 @@ export function Player({
   const feedbackRef = useRef<HTMLElement>(null);
   useVisibleHeight(rootRef);
 
+  // The parent may pass new function props on every render; keep the latest without re-running effects.
+  const cb = useRef({ onFinished, onActiveChange });
+  cb.current = { onFinished, onActiveChange };
+
   const [session, setSession] = useState<SessionState | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -59,12 +63,12 @@ export function Player({
   const finish = useCallback(async () => {
     setPhase("finishing");
     try {
-      onFinished(await store.finishSession(sessionId));
+      cb.current.onFinished(await store.finishSession(sessionId));
     } catch (e) {
       setError(messageOf(e));
       setPhase("answering");
     }
-  }, [onFinished, sessionId, store]);
+  }, [sessionId, store]);
 
   const enter = useCallback(
     (s: SessionState) => {
@@ -94,9 +98,9 @@ export function Player({
   }, [store, sessionId, enter]);
 
   useEffect(() => {
-    onActiveChange?.(true);
-    return () => onActiveChange?.(false);
-  }, [onActiveChange]);
+    cb.current.onActiveChange?.(true);
+    return () => cb.current.onActiveChange?.(false);
+  }, []);
 
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
@@ -379,13 +383,6 @@ export function Player({
                 >
                   {current.type === "case" ? "Check answers" : "Check answer"}
                 </Button>
-              )}
-              {selfSubmitting && (
-                <p className="ml-auto text-sm text-text-muted">
-                  {current.type === "flashcard"
-                    ? "Show the answer, then rate it."
-                    : "Show the model answer, then tick."}
-                </p>
               )}
             </>
           ) : (

@@ -88,7 +88,8 @@ export const FeedbackPanel = forwardRef<
   const v = verdict(result);
   const isCase = type === "case";
   const selfGraded = type === "flashcard" || type === "free_response";
-  const showCorrect = !result.correct && !isCase && !selfGraded && result.correctAnswer.text;
+  // Choices, matching and blanks show the right answer in place; a calculation needs it spelled out.
+  const showCorrect = !result.correct && type === "calculation" && result.correctAnswer.text;
   return (
     <section
       ref={ref}
@@ -108,7 +109,7 @@ export const FeedbackPanel = forwardRef<
           {selfGraded && result.correct ? "Marked as recalled" : v.title}
         </h2>
       </div>
-      {!isCase && !selfGraded && <FeedbackLines result={result} />}
+      {!isCase && !selfGraded && type !== "calculation" && <FeedbackLines result={result} />}
       {isCase && (
         <p className="text-sm text-text-muted">
           {fmt(result.points)} of {fmt(result.maxPoints)} points across the parts.

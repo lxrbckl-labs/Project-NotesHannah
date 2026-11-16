@@ -16,7 +16,7 @@ type FreeAnswer = { type: "free_response"; text: string; covered: number[] };
 export function formatInterval(days: number): string {
   if (days < 1) return "<1 day";
   if (days === 1) return "1 day";
-  if (days < 30) return `${days} days`;
+  if (days <= 100) return `${days} days`;
   if (days < 365) {
     const m = Math.round(days / 30);
     return `${m} ${m === 1 ? "month" : "months"}`;

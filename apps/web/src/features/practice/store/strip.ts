@@ -48,7 +48,8 @@ export function unitChoicesFor(units: readonly string[], seed: number): string[]
   })
     ? same
     : [shown, ...same];
-  return [...base, ...others];
+  // shuffled, so the first chip does not give the kind of unit away
+  return practice.shuffled([...base, ...others], practice.makeRng(seed + 1));
 }
 
 function servePart(q: Part, seeds: Seeds): ServedPart {

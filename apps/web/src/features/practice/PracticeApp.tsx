@@ -137,7 +137,7 @@ export function PracticeApp({
           aria-label="Practice sections"
           className="-mx-4 mb-7 overflow-x-auto px-4 md:mx-0 md:px-0"
         >
-          <ul className="inline-flex gap-1 rounded-full border border-border bg-surface-muted p-1">
+          <ul className="grid grid-cols-5 gap-0.5 rounded-full border border-border bg-surface-muted p-1 sm:inline-flex sm:gap-1">
             {NAV.map((n) => (
               <li key={n.view}>
                 <button
@@ -148,7 +148,7 @@ export function PracticeApp({
                     setProblem(null);
                     setView(n.view);
                   }}
-                  className="min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-medium text-text-muted transition-colors hover:text-text aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm"
+                  className="min-h-11 whitespace-nowrap w-full rounded-full px-1 text-[0.8rem] sm:px-4 sm:text-sm font-medium text-text-muted transition-colors hover:text-text aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm"
                 >
                   {n.label}
                 </button>
