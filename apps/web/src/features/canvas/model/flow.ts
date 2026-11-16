@@ -269,7 +269,6 @@ export function buildEdges(
       source: connector.from,
       target: connector.to,
       selected,
-      zIndex: 1,
       ariaLabel: `Connector${connector.label ? ` "${connector.label}"` : ""}, ${connector.kind.replace("_", " ")}`,
       data: { connector: stable, dim },
     } satisfies ConnectorEdge;

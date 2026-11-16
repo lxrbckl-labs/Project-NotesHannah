@@ -63,9 +63,20 @@ function NoteEditor({
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState(initial);
+  // A new node stays hidden until React Flow has measured it, and hidden
+  // fields cannot take focus: retry for a few frames.
   useLayoutEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
+    let tries = 0;
+    let frame = 0;
+    const attempt = () => {
+      const el = ref.current;
+      if (!el) return;
+      el.focus();
+      if (document.activeElement === el) el.select();
+      else if (tries++ < 20) frame = requestAnimationFrame(attempt);
+    };
+    attempt();
+    return () => cancelAnimationFrame(frame);
   }, []);
   return (
     <textarea

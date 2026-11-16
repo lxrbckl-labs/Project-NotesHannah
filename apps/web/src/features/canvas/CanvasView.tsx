@@ -894,7 +894,7 @@ function CanvasInner({
             maxZoom={2.5}
             onlyRenderVisibleElements={onlyRenderVisible}
             elevateNodesOnSelect={false}
-            elevateEdgesOnSelect
+            elevateEdgesOnSelect={false}
             attributionPosition="bottom-left"
             aria-label="Canvas"
           >
