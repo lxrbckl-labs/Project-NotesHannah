@@ -1,4 +1,4 @@
-import { cx } from "../ui/primitives";
+import { cn } from "../../../lib/cn";
 
 export interface OutlineItem {
   id: string;
@@ -33,29 +33,29 @@ export function OutlinePanel({
                 type="button"
                 aria-current={active ? "location" : undefined}
                 onClick={() => onJump(item.id)}
-                className={cx(
-                  "group flex min-h-9 w-full items-center gap-2 rounded-xl py-1.5 pr-2 text-left text-[14px] leading-snug transition-colors pointer-coarse:min-h-11",
+                className={cn(
+                  "group flex min-h-9 w-full items-center gap-2 rounded-control py-1.5 pr-2 text-left text-ui leading-snug transition-colors duration-(--duration-instant) pointer-coarse:min-h-11",
                   item.level === 1
                     ? "pl-2.5 font-semibold"
                     : item.level === 2
                       ? "pl-2.5"
-                      : "pl-6 text-[13.5px]",
+                      : "pl-6 text-label",
                   active
-                    ? "bg-[var(--doc-blue-bg)] font-medium text-[var(--doc-blue-fg)]"
+                    ? "bg-accent-soft font-medium text-accent"
                     : "text-text-muted hover:bg-surface-muted hover:text-text",
                 )}
               >
                 <span
                   aria-hidden
-                  className={cx(
-                    "h-4 w-0.5 shrink-0 rounded-full transition-colors",
-                    active ? "bg-[var(--doc-blue-solid)]" : "bg-transparent",
+                  className={cn(
+                    "h-4 w-0.5 shrink-0 rounded-pill transition-colors",
+                    active ? "bg-accent" : "bg-transparent",
                   )}
                 />
                 <span className="min-w-0 flex-1 truncate">{item.text || "Untitled section"}</span>
                 {item.unverified > 0 && (
                   <span
-                    className="rounded-full bg-[var(--doc-yellow-bg)] px-1.5 text-[11px] font-semibold text-[var(--doc-yellow-fg)] tabular-nums"
+                    className="rounded-pill border border-warning-border bg-warning-soft px-1.5 text-caption font-semibold text-warning tabular-nums"
                     title={`${item.unverified} to review`}
                   >
                     <span className="sr-only">, to review: </span>

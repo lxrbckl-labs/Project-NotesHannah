@@ -9,10 +9,18 @@ import { useToast } from "../../components/ui/toast";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { formatDateTime } from "../../lib/format";
+import { DOCUMENT_HUE } from "../../lib/roles";
 import { FLAG_LABEL, segmentText } from "./highlight";
 
 const transcriptKey = (pageId: string) => ["files", "transcript", pageId] as const;
 const revisionsKey = (pageId: string) => ["files", "revisions", pageId] as const;
+
+/** Dose, unit and decimal flags are worth a second look in red; the others in the flag colour. */
+function flagHue(kind: string) {
+  return kind === "dose" || kind === "unit" || kind === "decimal"
+    ? DOCUMENT_HUE.flagDose
+    : DOCUMENT_HUE.flag;
+}
 
 function whoWrote(t: Transcript): string {
   if (t.author.type === "user") return "you";
@@ -85,9 +93,9 @@ export function TranscriptPanel({
         <>
           <div className="flex flex-wrap items-center gap-2">
             {t.reviewStatus === "reviewed" ? (
-              <Badge tone="accent">Reviewed</Badge>
+              <Badge tone="success">Reviewed</Badge>
             ) : (
-              <Badge tone="neutral">Unverified</Badge>
+              <Badge tone="warning">Unverified</Badge>
             )}
             <span className="text-xs text-text-muted">
               Revision {t.revision} by {whoWrote(t)} · {formatDateTime(t.createdAt)}
@@ -95,7 +103,7 @@ export function TranscriptPanel({
           </div>
 
           {t.reviewStatus === "unverified" ? (
-            <p className="rounded-xl bg-surface-muted px-3.5 py-2.5 text-sm text-text-muted">
+            <p className="rounded-control bg-surface-muted px-3.5 py-2.5 text-sm text-text-muted">
               Unverified: nobody has checked this against the page yet. Doses, units and decimals
               are flagged for a closer look.
             </p>
@@ -109,7 +117,7 @@ export function TranscriptPanel({
           {viewing !== null && shown && viewing !== t.revision ? (
             <p
               role="status"
-              className="flex flex-wrap items-center gap-2 rounded-xl bg-accent-soft px-3.5 py-2.5 text-sm text-accent"
+              className="flex flex-wrap items-center gap-2 rounded-control bg-accent-soft px-3.5 py-2.5 text-sm text-accent"
             >
               Viewing revision {shown.revision}, not the current one.
               <Button className="ml-auto" onClick={() => setViewing(null)}>
@@ -121,7 +129,7 @@ export function TranscriptPanel({
           {shown ? (
             <div
               data-testid="transcript-text"
-              className="whitespace-pre-wrap break-words rounded-2xl border border-border bg-surface p-4 text-[15px] leading-relaxed"
+              className="whitespace-pre-wrap break-words rounded-card border border-border bg-surface p-4 text-body leading-relaxed"
             >
               {segmentText(shown.text, shown.flags, highlightQuote).map((seg, i) => {
                 const key = `seg-${i}`;
@@ -134,15 +142,16 @@ export function TranscriptPanel({
                       title={
                         seg.flag ? (seg.flag.note ?? FLAG_LABEL[seg.flag.kind]) : "Cited passage"
                       }
+                      data-hue={seg.flag ? flagHue(seg.flag.kind) : DOCUMENT_HUE.highlight}
                       className={cn(
-                        "rounded px-0.5",
-                        seg.quoted ? "bg-accent text-accent-contrast" : "bg-accent-soft text-text",
-                        seg.flag && "border-b-2 border-dotted border-accent",
+                        "rounded-inline bg-tone-mark px-0.5 text-text",
+                        seg.flag && "border-b-2 border-dotted border-tone-solid",
+                        seg.quoted && seg.flag && "outline-2 outline-hue-yellow-solid",
                       )}
                     >
                       {seg.text}
                       {seg.flag ? (
-                        <sup className="ml-0.5 rounded bg-surface-muted px-1 text-[10px] font-medium text-text-muted">
+                        <sup className="ml-0.5 rounded-inline bg-surface px-1 text-[10px] font-medium text-text">
                           {FLAG_LABEL[seg.flag.kind]}
                         </sup>
                       ) : null}
@@ -168,8 +177,8 @@ export function TranscriptPanel({
                     data-testid="flag-note"
                     className="flex flex-wrap items-baseline gap-x-2"
                   >
-                    <Badge>{FLAG_LABEL[flag.kind]}</Badge>
-                    <code className="rounded bg-surface-muted px-1.5">{flag.quote}</code>
+                    <Badge hue={flagHue(flag.kind)}>{FLAG_LABEL[flag.kind]}</Badge>
+                    <code className="rounded-inline bg-surface-muted px-1.5">{flag.quote}</code>
                     {flag.note ? <span className="text-text-muted">{flag.note}</span> : null}
                   </li>
                 ))}
@@ -210,7 +219,7 @@ export function TranscriptPanel({
                     <li
                       key={r.id}
                       data-testid="revision"
-                      className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+                      className="flex flex-wrap items-center gap-2 rounded-control border border-border bg-surface px-3 py-2 text-sm"
                     >
                       <span className="font-medium">Revision {r.revision}</span>
                       <span className="text-text-muted">
@@ -245,7 +254,7 @@ export function TranscriptPanel({
       )}
 
       {page.nativeText ? (
-        <details className="rounded-2xl border border-border bg-surface px-4 py-3" open={!t}>
+        <details className="rounded-card border border-border bg-surface px-4 py-3" open={!t}>
           <summary className="cursor-pointer text-sm font-medium">Text from the file</summary>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm text-text-muted">
             {page.nativeText}
@@ -253,7 +262,7 @@ export function TranscriptPanel({
         </details>
       ) : null}
       {page.speakerNotes ? (
-        <details className="rounded-2xl border border-border bg-surface px-4 py-3" open>
+        <details className="rounded-card border border-border bg-surface px-4 py-3" open>
           <summary className="cursor-pointer text-sm font-medium">Speaker notes</summary>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm text-text-muted">
             {page.speakerNotes}

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../../../app/styles.css";
+import { ToastProvider } from "../../../components/ui/toast";
 import { DocumentView } from "../DocumentView";
 import { GUIDE_ID } from "../store/fixture";
 import { MockDocumentStore } from "../store/mock-store";
@@ -51,6 +52,8 @@ const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root");
 createRoot(root).render(
   <StrictMode>
-    <Demo />
+    <ToastProvider>
+      <Demo />
+    </ToastProvider>
   </StrictMode>,
 );

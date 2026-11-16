@@ -8,6 +8,7 @@ import {
 } from "@notes/schema";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { ToastProvider } from "../../../components/ui/toast";
 import { DocumentView } from "../DocumentView";
 import { AGENT, guideDocument } from "../store/fixture";
 import { mockId } from "../store/mock-pages";
@@ -31,7 +32,11 @@ function exampleBlock(type: (typeof BLOCK_TYPES)[number], i: number): Block {
 
 async function show(doc: DocumentWithBlocks) {
   const store = new MockDocumentStore({ latency: 0, documents: [doc] });
-  render(<DocumentView store={store} documentId={doc.id} initialMode="read" />);
+  render(
+    <ToastProvider>
+      <DocumentView store={store} documentId={doc.id} initialMode="read" />
+    </ToastProvider>,
+  );
   await screen.findByRole("heading", { level: 1 });
   return store;
 }

@@ -1,9 +1,9 @@
 import type { Block, BlockFlag, CitedText, RichText } from "@notes/schema";
 import { type ReactNode, useEffect, useState } from "react";
+import { cn } from "../../../lib/cn";
 import { RichTextView } from "../blocks/RichText";
 import { useActions, useSignal, useView } from "../context";
 import { type EditorLine, richTextSize } from "../model/richtext";
-import { cx } from "../ui/primitives";
 import { type EditorKeys, InlineEditor } from "./InlineEditor";
 import type { LineKind } from "./lines";
 
@@ -145,7 +145,7 @@ export function RichField({
       aria-label={label}
       aria-multiline="true"
       data-testid={`field-${field}`}
-      className={cx("cursor-text rounded-md outline-none", !value.length && "min-h-[1.7em]")}
+      className={cn("cursor-text rounded-inline outline-none", !value.length && "min-h-[1.7em]")}
       onFocus={(event) => {
         if (event.target === event.currentTarget && !mounted) {
           actions.setActive(blockId);
@@ -232,7 +232,7 @@ export function ListField({
       aria-label={label}
       aria-multiline="true"
       data-testid="field-lines"
-      className="cursor-text rounded-md outline-none"
+      className="cursor-text rounded-inline outline-none"
       onFocus={(event) => {
         if (event.target === event.currentTarget && !mounted) {
           actions.setActive(blockId);

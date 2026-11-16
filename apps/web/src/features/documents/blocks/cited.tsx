@@ -6,8 +6,10 @@ import {
   type RichText,
 } from "@notes/schema";
 import { Flag, Globe } from "lucide-react";
+import { Popover } from "../../../components/ui/popover";
+import { cn } from "../../../lib/cn";
+import { DOCUMENT_HUE } from "../../../lib/roles";
 import { RichField } from "../editor/RichField";
-import { cx, Popover } from "../ui/primitives";
 import { RemoveButton } from "./common";
 import { CiteChip, FlagNote } from "./RichText";
 
@@ -35,11 +37,9 @@ export function FlagIndicator({
           type="button"
           data-testid="flag-indicator"
           aria-label={`${flags.length} thing${flags.length === 1 ? "" : "s"} to check`}
-          className={cx(
-            "relative inline-flex h-6 items-center gap-1 rounded-full border px-2 align-[0.1em] text-[11.5px] font-semibold after:absolute after:-inset-2.5 after:content-['']",
-            danger
-              ? "border-[var(--doc-red-border)] bg-[var(--doc-red-bg)] text-[var(--doc-red-fg)]"
-              : "border-[var(--doc-orange-border)] bg-[var(--doc-orange-bg)] text-[var(--doc-orange-fg)]",
+          data-hue={danger ? DOCUMENT_HUE.flagDose : DOCUMENT_HUE.flag}
+          className={cn(
+            "relative inline-flex h-6 items-center gap-1 rounded-pill border border-tone-border bg-tone-soft px-2 align-[0.1em] text-caption font-semibold text-tone-text after:absolute after:-inset-2.5 after:content-['']",
             className,
           )}
         >
@@ -61,7 +61,7 @@ export function FlagIndicator({
 export function GeneralKnowledgeTag({ compact }: { compact?: boolean }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full border border-[var(--doc-purple-border)] bg-[var(--doc-purple-bg)] px-2 py-px align-[0.1em] text-[11.5px] font-medium whitespace-nowrap text-[var(--doc-purple-fg)]"
+      className="inline-flex items-center gap-1 rounded-pill border border-hue-purple-border bg-hue-purple-soft px-2 py-px align-[0.1em] text-caption font-medium whitespace-nowrap text-hue-purple-text"
       title={compact ? "Not from your notes" : undefined}
     >
       <Globe aria-hidden className="size-3" />
@@ -99,8 +99,8 @@ export function CitedEntry({
 }) {
   const chips = unreferenced(value);
   return (
-    <div className={cx("group/entry flex items-start gap-1", className)} data-testid="cited-entry">
-      <div className={cx("min-w-0 flex-1", editing && "flex flex-wrap items-baseline gap-x-1")}>
+    <div className={cn("group/entry flex items-start gap-1", className)} data-testid="cited-entry">
+      <div className={cn("min-w-0 flex-1", editing && "flex flex-wrap items-baseline gap-x-1")}>
         <RichField
           blockId={block.id}
           field={field}

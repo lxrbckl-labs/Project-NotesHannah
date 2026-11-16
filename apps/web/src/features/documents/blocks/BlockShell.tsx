@@ -13,6 +13,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  ChevronRight,
   CircleCheck,
   Copy,
   GripVertical,
@@ -26,7 +27,12 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
 import { memo, type ReactNode, useState } from "react";
+import { IconButton } from "../../../components/ui/button";
+import { menuContentClass, menuItemClass, menuSeparatorClass } from "../../../components/ui/menu";
+import { Popover } from "../../../components/ui/popover";
+import { cn } from "../../../lib/cn";
 import { useActions, useSignal, useView } from "../context";
 import {
   deleteBlocks,
@@ -38,19 +44,7 @@ import {
 } from "../model/gestures";
 import { looseFlags } from "../model/references";
 import type { RequestKind } from "../store/types";
-import { formatWhen, toneVars } from "../ui/hooks";
-import {
-  cx,
-  IconButton,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuLabel,
-  MenuSeparator,
-  MenuSub,
-  MenuTrigger,
-  Popover,
-} from "../ui/primitives";
+import { formatWhen } from "../ui/hooks";
 import { FlagIndicator, GeneralKnowledgeTag } from "./cited";
 import { CiteChip } from "./RichText";
 import { BlockBoundary, BlockContent } from "./registry";
@@ -71,7 +65,7 @@ function actorName(actor: Block["provenance"]["lastEditedBy"]): string {
 export function Provenance({ block }: { block: Block }) {
   const p = block.provenance;
   return (
-    <div className="flex flex-col gap-1 text-[13px]">
+    <div className="flex flex-col gap-1 text-label">
       <p className="m-0">
         Written by <strong className="font-semibold">{actorName(p.createdBy)}</strong> ·{" "}
         {formatWhen(p.createdAt)}
@@ -102,6 +96,76 @@ const COLOURABLE: string[] = [
   "comparison_table",
   "mnemonic",
 ];
+
+/*
+ * The block menu has custom content (colour swatches, who wrote the block), so it is composed
+ * from Radix DropdownMenu with the shared menu classes rather than built from ActionMenu entries.
+ */
+function MenuItem({
+  children,
+  onSelect,
+  icon,
+  danger,
+  disabled,
+}: {
+  children: ReactNode;
+  onSelect?: () => void;
+  icon?: ReactNode;
+  danger?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <DropdownMenu.Item
+      {...(disabled ? { disabled } : {})}
+      {...(onSelect ? { onSelect } : {})}
+      className={menuItemClass(danger)}
+    >
+      <span className="flex size-5 items-center justify-center text-text-muted [&_svg]:size-4">
+        {icon}
+      </span>
+      <span className="flex-1">{children}</span>
+    </DropdownMenu.Item>
+  );
+}
+
+function MenuSub({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={menuItemClass()}>
+        <span className="flex size-5 items-center justify-center text-text-muted [&_svg]:size-4">
+          {icon}
+        </span>
+        <span className="flex-1">{label}</span>
+        <ChevronRight size={16} aria-hidden className="text-text-muted" />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.SubContent sideOffset={4} collisionPadding={12} className={menuContentClass}>
+          {children}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Sub>
+  );
+}
+
+function MenuSeparator() {
+  return <DropdownMenu.Separator className={menuSeparatorClass} />;
+}
+
+function MenuLabel({ children }: { children: ReactNode }) {
+  return (
+    <DropdownMenu.Label className="px-3 py-1.5 text-xs font-medium text-text-muted">
+      {children}
+    </DropdownMenu.Label>
+  );
+}
 
 /** A submenu on a computer; on a narrow touch screen its items are shown in place. */
 function Section({
@@ -153,216 +217,223 @@ function BlockMenu({
   const order = actions.docRef.current?.blockIds ?? [];
   const { isTouch } = useView();
   return (
-    <Menu
+    <DropdownMenu.Root
       modal={false}
       {...(open !== undefined ? { open } : {})}
       {...(onOpenChange ? { onOpenChange } : {})}
     >
-      <MenuTrigger asChild>{trigger}</MenuTrigger>
-      <MenuContent label="Block actions" align="start">
-        {targets.length > 0 && (
-          <Section touch={isTouch} label="Turn into" icon={<Repeat2 />}>
-            {targets.map((type) => (
-              <MenuItem
-                key={type}
-                onSelect={() => perform(turnInto(documentId, block, type), "Turn into")}
-              >
-                {BLOCK_REGISTRY[type].label}
-              </MenuItem>
-            ))}
-          </Section>
-        )}
-        {block.type === "callout" && (
-          <Section
-            touch={isTouch}
-            label="Callout kind"
-            icon={CALLOUT_META[block.content.kind].icon}
-          >
-            {CALLOUT_KINDS.map((kind) => (
-              <MenuItem
-                key={kind}
-                icon={block.content.kind === kind ? <Check /> : CALLOUT_META[kind].icon}
-                onSelect={() =>
-                  perform(
-                    [
-                      {
-                        call: {
-                          operation: "update_block",
-                          input: {
-                            mode: "patch",
-                            documentId,
-                            blockId: block.id,
-                            patch: { content: { kind } },
+      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          aria-label="Block actions"
+          className={cn(menuContentClass, "min-w-56")}
+        >
+          {targets.length > 0 && (
+            <Section touch={isTouch} label="Turn into" icon={<Repeat2 />}>
+              {targets.map((type) => (
+                <MenuItem
+                  key={type}
+                  onSelect={() => perform(turnInto(documentId, block, type), "Turn into")}
+                >
+                  {BLOCK_REGISTRY[type].label}
+                </MenuItem>
+              ))}
+            </Section>
+          )}
+          {block.type === "callout" && (
+            <Section
+              touch={isTouch}
+              label="Callout kind"
+              icon={CALLOUT_META[block.content.kind].icon}
+            >
+              {CALLOUT_KINDS.map((kind) => (
+                <MenuItem
+                  key={kind}
+                  icon={block.content.kind === kind ? <Check /> : CALLOUT_META[kind].icon}
+                  onSelect={() =>
+                    perform(
+                      [
+                        {
+                          call: {
+                            operation: "update_block",
+                            input: {
+                              mode: "patch",
+                              documentId,
+                              blockId: block.id,
+                              patch: { content: { kind } },
+                            },
                           },
                         },
-                      },
-                    ],
-                    "Callout kind",
-                  )
-                }
-              >
-                {CALLOUT_META[kind].label}
-              </MenuItem>
-            ))}
-          </Section>
-        )}
-        {colorable && isTouch && (
-          <>
-            <MenuSeparator />
-            <MenuLabel>Colour</MenuLabel>
-            <fieldset className="m-0 grid grid-cols-6 gap-1.5 border-0 px-2.5 pt-0 pb-2">
-              <legend className="sr-only">Colour</legend>
-              <button
-                type="button"
-                aria-label="Default colour"
-                className="flex size-10 items-center justify-center rounded-xl border border-border"
-                onClick={() => {
-                  perform(setStyle(documentId, block.id, null), "Colour");
-                  onOpenChange?.(false);
-                }}
-              >
-                {!block.style && <Check aria-hidden className="size-4" />}
-              </button>
-              {COLOR_TOKENS.map((token) => (
+                      ],
+                      "Callout kind",
+                    )
+                  }
+                >
+                  {CALLOUT_META[kind].label}
+                </MenuItem>
+              ))}
+            </Section>
+          )}
+          {colorable && isTouch && (
+            <>
+              <MenuSeparator />
+              <MenuLabel>Colour</MenuLabel>
+              <fieldset className="m-0 grid grid-cols-6 gap-1.5 border-0 px-3 pt-0 pb-2">
+                <legend className="sr-only">Colour</legend>
                 <button
-                  key={token}
                   type="button"
-                  aria-label={`${token} colour`}
-                  className="flex size-10 items-center justify-center rounded-xl border border-border text-white"
-                  style={{ background: `var(--doc-${token}-solid)` }}
+                  aria-label="Default colour"
+                  className="flex size-11 items-center justify-center rounded-control border border-border-strong"
                   onClick={() => {
-                    perform(setStyle(documentId, block.id, { color: token }), "Colour");
+                    perform(setStyle(documentId, block.id, null), "Colour");
                     onOpenChange?.(false);
                   }}
                 >
-                  {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                  {!block.style && <Check aria-hidden className="size-4" />}
                 </button>
-              ))}
-            </fieldset>
-          </>
-        )}
-        {colorable && !isTouch && (
-          <MenuSub label="Colour" icon={<Palette />}>
-            <MenuItem
-              icon={
-                !block.style ? (
-                  <Check />
-                ) : (
-                  <span className="size-3.5 rounded-full border border-border" />
-                )
-              }
-              onSelect={() => perform(setStyle(documentId, block.id, null), "Colour")}
-            >
-              Default
-            </MenuItem>
-            {COLOR_TOKENS.map((token: ColorToken) => (
+                {COLOR_TOKENS.map((token) => (
+                  <button
+                    key={token}
+                    type="button"
+                    aria-label={`${token} colour`}
+                    data-hue={token}
+                    className="flex size-11 items-center justify-center rounded-control border border-tone-border bg-tone-solid text-surface"
+                    onClick={() => {
+                      perform(setStyle(documentId, block.id, { color: token }), "Colour");
+                      onOpenChange?.(false);
+                    }}
+                  >
+                    {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                  </button>
+                ))}
+              </fieldset>
+            </>
+          )}
+          {colorable && !isTouch && (
+            <MenuSub label="Colour" icon={<Palette />}>
               <MenuItem
-                key={token}
                 icon={
-                  block.style?.color === token ? (
+                  !block.style ? (
                     <Check />
                   ) : (
-                    <span
-                      className="size-3.5 rounded-full"
-                      style={{ background: `var(--doc-${token}-solid)` }}
-                    />
+                    <span className="size-3.5 rounded-pill border border-border-strong" />
                   )
                 }
-                onSelect={() => perform(setStyle(documentId, block.id, { color: token }), "Colour")}
+                onSelect={() => perform(setStyle(documentId, block.id, null), "Colour")}
               >
-                <span className="capitalize">{token}</span>
+                Default
+              </MenuItem>
+              {COLOR_TOKENS.map((token: ColorToken) => (
+                <MenuItem
+                  key={token}
+                  icon={
+                    block.style?.color === token ? (
+                      <Check />
+                    ) : (
+                      <span data-hue={token} className="size-3.5 rounded-pill bg-tone-solid" />
+                    )
+                  }
+                  onSelect={() =>
+                    perform(setStyle(documentId, block.id, { color: token }), "Colour")
+                  }
+                >
+                  <span className="capitalize">{token}</span>
+                </MenuItem>
+              ))}
+              {block.type === "paragraph" && (
+                <>
+                  <MenuSeparator />
+                  <MenuLabel>Background</MenuLabel>
+                  {(["yellow", "blue", "green", "purple", "gray"] as const).map((token) => (
+                    <MenuItem
+                      key={token}
+                      icon={
+                        <span
+                          data-hue={token}
+                          className="size-3.5 rounded-inline border border-tone-border bg-tone-soft"
+                        />
+                      }
+                      onSelect={() =>
+                        perform(
+                          setStyle(documentId, block.id, {
+                            ...(block.style ?? {}),
+                            background: token,
+                          }),
+                          "Background",
+                        )
+                      }
+                    >
+                      <span className="capitalize">{token} background</span>
+                    </MenuItem>
+                  ))}
+                </>
+              )}
+            </MenuSub>
+          )}
+          <MenuItem
+            icon={<Copy />}
+            onSelect={() => perform(duplicateBlock(documentId, block, newId("block")), "Duplicate")}
+          >
+            Duplicate
+          </MenuItem>
+          <MenuItem
+            icon={<ArrowUp />}
+            disabled={index === 0}
+            onSelect={() => {
+              const calls = moveBy(documentId, order, block.id, -1);
+              if (calls) perform(calls, "Move up");
+            }}
+          >
+            Move up
+          </MenuItem>
+          <MenuItem
+            icon={<ArrowDown />}
+            disabled={index === count - 1}
+            onSelect={() => {
+              const calls = moveBy(documentId, order, block.id, 1);
+              if (calls) perform(calls, "Move down");
+            }}
+          >
+            Move down
+          </MenuItem>
+          <MenuSeparator />
+          {block.type !== "divider" &&
+            (reviewed ? (
+              <MenuItem
+                icon={<RotateCcw />}
+                onSelect={() => controller.review("unverified", [block.id])}
+              >
+                Mark as not reviewed
+              </MenuItem>
+            ) : (
+              <MenuItem
+                icon={<CircleCheck />}
+                onSelect={() => controller.review("reviewed", [block.id])}
+              >
+                Mark as reviewed
               </MenuItem>
             ))}
-            {block.type === "paragraph" && (
-              <>
-                <MenuSeparator />
-                <MenuLabel>Background</MenuLabel>
-                {(["yellow", "blue", "green", "purple", "gray"] as const).map((token) => (
-                  <MenuItem
-                    key={token}
-                    icon={
-                      <span
-                        className="size-3.5 rounded-[4px] border border-border"
-                        style={{ background: `var(--doc-${token}-bg)` }}
-                      />
-                    }
-                    onSelect={() =>
-                      perform(
-                        setStyle(documentId, block.id, {
-                          ...(block.style ?? {}),
-                          background: token,
-                        }),
-                        "Background",
-                      )
-                    }
-                  >
-                    <span className="capitalize">{token} background</span>
-                  </MenuItem>
-                ))}
-              </>
-            )}
-          </MenuSub>
-        )}
-        <MenuItem
-          icon={<Copy />}
-          onSelect={() => perform(duplicateBlock(documentId, block, newId("block")), "Duplicate")}
-        >
-          Duplicate
-        </MenuItem>
-        <MenuItem
-          icon={<ArrowUp />}
-          disabled={index === 0}
-          onSelect={() => {
-            const calls = moveBy(documentId, order, block.id, -1);
-            if (calls) perform(calls, "Move up");
-          }}
-        >
-          Move up
-        </MenuItem>
-        <MenuItem
-          icon={<ArrowDown />}
-          disabled={index === count - 1}
-          onSelect={() => {
-            const calls = moveBy(documentId, order, block.id, 1);
-            if (calls) perform(calls, "Move down");
-          }}
-        >
-          Move down
-        </MenuItem>
-        <MenuSeparator />
-        {block.type !== "divider" &&
-          (reviewed ? (
-            <MenuItem
-              icon={<RotateCcw />}
-              onSelect={() => controller.review("unverified", [block.id])}
-            >
-              Mark as not reviewed
-            </MenuItem>
-          ) : (
-            <MenuItem
-              icon={<CircleCheck />}
-              onSelect={() => controller.review("reviewed", [block.id])}
-            >
-              Mark as reviewed
-            </MenuItem>
-          ))}
-        <MenuItem icon={<MessageCircleQuestion />} onSelect={() => actions.askAbout(block.id)}>
-          Ask about this…
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem
-          icon={<Trash2 />}
-          danger
-          onSelect={() => perform(deleteBlocks(documentId, [block.id]), "Delete block")}
-        >
-          Delete
-        </MenuItem>
-        <MenuSeparator />
-        <div className="px-2.5 py-2">
-          <Provenance block={block} />
-        </div>
-      </MenuContent>
-    </Menu>
+          <MenuItem icon={<MessageCircleQuestion />} onSelect={() => actions.askAbout(block.id)}>
+            Ask about this…
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem
+            icon={<Trash2 />}
+            danger
+            onSelect={() => perform(deleteBlocks(documentId, [block.id]), "Delete block")}
+          >
+            Delete
+          </MenuItem>
+          <MenuSeparator />
+          <div className="px-3 py-2">
+            <Provenance block={block} />
+          </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
@@ -376,7 +447,7 @@ function SourcesRow({ block }: { block: Block }) {
       className="inline-flex flex-wrap items-center gap-x-1 gap-y-1"
       data-testid="block-sources"
     >
-      <span className="mr-0.5 text-[12px] font-medium text-text-muted">
+      <span className="mr-0.5 text-caption font-medium text-text-muted">
         {unique.length === 1 ? "Source" : "Sources"}
       </span>
       {unique.map((citation) => (
@@ -419,7 +490,7 @@ export const BlockShell = memo(function BlockShell({
       data-type={block.type}
       data-review={block.review.status}
       data-active={active ? "true" : undefined}
-      className={cx(
+      className={cn(
         "doc-block group/block relative scroll-mt-24",
         block.type === "heading" ? "mt-7 mb-1 first:mt-0" : "my-2.5",
       )}
@@ -437,25 +508,22 @@ export const BlockShell = memo(function BlockShell({
             type="button"
             data-testid="provenance"
             aria-label={`${unverified ? "Not yet reviewed. " : ""}Last edited by ${actorName(block.provenance.lastEditedBy)}`}
-            className={cx(
-              "absolute top-1 bottom-1 -left-3 w-1 rounded-full after:absolute after:-inset-x-1.5 after:inset-y-0 after:content-[''] md:-left-4",
+            className={cn(
+              "absolute top-1 bottom-1 -left-3 w-1 rounded-pill after:absolute after:-inset-x-1.5 after:inset-y-0 after:content-[''] md:-left-4",
               unverified
-                ? "bg-[var(--doc-yellow-solid)]/70"
+                ? "bg-warning-solid"
                 : byAgent
-                  ? "bg-[var(--doc-purple-solid)]/25"
-                  : "bg-transparent hover:bg-[var(--doc-green-solid)]/30",
+                  ? "bg-hue-purple-solid/25"
+                  : "bg-transparent hover:bg-hue-green-solid/30",
             )}
           />
         }
       >
         <div className="flex gap-2.5">
           {byAgent ? (
-            <Sparkles
-              aria-hidden
-              className="mt-0.5 size-4 shrink-0 text-[var(--doc-purple-solid)]"
-            />
+            <Sparkles aria-hidden className="mt-0.5 size-4 shrink-0 text-hue-purple-solid" />
           ) : (
-            <PenLine aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--doc-green-solid)]" />
+            <PenLine aria-hidden className="mt-0.5 size-4 shrink-0 text-hue-green-solid" />
           )}
           <Provenance block={block} />
         </div>
@@ -464,7 +532,7 @@ export const BlockShell = memo(function BlockShell({
       {/* Computer: hover gutter with + and the drag handle / menu. */}
       {editing && !isTouch && (
         <div
-          className={cx(
+          className={cn(
             "absolute top-0 -left-[4.25rem] flex h-8 items-center gap-0.5 opacity-0 transition-opacity group-hover/block:opacity-100 focus-within:opacity-100",
             active && "opacity-100",
           )}
@@ -472,7 +540,6 @@ export const BlockShell = memo(function BlockShell({
           <IconButton
             label="Insert a block below"
             size="sm"
-            className="size-7"
             onClick={(e) => addAfter(e.currentTarget.getBoundingClientRect())}
           >
             <Plus className="size-4" />
@@ -488,7 +555,7 @@ export const BlockShell = memo(function BlockShell({
                 type="button"
                 aria-label="Drag to move, or click for block actions"
                 data-testid="block-handle"
-                className="flex h-7 w-5 cursor-grab items-center justify-center rounded-md text-text-muted hover:bg-surface-muted active:cursor-grabbing"
+                className="flex h-7 w-5 cursor-grab items-center justify-center rounded-inline text-text-muted hover:bg-surface-muted active:cursor-grabbing"
                 onPointerDown={(e) => {
                   if (e.button !== 0) return;
                   // Keep the menu shut on press: a press may become a drag. A click opens it.
@@ -509,7 +576,7 @@ export const BlockShell = memo(function BlockShell({
       {/* Touch: actions for the selected block. */}
       {editing && isTouch && active && (
         <div
-          className="doc-anim-pop absolute -top-12 right-0 z-10 flex items-center gap-0.5 rounded-2xl border border-border bg-surface p-0.5 shadow-[var(--doc-pop-shadow)]"
+          className="anim-pop absolute -top-12 right-0 z-(--z-raised) flex items-center gap-0.5 rounded-card border border-border bg-surface p-0.5 shadow-pop"
           data-testid="touch-actions"
         >
           <IconButton
@@ -545,7 +612,7 @@ export const BlockShell = memo(function BlockShell({
           <button
             type="button"
             aria-label="Press and hold to drag"
-            className="flex size-11 touch-none items-center justify-center rounded-xl text-text-muted"
+            className="flex size-11 touch-none items-center justify-center rounded-control text-text-muted"
             onPointerDown={(e) => actions.startDrag(block.id, e.nativeEvent, true)}
             onContextMenu={(e) => e.preventDefault()}
           >
@@ -575,11 +642,11 @@ export const BlockShell = memo(function BlockShell({
       )}
 
       <div
-        className={cx(
-          "doc-tone doc-block-body",
-          textual && style?.background && "rounded-xl bg-[var(--t-bg)] px-3 py-1.5",
+        className={cn(
+          "doc-block-body",
+          textual && style?.background && "rounded-control bg-tone-soft px-3 py-1.5",
         )}
-        style={style ? toneVars(style.color ?? style.background) : undefined}
+        data-hue={style ? (style.color ?? style.background ?? "gray") : undefined}
       >
         <BlockBoundary type={block.type} content={block.content}>
           <BlockContent block={block} />
@@ -587,13 +654,13 @@ export const BlockShell = memo(function BlockShell({
       </div>
 
       {showFooter && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[12.5px]">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-label">
           <SourcesRow block={block} />
           {block.generalKnowledge && <GeneralKnowledgeTag />}
           {loose.length > 0 && <FlagIndicator flags={loose} />}
           {unverified && (
             <span
-              className="ml-auto inline-flex items-center gap-1 rounded-full border border-[var(--doc-yellow-border)] bg-[var(--doc-yellow-bg)] py-0.5 pr-0.5 pl-2.5 text-[12px] font-medium text-[var(--doc-yellow-fg)]"
+              className="ml-auto inline-flex items-center gap-1 rounded-pill border border-warning-border bg-warning-soft py-0.5 pr-0.5 pl-2.5 text-caption font-medium text-warning"
               data-testid="unverified-badge"
             >
               <TriangleAlert aria-hidden className="size-3.5" />
@@ -602,7 +669,7 @@ export const BlockShell = memo(function BlockShell({
                 type="button"
                 data-testid="mark-reviewed"
                 onClick={() => actions.controller.review("reviewed", [block.id])}
-                className="relative ml-1 inline-flex h-6 items-center gap-1 rounded-full bg-surface px-2 font-semibold text-text shadow-sm transition-colors hover:bg-[var(--doc-green-bg)] hover:text-[var(--doc-green-fg)] after:absolute after:-inset-2.5 after:content-['']"
+                className="relative ml-1 inline-flex h-6 items-center gap-1 rounded-pill bg-surface px-2 font-semibold text-text shadow-card transition-colors duration-(--duration-instant) hover:bg-success-soft hover:text-success after:absolute after:-inset-2.5 after:content-['']"
               >
                 <Check aria-hidden className="size-3.5" />
                 Mark reviewed

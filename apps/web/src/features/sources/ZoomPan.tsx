@@ -112,7 +112,7 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
             ? setView({ scale: 1, x: 0, y: 0 })
             : zoomTo(2.5, { x: event.clientX, y: event.clientY })
         }
-        className="relative flex min-h-40 touch-none select-none items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-muted"
+        className="relative flex min-h-40 touch-none select-none items-center justify-center overflow-hidden rounded-card border border-border bg-surface-muted"
         style={{ cursor: view.scale > 1 ? "grab" : "zoom-in" }}
       >
         <div
@@ -125,7 +125,7 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
           {children}
         </div>
       </div>
-      <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-2xl border border-border bg-surface/95 p-1 shadow-card">
+      <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-card border border-border bg-(--color-chrome) p-1 shadow-card backdrop-blur">
         <IconButton
           aria-label="Zoom out"
           onClick={() => zoomTo(view.scale / 1.4)}

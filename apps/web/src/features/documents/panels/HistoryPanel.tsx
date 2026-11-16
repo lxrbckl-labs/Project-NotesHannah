@@ -1,11 +1,13 @@
 import type { Revision, RevisionSummary } from "@notes/schema";
 import { ArrowLeft, PenLine, RotateCcw, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "../../../components/ui/button";
+import { ConfirmDialog } from "../../../components/ui/dialog";
+import { cn } from "../../../lib/cn";
 import { BlockContent } from "../blocks/registry";
 import { ActionsContext, useActions, useView, ViewContext } from "../context";
 import { buildReferenceIndex } from "../model/references";
 import { formatWhen } from "../ui/hooks";
-import { Button, ConfirmDialog, cx } from "../ui/primitives";
 
 function who(revision: RevisionSummary): string {
   return revision.author.type === "user" ? "You" : (revision.author.label ?? "An agent");
@@ -87,8 +89,7 @@ export function HistoryPanel({
     }
   };
 
-  if (failed)
-    return <p className="p-5 text-sm text-[var(--doc-red-fg)]">History couldn’t be loaded.</p>;
+  if (failed) return <p className="p-5 text-ui text-danger">History couldn’t be loaded.</p>;
   if (!items) return <p className="p-5 text-sm text-text-muted">Loading history…</p>;
 
   const list = (
@@ -103,18 +104,18 @@ export function HistoryPanel({
             type="button"
             aria-current={selected === r.number ? "true" : undefined}
             onClick={() => setSelected(r.number)}
-            className={cx(
-              "flex w-full items-start gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
-              selected === r.number ? "bg-[var(--doc-blue-bg)]" : "hover:bg-surface-muted",
+            className={cn(
+              "flex w-full items-start gap-3 rounded-card px-3 py-2.5 text-left transition-colors duration-(--duration-instant)",
+              selected === r.number ? "bg-accent-soft" : "hover:bg-surface-muted",
             )}
           >
             <span
               aria-hidden
-              className={cx(
-                "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full",
+              className={cn(
+                "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-pill",
                 r.author.type === "user"
-                  ? "bg-[var(--doc-green-bg)] text-[var(--doc-green-fg)]"
-                  : "bg-[var(--doc-purple-bg)] text-[var(--doc-purple-fg)]",
+                  ? "bg-hue-green-soft text-hue-green-text"
+                  : "bg-hue-purple-soft text-hue-purple-text",
               )}
             >
               {r.author.type === "user" ? (
@@ -125,19 +126,19 @@ export function HistoryPanel({
             </span>
             <span className="min-w-0 flex-1">
               <span className="flex items-baseline gap-2">
-                <span className="text-[14px] font-semibold">Revision {r.number}</span>
+                <span className="text-ui font-semibold">Revision {r.number}</span>
                 {r.number === current && (
-                  <span className="rounded-full bg-surface px-1.5 text-[11px] font-semibold text-text-muted">
+                  <span className="rounded-pill border border-border bg-surface px-1.5 text-caption font-semibold text-text-muted">
                     current
                   </span>
                 )}
               </span>
-              <span className="block text-[13px] text-text-muted">
+              <span className="block text-label text-text-muted">
                 {who(r)} · {formatWhen(r.createdAt)}
               </span>
-              {r.summary && <span className="mt-0.5 block text-[13px]">{r.summary}</span>}
+              {r.summary && <span className="mt-0.5 block text-label">{r.summary}</span>}
               {r.restoredFrom && (
-                <span className="block text-[12px] text-text-muted">
+                <span className="block text-caption text-text-muted">
                   Restored from revision {r.restoredFrom}
                 </span>
               )}
@@ -152,11 +153,16 @@ export function HistoryPanel({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
         {compact && (
-          <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-text-muted hover:text-text"
+            onClick={() => setSelected(null)}
+          >
             <ArrowLeft className="size-4" /> All revisions
           </Button>
         )}
-        <p className="m-0 min-w-0 flex-1 text-[13.5px] text-text-muted">
+        <p className="m-0 min-w-0 flex-1 text-label text-text-muted">
           {preview
             ? `Revision ${preview.number} · ${preview.snapshot.blocks.length} blocks`
             : "Loading…"}
@@ -172,7 +178,7 @@ export function HistoryPanel({
         </Button>
       </div>
       <div
-        className="min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg)] px-5 py-4"
+        className="min-h-0 flex-1 overflow-y-auto bg-bg px-5 py-4"
         data-testid="revision-preview"
       >
         {preview && previewView && (
@@ -211,9 +217,13 @@ export function HistoryPanel({
         open={confirm}
         onOpenChange={setConfirm}
         title={`Restore revision ${selected ?? ""}?`}
-        body="The document will go back to this version. Nothing is lost: the current version stays in the history and can be restored again."
+        description="The document will go back to this version. Nothing is lost: the current version stays in the history and can be restored again."
         confirmLabel="Restore"
-        onConfirm={() => void restore()}
+        busy={busy}
+        onConfirm={() => {
+          setConfirm(false);
+          void restore();
+        }}
       />
     </>
   );

@@ -9,9 +9,11 @@ import {
 } from "@notes/schema";
 import { Flag } from "lucide-react";
 import { Fragment, memo, type ReactNode } from "react";
+import { Popover } from "../../../components/ui/popover";
+import { cn } from "../../../lib/cn";
+import { DOCUMENT_HUE } from "../../../lib/roles";
 import { useActions, useView } from "../context";
 import { FLAG_LABELS, type FlagRange, flagRanges, markerCitation } from "../model/references";
-import { cx, Popover } from "../ui/primitives";
 
 /** A numbered citation chip. Tapping opens the source (K2). */
 export function CiteChip({ citation, label }: { citation: Citation | undefined; label?: boolean }) {
@@ -62,10 +64,8 @@ export function FlagNote({ flag }: { flag: BlockFlag }) {
     <div className="flex gap-2.5">
       <Flag
         aria-hidden
-        className={cx(
-          "mt-0.5 size-4 shrink-0",
-          danger ? "text-[var(--doc-red-solid)]" : "text-[var(--doc-orange-solid)]",
-        )}
+        data-hue={danger ? DOCUMENT_HUE.flagDose : DOCUMENT_HUE.flag}
+        className="mt-0.5 size-4 shrink-0 text-tone-solid"
       />
       <div>
         <p className="font-semibold">{FLAG_LABELS[flag.kind]}</p>
@@ -88,7 +88,7 @@ function wrapMarks(run: TextRun, content: ReactNode): ReactNode {
   if (run.strike) node = <s>{node}</s>;
   if (run.highlight)
     node = (
-      <mark className="doc-hl" data-color={run.highlight}>
+      <mark className="doc-hl" data-hue={run.highlight}>
         {node}
       </mark>
     );
@@ -203,9 +203,9 @@ export const RichTextView = memo(function RichTextView({
   const Tag = as;
   if (value.length === 0 && placeholder)
     return (
-      <Tag className={cx("text-text-muted/70 whitespace-pre-wrap", className)}>{placeholder}</Tag>
+      <Tag className={cn("text-text-muted/70 whitespace-pre-wrap", className)}>{placeholder}</Tag>
     );
-  return <Tag className={cx("whitespace-pre-wrap", className)}>{children}</Tag>;
+  return <Tag className={cn("whitespace-pre-wrap", className)}>{children}</Tag>;
 });
 
 /** The chips for a list of citations (a block's own, or a field's). */

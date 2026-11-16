@@ -16,9 +16,11 @@ import {
 import { Popover as RadixPopover } from "radix-ui";
 import { type ReactNode, useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Button, IconButton } from "../../../components/ui/button";
+import { floatingPanelClass } from "../../../components/ui/popover";
+import { cn } from "../../../lib/cn";
 import { useActions, useSignal } from "../context";
 import { useKeyboardInset } from "../ui/hooks";
-import { cx } from "../ui/primitives";
 
 function ToolButton({
   label,
@@ -34,21 +36,15 @@ function ToolButton({
   shortcut?: string;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={shortcut ? `${label} (${shortcut})` : label}
-      aria-pressed={active}
+    <IconButton
+      label={shortcut ? `${label} (${shortcut})` : label}
+      pressed={active}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onPress}
-      className={cx(
-        "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors pointer-coarse:size-11 [&_svg]:size-4",
-        active
-          ? "bg-[var(--doc-blue-bg)] text-[var(--doc-blue-fg)]"
-          : "text-text-muted hover:bg-surface-muted hover:text-text",
-      )}
+      className="[&_svg]:size-4"
     >
       {children}
-    </button>
+    </IconButton>
   );
 }
 
@@ -115,11 +111,11 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
             type="button"
             aria-label="Highlight colour"
             onMouseDown={(e) => e.preventDefault()}
-            className={cx(
-              "flex size-9 shrink-0 items-center justify-center rounded-lg pointer-coarse:size-11 [&_svg]:size-4",
-              state.highlight ? "text-text" : "text-text-muted hover:bg-surface-muted",
+            data-hue={state.highlight ?? undefined}
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-control transition-colors duration-(--duration-instant) xl:size-9 [&_svg]:size-4",
+              state.highlight ? "bg-tone-mark text-text" : "text-text-muted hover:bg-surface-muted",
             )}
-            style={state.highlight ? { background: `var(--doc-${state.highlight}-hl)` } : undefined}
           >
             <Highlighter />
           </button>
@@ -131,7 +127,7 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
             collisionPadding={12}
             onOpenAutoFocus={(e) => e.preventDefault()}
             onCloseAutoFocus={(e) => e.preventDefault()}
-            className="doc-portal doc-anim-pop z-[60] grid grid-cols-6 gap-1.5 rounded-2xl border border-border bg-surface p-2 shadow-[var(--doc-pop-shadow)]"
+            className={cn(floatingPanelClass, "grid grid-cols-6 gap-1.5 p-2")}
             aria-label="Highlight colours"
           >
             {COLOR_TOKENS.map((token) => (
@@ -141,8 +137,8 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
                 aria-label={`${token} highlight`}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => chain().setMark("highlight", { color: token }).run()}
-                className="flex size-8 items-center justify-center rounded-lg border border-border pointer-coarse:size-10"
-                style={{ background: `var(--doc-${token}-hl)` }}
+                data-hue={token}
+                className="flex size-8 items-center justify-center rounded-control border border-tone-border bg-tone-mark pointer-coarse:size-11"
               >
                 {state.highlight === token && <Check aria-hidden className="size-3.5" />}
               </button>
@@ -152,7 +148,7 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
               aria-label="No highlight"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => chain().unsetMark("highlight").run()}
-              className="flex size-8 items-center justify-center rounded-lg border border-border text-[11px] text-text-muted pointer-coarse:size-10"
+              className="flex size-8 items-center justify-center rounded-control border border-border-strong text-caption text-text-muted pointer-coarse:size-11"
             >
               None
             </button>
@@ -172,11 +168,11 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
             aria-label="Link"
             aria-pressed={Boolean(state.link)}
             onMouseDown={(e) => e.preventDefault()}
-            className={cx(
-              "flex size-9 shrink-0 items-center justify-center rounded-lg pointer-coarse:size-11 [&_svg]:size-4",
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-control transition-colors duration-(--duration-instant) xl:size-9 [&_svg]:size-4",
               state.link
-                ? "bg-[var(--doc-blue-bg)] text-[var(--doc-blue-fg)]"
-                : "text-text-muted hover:bg-surface-muted",
+                ? "bg-accent text-accent-contrast"
+                : "text-text-muted hover:bg-surface-muted hover:text-text",
             )}
           >
             <Link2 />
@@ -187,7 +183,7 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
             side={touch ? "top" : "bottom"}
             sideOffset={8}
             collisionPadding={12}
-            className="doc-portal doc-anim-pop z-[60] flex w-[min(20rem,calc(100vw-24px))] gap-1.5 rounded-2xl border border-border bg-surface p-2 shadow-[var(--doc-pop-shadow)]"
+            className={cn(floatingPanelClass, "flex w-[min(20rem,calc(100vw-24px))] gap-1.5 p-2")}
           >
             <form
               className="flex flex-1 gap-1.5"
@@ -204,27 +200,25 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
                 aria-label="Link address"
                 value={href}
                 onChange={(e) => setHref(e.target.value)}
-                className="min-w-0 flex-1 rounded-lg bg-surface-muted px-2.5 py-1.5 text-[14px] outline-none"
+                className="min-w-0 flex-1 rounded-control bg-surface-muted px-2.5 py-1.5 text-ui outline-none pointer-coarse:text-body"
                 placeholder="https://"
                 inputMode="url"
               />
-              <button
-                type="submit"
-                className="rounded-lg bg-accent px-3 text-[13px] font-semibold text-accent-contrast"
-              >
+              <Button type="submit" variant="primary" size="sm">
                 {state.link ? "Update" : "Add"}
-              </button>
+              </Button>
               {state.link && (
-                <button
-                  type="button"
-                  className="rounded-lg px-2 text-[13px] text-[var(--doc-red-fg)]"
+                <Button
+                  variant="ghostDanger"
+                  size="sm"
+                  className="px-2"
                   onClick={() => {
                     chain().extendMarkRange("link").unsetLink().run();
                     setLinkOpen(false);
                   }}
                 >
                   Remove
-                </button>
+                </Button>
               )}
             </form>
           </RadixPopover.Content>
@@ -239,14 +233,14 @@ function Tools({ editor, touch }: { editor: Editor; touch: boolean }) {
           <ToolButton label="Redo" onPress={() => actions.controller.redo()}>
             <Redo2 />
           </ToolButton>
-          <button
-            type="button"
+          <Button
+            variant="ghostAccent"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => editor.commands.blur()}
-            className="ml-auto min-h-11 shrink-0 rounded-lg px-3 text-[14px] font-semibold text-[var(--doc-blue-fg)]"
+            className="ml-auto shrink-0 font-semibold"
           >
             Done
-          </button>
+          </Button>
         </>
       )}
     </>
@@ -304,7 +298,7 @@ export function FormatToolbar({ touch }: { touch: boolean }) {
         role="toolbar"
         aria-label="Text formatting"
         data-testid="format-toolbar"
-        className="doc-portal doc-root fixed inset-x-0 z-40 flex items-center gap-0.5 overflow-x-auto border-t border-border bg-surface/95 px-2 py-1 pb-[max(4px,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgb(0_0_0/0.06)] backdrop-blur"
+        className="fixed inset-x-0 z-(--z-dock) flex items-center gap-0.5 overflow-x-auto border-t border-border bg-(--color-chrome) px-2 py-1 pb-[max(4px,env(safe-area-inset-bottom))] text-text shadow-pop backdrop-blur"
         style={{ bottom: inset }}
       >
         <Tools editor={editor} touch />
@@ -318,7 +312,7 @@ export function FormatToolbar({ touch }: { touch: boolean }) {
       role="toolbar"
       aria-label="Text formatting"
       data-testid="format-toolbar"
-      className="doc-portal doc-root doc-anim-pop fixed z-40 flex items-center gap-0.5 rounded-xl border border-border bg-surface p-1 shadow-[var(--doc-pop-shadow)]"
+      className="anim-pop fixed z-(--z-dock) flex items-center gap-0.5 rounded-card border border-border bg-surface p-1 text-text shadow-pop"
       style={{ top: pos.top, left: pos.left }}
     >
       <Tools editor={editor} touch={false} />

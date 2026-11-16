@@ -1,11 +1,4 @@
-import {
-  type Block,
-  type BlockOf,
-  CALLOUT_DEFAULT_COLORS,
-  type CalloutKind,
-  newId,
-  type RichText,
-} from "@notes/schema";
+import { type Block, type BlockOf, type CalloutKind, newId, type RichText } from "@notes/schema";
 import {
   BookMarked,
   CircleAlert,
@@ -15,6 +8,9 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "../../../lib/cn";
+import { hueVar } from "../../../lib/hues";
+import { CALLOUT_HUE } from "../../../lib/roles";
 import { type DocActions, useActions } from "../context";
 import type { EditorKeys } from "../editor/InlineEditor";
 import { RichField } from "../editor/RichField";
@@ -27,8 +23,6 @@ import {
   turnInto,
 } from "../model/gestures";
 import { richTextSize } from "../model/richtext";
-import { toneVars } from "../ui/hooks";
-import { cx } from "../ui/primitives";
 import { PlainInput, useBlockEdit } from "./common";
 
 /** Move the caret to the neighbouring editable block. */
@@ -110,19 +104,23 @@ export function ParagraphBlock({ block }: { block: BlockOf<"paragraph"> }) {
   const keys = useTextKeys(block);
   const commit = useTextCommit(block);
   const color = block.style?.color;
+  // The shared reading style (measure, hyphenation) sits on a wrapper: its spacing between
+  // siblings must not reach the chips inside the text.
   return (
-    <RichField
-      blockId={block.id}
-      value={block.content.text}
-      onCommit={commit}
-      block={block}
-      flags={block.flags}
-      keys={keys}
-      label="Paragraph"
-      placeholder="Type, or press / for blocks"
-      className={cx("min-h-[1.7em]", color && "text-[var(--t-fg)]")}
-      as="p"
-    />
+    <div className="prose-reading">
+      <RichField
+        blockId={block.id}
+        value={block.content.text}
+        onCommit={commit}
+        block={block}
+        flags={block.flags}
+        keys={keys}
+        label="Paragraph"
+        placeholder="Type, or press / for blocks"
+        className={cn("min-h-[1.7em]", color && "text-tone-text")}
+        as="p"
+      />
+    </div>
   );
 }
 
@@ -141,11 +139,7 @@ export function HeadingBlock({ block }: { block: BlockOf<"heading"> }) {
     <Tag
       id={`h-${block.id}`}
       data-outline-heading={level}
-      className={cx(
-        HEADING_CLASS[level],
-        "scroll-mt-24",
-        block.style?.color && "text-[var(--t-fg)]",
-      )}
+      className={cn(HEADING_CLASS[level], "scroll-mt-24", block.style?.color && "text-tone-text")}
     >
       <RichField
         blockId={block.id}
@@ -168,10 +162,7 @@ export function QuoteBlock({ block }: { block: BlockOf<"quote"> }) {
   const { editing, patch } = useBlockEdit(block);
   const tone = block.style?.color ?? "gray";
   return (
-    <figure
-      className="doc-tone my-1 border-l-[3px] border-[var(--t-solid)] py-1 pl-5"
-      style={toneVars(tone)}
-    >
+    <figure data-hue={tone} className="my-1 border-l-[3px] border-tone-solid py-1 pl-5">
       <blockquote className="font-serif text-[1.1em] leading-relaxed italic text-text">
         <RichField
           blockId={block.id}
@@ -185,7 +176,7 @@ export function QuoteBlock({ block }: { block: BlockOf<"quote"> }) {
         />
       </blockquote>
       {(block.content.attribution || editing) && (
-        <figcaption className="mt-1.5 text-[13.5px] text-text-muted">
+        <figcaption className="mt-1.5 text-label text-text-muted">
           {editing ? (
             <span className="flex items-center gap-1">
               <span aria-hidden>—</span>
@@ -221,28 +212,26 @@ export function CalloutBlock({ block }: { block: BlockOf<"callout"> }) {
   const commit = useTextCommit(block);
   const { editing, patch } = useBlockEdit(block);
   const kind = block.content.kind;
-  const tone = block.style?.color ?? CALLOUT_DEFAULT_COLORS[kind];
+  const tone = block.style?.color ?? CALLOUT_HUE[kind];
   const background = block.style?.background;
   const meta = CALLOUT_META[kind];
   return (
     <aside
       aria-label={meta.label}
       data-kind={kind}
-      className="doc-tone flex gap-3 rounded-2xl border border-[var(--t-border)] bg-[var(--t-bg)] px-4 py-3.5"
-      style={{
-        ...toneVars(tone),
-        ...(background ? { background: `var(--doc-${background}-bg)` } : {}),
-      }}
+      data-hue={tone}
+      className="flex gap-3 rounded-card border border-tone-border bg-tone-soft px-4 py-3.5"
+      style={background ? { background: hueVar(background, "soft") } : undefined}
     >
       <span
         aria-hidden
-        className="mt-[3px] flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--t-hl)] text-[var(--t-fg)]"
+        className="mt-[3px] flex size-7 shrink-0 items-center justify-center rounded-control bg-tone-mark text-tone-text"
       >
         {meta.icon}
       </span>
       <div className="min-w-0 flex-1">
         {(block.content.title || editing) && (
-          <div className="mb-0.5 text-[15px] font-semibold text-[var(--t-fg)]">
+          <div className="mb-0.5 text-body font-semibold text-tone-text">
             {editing ? (
               <PlainInput
                 value={block.content.title ?? ""}
@@ -255,16 +244,18 @@ export function CalloutBlock({ block }: { block: BlockOf<"callout"> }) {
             )}
           </div>
         )}
-        <RichField
-          blockId={block.id}
-          value={block.content.text}
-          onCommit={commit}
-          block={block}
-          flags={block.flags}
-          keys={keys}
-          label={`${meta.label} text`}
-          placeholder="Write the note…"
-        />
+        <div className="prose-reading">
+          <RichField
+            blockId={block.id}
+            value={block.content.text}
+            onCommit={commit}
+            block={block}
+            flags={block.flags}
+            keys={keys}
+            label={`${meta.label} text`}
+            placeholder="Write the note…"
+          />
+        </div>
       </div>
     </aside>
   );

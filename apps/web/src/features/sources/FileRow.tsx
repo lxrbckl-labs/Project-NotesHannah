@@ -97,7 +97,7 @@ export function FileRow({
         data-testid="file-row"
         data-status={file.status}
         {...fileLeafDragProps(file, fine)}
-        className="group flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-border bg-surface py-2.5 pl-3 pr-1.5 shadow-card hover:border-border-strong"
+        className="group flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-border bg-surface py-2.5 pl-3 pr-1.5 shadow-card hover:border-border-strong"
       >
         {fine ? (
           <GripVertical
@@ -106,7 +106,7 @@ export function FileRow({
             className="hidden shrink-0 text-text-muted opacity-0 group-hover:opacity-100 xl:block"
           />
         ) : null}
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent">
           <FileTypeIcon type={file.type} size={20} />
         </span>
         <div className="min-w-0 flex-1 basis-52">
@@ -125,7 +125,7 @@ export function FileRow({
               to={`/files/${file.id}`}
               draggable={false}
               title={file.originalName}
-              className="block break-words rounded-md font-medium [overflow-wrap:anywhere] hover:underline"
+              className="block break-words rounded-inline font-medium [overflow-wrap:anywhere] hover:underline"
             >
               {file.originalName}
             </Link>

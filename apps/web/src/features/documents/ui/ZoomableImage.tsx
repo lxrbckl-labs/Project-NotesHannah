@@ -1,7 +1,7 @@
 import type { NormalizedBox } from "@notes/schema";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { IconButton } from "./primitives";
+import { IconButton } from "../../../components/ui/button";
 
 interface View {
   scale: number;
@@ -176,7 +176,7 @@ export function ZoomableImage({
       <div
         ref={frame}
         data-testid={testId}
-        className="relative w-full touch-pan-y overflow-hidden rounded-xl border border-border bg-[var(--doc-gray-bg)] select-none"
+        className="relative w-full touch-pan-y overflow-hidden rounded-control border border-border bg-hue-gray-soft select-none"
         style={{
           aspectRatio: `${width} / ${height}`,
           touchAction: view.scale > 1 ? "none" : "pan-y",
@@ -195,7 +195,7 @@ export function ZoomableImage({
             <div
               data-testid="citation-region"
               aria-hidden
-              className="absolute rounded-md border-2 border-[var(--doc-orange-solid)] bg-[var(--doc-yellow-solid)]/15 shadow-[0_0_0_4px_rgb(255_255_255/0.5)]"
+              className="absolute rounded-inline border-2 border-hue-orange-solid bg-hue-yellow-solid/15 shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-surface)_50%,transparent)]"
               style={{
                 left: `${region.x * 100}%`,
                 top: `${region.y * 100}%`,
@@ -207,7 +207,7 @@ export function ZoomableImage({
           {overlay}
         </div>
       </div>
-      <div className="absolute right-2 bottom-2 flex gap-1 rounded-xl border border-border bg-surface/90 p-0.5 shadow-sm backdrop-blur">
+      <div className="absolute right-2 bottom-2 flex gap-1 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur">
         <IconButton
           label="Zoom out"
           size="sm"

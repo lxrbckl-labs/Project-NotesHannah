@@ -1,7 +1,7 @@
 import type { BlockOf, RichText } from "@notes/schema";
 import { BLOCK_LIMITS } from "@notes/schema";
+import { cn } from "../../../lib/cn";
 import { RichField } from "../editor/RichField";
-import { cx } from "../ui/primitives";
 import { AddButton, PlainInput, RemoveButton, useBlockEdit } from "./common";
 
 export function TableBlock({ block }: { block: BlockOf<"table"> }) {
@@ -27,7 +27,7 @@ export function TableBlock({ block }: { block: BlockOf<"table"> }) {
   return (
     <figure className="m-0">
       <div className="doc-scroll-x -mx-1 px-1 pb-1">
-        <table className="w-full min-w-max border-separate border-spacing-0 overflow-hidden rounded-2xl border border-border text-[15px] leading-normal">
+        <table className="w-full min-w-max border-separate border-spacing-0 overflow-hidden rounded-card border border-border text-body leading-normal">
           {tools && (
             <thead>
               <tr>
@@ -61,7 +61,7 @@ export function TableBlock({ block }: { block: BlockOf<"table"> }) {
                       // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional
                       key={c}
                       scope={header ? (r === 0 ? "col" : "row") : undefined}
-                      className={cx(
+                      className={cn(
                         "min-w-28 max-w-80 border-border px-3.5 py-2.5 text-left align-top",
                         r > 0 && "border-t",
                         c > 0 && "border-l",
@@ -83,7 +83,7 @@ export function TableBlock({ block }: { block: BlockOf<"table"> }) {
                 })}
                 {tools && (
                   <td
-                    className={cx(
+                    className={cn(
                       "w-9 border-l border-border bg-surface-muted/50 p-0 text-center align-middle",
                       r > 0 && "border-t",
                     )}
@@ -108,28 +108,28 @@ export function TableBlock({ block }: { block: BlockOf<"table"> }) {
               Column
             </AddButton>
           )}
-          <label className="ml-1 inline-flex min-h-9 items-center gap-2 text-[13px] text-text-muted">
+          <label className="ml-1 inline-flex min-h-9 items-center gap-2 text-label text-text-muted">
             <input
               type="checkbox"
               checked={headerRow}
               onChange={(e) => patch({ headerRow: e.target.checked }, "Header row")}
-              className="size-4 accent-[var(--doc-focus)]"
+              className="size-4 accent-accent"
             />
             Header row
           </label>
-          <label className="inline-flex min-h-9 items-center gap-2 text-[13px] text-text-muted">
+          <label className="inline-flex min-h-9 items-center gap-2 text-label text-text-muted">
             <input
               type="checkbox"
               checked={headerColumn}
               onChange={(e) => patch({ headerColumn: e.target.checked }, "Header column")}
-              className="size-4 accent-[var(--doc-focus)]"
+              className="size-4 accent-accent"
             />
             Header column
           </label>
         </div>
       )}
       {(caption || tools) && (
-        <figcaption className="mt-2 text-center text-[13.5px] text-text-muted">
+        <figcaption className="mt-2 text-center text-label text-text-muted">
           {tools ? (
             <PlainInput
               value={caption ?? ""}
