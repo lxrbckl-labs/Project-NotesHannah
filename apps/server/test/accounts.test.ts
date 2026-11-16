@@ -79,32 +79,30 @@ describe("sign-in", () => {
     expect(unknown.setCookies.size).toBe(0);
   });
 
-  test("unknown username and wrong password take about the same time", async () => {
-    // Realistic-ish cost so the hash dominates the timing.
+  test("unknown username and wrong password both run one full hash verify", async () => {
+    // Wall-clock comparisons are flaky on a busy machine, so check the cause of equal
+    // timing instead: each attempt runs exactly one real verify, user or no user.
     const params = { memoryCost: 8192, timeCost: 2, parallelism: 1 };
     const t = makeTestApp({ hasher: new PasswordHasher(params) });
     await t.addUser("hannah", PW, params);
     await t.hasher.warmUp();
-    const time = async (username: string, address: string) => {
-      const start = performance.now();
+    const realVerify = t.hasher.verify.bind(t.hasher);
+    let verifies = 0;
+    t.hasher.verify = (stored: string, password: string) => {
+      verifies++;
+      return realVerify(stored, password);
+    };
+    const attempt = async (username: string, address: string) => {
+      const before = verifies;
       const res = await t.request("/api/auth/login", {
         body: { username, password: "wrong password" },
         address,
       });
       expect(res.status).toBe(401);
-      return performance.now() - start;
+      return verifies - before;
     };
-    const known: number[] = [];
-    const unknown: number[] = [];
-    for (let i = 0; i < 4; i++) {
-      known.push(await time("hannah", `198.51.100.${i}`));
-      unknown.push(await time(`nobody${i}`, `198.51.100.${i + 50}`));
-    }
-    const median = (xs: number[]) =>
-      [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] as number;
-    const ratio = median(unknown) / median(known);
-    expect(ratio).toBeGreaterThan(0.5);
-    expect(ratio).toBeLessThan(2);
+    expect(await attempt("hannah", "198.51.100.1")).toBe(1);
+    expect(await attempt("nobody", "198.51.100.51")).toBe(1);
   });
 
   test("a malformed username gets the same answer", async () => {

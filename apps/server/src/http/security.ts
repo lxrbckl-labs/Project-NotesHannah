@@ -44,7 +44,8 @@ export function securityHeaders(config: Config): MiddlewareHandler {
       h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     }
     if (c.req.path.startsWith("/api/") || c.req.path === "/api") {
-      h.set("Cache-Control", "no-store");
+      // Routes that serve page images and originals set their own private caching.
+      if (!h.has("Cache-Control")) h.set("Cache-Control", "no-store");
     }
   };
 }
