@@ -32,6 +32,7 @@ import { cn } from "../lib/cn";
 import { readFlag, writeFlag } from "../lib/storage";
 import { useLayout } from "../lib/useMedia";
 import { NavBadge, useBadges } from "./badges";
+import { tabDirection } from "./tabDirection";
 
 const SIDEBAR_KEY = "notes-sidebar";
 const PANEL_KEY = "notes-panel";
@@ -157,7 +158,14 @@ function Shell() {
             layout === "phone" && "px-safe pb-24",
           )}
         >
-          <Outlet />
+          {/* On a phone the page, not the dotted background, slides when she changes tab. */}
+          {layout === "phone" ? (
+            <div className="vt-page">
+              <Outlet />
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
 
         {layout === "phone" ? <TabBar /> : null}
@@ -271,6 +279,8 @@ const TABS = [
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
+const TAB_PATHS = TABS.map((t) => t.to);
+
 function TabBar() {
   const badges = useBadges();
   const count: Record<string, number> = { "/practice": badges.practice, "/inbox": badges.inbox };
@@ -278,13 +288,23 @@ function TabBar() {
     <nav
       data-testid="tab-bar"
       aria-label="Primary"
-      className="pb-safe px-safe fixed inset-x-0 bottom-0 z-(--z-nav) border-t border-border bg-surface/95 backdrop-blur print:hidden"
+      className="vt-tabbar pb-safe px-safe fixed inset-x-0 bottom-0 z-(--z-nav) border-t border-border bg-surface/95 backdrop-blur print:hidden"
     >
       <ul className="flex">
         {TABS.map(({ to, label, icon: Icon }) => (
           <li key={to} className="flex-1">
             <NavLink
               to={to}
+              // The new page slides in from the side of the tab she tapped (styles.css, "Tab changes").
+              viewTransition
+              // The address bar, not React state: a tap during a transition must still read where she is now.
+              onClick={() => {
+                document.documentElement.dataset.tabDir = tabDirection(
+                  TAB_PATHS,
+                  window.location.pathname,
+                  to,
+                );
+              }}
               className={({ isActive }) =>
                 cn(
                   "flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption font-medium",

@@ -725,7 +725,70 @@ h3 {
   opacity: 0.45;
 }
 
+/*
+ * Tab changes (phone). Tapping a tab runs a view transition: the old page leaves towards one side and the
+ * new one arrives from the other, by where the tapped tab sits (html[data-tab-dir], set by the tab bar).
+ * The tab bar has its own name so it stays still. Browsers without view transitions just change page.
+ */
+.vt-page {
+  view-transition-name: page;
+}
+.vt-tabbar {
+  view-transition-name: tabbar;
+}
+::view-transition-group(tabbar) {
+  z-index: 1;
+}
+::view-transition-old(page),
+::view-transition-new(page) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-calm);
+  animation-fill-mode: both;
+}
+html[data-tab-dir="forward"]::view-transition-old(page) {
+  animation-name: tab-out-left;
+}
+html[data-tab-dir="forward"]::view-transition-new(page) {
+  animation-name: tab-in-right;
+}
+html[data-tab-dir="back"]::view-transition-old(page) {
+  animation-name: tab-out-right;
+}
+html[data-tab-dir="back"]::view-transition-new(page) {
+  animation-name: tab-in-left;
+}
+@keyframes tab-out-left {
+  to {
+    transform: translateX(-100%);
+    opacity: 0.4;
+  }
+}
+@keyframes tab-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0.4;
+  }
+}
+@keyframes tab-out-right {
+  to {
+    transform: translateX(100%);
+    opacity: 0.4;
+  }
+}
+@keyframes tab-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.4;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win */
+    animation: none !important;
+  }
   *,
   *::before,
   *::after {
