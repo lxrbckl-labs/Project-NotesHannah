@@ -1,4 +1,4 @@
-import type { practice } from "@notes/schema";
+import { practice } from "@notes/schema";
 import type { AppHttp } from "../../lib/api";
 import type { ExamInput, ExamProgress, ExamSummary } from "../exams/types";
 import {
@@ -613,7 +613,7 @@ export function createRealPracticeStore(http: AppHttp): PracticeStore {
               correctRun: i.correctRun,
               stillNeeds: i.stillNeeds,
             },
-            promptText: i.question.text,
+            promptText: practice.blanksAsGaps(i.question.text),
             tags: i.question.tags,
             reason: i.reason ?? null,
             leaveRule:

@@ -1,4 +1,4 @@
-import type { SearchHit } from "@notes/schema";
+import { practice, type SearchHit } from "@notes/schema";
 import { BookMarked, FileText, Globe, HelpCircle, Pill, Search, TextQuote } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
@@ -85,7 +85,9 @@ function ReferenceHit({
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{hit.title}</span>
-        <span className="block truncate text-ui text-text-muted">{hit.snippet}</span>
+        <span className="block truncate text-ui text-text-muted">
+          {hit.kind === "question" ? practice.blanksAsGaps(hit.snippet) : hit.snippet}
+        </span>
       </span>
     </ExternalLink>
   );
@@ -151,7 +153,9 @@ function AppHitLink({
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{title}</span>
-        <span className="block truncate text-ui text-text-muted">{hit.snippet}</span>
+        <span className="block truncate text-ui text-text-muted">
+          {hit.kind === "question" ? practice.blanksAsGaps(hit.snippet) : hit.snippet}
+        </span>
       </span>
     </Link>
   );

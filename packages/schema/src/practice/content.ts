@@ -382,6 +382,14 @@ export type QuestionPart = z.output<typeof QuestionPart>;
 export type QuestionOfType<T extends QuestionType> = Extract<Question, { type: T }>;
 export type PartOfType<T extends QuestionType> = Extract<QuestionPart, { type: T }>;
 
+/**
+ * A fill-in question stores its gaps as {{1}}, {{2}}. Anywhere the text is shown outside the answer
+ * boxes (a list, a search result, a card), the markers become a drawn gap.
+ */
+export function blanksAsGaps(text: string): string {
+  return text.replace(/\{\{\d+\}\}/g, "_____");
+}
+
 /** The text a person sees as "the question": the prompt, the front of a card, the text with blanks, or the vignette. */
 export function questionText(q: Question | QuestionPart): string {
   switch (q.type) {
