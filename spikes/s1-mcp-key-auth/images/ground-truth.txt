@@ -1,0 +1,13 @@
+== slide.png ==
+Beta-Blocker Dosing Review
+Drug | Usual dose | Max/day
+Veloprol | 12.5 mg BID | 50 mg
+Zantrexal | 0.25 mg QD | 1.5 mg
+Corbimide | 5 mg TID | 30 mg
+Contraindicated in sick sinus syndrome; titrate q2 weeks.
+Monitor heart rate < 55 bpm and K+ 3.5-5.0 mEq/L.
+== handwritten.png ==
+Pt: 68 yo, wt 72.5 kg
+Dose = 0.4 mg/kg q8h
+Hold if HR < 55
+Renal: CrCl 45.5 mL/min
