@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Citation } from "../citations.js";
 import { Actor, Timestamp } from "../common.js";
 import { ConceptId, PageId, QuestionId } from "../ids.js";
 import {
@@ -8,7 +9,6 @@ import {
   type EnvelopeLike,
   LIGHT_MARKDOWN_RULE,
 } from "./checks.js";
-import { SourceRef } from "./source-ref.js";
 import { CalcAnswer } from "./variants.js";
 
 /** The eight kinds of question. */
@@ -257,7 +257,7 @@ function buildShapes<const Id extends z.ZodRawShape>(itemId: Id) {
 /** Fields every question has, whoever writes it. */
 const sharedFields = {
   /** Where the question came from. Needs at least one, or generalKnowledge: true. */
-  sources: z.array(SourceRef).max(10, "at most 10 sources").default([]),
+  sources: z.array(Citation).max(10, "at most 10 sources").default([]),
   /** True only for a question that is not from her notes; it is labelled as such. */
   generalKnowledge: z.boolean().default(false),
   difficulty: QuestionDifficulty.default(2),

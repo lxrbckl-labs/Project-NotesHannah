@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { Citation } from "../src/citations.js";
 import { newId } from "../src/ids.js";
 import { Answer } from "../src/practice/answers.js";
 import {
@@ -12,7 +13,6 @@ import {
 import { grade } from "../src/practice/grading.js";
 import { exampleFor, QUESTION_REGISTRY } from "../src/practice/registry.js";
 import { Attempt, PracticeSession, SessionScope } from "../src/practice/session.js";
-import { SourceRef } from "../src/practice/source-ref.js";
 import { type Problem, toStoredQuestion, validateQuestionInput } from "../src/practice/validate.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: test inputs are edited loosely on purpose
@@ -133,7 +133,7 @@ describe("JSON Schema export", () => {
       PracticeSession,
       Question,
       QuestionPart,
-      SourceRef,
+      Citation,
     ]) {
       expect(() => z.toJSONSchema(schema, { io: "output" })).not.toThrow();
     }
@@ -667,7 +667,7 @@ describe("authoring mistakes: every problem has a path, a message and a valid ex
       name: "source with an empty quote",
       input: mutate("multiple_choice", (q) => (q.sources[0].quote = "")),
       path: "$.sources[0].quote",
-      message: /quote must not be empty/,
+      message: /Quote the passage/,
     },
     {
       name: "source with a quote that is too long",
