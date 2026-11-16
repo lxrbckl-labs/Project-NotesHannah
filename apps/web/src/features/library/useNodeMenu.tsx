@@ -1,10 +1,22 @@
 import type { NodeWithLinks } from "@notes/schema";
-import { isFixed } from "@notes/schema";
-import { Copy, FolderInput, Pencil, Plus, Star, StarOff, Trash2 } from "lucide-react";
+import { isFixed, lectureLabel } from "@notes/schema";
+import {
+  Copy,
+  FolderInput,
+  Pencil,
+  Plus,
+  SlidersHorizontal,
+  Star,
+  StarOff,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import type { MenuEntry } from "../../components/ui/menu";
 import { useToast } from "../../components/ui/toast";
+import { useUploadPicker } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
 import { useLibraryDialogs } from "./dialogs";
+import { canHoldFiles } from "./picker";
 import { creatableIn, isPending, KIND_NAME } from "./rules";
 
 /** The actions on one library item, as menu entries (the same list for "...", right-click and long-press). */
@@ -14,6 +26,7 @@ export function useNodeMenu(
 ) {
   const actions = useNodeActions();
   const dialogs = useLibraryDialogs();
+  const pickFiles = useUploadPicker();
   const toast = useToast();
 
   const fixed = isFixed(node.kind);
@@ -29,7 +42,14 @@ export function useNodeMenu(
     });
   }
 
-  const entries: MenuEntry[] = [];
+  const entries: MenuEntry[] = [
+    // The full name, for names the row had to cut short (and on touch, where there is no tooltip).
+    {
+      type: "label",
+      text: node.kind === "lecture" ? lectureLabel(node.name, node.lecture) : node.name,
+    },
+    { type: "separator" },
+  ];
   for (const kind of creatableIn(node.kind)) {
     entries.push({
       type: "item",
@@ -40,6 +60,15 @@ export function useNodeMenu(
     });
   }
   if (entries.length) entries.push({ type: "separator" });
+  if (canHoldFiles(node)) {
+    entries.push({
+      type: "item",
+      label: "Upload files here…",
+      icon: <Upload size={16} />,
+      disabled: pending,
+      onSelect: () => pickFiles({ nodeId: node.id, label: node.name }),
+    });
+  }
   entries.push({
     type: "item",
     label: node.favourite ? "Remove from favourites" : "Add to favourites",
@@ -57,6 +86,17 @@ export function useNodeMenu(
         disabled: pending || !options.onRename,
         onSelect: () => options.onRename?.(),
       },
+      ...(node.kind === "lecture" || node.kind === "course"
+        ? [
+            {
+              type: "item" as const,
+              label: "Edit details…",
+              icon: <SlidersHorizontal size={16} />,
+              disabled: pending,
+              onSelect: () => dialogs.openEdit(node),
+            },
+          ]
+        : []),
       {
         type: "item",
         label: "Duplicate",

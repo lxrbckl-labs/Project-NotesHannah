@@ -32,32 +32,63 @@ Served at `notes.hannahporras.app`, from a Docker container on the Mac mini behi
 
 Requires Node 25 and pnpm 10 (see `.nvmrc`).
 
-### Quick start, dev mode
+### Quick start: run everything locally
 
 ```sh
 pnpm install
+pnpm local          # prepares ./data/local, creates a first user, starts the converter, the server and the web app
+```
+
+One command, no mock. On the first run it:
+
+1. builds the shared schema and marks `data/local/storage` as the storage drive (`init-storage`);
+2. creates the user `hannah` if there is none and **prints the password once** (it is also kept in
+   `data/local/credentials.json`, which is git-ignored, so the seed script and tests can sign in);
+3. builds and starts the conversion worker with its lockdown flags
+   (`deploy/docker-compose.converter.yml`: no network, read-only root, non-root, dropped
+   capabilities) against the same data directory. If Docker is not running it says so and carries
+   on: uploads are stored and wait in "Converting" until you start Docker and run `pnpm local` again;
+4. starts the server on `:3000` and the web dev server on `:5173` (strict port), with `APP_ORIGIN`
+   and the Vite proxy agreeing, so sign-in works. Open <http://localhost:5173>.
+
+Ctrl-C stops the server, the web app and the converter container.
+
+```sh
+pnpm local:seed     # a small library (terms, courses, lectures) and the fixture files uploaded through the real API
+pnpm local:reset    # wipes ./data/local after you type "reset": database, uploads and users
+```
+
+`local:seed` needs `pnpm local` running (in another terminal); it does nothing if the library already
+has terms. Variables: `NOTES_LOCAL_DIR` (data directory), `NOTES_SERVER_PORT`, `NOTES_WEB_PORT`,
+`NOTES_CONVERTER=0` (skip the container), `NOTES_LOCAL_USER`, `NOTES_LOCAL_PASSWORD`. Two runs with
+different `NOTES_LOCAL_DIR` get their own converter container.
+
+The web app without a server, for UI work and the unit tests, is the mock: `VITE_MOCK_API=1 pnpm --filter
+@notes/web dev` (in-memory library, simulated uploads and conversion; sign in as `hannah` /
+`study-notes-2026`). A normal build refuses to include it.
+
+### Manual dev mode
+
+```sh
 cp .env.example .env     # defaults: server :3000, web :5173, APP_ORIGIN=http://localhost:5173
 pnpm --filter @notes/server admin init-storage --create-dir   # once: marks DATA_DIR as the storage drive
 pnpm --filter @notes/server admin create-user hannah --generate   # once: prints a password, once
 pnpm dev                 # server on :3000, web on :5173 (proxies /api and /mcp to the server)
 ```
 
-The web app has no sign-in screen yet; sign in over the API to check that it works:
-`curl -i -X POST localhost:3000/api/auth/login -H 'Origin: http://localhost:5173' -H
-'content-type: application/json' -d '{"username":"hannah","password":"<the printed one>"}'`.
-The server refuses to start without the
-storage marker (`init-storage`) and refuses state-changing browser requests whose `Origin` is not
-`APP_ORIGIN`, so keep `APP_ORIGIN` equal to the address in the browser's address bar. Relative
-paths in `.env` (`DATA_DIR`, `DB_PATH`) are relative to `apps/server`, where the commands run; the
-data lands in `apps/server/data/` (git-ignored). Uploaded files wait in `converting` until the
-converter worker is running; it is not part of this quick start.
+The server refuses to start without the storage marker (`init-storage`) and refuses
+state-changing browser requests whose `Origin` is not `APP_ORIGIN`, so keep `APP_ORIGIN` equal to
+the address in the browser's address bar. Relative paths in `.env` (`DATA_DIR`, `DB_PATH`) are
+relative to `apps/server`, where the commands run; the data lands in `apps/server/data/`
+(git-ignored). Uploaded files wait in `converting` until the converter worker is running.
 
 ```sh
 pnpm test               # unit tests in every package
 pnpm gate               # lint + typecheck + test + build: run before every commit
 pnpm format             # apply Biome formatting and safe fixes
 pnpm exec playwright install chromium   # once, for the end-to-end layout check
-pnpm e2e                # Playwright smoke spec at phone, tablet and computer sizes
+pnpm e2e                # Playwright: the mock suite, then the same journeys against the real server
+                        # (E2E_PORT / E2E_REAL_* variables: see apps/web/playwright.real.config.ts)
 ```
 
 Layout: `apps/web` (React, Vite, Tailwind 4), `apps/server` (Hono: API, MCP endpoint, static

@@ -641,6 +641,28 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     return view(needFile(auth.userId, id));
   }
 
+  /** Change the display name. The original is stored by hash, so nothing on disk changes. */
+  function rename(auth: AuthContext, id: string, name: string): SourceFile {
+    assertWrite(auth);
+    const file = needLive(auth.userId, id, "renamed");
+    const clean = sanitizeFileName(name);
+    if (clean !== file.original_name) {
+      db.transaction(() => {
+        db.prepare("UPDATE source_files SET original_name = ?, updated_at = ? WHERE id = ?").run(
+          clean,
+          now(),
+          file.id,
+        );
+        note(auth.actor, {
+          action: "file.renamed",
+          summary: `Renamed ${file.original_name} to ${clean}`,
+          file: needFile(auth.userId, id),
+        });
+      })();
+    }
+    return view(needFile(auth.userId, id));
+  }
+
   function retry(auth: AuthContext, id: string): SourceFile {
     assertWrite(auth);
     const file = needLive(auth.userId, id, "retried");
@@ -1258,6 +1280,7 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     getFile,
     fileUnder,
     retry,
+    rename,
     claim,
     release,
     trash,

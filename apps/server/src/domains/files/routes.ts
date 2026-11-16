@@ -51,6 +51,7 @@ const FileBody = z.object({ nodeId: NodeId.nullable() });
 const TranscriptBody = SaveTranscriptInput.omit({ pageId: true }).extend({
   pageId: SaveTranscriptInput.shape.pageId.optional(),
 });
+const RenameBody = z.object({ originalName: z.string().trim().min(1).max(255) });
 const ReviewBody = z.object({ reviewed: z.boolean().default(true) });
 
 const EXAMPLE_NODE = "nod_01HZX3K9Q2V7M4N8P6R5T0W1YB";
@@ -62,6 +63,7 @@ const EXAMPLES = {
     flags: [{ kind: "dose", quote: "50 mg" }],
   },
   review: { reviewed: true },
+  rename: { originalName: "Lecture 7 slides.pptx" },
   list: { status: "converted", inbox: "true", limit: 50 },
 };
 
@@ -278,6 +280,11 @@ export function filesRoutes(
   app.post("/api/files/:id/release", requireWrite, (c) =>
     c.json({ file: files.release(getAuth(c), c.req.param("id")) }),
   );
+
+  app.patch("/api/files/:id", requireWrite, async (c) => {
+    const body = parse(RenameBody, await readJson(c, EXAMPLES.rename), EXAMPLES.rename);
+    return c.json({ file: files.rename(getAuth(c), c.req.param("id"), body.originalName) });
+  });
 
   app.post("/api/files/:id/trash", requireWrite, (c) =>
     c.json({ file: files.trash(getAuth(c), c.req.param("id")) }),

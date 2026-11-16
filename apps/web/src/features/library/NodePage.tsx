@@ -1,18 +1,25 @@
 import type { NodeWithLinks } from "@notes/schema";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, FolderOpen, Hourglass, RotateCcw } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { Page } from "../../components/Page";
 import { Button } from "../../components/ui/button";
 import { EmptyState, ErrorState, LoadingList, Skeleton } from "../../components/ui/states";
-import { isApiError } from "../../lib/api";
+import { api, isApiError } from "../../lib/api";
+import { cn } from "../../lib/cn";
+import { IN_PROGRESS } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
+import { FileRow } from "../sources/FileRow";
+import { useFileDrop } from "../uploads/useFileDrop";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { useLibraryDialogs } from "./dialogs";
 import { NodeCard } from "./NodeCard";
 import { NodeHeader } from "./NodeHeader";
 import { NodeRow, nodeTitle } from "./NodeRow";
-import { useChildren, useNode } from "./queries";
+import { canHoldFiles } from "./picker";
+import { fileKeys, useChildren, useNode } from "./queries";
 import { creatableIn, KIND_NAME } from "./rules";
 
 export function NodePage() {
@@ -80,12 +87,55 @@ function NodeView({ node }: { node: NodeWithLinks }) {
   return (
     <Page>
       <NodeHeader node={node} />
-      {node.kind === "lecture" || node.kind === "document" ? (
-        <ContentPlaceholder node={node} />
-      ) : (
-        <Children node={node} />
-      )}
+      <DropArea node={node}>
+        {canHoldFiles(node) ? <NodeFiles node={node} /> : null}
+        {node.kind === "lecture" || node.kind === "document" ? (
+          <ContentPlaceholder node={node} />
+        ) : (
+          <Children node={node} />
+        )}
+      </DropArea>
     </Page>
+  );
+}
+
+/** Files dropped anywhere on a lecture, folder or Sources page are uploaded there (computer). */
+function DropArea({ node, children }: { node: NodeWithLinks; children: ReactNode }) {
+  const fine = useFinePointer();
+  const drop = useFileDrop({ nodeId: node.id, label: node.name }, fine && canHoldFiles(node));
+  return (
+    <div
+      {...drop.props}
+      data-drop={drop.over ? "into" : undefined}
+      className={cn("rounded-3xl", drop.over && "outline-2 outline-accent outline-offset-4")}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** The source files filed under a lecture, folder or Sources section. */
+function NodeFiles({ node }: { node: NodeWithLinks }) {
+  const files = useQuery({
+    queryKey: fileKeys.of(node.id),
+    queryFn: () => api.filesOf(node.id),
+    refetchInterval: (query) =>
+      query.state.data?.some((f) => IN_PROGRESS.has(f.status)) ? 2500 : false,
+  });
+  if (files.isPending) return <LoadingList rows={1} label="Loading files" />;
+  if (files.isError) return <ErrorState error={files.error} onRetry={() => files.refetch()} />;
+  if (files.data.length === 0) return null;
+  return (
+    <section aria-labelledby="node-files-title" className="mb-6">
+      <h2 id="node-files-title" className="mb-3 text-base font-semibold">
+        Source files
+      </h2>
+      <ul className="grid gap-2.5" aria-label="Source files">
+        {files.data.map((f) => (
+          <FileRow key={f.id} file={f} />
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -109,11 +159,17 @@ function Children({ node }: { node: NodeWithLinks }) {
   const dialogs = useLibraryDialogs();
   const fine = useFinePointer();
 
+  const files = useQuery({
+    queryKey: fileKeys.of(node.id),
+    queryFn: () => api.filesOf(node.id),
+    enabled: canHoldFiles(node),
+  });
   if (query.isPending) return <LoadingList label="Loading contents" />;
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
   const items = query.data;
   const creatable = creatableIn(node.kind);
 
+  if (items.length === 0 && (files.data?.length ?? 0) > 0) return null;
   if (items.length === 0) {
     const kind = creatable[0];
     return (

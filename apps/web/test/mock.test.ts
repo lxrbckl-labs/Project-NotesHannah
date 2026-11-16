@@ -254,12 +254,18 @@ describe("library rules", () => {
 
   it("searches node names, never the trash", async () => {
     const hits = await api.search("beta");
-    expect(hits.map((h) => h.node.name)).toContain("Beta blockers");
+    expect(hits.flatMap((h) => (h.kind === "node" ? [h.node.name] : []))).toContain(
+      "Beta blockers",
+    );
     expect(hits[0]?.snippet).toContain("Fall 2026");
     const { lectures } = await pharm2();
     const lecture = (await api.children(lectures.id))[6];
     await api.trashNode(lecture?.id ?? "");
-    expect((await api.search("beta blockers")).some((h) => h.node.id === lecture?.id)).toBe(false);
+    expect(
+      (await api.search("beta blockers")).some(
+        (h) => h.kind === "node" && h.node.id === lecture?.id,
+      ),
+    ).toBe(false);
     expect((await fails(api.search("  "))).code).toBe("invalid_input");
   });
 });

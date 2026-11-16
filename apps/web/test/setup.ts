@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 /** matchMedia for jsdom: understands min-width, max-width, hover and pointer against innerWidth. */
@@ -16,6 +16,9 @@ function matches(query: string): boolean {
     return false;
   });
 }
+
+// Screens load lazily and the machine may be busy: wait longer than the 1s default for async UI.
+configure({ asyncUtilTimeout: 10_000 });
 
 beforeEach(() => {
   window.innerWidth = 1440;

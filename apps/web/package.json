@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --testTimeout=60000 --hookTimeout=60000",
-    "e2e": "pnpm --filter @notes/schema build && playwright test"
+    "e2e": "pnpm --filter @notes/schema build && playwright test && playwright test -c playwright.real.config.ts",
+    "e2e:mock": "pnpm --filter @notes/schema build && playwright test",
+    "e2e:real": "pnpm --filter @notes/schema build && playwright test -c playwright.real.config.ts"
   },
   "dependencies": {
     "@notes/schema": "workspace:*",

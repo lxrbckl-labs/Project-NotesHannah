@@ -248,7 +248,7 @@ test.describe("library", () => {
     else if (layout === "tablet") await page.getByRole("button", { name: /Quick find/ }).click();
     else await page.getByTestId("tab-bar").getByRole("link", { name: "Search" }).click();
     await page.getByRole("searchbox", { name: "Search your library" }).fill("adrenergic");
-    await expect(page.getByRole("list", { name: "Results" }).getByRole("link")).toHaveCount(2);
+    await expect(page.getByTestId("results-node").getByRole("link")).toHaveCount(2);
     await page.getByRole("link", { name: /Adrenergic antagonists/ }).click();
     await expect(
       page.getByRole("heading", { level: 1, name: "04 · Adrenergic antagonists · Sep 16" }),
@@ -266,7 +266,7 @@ test.describe("the whole library as one tree", () => {
     await expect(
       tree.getByRole("treeitem", { name: "Pharmacology II", exact: true }),
     ).toBeVisible();
-    await expect(tree.getByTestId("tree-inbox")).toContainText("2");
+    await expect(tree.getByTestId("tree-inbox")).toContainText("3");
     await expect(tree.getByRole("treeitem", { name: "Lectures", exact: true })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Expand all" }).click();
@@ -274,7 +274,7 @@ test.describe("the whole library as one tree", () => {
     await expect(tree.getByRole("treeitem", { name: "Slide transcript" })).toBeVisible();
     const deck = tree.getByTestId("tree-file").filter({ hasText: "Lecture 07 slides.pptx" });
     await expect(deck).toContainText("34 pages");
-    await expect(deck).toContainText("Transcribed");
+    await expect(deck).toContainText("Filed");
     await expect(
       tree.getByTestId("tree-file").filter({ hasText: "handwritten notes.pdf" }).first(),
     ).toBeVisible();
@@ -316,7 +316,7 @@ test.describe("the whole library as one tree", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Lecture 07 slides.pptx" }),
     ).toBeVisible();
-    await expect(page.getByText("source viewer arrives in a later stage")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Pages" })).toBeVisible();
     await page.getByRole("button", { name: "Back" }).click();
     await expect(tree.getByRole("treeitem", { name: "Slide transcript" })).toBeVisible();
     await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeGreaterThan(before - 8);
@@ -331,7 +331,7 @@ test.describe("the whole library as one tree", () => {
     await allFiles(page).getByTestId("tree-inbox").click();
     await expect(page.getByRole("heading", { level: 1, name: "Inbox" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Unfiled files" }).getByRole("link")).toHaveCount(
-      2,
+      3,
     );
   });
 

@@ -52,5 +52,6 @@ export function folderDepthOf(client: QueryClient, node: NodeWithLinks): number 
 export const fileKeys = {
   of: (nodeId: string) => ["files", "of", nodeId] as const,
   inbox: ["files", "inbox"] as const,
+  trashed: ["files", "trashed"] as const,
   one: (id: string) => ["files", "one", id] as const,
 };

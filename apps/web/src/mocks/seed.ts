@@ -5,8 +5,10 @@ import {
   type LibraryNode,
   type NodeKind,
   newId,
+  type Page,
   type SectionKind,
   type SourceFile,
+  type Transcript,
 } from "@notes/schema";
 
 export const MOCK_USERNAME = "hannah";
@@ -14,10 +16,54 @@ export const MOCK_PASSWORD = "study-notes-2026";
 
 const SEEDED_AT = "2026-08-20T14:00:00.000Z";
 
+export interface SeedBlock {
+  documentId: string;
+  nodeId: string;
+  documentTitle: string;
+  blockId: string;
+  text: string;
+}
+
+export interface SeedActivity {
+  id: number;
+  at: string;
+  keyId: string;
+  keyLabel: string | null;
+  action: string;
+  summary: string;
+  links: Array<{ type: string; id: string; nodeId?: string; documentId?: string; label?: string }>;
+}
+
+/** Pages for a converted file: slides and PDF pages carry native text, photos do not. */
+export function makePages(file: SourceFile): Page[] {
+  const count = file.pageCount ?? 0;
+  return Array.from({ length: count }, (_, i) => ({
+    id: newId("page"),
+    fileId: file.id,
+    index: i + 1,
+    width: 1280,
+    height: file.type === "pptx" ? 720 : 1650,
+    hasTextLayer:
+      file.type === "pptx" || (file.type === "pdf" && !file.originalName.includes("handwritten")),
+    nativeText:
+      file.type === "pptx" || file.type === "pdf"
+        ? file.originalName.includes("handwritten")
+          ? null
+          : `Slide ${i + 1}. Beta blockers reduce heart rate. Metoprolol 50 mg PO BID.`
+        : null,
+    speakerNotes: file.type === "pptx" && i === 0 ? "Remind them: start low and go slow." : null,
+    transcriptId: null,
+  }));
+}
+
 export interface SeedResult {
   userId: string;
   nodes: LibraryNode[];
   files: SourceFile[];
+  pages: Page[];
+  transcripts: Transcript[];
+  blocks: SeedBlock[];
+  activity: SeedActivity[];
   /** Most recently opened first. */
   recents: string[];
 }
@@ -42,7 +88,7 @@ export function seedLibrary(userId: string): SeedResult {
       sha256: Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
         b.toString(16).padStart(2, "0"),
       ).join(""),
-      bytes: pageCount * 180_000,
+      bytes: Math.max(1, pageCount) * 180_000,
       type,
       status,
       errorCode: null,
@@ -122,7 +168,7 @@ export function seedLibrary(userId: string): SeedResult {
   const betaBlockers = created[6] as LibraryNode;
   created.forEach((l, i) => {
     const n = String(i + 1).padStart(2, "0");
-    file(l.id, `Lecture ${n} slides.pptx`, "pptx", 28 + i, "transcribed");
+    file(l.id, `Lecture ${n} slides.pptx`, "pptx", 28 + i, "filed");
     file(
       l.id,
       `Lecture ${n} handwritten notes.pdf`,
@@ -143,7 +189,7 @@ export function seedLibrary(userId: string): SeedResult {
 
   const therapy = course(fall.id, "Pharmacotherapy I", "PHAR 7310");
   const t1 = lecture(therapy.sections.lectures.id, 1, "Hypertension guidelines", "2026-08-27");
-  file(t1.id, "Lecture 01 slides.pptx", "pptx", 34, "transcribed");
+  file(t1.id, "Lecture 01 slides.pptx", "pptx", 34, "filed");
   file(t1.id, "Lecture 01 handwritten notes.pdf", "pdf", 5, "converted");
   lecture(therapy.sections.lectures.id, 2, "Heart failure", "2026-09-03");
   lecture(therapy.sections.lectures.id, 3, "Dyslipidemia", "2026-09-10");
@@ -157,8 +203,102 @@ export function seedLibrary(userId: string): SeedResult {
   for (const favourite of [pharm2.course, betaBlockers]) favourite.favourite = true;
 
   const recents = [betaBlockers.id, t1.id, cardio.id, pharm2.course.id];
-  file(null, "Whiteboard photo.jpeg", "jpeg", 1, "uploaded");
+  file(null, "Whiteboard photo.jpeg", "jpeg", 1, "converted");
   file(null, "Lecture 10 slides.pptx", "pptx", 31, "converting");
+  const locked = file(null, "Locked notes.pdf", "pdf", 0, "failed");
+  locked.pageCount = null;
+  locked.errorCode = "encrypted_file";
+  locked.errorMessage = "This PDF is password protected.";
 
-  return { userId, nodes, files, recents };
+  // Pages for every file that has been converted; transcripts for the finished ones.
+  const pages: Page[] = [];
+  const transcripts: Transcript[] = [];
+  const author = { type: "agent" as const, keyId: newId("apiKey"), label: "Claude Code" };
+  for (const f of files) {
+    if (f.status === "uploaded" || f.status === "converting" || f.status === "failed") continue;
+    const made = makePages(f);
+    pages.push(...made);
+    if (f.status !== "transcribed" && f.status !== "filed") continue;
+    for (const p of made) {
+      const base = `Slide ${p.index}\nBeta blockers reduce heart rate and blood pressure.\nMetoprolol 50 mg PO BID, titrate to effect.`;
+      const flagged = [
+        { kind: "dose" as const, quote: "50 mg", note: "Check the dose against the slide." },
+        { kind: "drug_name" as const, quote: "Metoprolol" },
+      ];
+      if (p.index === 1) {
+        const first: Transcript = {
+          id: newId("transcript"),
+          pageId: p.id,
+          text: base.replace("50 mg", "5O mg"),
+          flags: [{ kind: "uncertain" as const, quote: "5O mg" }],
+          author,
+          reviewStatus: "unverified",
+          reviewedAt: null,
+          revision: 1,
+          createdAt: "2026-11-10T10:00:00.000Z",
+        };
+        transcripts.push(first);
+      }
+      const current: Transcript = {
+        id: newId("transcript"),
+        pageId: p.id,
+        text: base,
+        flags: flagged,
+        author,
+        reviewStatus: p.index === 2 ? "reviewed" : "unverified",
+        reviewedAt: p.index === 2 ? "2026-11-12T09:00:00.000Z" : null,
+        revision: p.index === 1 ? 2 : 1,
+        createdAt: "2026-11-11T10:00:00.000Z",
+      };
+      transcripts.push(current);
+      p.transcriptId = current.id;
+    }
+  }
+
+  const slides7 = files.find((f) => f.originalName === "Lecture 07 slides.pptx");
+  const doc = nodes.find((n) => n.name === "Beta blocker cheat sheet");
+  const blocks: SeedBlock[] = doc
+    ? [
+        {
+          documentId: newId("document"),
+          nodeId: doc.id,
+          documentTitle: doc.name,
+          blockId: newId("block"),
+          text: "Beta blockers end in -olol. Metoprolol is beta-1 selective.",
+        },
+      ]
+    : [];
+  const activity: SeedActivity[] = [
+    {
+      id: 3,
+      at: "2026-11-14T21:05:00.000Z",
+      keyId: "key_seed",
+      keyLabel: "Claude Code",
+      action: "file.filed",
+      summary: `Filed Lecture 07 slides.pptx under lecture 07 · Beta blockers`,
+      links: [
+        { type: "node", id: betaBlockers.id, nodeId: betaBlockers.id, label: "Beta blockers" },
+      ],
+    },
+    {
+      id: 2,
+      at: "2026-11-14T20:40:00.000Z",
+      keyId: "key_seed",
+      keyLabel: "Claude Code",
+      action: "transcript.saved",
+      summary: "Transcribed page 2 of Lecture 07 slides.pptx",
+      links: slides7 ? [{ type: "file", id: slides7.id, label: slides7.originalName }] : [],
+    },
+    {
+      id: 1,
+      at: "2026-11-13T18:00:00.000Z",
+      keyId: "key_seed",
+      keyLabel: "Claude Code",
+      action: "library.created",
+      summary: "Created lecture 08 · ACE inhibitors and ARBs",
+      links: [{ type: "node", id: created[7]?.id ?? betaBlockers.id, nodeId: created[7]?.id }],
+    },
+  ];
+
+  return { userId, nodes, files, pages, transcripts, blocks, activity, recents };
 }

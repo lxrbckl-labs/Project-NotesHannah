@@ -18,7 +18,7 @@ describe("library home as a full tree", () => {
     expect(await tree().findByRole("treeitem", { name: "Pharmacology II" })).toBeInTheDocument();
     const inbox = tree().getByTestId("tree-inbox");
     expect(inbox).toHaveTextContent("Inbox");
-    expect(inbox).toHaveTextContent("2");
+    expect(inbox).toHaveTextContent("3");
     // courses are listed, their sections are not until a course is opened
     expect(tree().queryByRole("treeitem", { name: "Lectures" })).toBeNull();
   });
@@ -39,7 +39,7 @@ describe("library home as a full tree", () => {
     const decks = await tree().findAllByTestId("tree-file");
     const deck = decks.find((d) => d.textContent?.includes("Lecture 07 slides.pptx"));
     expect(deck).toHaveTextContent("34 pages");
-    expect(deck).toHaveTextContent("Transcribed");
+    expect(deck).toHaveTextContent("Filed");
     expect(deck?.dataset.type).toBe("pptx");
     const notes = decks.find((d) => d.textContent?.includes("Lecture 09 handwritten notes.pdf"));
     expect(notes).toHaveTextContent("Converted");
@@ -91,7 +91,7 @@ describe("library home as a full tree", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: /Lecture 01 slides\.pptx/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/source viewer arrives in a later stage/i)).toBeInTheDocument();
+    expect(await screen.findByRole("navigation", { name: "Pages" })).toBeInTheDocument();
     expect(router.state.location.pathname).toMatch(/^\/files\/fil_/);
 
     await router.navigate(-1);
@@ -106,6 +106,6 @@ describe("library home as a full tree", () => {
     expect(fall).toBeDefined();
     const inbox = await api.inboxFiles();
     expect(inbox.every((f) => f.nodeId === null)).toBe(true);
-    expect(inbox.map((f) => f.status).sort()).toEqual(["converting", "uploaded"]);
+    expect(inbox.map((f) => f.status).sort()).toEqual(["converted", "converted", "failed"]);
   });
 });
