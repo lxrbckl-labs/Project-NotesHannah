@@ -103,7 +103,7 @@ export function NodeCard({
     </Card>
   );
   const body =
-    node.kind === "section" && hue ? (
+    node.kind === "section" && hue && typeof IntersectionObserver !== "undefined" ? (
       <Suspense fallback={plain}>
         <SpotlightCard
           data-testid="node-card"

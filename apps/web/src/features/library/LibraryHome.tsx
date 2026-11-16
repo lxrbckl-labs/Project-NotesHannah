@@ -163,7 +163,12 @@ export function LibraryHome() {
         {fine ? (
           <div aria-hidden className="pointer-events-none absolute inset-0">
             <Suspense fallback={null}>
-              <DotGrid className="size-full" mouseInteraction={false} clickShock={false} />
+              <DotGrid
+                className="size-full"
+                opacity={0.45}
+                mouseInteraction={false}
+                clickShock={false}
+              />
             </Suspense>
           </div>
         ) : null}
@@ -186,18 +191,18 @@ export function LibraryHome() {
             <div className="flex flex-wrap items-center justify-end gap-1.5">
               <Button onClick={expandAll} disabled={busy} aria-label="Expand all">
                 <ChevronsUpDown size={16} aria-hidden />
-                <span className="hidden sm:inline">Expand all</span>
+                <span className="hidden lg:inline">Expand all</span>
               </Button>
               <Button onClick={() => tree.collapseAll()} aria-label="Collapse all">
                 <ChevronsDownUp size={16} aria-hidden />
-                <span className="hidden sm:inline">Collapse all</span>
+                <span className="hidden lg:inline">Collapse all</span>
               </Button>
               <UploadButton nodeId={null} target="the inbox" variant="secondary">
-                <span className="hidden sm:inline">Upload</span>
+                <span className="hidden lg:inline">Upload</span>
               </UploadButton>
               <Button onClick={() => dialogs.openCreate(null, "term")} aria-label="New term">
                 <Plus size={16} aria-hidden />
-                <span className="hidden sm:inline">New term</span>
+                <span className="hidden lg:inline">New term</span>
               </Button>
             </div>
           }

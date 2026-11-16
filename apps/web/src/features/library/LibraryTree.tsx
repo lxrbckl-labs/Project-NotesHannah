@@ -136,7 +136,7 @@ export function LibraryTree({
         role="tree"
         aria-label={label}
         className={cn(
-          "grid gap-px [--indent:12px] md:[--indent:16px]",
+          "grid grid-cols-[minmax(0,1fr)] gap-px [--indent:12px] md:[--indent:16px]",
           variant === "sidebar" ? "px-2" : "gap-0.5",
         )}
       >
@@ -665,7 +665,7 @@ function TreeItem({
           role="group"
           data-hue={hue ?? undefined}
           style={{ ["--guide" as string]: `calc(var(--indent) * ${depth} + 22px)` }}
-          className="relative grid gap-px before:pointer-events-none before:absolute before:inset-y-1 before:left-(--guide) before:w-px before:bg-tone-border before:opacity-60 xl:before:left-[calc(var(--guide)-6px)]"
+          className="relative grid grid-cols-[minmax(0,1fr)] gap-px before:pointer-events-none before:absolute before:inset-y-1 before:left-(--guide) before:w-px before:bg-tone-border before:opacity-60 xl:before:left-[calc(var(--guide)-6px)]"
         >
           <TreeBranch parent={node} depth={depth + 1} hue={hue} />
         </ul>

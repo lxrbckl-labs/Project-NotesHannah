@@ -377,10 +377,10 @@ test.describe("settings", () => {
     await openSettings(page);
     const html = page.locator("html");
     const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    await page.getByRole("button", { name: "Light", exact: true }).click();
+    await page.getByRole("radio", { name: "Light", exact: true }).click();
     await expect(html).toHaveAttribute("data-theme", "light");
     const light = await background();
-    await page.getByRole("button", { name: "Dark", exact: true }).click();
+    await page.getByRole("radio", { name: "Dark", exact: true }).click();
     await expect(html).toHaveAttribute("data-theme", "dark");
     expect(await background()).not.toBe(light);
     await page.reload();
