@@ -584,45 +584,50 @@ export function resolveLayout(input: LayoutInput, options: ResolveOptions): Layo
   };
   place(null);
 
-  // Top-level groups that collide are pushed down, pinned groups never move.
+  // Top-level groups that collide are pushed down; groups holding pinned cards
+  // never move. Then a safety net: no unpinned card may overlap another card.
+  // A card pushed by the safety net can grow its frame, so repeat until calm.
   const top = itemsOf(null);
-  const placed: Rect[] = [];
-  const movable: Item[] = [];
-  for (const item of top) hasPinned(item) ? placed.push(rectOf(item)) : movable.push(item);
-  movable.sort(
-    (a, b) => rectOf(a).y - rectOf(b).y || rectOf(a).x - rectOf(b).x || (a.id < b.id ? -1 : 1),
-  );
-  for (const item of movable) {
-    pushDown(item, placed, rectOf, translate, LAYOUT_SPACING.group);
-    placed.push(rectOf(item));
-  }
-
-  // Safety net: no unpinned card may overlap another card.
-  const order = input.cards
-    .filter((c) => !c.pinned)
-    .map((c) => c.id)
-    .sort((a, b) => {
-      const ra = cardRect.get(a) as Rect;
-      const rb = cardRect.get(b) as Rect;
-      return ra.y - rb.y || ra.x - rb.x || (a < b ? -1 : 1);
-    });
-  const settled: Rect[] = input.cards
-    .filter((c) => c.pinned)
-    .map((c) => cardRect.get(c.id) as Rect);
-  let moved = false;
-  for (const id of order) {
-    const before = cardRect.get(id) as Rect;
-    pushDown({ kind: "card", id }, settled, rectOf, translate, 8);
-    const after = cardRect.get(id) as Rect;
-    if (after.y !== before.y) moved = true;
-    settled.push(after);
-  }
-  if (moved) {
+  const resizeAll = () => {
     const resize = (frame: string) => {
       for (const f of childFrames.get(frame) ?? []) resize(f);
       sizeFrame(frame);
     };
     for (const f of childFrames.get(null) ?? []) resize(f);
+  };
+  for (let round = 0; round < 6; round++) {
+    const placed: Rect[] = [];
+    const movable: Item[] = [];
+    for (const item of top) hasPinned(item) ? placed.push(rectOf(item)) : movable.push(item);
+    movable.sort(
+      (a, b) => rectOf(a).y - rectOf(b).y || rectOf(a).x - rectOf(b).x || (a.id < b.id ? -1 : 1),
+    );
+    for (const item of movable) {
+      pushDown(item, placed, rectOf, translate, LAYOUT_SPACING.group);
+      placed.push(rectOf(item));
+    }
+
+    const order = input.cards
+      .filter((c) => !c.pinned)
+      .map((c) => c.id)
+      .sort((a, b) => {
+        const ra = cardRect.get(a) as Rect;
+        const rb = cardRect.get(b) as Rect;
+        return ra.y - rb.y || ra.x - rb.x || (a < b ? -1 : 1);
+      });
+    const settled: Rect[] = input.cards
+      .filter((c) => c.pinned)
+      .map((c) => cardRect.get(c.id) as Rect);
+    let moved = false;
+    for (const id of order) {
+      const before = cardRect.get(id) as Rect;
+      pushDown({ kind: "card", id }, settled, rectOf, translate, 8);
+      const after = cardRect.get(id) as Rect;
+      if (after.y !== before.y) moved = true;
+      settled.push(after);
+    }
+    if (!moved) break;
+    resizeAll();
   }
 
   const cards: Record<string, Rect> = {};

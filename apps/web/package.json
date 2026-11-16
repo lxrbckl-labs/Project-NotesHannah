@@ -12,6 +12,10 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@notes/schema": "workspace:*",
+    "@xyflow/react": "12.12.1",
+    "elkjs": "0.12.1",
+    "radix-ui": "1.8.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

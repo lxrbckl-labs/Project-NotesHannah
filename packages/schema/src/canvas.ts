@@ -1002,7 +1002,7 @@ function renumberFrames(canvas: Canvas): void {
 }
 
 function cloneCanvas(canvas: Canvas): Canvas {
-  return structuredClone(canvas);
+  return JSON.parse(JSON.stringify(canvas)) as Canvas;
 }
 
 function finish(
