@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const localDir = resolve(process.env.NOTES_LOCAL_DIR ?? join(root, "data", "local"));
-export const serverPort = Number(process.env.NOTES_SERVER_PORT ?? 3000);
-export const webPort = Number(process.env.NOTES_WEB_PORT ?? 5173);
+export const serverPort = Number(process.env.NOTES_SERVER_PORT ?? 3210);
+export const webPort = Number(process.env.NOTES_WEB_PORT ?? 5273);
 export const appOrigin = `http://localhost:${webPort}`;
 export const serverUrl = `http://localhost:${serverPort}`;
 export const storageDir = join(localDir, "storage");

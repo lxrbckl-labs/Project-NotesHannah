@@ -48,8 +48,8 @@ One command, no mock. On the first run it:
    (`deploy/docker-compose.converter.yml`: no network, read-only root, non-root, dropped
    capabilities) against the same data directory. If Docker is not running it says so and carries
    on: uploads are stored and wait in "Converting" until you start Docker and run `pnpm local` again;
-4. starts the server on `:3000` and the web dev server on `:5173` (strict port), with `APP_ORIGIN`
-   and the Vite proxy agreeing, so sign-in works. Open <http://localhost:5173>.
+4. starts the server on `:3210` and the web dev server on `:5273` (strict port; chosen so they do not collide with other dev servers on 3000 and 5173), with `APP_ORIGIN`
+   and the Vite proxy agreeing, so sign-in works. Open <http://localhost:5273>.
 
 Ctrl-C stops the server, the web app and the converter container.
 
