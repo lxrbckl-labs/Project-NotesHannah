@@ -85,9 +85,7 @@ function ReferenceHit({
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{hit.title}</span>
-        <span className="block truncate text-ui text-text-muted">
-          {hit.kind === "question" ? practice.blanksAsGaps(hit.snippet) : hit.snippet}
-        </span>
+        <span className="block truncate text-ui text-text-muted">{hit.snippet}</span>
       </span>
     </ExternalLink>
   );
