@@ -201,8 +201,10 @@ write_status() { # name json
 set_var() {
   local file="$1" key="$2" value="$3"
   if grep -q "^$key=" "$file"; then
-    sed -e "s|^$key=.*|$key=$value|" "$file" >"$file.new" && mv "$file.new" "$file"
+    # The file holds secrets: write the replacement private from the start, since mv would carry a looser mode over.
+    (umask 077 && sed -e "s|^$key=.*|$key=$value|" "$file" >"$file.new") && mv "$file.new" "$file"
   else
     printf '%s=%s\n' "$key" "$value" >>"$file"
   fi
+  chmod 600 "$file"
 }

@@ -1,12 +1,13 @@
 # Status
 
-As of 2026-11-16, after the design pass. Feature IDs refer to [features.md](features.md).
+As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
 ## Where it stands
 
 The app is built and runs locally end to end on the real server with the real file
-converter (`pnpm local`, then <http://localhost:5273>). It has **not** been deployed to
-the mini, has **not** been used on a real iPad or phone, and has **not** seen any of
+converter (`pnpm local`, then <http://localhost:5273>). It is **deployed on the mini** at
+<https://notes.hannahporras.app> since 2026-11-16 (commit `6cdd4fe`, port 8060, one account: `alex`; details in
+[mini-handoff.md](mini-handoff.md)). **Its scheduled backups do not work yet** (see Known gaps). It has **not** been used on a real iPad or phone, and has **not** seen any of
 her real lecture material. Nothing has been through a pull request; work was merged
 locally and pushed to `main` at checkpoints.
 
@@ -31,7 +32,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 | Exam planner | M1 to M4 | |
 | Agent layer (MCP) | H1 to H11 | 17 tools, API-key login, tested with live Claude Code and Codex sessions. |
 | Appearance | I1, I2, I4 | Light and dark; phone, tablet and computer layouts. One design system ([design.md](design.md)): ten named colours, roles, scales and shared components; reference page at `/design`. Each course has its own colour. React Bits ([react-bits.md](react-bits.md)): ten components, gallery at `/design/bits`, four placed in the app. |
-| Operations | J1 to J6 scripts | Compose stack, backups, restore drill, admin commands. Not yet run on the mini. |
+| Operations | J1 to J6 scripts | Compose stack, backups, restore drill, admin commands. Running on the mini; restore test passed there in 110 s. |
 
 ## Not built, or built differently
 
@@ -44,6 +45,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 
 ## Known gaps and rough edges
 
+- **Scheduled backups on the mini fail**: the 5-minute snapshot and the nightly backup cannot read the external drives until Alex grants `/bin/bash` access to removable volumes at the mini's keyboard. A manual `scripts/backup.sh` works. Failed runs leave unverified snapshot files behind.
 - Concepts cannot be filtered by course (the server does not record a concept's course).
 - The "to review" count in the navigation covers unverified concepts only, not unverified blocks in documents (the server has no listing for those).
 - **Dragging a card into a frame fails in the browser test at tablet and computer sizes** (it passes at phone size). Not yet investigated: it may be the gesture or the test.
@@ -61,14 +63,15 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 - **The React Bits animations playing.** They were checked only in a browser pane that draws no animation frames; the greeting and stat numbers fall back to plain text there. Not seen in a normal window.
 - **Every screen at every size in both themes by eye.** A sample was looked at on the real server; the rest rests on the browser tests.
 - **Handwriting transcription accuracy** on real notes. One stand-in page showed a small model misreading `q8h` as `qsh`.
-- **The mini:** scheduled backup jobs, Docker starting after a power loss, the Caddy route, live canvas updates through the proxy.
+- **The mini:** scheduled backup jobs (failing, see Known gaps), Docker starting after a power loss (reboot test not run), live canvas updates through the proxy, signing in and uploading on the live site.
 - **Remote backups:** only a local backup repository was tested.
 - **A pinned-card refusal in a live agent run** (covered by tests only).
 
 ## Waiting on Alex
 
-- The Caddy route on the mini (task 1 in [mini-handoff.md](mini-handoff.md)); deployment (task 2) waits on his go.
-- Drive paths for data and backups; a remote backup location; where the backup password is kept.
+- At the mini's keyboard: the removable-volumes grant for `/bin/bash`, then the reboot test.
+- A remote backup location; where the backup password is kept. (Drive paths are set: data on NVME1, backup copies on NVME2.)
+- Changing the `alex` password, which was relayed through chat.
 - Automatic login on the mini, so the app returns unattended after a power cut.
 - Whether to turn on the RxNorm drug-name check.
 - Whether macro-enabled decks (`.pptm`) should be accepted (they are, with a warning).

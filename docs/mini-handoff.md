@@ -5,7 +5,9 @@ status; update it here when done.
 
 ## Task 1: add `notes.hannahporras.app` to Caddy
 
-**Status:** open (requested by Alex 2026-11-15).
+**Status:** done 2026-11-16. Port **8060** (`127.0.0.1:8060` to the app's 3000). Caddy runs as the container `caddy`,
+so the block proxies to `host.docker.internal:8060`, not `127.0.0.1`. The 210MiB body limit went in with the block.
+Backup of the old file: `~/caddyfile.bak-notes-2026-11-16`. Certificate obtained; checked from outside the mini.
 
 **Context.** `notes.hannahporras.app` will serve the Project-NotesHannah web app from a
 Docker container on the mini. The app does not exist yet; this task only prepares the
@@ -41,7 +43,26 @@ of the checks. Then record the port in this file under Task 1 and set the status
 
 ## Task 2: deploy the stack
 
-**Status:** go given by Alex on 2026-11-16 08:01 CST, from his phone, away from home: "Can you deploy this to the
+**Status:** done through step 9 on 2026-11-16; live at <https://notes.hannahporras.app>. Open items below.
+
+**Result.** Checkout on the mini: `~/lxrbckl-dev/Project-NotesHannah`. App and converter healthy. First backup, second
+copy and `restic-check` passed. Five `app.notes` jobs loaded. `restore-test.sh` passed in 110 s. First account: `alex`.
+
+**Open items.**
+
+- **Scheduled backups fail.** The `app.notes.snapshot` job (every 5 minutes) and the nightly backup cannot read the
+  external drives: macOS has not granted `/bin/bash` access to removable volumes. Alex, at the mini's keyboard: grant
+  `/bin/bash` Full Disk Access (or Files and Folders, Removable Volumes), then
+  `launchctl kickstart gui/501/app.notes.snapshot` and read `~/Library/Logs/notes/snapshot.log`. Until then
+  `scripts/backup.sh` from a terminal is the backup, and each failed run leaves an unverified `.db` and `.json` pair in
+  `/Volumes/NVME1/notes/backups/db`.
+- **Step 10 (reboot test)** not run.
+- **No remote backup repository** is configured.
+- `setup.sh` left `deploy/.env` at mode 644; set to 600 by hand on the mini. Fixed in the script afterwards (`set_var` keeps the file at 600); the mini's checkout does not have that fix until its next pull.
+- `X-Robots-Tag` is sent twice (app and Caddy). Harmless.
+- From the mini itself the public name is unreliable (no hairpin); check the site from another machine.
+
+**The go:** given by Alex on 2026-11-16 08:01 CST, from his phone, away from home: "Can you deploy this to the
 domain on the Mac mini so I can access it away?" Task 1 is still open, so do it first.
 
 **For this run (Alex is away from the keyboard):**
