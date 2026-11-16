@@ -8,4 +8,6 @@ export * from "./common.js";
 export * from "./documents.js";
 export * from "./ids.js";
 export * from "./library.js";
+/** Practice questions, grading, sessions and scheduling. Namespaced: its names are generic. */
+export * as practice from "./practice/index.js";
 export * from "./sources.js";
