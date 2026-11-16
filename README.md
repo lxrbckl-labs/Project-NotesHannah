@@ -92,6 +92,11 @@ An account seeded before her own notes existed gets them with `pnpm local:seed:p
 variables). It finds the lectures, folders, files and questions by name, skips what is already there (safe
 to run twice), and changes nothing if the account does not look like the pharmacy set.
 
+`pnpm local:seed:pharm:sidenotes` (same variables) adds eleven of her side notes to the Beta blockers and
+Hypertension guides of a seeded account, through her session: questions for office hours, quiz reminders, a
+dose reminder, one long note, two resolved, some coloured. Each is anchored to the block that holds a short
+phrase; a note already there is skipped, and nothing changes if a guide or an anchor is missing.
+
 `NOTES_SEED_WAIT` (seconds, default 300) is how long it waits for the converter. The content is original
 sample material written for this app (no textbook, guideline or slide text is copied); every file says
 "Sample study material. Not for clinical use."

@@ -326,7 +326,15 @@ export const editLibrary = defineTool({
 // search_notes
 // ---------------------------------------------------------------------------
 
-const SEARCH_KIND_OPTIONS = ["node", "page", "block", "question", "concept", "reference"] as const;
+const SEARCH_KIND_OPTIONS = [
+  "node",
+  "page",
+  "block",
+  "question",
+  "concept",
+  "reference",
+  "margin_note",
+] as const;
 
 function hitLine(hit: SearchHit): string {
   switch (hit.kind) {
@@ -342,6 +350,8 @@ function hitLine(hit: SearchHit): string {
       return `- concept ${hit.conceptId} (${hit.conceptType}) "${hit.name}"${hit.genericName ? `, generic ${hit.genericName}` : ""}: ${hit.snippet}`;
     case "reference":
       return `- saved reference ${hit.referenceId} "${hit.title}" <${hit.url}>${hit.referenceKind ? ` (${hit.referenceKind})` : ""}: ${hit.snippet}`;
+    case "margin_note":
+      return `- side note ${hit.noteId} of hers on block ${hit.blockId} in "${hit.documentTitle}" (document ${hit.documentId})${hit.resolved ? ", resolved" : ""}${hit.detached ? ", detached" : ""}: ${hit.snippet}`;
   }
 }
 
@@ -372,7 +382,7 @@ export function searchTool(options: { unified: boolean }): ReturnType<typeof def
     limit: limit(50, 20),
   });
   const what = options.unified
-    ? "names of library items (terms, courses, folders, lectures, documents), the transcripts of source pages, the text of document blocks, practice questions, concepts and her saved outside references (title, note, address), in one ranked list"
+    ? "names of library items (terms, courses, folders, lectures, documents), the transcripts of source pages, the text of document blocks, practice questions, concepts, her saved outside references (title, note, address) and her side notes, in one ranked list"
     : "names of library items (terms, courses, folders, lectures, documents)";
   return defineTool({
     name: "search_notes",
@@ -389,7 +399,7 @@ export function searchTool(options: { unified: boolean }): ReturnType<typeof def
       ...(options.unified
         ? {
             kinds:
-              'Only these kinds of hit: "node" (library names), "page" (transcribed source pages), "block" (document text), "question", "concept", "reference" (her saved outside references). Default: all.',
+              'Only these kinds of hit: "node" (library names), "page" (transcribed source pages), "block" (document text), "question", "concept", "reference" (her saved outside references), "margin_note" (her side notes; read them with side_notes). Default: all.',
           }
         : {}),
       cursor: CURSOR_TEXT,

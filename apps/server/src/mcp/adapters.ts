@@ -99,6 +99,7 @@ export function backendFromServices(services: Services): McpBackend {
     concepts: services.concepts,
     canvas: services.canvasPort,
     references: services.references,
+    marginNotes: services.marginNotes,
     search: { search: (userId, request) => search.search(userId, request) },
     files: filesPort,
     documents: documentsPort,

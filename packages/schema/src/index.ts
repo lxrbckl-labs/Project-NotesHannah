@@ -10,6 +10,7 @@ export * from "./concepts.js";
 export * from "./documents.js";
 export * from "./ids.js";
 export * from "./library.js";
+export * from "./margin-notes.js";
 /** Practice questions, grading, sessions and scheduling. Namespaced: its names are generic. */
 export * as practice from "./practice/index.js";
 export * from "./reference-sites.js";

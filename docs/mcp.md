@@ -15,8 +15,9 @@ operations), [converter.md](converter.md) (how uploads become pages),
 
 Everything below is live on the shared services: `createApp` passes the one `Services`
 object to `mcpRoutes(deps, services)`, so MCP and the HTTP API run the same domain code.
-Eighteen tools are registered in production, covering the library, files, documents,
-the study map, requests, practice, exams, concepts and trusted references (added 2026-11-16). Proved end to end with the real server, the real
+Nineteen tools are registered in production, covering the library, files, documents,
+the study map, requests, practice, exams, concepts, trusted references (added 2026-11-16) and her
+side notes (read only, added 2026-11-16). Proved end to end with the real server, the real
 converter container and headless Claude Code and Codex sessions (see Live checks).
 
 ## Endpoint
@@ -39,7 +40,7 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 | `start_here` | Orientation, the whole job in order, the rules, content types, live facts (open requests, inbox); `topic` for detail | read-only |
 | `browse_library` | One level of the tree, or trash, favourites, recents; paged | read-only |
 | `get_item` | Any object by ID (nod_, fil_, pag_, doc_, blk_, req_, qst_, con_, exm_) with links to its neighbours; a file with `text: true` gives every page's text at once; a lecture shows who is writing for it | read-only |
-| `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts, her saved references | read-only |
+| `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts, her saved references, her side notes | read-only |
 | `edit_library` | create, update (rename), move, duplicate, trash, restore; claim and release any library item or document for writing | destructive |
 | `changes` | The change feed since a cursor | read-only |
 | `requests` | Her requests: list (waiting first, with target, path, preview), claim, release, complete with a reply and links (figures in the reply are checked against its sources), decline with a reason | write |
@@ -54,6 +55,7 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 | `study_progress` | Her weak areas, missed-questions notebook, due cards, sessions, a session's results | read-only |
 | `exams` | Upcoming exams with coverage and progress; create, update (never delete) | write |
 | `references` | Trusted outside references: `list` returns the built-in sites (PharmGuides and its sections, with its search address pattern, flagged trusted) and her saved references (optionally for one place and what is inside it); `add` saves one she asked for. No change or delete. The description carries the writing rule (below) | write |
+| `side_notes` | Her private side notes beside a document's blocks (docs/side-notes.md): `list` a document's notes (open first, in block order, detached last; each with its anchor block id and type, quote, colour, resolved, detached, the block's last known text, her words, timestamps); `recent` her open notes across documents, newest first, with document title and id (`limit`, default 20). No add, change or delete: only her session writes them | read-only |
 
 Why this list (and not more) and why ONE `study_map` tool: each tool is one job an agent recognises by name. Actions
 that share a subject fold into one tool with an `action` (requests, source_files, concepts,
@@ -87,6 +89,14 @@ Decisions:
   apart from her numbered sources. Such a block satisfies the citation rule. Agents summarise in
   their own words with the link and never paste long passages from a site. Agents can add a
   saved reference only when she asks; they cannot change or delete hers.
+
+- **Side notes are read only for agents** (docs/side-notes.md). They are her private remarks
+  on a document, telling an agent where she is confused or what she wants. `side_notes` lists
+  them; its description, `start_here` and the agent guide say to read them before revising a
+  document and to address the open ones in the edits or a request reply. The tool has no write
+  action, and the HTTP routes refuse every API key (`forbidden`, in plain words), so an agent
+  cannot add, change, resolve or delete one. Block writes never change a note's words; a note
+  whose block an agent deletes or regenerates shows to her as detached, with the block's last text.
 
 - **Exams.** Agents may create and update exams unprompted (an exam date in her
   material, or a request), because the activity log shows it and she can change it; they

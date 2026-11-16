@@ -27,7 +27,8 @@
     "local:seed": "node tools/dev/seed.mjs",
     "local:seed:pharm": "node tools/dev/seed-pharm.mjs",
     "local:seed:pharm:notes": "node tools/dev/seed-pharm-notes.mjs",
-    "local:seed:pharm:references": "node tools/dev/seed-pharm-references.mjs"
+    "local:seed:pharm:references": "node tools/dev/seed-pharm-references.mjs",
+    "local:seed:pharm:sidenotes": "node tools/dev/seed-pharm-sidenotes.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",

@@ -18,6 +18,7 @@ import { browseLibrary, changesTool, editLibrary, searchTool } from "./tools/lib
 import { practiceQuestions, studyProgress } from "./tools/practice.js";
 import { referencesTool } from "./tools/references.js";
 import { requestsTool } from "./tools/requests.js";
+import { sideNotesTool } from "./tools/side-notes.js";
 import { SERVER_INSTRUCTIONS, startHere } from "./tools/start-here.js";
 import { studyMap } from "./tools/study-map.js";
 
@@ -47,6 +48,7 @@ export function toolsFor(backend: Omit<McpBackend, "library">): ToolDef[] {
     ...(backend.practice ? [practiceQuestions, studyProgress] : []),
     ...(backend.exams ? [examsTool] : []),
     ...(backend.references ? [referencesTool] : []),
+    ...(backend.marginNotes ? [sideNotesTool] : []),
   ];
 }
 

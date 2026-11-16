@@ -38,6 +38,7 @@ import {
   type LibraryListener,
   type LibraryService,
 } from "./domains/library/index.js";
+import { createMarginNotesService, type MarginNotesService } from "./domains/margin-notes/index.js";
 import {
   createPracticePort,
   createPracticeService,
@@ -85,6 +86,8 @@ export interface Services {
   concepts: ConceptsService;
   /** Her saved outside references (docs/references.md). */
   references: ReferencesService;
+  /** Her side notes beside a document's blocks, stored apart from them (docs/side-notes.md). */
+  marginNotes: MarginNotesService;
   /** The second view of a document: cards, connectors and frames, pins of hers (docs/canvas.md). */
   canvas: CanvasService;
   /** "What changed since" (H9). Every domain's changes land here. */
@@ -139,6 +142,8 @@ function conceptsPortOf(concepts: ConceptsService): ConceptsPort {
  *   only lifts the protection of her blocks when the requests domain says it covers them;
  * - a document write tells the canvas (in the same transaction) so its cards follow the blocks, and a
  *   duplicated node gets a copy of its canvas with fresh IDs; a canvas goes with its document;
+ * - the same write tells the side notes, which detach from blocks that are gone and come back
+ *   when a block does; they go with their document and are not copied with it;
  * - concept pages find their mentions (documents) and questions (practice) in the real tables.
  */
 export function createServices(deps: ServicesDeps, options: ServicesOptions = {}): Services {
@@ -158,6 +163,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     concepts?: ConceptsService;
     canvas?: CanvasService;
     references?: ReferencesService;
+    marginNotes?: MarginNotesService;
   } = {};
   const need = <K extends keyof typeof later>(key: K): NonNullable<(typeof later)[K]> =>
     later[key] as NonNullable<(typeof later)[K]>;
@@ -253,7 +259,11 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
       activity: activity.port,
       requests: requests.port,
       onDocumentsDeleted: (userId, ids) => requests.onDocumentsDeleted(userId, ids),
-      onBlocksChanged: (change) => need("canvas").onBlocksChanged(change),
+      // Both run inside the write's transaction: the canvas cards and her side notes follow the blocks.
+      onBlocksChanged: (change) => {
+        need("canvas").onBlocksChanged(change);
+        need("marginNotes").onBlocksChanged(change);
+      },
       ...(options.revisionCap === undefined ? {} : { revisionCap: options.revisionCap }),
     },
   );
@@ -292,6 +302,9 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
   later.canvas = canvas;
   const references = createReferencesService({ db, now }, trace);
   later.references = references;
+  // A document going for good takes its side notes by cascade; duplicating one copies none.
+  const marginNotes = createMarginNotesService({ db, now }, trace);
+  later.marginNotes = marginNotes;
 
   const search = createSearchService({
     library,
@@ -300,6 +313,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     practice,
     concepts,
     references,
+    marginNotes,
   });
 
   return {
@@ -312,6 +326,7 @@ export function createServices(deps: ServicesDeps, options: ServicesOptions = {}
     concepts,
     canvas,
     references,
+    marginNotes,
     changes,
     activity,
     search,

@@ -1,5 +1,14 @@
 import type { SearchHit } from "@notes/schema";
-import { BookMarked, FileText, Globe, HelpCircle, Pill, Search, TextQuote } from "lucide-react";
+import {
+  BookMarked,
+  FileText,
+  Globe,
+  HelpCircle,
+  MessageSquareText,
+  Pill,
+  Search,
+  TextQuote,
+} from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { inputClass } from "../../components/ui/field";
@@ -20,6 +29,7 @@ const GROUPS: Array<{ kind: SearchHit["kind"]; title: string }> = [
   { kind: "concept", title: "Drugs and concepts" },
   { kind: "reference", title: "Your saved references" },
   { kind: "block", title: "In your study material" },
+  { kind: "margin_note", title: "In your side notes" },
   { kind: "question", title: "In your practice questions" },
   { kind: "page", title: "In your transcripts" },
 ];
@@ -38,6 +48,8 @@ function hitKey(hit: SearchHit): string {
       return hit.conceptId;
     case "reference":
       return hit.referenceId;
+    case "margin_note":
+      return hit.noteId;
   }
 }
 
@@ -48,6 +60,9 @@ export function hitHref(hit: Exclude<SearchHit, { kind: "reference" }>, q: strin
     return `/files/${hit.fileId}?page=${hit.pageId}&quote=${encodeURIComponent(q)}`;
   }
   if (hit.kind === "block") return `/doc/${hit.nodeId}?block=${hit.blockId}`;
+  // A side note opens its document with the Notes panel on that note.
+  if (hit.kind === "margin_note")
+    return `/doc/${hit.nodeId}?block=${hit.blockId}&note=${hit.noteId}`;
   if (hit.kind === "question") {
     return `/question/${hit.questionId}`;
   }
@@ -131,9 +146,11 @@ function AppHitLink({
         ? `${hit.fileName}, page ${hit.pageIndex}`
         : hit.kind === "block"
           ? hit.documentTitle
-          : hit.kind === "question"
-            ? "Practice question"
-            : hit.name;
+          : hit.kind === "margin_note"
+            ? `Side note · ${hit.documentTitle}`
+            : hit.kind === "question"
+              ? "Practice question"
+              : hit.name;
   return (
     <Link to={hitHref(hit, q)} onClick={onPick} data-hue={hue ?? "accent"} className={rowClass}>
       <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
@@ -143,6 +160,8 @@ function AppHitLink({
           <FileText size={18} aria-hidden />
         ) : hit.kind === "block" ? (
           <TextQuote size={18} aria-hidden />
+        ) : hit.kind === "margin_note" ? (
+          <MessageSquareText size={18} aria-hidden />
         ) : hit.kind === "question" ? (
           <HelpCircle size={18} aria-hidden />
         ) : (
