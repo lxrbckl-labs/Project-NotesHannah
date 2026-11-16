@@ -23,7 +23,14 @@ export const UPLOAD_LIMITS = {
  *   uploaded → converting → converted → transcribed → filed
  *                  ↘ failed
  */
-export const FileStatus = z.enum(["uploaded", "converting", "converted", "transcribed", "filed", "failed"]);
+export const FileStatus = z.enum([
+  "uploaded",
+  "converting",
+  "converted",
+  "transcribed",
+  "filed",
+  "failed",
+]);
 export type FileStatus = z.infer<typeof FileStatus>;
 
 export const SourceFile = z.object({

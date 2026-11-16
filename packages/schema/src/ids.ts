@@ -22,6 +22,11 @@ export type IdKind = keyof typeof ID_PREFIX;
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const ULID_BODY = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
+/** Web Crypto, present in browsers and in Node; typed here so the package needs no DOM or Node typings. */
+const webCrypto = (
+  globalThis as unknown as { crypto: { getRandomValues(array: Uint8Array): Uint8Array } }
+).crypto;
+
 function encodeTime(ms: number): string {
   let out = "";
   let t = ms;
@@ -34,7 +39,7 @@ function encodeTime(ms: number): string {
 
 function encodeRandom(): string {
   const bytes = new Uint8Array(16);
-  globalThis.crypto.getRandomValues(bytes);
+  webCrypto.getRandomValues(bytes);
   let out = "";
   for (let i = 0; i < 16; i++) {
     out += CROCKFORD[(bytes[i] as number) % 32];
@@ -63,11 +68,9 @@ export function idKind(id: string): IdKind | null {
 /** Zod schema for an ID of one kind. */
 export function idSchema<K extends IdKind>(kind: K) {
   const prefix = ID_PREFIX[kind];
-  return z
-    .string()
-    .refine((value) => idKind(value) === kind, {
-      message: `Expected a ${kind} ID like "${prefix}_01HZX3K9Q2V7M4N8P6R5T0W1YB"`,
-    });
+  return z.string().refine((value) => idKind(value) === kind, {
+    message: `Expected a ${kind} ID like "${prefix}_01HZX3K9Q2V7M4N8P6R5T0W1YB"`,
+  });
 }
 
 export const UserId = idSchema("user");

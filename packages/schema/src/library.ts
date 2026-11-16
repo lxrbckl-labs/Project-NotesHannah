@@ -53,7 +53,10 @@ export const NodeName = z
   .trim()
   .min(1)
   .max(200)
-  .refine((value) => !/[\u0000-\u001f]/.test(value), "No control characters");
+  .refine(
+    (value) => [...value].every((char) => (char.codePointAt(0) ?? 0) >= 0x20),
+    "No control characters",
+  );
 
 const LocalDate = z.iso.date();
 
@@ -136,7 +139,20 @@ export function lectureLabel(name: string, meta: LectureMeta | null): string {
   parts.push(name);
   if (meta?.date) {
     const [, month, day] = meta.date.split("-").map(Number) as [number, number, number];
-    const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const names = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     parts.push(`${names[month - 1]} ${day}`);
   }
   return parts.join(" · ");

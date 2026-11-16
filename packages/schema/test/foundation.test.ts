@@ -3,19 +3,19 @@ import {
   API_KEY_PATTERN,
   COURSE_SECTIONS,
   CreateNodeInput,
+  canContain,
   FileId,
+  idKind,
   LectureMeta,
+  lectureLabel,
   NodeId,
   NodeName,
+  newId,
   RequestUploadsInput,
   SaveTranscriptInput,
   Timestamp,
   UPLOAD_LIMITS,
   Username,
-  canContain,
-  idKind,
-  lectureLabel,
-  newId,
 } from "../src/index.js";
 
 describe("ids", () => {
@@ -78,7 +78,11 @@ describe("library tree rules", () => {
   });
 
   it("does not let a client create a section directly", () => {
-    const result = CreateNodeInput.safeParse({ parentId: newId("node"), kind: "section", name: "Extra" });
+    const result = CreateNodeInput.safeParse({
+      parentId: newId("node"),
+      kind: "section",
+      name: "Extra",
+    });
     expect(result.success).toBe(false);
   });
 
