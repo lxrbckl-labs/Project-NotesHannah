@@ -81,8 +81,12 @@ proposed for after the first release. See [architecture.md](architecture.md) for
 - **G6** Weak-areas view.
 - **G7** Flashcard review deck.
 - **G8** Agents can read results over MCP to build targeted practice.
-- **G9** *Later:* spaced-repetition scheduling for flashcards.
+- **G9** Spaced-repetition scheduling for flashcards (moved into the first release 2026-11-15).
 - **G10** *Later:* timed exam mode.
+- **G11** Missed-questions notebook: every question she gets wrong is collected
+  automatically, can be retried, and leaves the notebook once answered correctly.
+- **G12** Brand and generic drill: a matching mode over the drugs in her notes (brand
+  name, generic name, class), built from the concepts with no extra authoring.
 
 ## K. Citations
 
@@ -107,6 +111,31 @@ through to see it.
 K1 to K4 and K6 are built in stage 2 with the block schema; K5 and K7 follow in the
 same stage. Supersedes D9 and G4, which described the same idea more loosely.
 
+## L. Request queue
+
+Added 2026-11-15. How she asks for things without running an agent herself.
+
+- **L1** She can leave a request anywhere: on a course, a document or a single block
+  ("quiz me on beta blockers", "this card is wrong", "explain this more").
+- **L2** A requests screen lists them with a status: waiting, in progress, done, declined.
+- **L3** Agents read and claim requests over MCP, do the work, and mark them done with a
+  short note of what changed and links to the result.
+- **L4** She sees the agent's reply on the request and can reopen it.
+- **L5** Quick actions on a block for the common cases: wrong, unclear, more like this,
+  make questions from this.
+
+## M. Exam planner
+
+Added 2026-11-15.
+
+- **M1** Each course has exams with a date and the lectures or folders each one covers.
+- **M2** Home screen shows upcoming exams with a countdown and how much of the covered
+  material she has reviewed.
+- **M3** Practice sessions, the missed-questions notebook and the flashcard deck can be
+  scoped to an exam.
+- **M4** Agents read exams over MCP, so they can build a review schedule backwards from
+  the date and target the covered material.
+
 ## H. Agent layer (MCP)
 
 - **H1** Remote MCP endpoint with API-key login.
@@ -125,7 +154,9 @@ same stage. Supersedes D9 and G4, which described the same idea more loosely.
 ## I. Appearance and devices
 
 - **I1** Light and dark mode, following the device, with a manual switch.
-- **I2** iPad, phone and laptop layouts.
+- **I2** Three layouts, all first-class: computer, tablet and phone. Every screen is
+  designed for all three, and no feature is finished until it works at each size, in
+  both orientations on tablet, by touch and by mouse and keyboard.
 - **I3** Installable to the home screen.
 - **I4** React Bits components, respecting reduced motion.
 - **I5** *Later:* offline reading.

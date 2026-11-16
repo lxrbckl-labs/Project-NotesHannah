@@ -14,6 +14,9 @@ and nothing is built on an untested assumption. Feature IDs refer to
 - **One writer per area.** Packages are cut along folder lines (`apps/web`,
   `apps/server`, `apps/converter`, `packages/schema`) so parallel workers do not collide.
 - **Every package lands through a pull request** with tests, reviewed before merge.
+- **Three layouts are part of done.** No web package is finished until every screen it
+  touches works on computer, tablet and phone, checked by browser tests at all three
+  sizes and by eye.
 
 ## Stage 0: decisions and spikes
 
@@ -64,6 +67,7 @@ it, file it under a course, and see it in the browser on an iPad.
 | W13 | Page view and editor with the basic blocks, outline, citation chips with click-through to the source, reverse view, references list, review markers | apps/web | D1, D2, D3, D10, D13, K2, K5, K7 | W11 |
 | W14 | Study blocks: drug card, comparison table, mnemonic, labelled image, mind map | apps/web | D4 to D8 | W13 |
 | W15 | MCP document and block tools, with helpful validation errors | apps/server | H6 | W12 |
+| W28 | Request queue: storage, MCP tools to list, claim and complete, requests screen, block quick actions | schema, server, web | L1 to L5 | W12, W13 |
 
 Stage check: an agent turns one transcribed lecture into a study guide; she edits a block;
 the agent regenerates the guide and her edit survives.
@@ -73,8 +77,9 @@ the agent regenerates the guide and her edit survives.
 | ID | Package | Area | Features | Depends on |
 |---|---|---|---|---|
 | W16 | Question schema and grading rules, including numeric tolerance and units | packages/schema | G1, G3 | W11 |
-| W17 | Sessions, attempts, results, weak areas; readable over MCP | apps/server | G2, G5, G6, G8 | W16 |
-| W18 | Question blocks, session player, results and weak-area screens, flashcard deck | apps/web | G1 to G7 | W16 |
+| W17 | Sessions, attempts, results, weak areas, missed-questions notebook, spaced-repetition schedule; readable over MCP | apps/server | G2, G5, G6, G8, G9, G11 | W16 |
+| W18 | Question blocks, session player, results and weak-area screens, flashcard deck, missed-questions notebook | apps/web | G1 to G7, G9, G11 | W16 |
+| W29 | Exam planner: exams and coverage, home-screen countdown, exam scope for practice, MCP access | schema, server, web | M1 to M4 | W17, W18 |
 
 Stage check: an agent builds a mixed quiz from a lecture; she takes it on a phone; the
 agent reads the results and builds a follow-up on the weak areas.
@@ -87,6 +92,7 @@ agent reads the results and builds a follow-up on the weak areas.
 | W20 | Canvas structure in the schema, automatic layout, MCP tools for cards, connectors and frames | schema, server | E2 | W11 |
 | W21 | Canvas view: cards, connectors, frames, hand editing, stickers, step-through, gestures | apps/web | E1, E3 to E6 | W20 |
 | W22 | Concept pages and graph view | apps/web | F2, F3 | W19 |
+| W30 | Brand and generic drill, built from the concepts | server, web | G12 | W19, W18 |
 
 ## Stage 5: before she gets it
 

@@ -33,6 +33,9 @@ Changed 2026-11-15 (replaces the earlier server-side transcription idea).
   anyway). Agents are Claude Code and Codex.
 - Consequence: nothing is processed automatically on upload. Someone runs an agent
   session and tells it to process the inbox.
+- **Request queue:** she leaves requests inside the app (on a course, document or
+  block), and the next agent session claims and completes them over MCP. This is how she
+  asks for work without running an agent herself.
 
 ## Agent orientation
 
@@ -115,7 +118,8 @@ so anything the screen can do, an agent can do.
 
 ## Front end
 
-- React web app, installable to the home screen. iPad and phone first, laptop too.
+- React web app, installable to the home screen. Computer, tablet and phone are all
+  first-class layouts; nothing is finished until it works on all three.
 - **Two views of one block tree:** linear page view, and a canvas (dotted grid, cards,
   curved labelled connectors, frames, stickers) in the style of AFFiNE's edgeless mode.
 - **Canvas:** React Flow, with automatic layout (ELK). Agents state structure, not pixel
