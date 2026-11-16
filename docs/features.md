@@ -34,6 +34,10 @@ proposed for after the first release. See [architecture.md](architecture.md) for
 - **C5** Recents and favourites.
 - **C6** Source viewer: the original page beside its transcript.
 - **C7** *Later:* tags.
+- **C8** Whole-library tree page (added 2026-11-15, from what she said she wants most): the
+  library home on every device is one page showing everything as a tree, including her
+  uploaded files as leaves. She clicks into an item and back out, and the tree is exactly
+  as she left it (same rows open, same scroll position).
 
 ## D. Documents and blocks
 
