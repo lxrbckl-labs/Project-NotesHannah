@@ -1,0 +1,340 @@
+import type { Block, CitedText, RichText } from "@notes/schema";
+import { type Editor, Extension } from "@tiptap/core";
+import { Placeholder } from "@tiptap/extensions";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { useEffect, useMemo, useRef } from "react";
+import { useActions, useView } from "../context";
+import { markerCitation } from "../model/references";
+import {
+  docToLines,
+  docToRichText,
+  type EditorLine,
+  linesToDoc,
+  richTextToDoc,
+  splitRichText,
+  type TiptapNode,
+} from "../model/richtext";
+import { cx } from "../ui/primitives";
+import { inlineExtensions } from "./extensions";
+import { type LineKind, listLinesExtension } from "./lines";
+
+/** Keys the surrounding block handles (splitting, merging, moving between blocks). */
+export interface EditorKeys {
+  /** Enter in a single-line field: return true when handled (the block split). */
+  onEnter?: (before: RichText, after: RichText) => boolean;
+  /** Backspace with the cursor at the very start. */
+  onBackspaceStart?: (current: RichText) => boolean;
+  /** Arrow up at the start or down at the end: move to the neighbouring block. */
+  onArrowOut?: (direction: "up" | "down") => boolean;
+  /** Lists: Enter on an empty last line leaves the list. */
+  onExitList?: (lines: EditorLine[]) => void;
+  /** Lists: Backspace in the only, empty line. */
+  onEmptyList?: () => void;
+  /** "/" typed at the start of an otherwise empty field; null when it goes away. */
+  onSlash?: (query: string | null) => void;
+  /** While the slash menu is open, it gets first go at arrow keys, Enter and Escape. */
+  slashKey?: (key: string) => boolean;
+}
+
+export type EditorValue = RichText | EditorLine[];
+
+export interface InlineEditorProps {
+  mode: "single" | "lines";
+  value: EditorValue;
+  lineKind?: LineKind;
+  start?: number;
+  onCommit: (value: EditorValue) => void;
+  block: Pick<Block, "citations">;
+  field?: Pick<CitedText, "citations"> | undefined;
+  autoFocus?: "start" | "end" | number | null;
+  placeholder?: string;
+  className?: string;
+  ariaLabel: string;
+  keys?: EditorKeys;
+  onFocusChange?: (focused: boolean) => void;
+  /** Commit after this long without typing. */
+  debounceMs?: number;
+  testId?: string;
+}
+
+/** Key names for Tiptap shortcuts (kept out of object literals so lint does not read them as components). */
+const KEY = {
+  escape: "Escape",
+  down: "ArrowDown",
+  up: "ArrowUp",
+  tab: "Tab",
+  enter: "Enter",
+  backspace: "Backspace",
+} as const;
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+function readValue(editor: Editor, mode: "single" | "lines", lineKind?: LineKind): EditorValue {
+  const json = editor.getJSON() as TiptapNode;
+  return mode === "single" ? docToRichText(json) : docToLines(json, lineKind === "check");
+}
+
+function toDoc(value: EditorValue, mode: "single" | "lines"): TiptapNode {
+  return mode === "single" ? richTextToDoc(value as RichText) : linesToDoc(value as EditorLine[]);
+}
+
+/**
+ * A Tiptap editor for one piece of a block's text. It holds the schema's
+ * rich text, commits it (debounced, and on blur) as the block's content, and
+ * hands Enter/Backspace at the edges to the block so blocks split and merge.
+ */
+export function InlineEditor(props: InlineEditorProps) {
+  const { mode, lineKind, start, autoFocus, placeholder, ariaLabel, debounceMs = 450 } = props;
+  const actions = useActions();
+  const { refs } = useView();
+  const committed = useRef<EditorValue>(props.value);
+  const dirty = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latest = useRef(props);
+  latest.current = props;
+  const refsRef = useRef(refs);
+  refsRef.current = refs;
+  const slashOpen = useRef(false);
+
+  const flushRef = useRef<() => void>(() => {});
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the editor is built once per mount; later props are read through refs
+  const extensions = useMemo(() => {
+    const keymap = Extension.create({
+      name: "docBlockKeys",
+      priority: 1000,
+      addKeyboardShortcuts() {
+        const editor = this.editor;
+        const keys = () => latest.current.keys ?? {};
+        const slash = (key: string) => slashOpen.current && Boolean(keys().slashKey?.(key));
+        const atStart = () => {
+          const { selection } = editor.state;
+          return (
+            selection.empty && selection.$from.parentOffset === 0 && selection.$from.index(0) === 0
+          );
+        };
+        const atEnd = () => {
+          const { selection, doc } = editor.state;
+          return selection.empty && selection.from >= doc.content.size - 1;
+        };
+        const currentLine = () => editor.state.selection.$from.parent;
+        const setIndent = (delta: number) => {
+          const { $from } = editor.state.selection;
+          const index = $from.index(0);
+          const prev = index > 0 ? Number(editor.state.doc.child(index - 1).attrs.indent ?? 0) : -1;
+          const now = Number($from.parent.attrs.indent ?? 0);
+          const next = Math.max(0, Math.min(2, prev + 1, now + delta));
+          if (next === now) return true;
+          return editor.commands.updateAttributes("paragraph", { indent: next });
+        };
+        const undo = () => {
+          flushRef.current();
+          actions.controller.undo();
+          return true;
+        };
+        const redo = () => {
+          flushRef.current();
+          actions.controller.redo();
+          return true;
+        };
+        const shortcuts: Record<string, () => boolean> = {
+          "Mod-z": undo,
+          "Mod-Shift-z": redo,
+          "Mod-y": redo,
+          [KEY.escape]: () => {
+            if (slash("Escape")) return true;
+            editor.commands.blur();
+            return true;
+          },
+          [KEY.down]: () => {
+            if (slash("ArrowDown")) return true;
+            return atEnd() ? Boolean(keys().onArrowOut?.("down")) : false;
+          },
+          [KEY.up]: () => {
+            if (slash("ArrowUp")) return true;
+            return atStart() ? Boolean(keys().onArrowOut?.("up")) : false;
+          },
+          [KEY.tab]: () => (mode === "lines" ? lineKind === "check" || setIndent(1) : false),
+          "Shift-Tab": () => (mode === "lines" ? lineKind === "check" || setIndent(-1) : false),
+          [KEY.enter]: () => {
+            if (slash("Enter")) return true;
+            if (mode === "single") {
+              if (!editor.state.selection.empty) editor.commands.deleteSelection();
+              const offset = editor.state.selection.$from.parentOffset;
+              const value = docToRichText(editor.getJSON() as TiptapNode);
+              const [before, after] = splitRichText(value, offset);
+              const handled = Boolean(keys().onEnter?.(before, after));
+              if (handled) {
+                if (timer.current) clearTimeout(timer.current);
+                dirty.current = false;
+                committed.current = before;
+              }
+              return true;
+            }
+            const line = currentLine();
+            if (line.content.size === 0) {
+              const indent = Number(line.attrs.indent ?? 0);
+              if (indent > 0) return setIndent(-1);
+              const doc = editor.state.doc;
+              const isLast = editor.state.selection.$from.index(0) === doc.childCount - 1;
+              if (isLast && doc.childCount > 1 && keys().onExitList) {
+                const lines = docToLines(
+                  editor.getJSON() as TiptapNode,
+                  lineKind === "check",
+                ).slice(0, -1);
+                if (timer.current) clearTimeout(timer.current);
+                dirty.current = false;
+                committed.current = lines;
+                keys().onExitList?.(lines);
+                return true;
+              }
+            }
+            return false;
+          },
+          [KEY.backspace]: () => {
+            if (mode === "lines") {
+              const { selection, doc } = editor.state;
+              if (selection.empty && selection.$from.parentOffset === 0) {
+                const indent = Number(selection.$from.parent.attrs.indent ?? 0);
+                if (indent > 0) return setIndent(-1);
+                if (doc.childCount === 1 && doc.textContent === "" && keys().onEmptyList) {
+                  keys().onEmptyList?.();
+                  return true;
+                }
+              }
+              return false;
+            }
+            if (!atStart()) return false;
+            const value = docToRichText(editor.getJSON() as TiptapNode);
+            const handled = Boolean(keys().onBackspaceStart?.(value));
+            if (handled) {
+              if (timer.current) clearTimeout(timer.current);
+              dirty.current = false;
+            }
+            return handled;
+          },
+        };
+        return shortcuts;
+      },
+    });
+    const list = mode === "lines" ? [listLinesExtension(lineKind ?? "bullet", start)] : [];
+    return [
+      ...inlineExtensions(mode, {
+        citeLabel: (n) => {
+          const p = latest.current;
+          const citation = markerCitation(p.block, p.field, n);
+          return citation ? String(refsRef.current.numberOf(citation) || "?") : "?";
+        },
+        onOpenCite: (n) => {
+          const p = latest.current;
+          const citation = markerCitation(p.block, p.field, n);
+          const number = citation ? refsRef.current.numberOf(citation) : 0;
+          if (number) actions.openCitation(number);
+        },
+        onOpenConcept: (id) => actions.openConcept(id),
+      }),
+      ...(mode === "single" && placeholder
+        ? [Placeholder.configure({ placeholder, showOnlyCurrent: false })]
+        : []),
+      keymap,
+      ...list,
+    ];
+  }, []);
+
+  const editor = useEditor({
+    extensions,
+    content: toDoc(props.value, mode),
+    immediatelyRender: true,
+    shouldRerenderOnTransaction: false,
+    editorProps: {
+      attributes: {
+        "aria-label": ariaLabel,
+        role: "textbox",
+        "aria-multiline": "true",
+        class: cx(mode === "lines" && "doc-lines-editor"),
+        ...(props.testId ? { "data-testid": props.testId } : {}),
+      },
+    },
+    onUpdate: ({ editor }) => {
+      dirty.current = true;
+      if (mode === "single") {
+        const text = editor.state.doc.textContent;
+        const onlyText = editor.state.doc.firstChild?.childCount === 1 || text === "";
+        const query =
+          onlyText && text.startsWith("/") && !text.includes(" ") ? text.slice(1) : null;
+        if (query !== null || slashOpen.current) {
+          slashOpen.current = query !== null;
+          latest.current.keys?.onSlash?.(query);
+        }
+      }
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => flushRef.current(), debounceMs);
+    },
+    onFocus: ({ editor }) => {
+      actions.activeEditor.set(editor);
+      latest.current.onFocusChange?.(true);
+    },
+    onBlur: ({ editor }) => {
+      flushRef.current();
+      setTimeout(() => {
+        if (actions.activeEditor.get() === editor && !editor.isFocused)
+          actions.activeEditor.set(null);
+      }, 150);
+      latest.current.onFocusChange?.(false);
+    },
+  });
+
+  flushRef.current = () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    if (!dirty.current || !editor || editor.isDestroyed) return;
+    dirty.current = false;
+    if (slashOpen.current) return;
+    const value = readValue(editor, mode, lineKind);
+    if (same(value, committed.current)) return;
+    committed.current = value;
+    latest.current.onCommit(value);
+  };
+
+  // Register with the controller so undo and restore see unsaved typing.
+  useEffect(() => actions.controller.registerFlush(() => flushRef.current()), [actions.controller]);
+
+  // Flush on unmount.
+  useEffect(
+    () => () => {
+      flushRef.current();
+      if (editor && actions.activeEditor.get() === editor) actions.activeEditor.set(null);
+    },
+    [editor, actions.activeEditor],
+  );
+
+  // Take in outside changes (undo, another device) when she is not mid-typing.
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    if (same(props.value, committed.current)) return;
+    committed.current = props.value;
+    if (dirty.current) return;
+    if (same(readValue(editor, mode, lineKind), props.value)) return;
+    const { from } = editor.state.selection;
+    editor.commands.setContent(toDoc(props.value, mode), { emitUpdate: false });
+    const max = editor.state.doc.content.size - 1;
+    if (editor.isFocused) editor.commands.setTextSelection(Math.max(1, Math.min(from, max)));
+  }, [editor, props.value, mode, lineKind]);
+
+  // Focus where asked when mounted.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only on mount
+  useEffect(() => {
+    if (!editor || autoFocus == null) return;
+    const at =
+      typeof autoFocus === "number"
+        ? Math.min(autoFocus + 1, editor.state.doc.content.size - 1)
+        : autoFocus;
+    requestAnimationFrame(() => {
+      if (!editor.isDestroyed) editor.commands.focus(at, { scrollIntoView: true });
+    });
+  }, [editor]);
+
+  return <EditorContent editor={editor} className={props.className} />;
+}

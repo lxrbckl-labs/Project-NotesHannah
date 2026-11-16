@@ -153,6 +153,33 @@ export function patchContent(
   ];
 }
 
+/**
+ * Change content fields, some of them cleared (undefined). A JSON patch cannot
+ * remove a field, so this replaces the whole block with the merged content.
+ */
+export function replaceContent(
+  documentId: string,
+  block: Block,
+  content: Record<string, unknown>,
+): PendingCall[] {
+  const input = inputOf(block);
+  const merged: Record<string, unknown> = { ...(input.content as object), ...content };
+  for (const key of Object.keys(merged)) if (merged[key] === undefined) delete merged[key];
+  return [
+    {
+      call: {
+        operation: "update_block",
+        input: {
+          mode: "replace",
+          documentId,
+          blockId: block.id,
+          block: { ...input, content: merged } as unknown as BlockInput,
+        },
+      },
+    },
+  ];
+}
+
 /** Change a block's colour; null clears the style. */
 export function setStyle(
   documentId: string,
