@@ -917,7 +917,12 @@ export function mergeCitations(
 
 // ---- bulk results ----------------------------------------------------------------------------------
 
-export const BulkItemAction = z.enum(["created", "updated", "unchanged", "rejected"]);
+/**
+ * What happened to one item: created or updated, unchanged (already said),
+ * rejected (a problem, see `problems`), or not_applied (fine, but atomic mode
+ * wrote nothing because another item had a problem).
+ */
+export const BulkItemAction = z.enum(["created", "updated", "unchanged", "rejected", "not_applied"]);
 export type BulkItemAction = z.infer<typeof BulkItemAction>;
 
 export const BulkProblem = z.object({
@@ -1106,6 +1111,8 @@ export const ConceptFilter = z.discriminatedUnion(
       side: z.enum(["from", "to"]).default("from"),
       /** Count a drug when its class has the relation (default true); the row says so. */
       viaClass: z.boolean().default(true),
+      /** Only concepts of these types (default: any). */
+      types: z.array(ConceptType).max(CONCEPT_TYPES.length).optional(),
       limit: z.number().int().min(1).max(500).default(200),
     }),
     /** Drugs in a class, including narrower classes by default. */
