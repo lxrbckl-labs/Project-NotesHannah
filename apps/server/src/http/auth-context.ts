@@ -9,6 +9,8 @@ export interface AuthContext {
   /** A browser session can do everything; an API key is limited to its scope. */
   via: "session" | "key";
   scope: ApiKeyScope;
+  /** The browser session behind this request (set only when `via` is "session"). */
+  sessionId?: string;
 }
 
 /** Hono environment shared by every route. */
