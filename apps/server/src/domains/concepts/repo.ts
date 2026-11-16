@@ -272,7 +272,6 @@ export function createConceptsRepo(db: Db) {
       q.deleteRel.run(id, userId);
       q.clearCitations.run("relation", id);
     },
-    db,
   };
 }
 

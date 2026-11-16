@@ -500,7 +500,12 @@ describe("the rate limiter", () => {
   it("stays well under 20 requests per second in any window", async () => {
     let now = 0;
     const stamps: number[] = [];
-    const limiter = createRateLimiter({ now: () => now, sleep: async (ms) => void (now += ms) });
+    const limiter = createRateLimiter({
+      now: () => now,
+      sleep: async (ms) => {
+        now += ms;
+      },
+    });
     for (let i = 0; i < 100; i++) {
       await limiter.acquire();
       stamps.push(now);
@@ -528,7 +533,10 @@ describe("the rate limiter", () => {
     const slept: number[] = [];
     const limiter = createRateLimiter({
       now: () => now,
-      sleep: async (ms) => void ((now += ms), slept.push(ms)),
+      sleep: async (ms) => {
+        now += ms;
+        slept.push(ms);
+      },
     });
     const { fetch, urls } = recordedFetch();
     await createRxNavChecker({ fetch, limiter, now: () => now }).check("metoprolo");

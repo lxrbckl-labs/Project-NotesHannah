@@ -922,7 +922,13 @@ export function mergeCitations(
  * rejected (a problem, see `problems`), or not_applied (fine, but atomic mode
  * wrote nothing because another item had a problem).
  */
-export const BulkItemAction = z.enum(["created", "updated", "unchanged", "rejected", "not_applied"]);
+export const BulkItemAction = z.enum([
+  "created",
+  "updated",
+  "unchanged",
+  "rejected",
+  "not_applied",
+]);
 export type BulkItemAction = z.infer<typeof BulkItemAction>;
 
 export const BulkProblem = z.object({
