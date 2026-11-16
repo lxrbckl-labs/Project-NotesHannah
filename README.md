@@ -72,8 +72,11 @@ decks, a calculations handout, a brand and generic sheet, handwritten notes and 
 `fixtures/demo/files`, rebuilt by `fixtures/demo/generator/build.sh` in Docker). Through the real API it
 then saves a transcript for every page, files the notes, writes a cited study guide per lecture (all
 block types), about 75 practice questions of every type with some practice history, about 160 concepts
-with relations, three exams, requests in every state and two arranged canvases. What an agent would
-write goes through an app-issued key; what she does goes through her session. It takes about 30 seconds
+with relations, three exams, requests in every state and two arranged canvases. Last come the notes she
+wrote herself, in her session so they show as hers: in-class notes under three lectures, an Exam 3 cram
+sheet, a calculations cheat sheet (five documents, 83 blocks, all 16 block types) and her own paragraph,
+callout and edit inside the agent's beta blocker guide. What an agent would write goes through an
+app-issued key; what she does goes through her session. It takes about 30 seconds
 once the converter is up and refuses to run if the account already has library items, files, concepts or
 questions.
 
@@ -84,6 +87,10 @@ pnpm local:seed:pharm       # in another
 NOTES_SERVER_URL=http://localhost:8060 NOTES_APP_ORIGIN=https://notes.example.org \
   NOTES_LOCAL_USER=someone NOTES_LOCAL_PASSWORD=... pnpm local:seed:pharm
 ```
+
+An account seeded before her own notes existed gets them with `pnpm local:seed:pharm:notes` (same
+variables). It finds the lectures, folders, files and questions by name, skips what is already there (safe
+to run twice), and changes nothing if the account does not look like the pharmacy set.
 
 `NOTES_SEED_WAIT` (seconds, default 300) is how long it waits for the converter. The content is original
 sample material written for this app (no textbook, guideline or slide text is copied); every file says

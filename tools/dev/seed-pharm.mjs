@@ -1,7 +1,8 @@
 // `pnpm local:seed:pharm`: the pharmacy demo set. Uploads the files in fixtures/demo/files through the
 // real API and leaves the account looking like a student's several weeks into a term: two courses,
 // lectures with their slides and notes, a transcript for every page, a cited study guide per lecture,
-// practice questions with some history, concepts and relations, exams, requests and arranged canvases.
+// practice questions with some history, concepts and relations, exams, requests and arranged canvases,
+// and last the notes she wrote herself (pharm/own-notes.mjs, also `pnpm local:seed:pharm:notes`).
 //
 // Like `pnpm local:seed`, it signs in as the user for what she does (library, uploads, exams, requests,
 // practice, reviews, pins) and uses an app-issued key for what an agent writes (transcripts, filing,
@@ -10,67 +11,24 @@
 // and NOTES_APP_ORIGIN at another instance. All content is original sample material.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { appOrigin, credentialsFile, root, serverUrl } from "./env.mjs";
+import { appOrigin, root, serverUrl } from "./env.mjs";
 import { conceptSet } from "./pharm/concepts.mjs";
 import { adrenergicGuide, betaGuide } from "./pharm/guides-adrenergic.mjs";
 import { autonomicGuide, cholinergicGuide } from "./pharm/guides-autonomic.mjs";
 import { heartFailureGuide, hypertensionGuide } from "./pharm/guides-therapy.mjs";
+import { buildOwnNotes, writeOwnNotes } from "./pharm/own-notes.mjs";
 import { questions as questionSet } from "./pharm/questions.mjs";
+import { apiError, createSession, loadCredentials, signIn } from "./pharm/session.mjs";
+import { loadManifest, sourceHelpers } from "./pharm/sources.mjs";
 
 const started = Date.now();
 const elapsed = () => `${((Date.now() - started) / 1000).toFixed(1)}s`;
 const say = (line) => console.log(`[${elapsed()}] ${line}`);
 
-const credentials = (() => {
-  if (process.env.NOTES_LOCAL_PASSWORD) {
-    return {
-      username: process.env.NOTES_LOCAL_USER ?? "hannah",
-      password: process.env.NOTES_LOCAL_PASSWORD,
-    };
-  }
-  try {
-    return JSON.parse(readFileSync(credentialsFile, "utf8"));
-  } catch {
-    console.error(
-      `No credentials found at ${credentialsFile}. Run \`pnpm local\` first (it creates the user),\n` +
-        "or set NOTES_LOCAL_USER and NOTES_LOCAL_PASSWORD.",
-    );
-    process.exit(1);
-  }
-})();
+const credentials = loadCredentials();
 
 // ---- HTTP: her browser session, and an agent's key ----------------------------------------------------
-let cookie = "";
-async function call(method, path, body, form) {
-  const response = await fetch(`${serverUrl}/api${path}`, {
-    method,
-    headers: {
-      Origin: appOrigin,
-      ...(cookie ? { Cookie: cookie } : {}),
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: form ?? (body ? JSON.stringify(body) : undefined),
-  });
-  const set = response.headers.getSetCookie?.() ?? [];
-  if (set.length) {
-    const jar = new Map(
-      cookie
-        .split("; ")
-        .filter(Boolean)
-        .map((c) => c.split(/=(.*)/s).slice(0, 2)),
-    );
-    for (const line of set) {
-      const [pair] = line.split(";");
-      const [name, value] = pair.split(/=(.*)/s);
-      jar.set(name, value);
-    }
-    cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
-  }
-  if (response.status === 204) return undefined;
-  const json = await response.json().catch(() => ({}));
-  if (!response.ok) throw apiError(method, path, response.status, json);
-  return json;
-}
+const { call, list } = createSession();
 
 let agentKey = "";
 async function agent(method, path, body) {
@@ -89,25 +47,10 @@ async function agent(method, path, body) {
   return json;
 }
 
-function apiError(method, path, status, json) {
-  const e = json.error ?? json;
-  const detail = [e.message, e.hint, e.problems ? JSON.stringify(e.problems).slice(0, 1500) : ""]
-    .filter(Boolean)
-    .join("\n  ");
-  return new Error(`${method} ${path} -> ${status}\n  ${detail}`);
-}
-
-const list = async (path) => (await call("GET", path)).items ?? [];
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- preflight -----------------------------------------------------------------------------------------
-try {
-  await fetch(`${serverUrl}/healthz`);
-} catch {
-  console.error(`The server is not running at ${serverUrl}. Start \`pnpm local\` first.`);
-  process.exit(1);
-}
-await call("POST", "/auth/login", credentials);
+await signIn(call, credentials);
 const already = [
   ["library items", (await list("/nodes?limit=1")).length],
   ["files", (await list("/files?limit=1")).length],
@@ -123,9 +66,7 @@ if (busy.length) {
   process.exit(1);
 }
 
-const manifest = JSON.parse(
-  readFileSync(join(root, "fixtures", "demo", "files", "manifest.json"), "utf8"),
-);
+const manifest = loadManifest();
 const byKey = Object.fromEntries(manifest.files.map((f) => [f.key, f]));
 
 // ---- the library ---------------------------------------------------------------------------------------
@@ -156,7 +97,7 @@ const lectures = {
   hf: await lecture(tS.lectures.id, 9, "Heart failure (HFrEF)", "2026-11-05"),
 };
 const calcFolder = await make(tS.practice.id, "folder", "Calculations");
-await make(pS.study_guides.id, "folder", "Exam 3 review");
+const examFolder = await make(pS.study_guides.id, "folder", "Exam 3 review");
 await call("PATCH", `/nodes/${pharm.id}`, { favourite: true });
 await call("PATCH", `/nodes/${lectures.beta.id}`, { favourite: true });
 
@@ -239,27 +180,7 @@ console.log(
 
 // ---- what the content modules get: citations checked against the transcripts ----------------------------
 const ctx = {
-  c(key, n, quote) {
-    const entry = byKey[key];
-    const page = pages[key]?.[n - 1];
-    if (!entry || !page) throw new Error(`No page ${n} in ${key}`);
-    if (!entry.pages[n - 1].text.includes(quote)) {
-      throw new Error(
-        `Quote not in the transcript of ${entry.name} page ${n}: ${JSON.stringify(quote)}`,
-      );
-    }
-    const label = entry.file.endsWith(".pptx")
-      ? `Slide ${n}`
-      : entry.file.endsWith(".jpg")
-        ? "Photo"
-        : `Page ${n}`;
-    return { fileId: uploads[key].id, pageId: page.id, quote, label };
-  },
-  page: (key, n) => ({ fileId: uploads[key].id, pageId: pages[key][n - 1].id }),
-  hot(key) {
-    const points = byKey[key].hotspots.points;
-    return Object.fromEntries(Object.entries(points).map(([k, [x, y]]) => [k, { x, y }]));
-  },
+  ...sourceHelpers({ byKey, uploads, pages }),
   concept(type, name) {
     const id = conceptIds.get(`${type}:${name}`);
     if (!id) throw new Error(`No concept ${type} ${name}`);
@@ -332,6 +253,9 @@ console.log(
     .map(([t, n]) => `${n} ${t}`)
     .join(", ")}`,
 );
+
+// Her own notes are built here, so a quote missing from a transcript stops the run before the guides.
+const ownBuilt = buildOwnNotes(ctx);
 
 // ---- study guides --------------------------------------------------------------------------------------------
 say("Writing a study guide for each lecture");
@@ -785,9 +709,27 @@ for (const key of ["ans", "hand"]) {
     await call("POST", `/pages/${page.id}/transcript/review`, { reviewed: true });
 }
 
+// ---- her own notes: written in her session, so they show as hers -------------------------------------------
+say("Writing her own notes (her session)");
+const own = await writeOwnNotes({
+  call,
+  list,
+  built: ownBuilt,
+  places: {
+    beta: lectures.beta.id,
+    htn: lectures.htn.id,
+    chol: lectures.chol.id,
+    cram: examFolder.id,
+    calc: tS.study_guides.id,
+  },
+  betaGuide: guides.beta.id,
+});
+const ownBlocks = own.written.reduce((n, d) => n + d.blocks, 0);
+
 say("Done");
 console.log(
   `\nSeeded the pharmacy demo set: ${Object.keys(uploads).length} files (${pageCount} pages), ${guideSpecs.length} guides ` +
     `(${blockTotal} blocks), ${allQuestions.length} questions, ${concepts.length} concepts, ${relations.length} relations, ` +
-    `3 exams, 7 requests, 2 arranged canvases.\nSign in at ${appOrigin} as ${credentials.username}.`,
+    `3 exams, 7 requests, 2 arranged canvases, ${own.written.length} documents of her own (${ownBlocks} blocks) ` +
+    `and her edits in the beta blocker guide.\nSign in at ${appOrigin} as ${credentials.username}.`,
 );
