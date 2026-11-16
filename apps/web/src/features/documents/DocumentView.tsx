@@ -33,6 +33,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { Button, IconButton } from "../../components/ui/button";
+import { Sheet } from "../../components/ui/sheet";
+import { useToast } from "../../components/ui/toast";
+import { cn } from "../../lib/cn";
 import { BlockShell } from "./blocks/BlockShell";
 import {
   ActionsContext,
@@ -62,7 +66,6 @@ import { References } from "./panels/References";
 import { DocumentController } from "./state/controller";
 import type { DocumentStore, RequestKind } from "./store/types";
 import { formatWhen, useIsTouch, useLayout, useReducedMotion } from "./ui/hooks";
-import { Button, cx, IconButton, Sheet, ToastProvider, useToast } from "./ui/primitives";
 import "./documents.css";
 
 export interface DocumentViewProps {
@@ -95,11 +98,8 @@ const KIND_LABEL = {
  * with a definite height; it scrolls inside.
  */
 export function DocumentView(props: DocumentViewProps) {
-  return (
-    <ToastProvider>
-      <DocumentScreen {...props} />
-    </ToastProvider>
-  );
+  // Toasts come from the app's ToastProvider (the shell, the demo page and tests provide one).
+  return <DocumentScreen {...props} />;
 }
 
 function useStableRefs(blocks: readonly Block[] | undefined): ReferenceIndex {
@@ -358,7 +358,12 @@ function DocumentScreen({
       slashQuery: signals.slashQuery,
       slashKeyHandler: signals.slashKeyHandler,
       docRef,
-      notify: (message, tone = "info") => toast.show(message, { tone }),
+      notify: (message, tone = "info") =>
+        tone === "error"
+          ? toast.error(new Error(message))
+          : tone === "success"
+            ? toast.success(message)
+            : toast.show(message),
     }),
     [
       controller,
@@ -461,9 +466,9 @@ function DocumentScreen({
 
   const markAll = () => {
     controller.review("reviewed");
-    toast.show(`Marked ${unverified} block${unverified === 1 ? "" : "s"} as reviewed.`, {
-      tone: "success",
-      action: { label: "Undo", run: () => controller.undo() },
+    toast.success(`Marked ${unverified} block${unverified === 1 ? "" : "s"} as reviewed.`, {
+      label: "Undo",
+      run: () => controller.undo(),
     });
   };
 
@@ -587,13 +592,13 @@ function DocumentScreen({
   // Errors from the controller as toasts.
   useEffect(() => {
     if (state.error && !state.conflict && state.failed.length === 0)
-      toast.show(state.error, { tone: "error" });
+      toast.error(new Error(state.error));
   }, [state.error, state.conflict, state.failed.length, toast]);
 
   if (state.phase === "loading" && !doc) {
     return (
       <div
-        className={cx(
+        className={cn(
           "doc-root flex h-full items-center justify-center bg-bg text-text-muted",
           className,
         )}
@@ -606,15 +611,15 @@ function DocumentScreen({
   if (state.phase === "error" || !doc) {
     return (
       <div
-        className={cx(
+        className={cn(
           "doc-root flex h-full flex-col items-center justify-center gap-3 bg-bg p-6 text-center",
           className,
         )}
         role="alert"
       >
         <p className="m-0 font-semibold">This document couldn’t be opened.</p>
-        <p className="m-0 text-sm text-text-muted">{state.loadError}</p>
-        <Button variant="outline" onClick={() => void controller.load()}>
+        <p className="m-0 text-ui text-text-muted">{state.loadError}</p>
+        <Button variant="secondary" onClick={() => void controller.load()}>
           Try again
         </Button>
       </div>
@@ -629,7 +634,7 @@ function DocumentScreen({
     <ActionsContext.Provider value={actions}>
       <ViewContext.Provider value={view}>
         <div
-          className={cx("doc-root flex h-full min-h-0 bg-bg text-text", className)}
+          className={cn("doc-root flex h-full min-h-0 bg-bg text-text", className)}
           data-editing={editing ? "true" : "false"}
         >
           <div className="relative flex min-w-0 flex-1 flex-col">
@@ -653,7 +658,7 @@ function DocumentScreen({
             >
               <div className="relative">
                 <article
-                  className={cx(
+                  className={cn(
                     "mx-auto max-w-[46rem] pt-8 pb-[40vh]",
                     "px-[max(20px,env(safe-area-inset-left))] md:px-12",
                     editing && !isTouch ? "xl:pr-12 xl:pl-24" : "xl:px-16",
@@ -661,7 +666,7 @@ function DocumentScreen({
                   aria-labelledby="doc-title"
                 >
                   <header className="mb-8">
-                    <p className="m-0 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                    <p className="m-0 text-label font-semibold uppercase tracking-[0.08em] text-text-muted">
                       {KIND_LABEL[doc.kind]}
                     </p>
                     <h1
@@ -670,7 +675,7 @@ function DocumentScreen({
                     >
                       {doc.title}
                     </h1>
-                    <p className="mt-2 mb-0 text-[13.5px] text-text-muted">
+                    <p className="mt-2 mb-0 text-label text-text-muted">
                       {doc.blocks.length} blocks · {refs.references.length} sources · edited{" "}
                       {formatWhen(doc.updatedAt)}
                     </p>
@@ -701,7 +706,7 @@ function DocumentScreen({
                           e.currentTarget.getBoundingClientRect(),
                         )
                       }
-                      className="mt-4 flex min-h-11 w-full items-center gap-2 rounded-2xl px-3 text-[14px] text-text-muted transition-colors hover:bg-surface"
+                      className="mt-4 flex min-h-11 w-full items-center gap-2 rounded-card px-3 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface hover:text-text"
                     >
                       <Plus aria-hidden className="size-4" /> Add a block
                     </button>
@@ -712,7 +717,7 @@ function DocumentScreen({
                   <div
                     aria-hidden
                     data-testid="drop-indicator"
-                    className="pointer-events-none absolute right-0 left-0 mx-auto h-1 max-w-[46rem] rounded-full bg-[var(--doc-blue-solid)] shadow-[0_0_0_3px_var(--doc-blue-bg)]"
+                    className="pointer-events-none absolute right-0 left-0 mx-auto h-1 max-w-[46rem] rounded-pill bg-selection shadow-[0_0_0_3px_var(--hue-blue-soft)]"
                     style={{ top: drop.top }}
                   />
                 )}
@@ -723,7 +728,7 @@ function DocumentScreen({
           {showSide && (
             <aside
               aria-label={sideCitation ? "Source" : "Outline"}
-              className="doc-anim-fade relative flex shrink-0 flex-col border-l border-border bg-surface pr-[env(safe-area-inset-right)]"
+              className="anim-fade relative flex shrink-0 flex-col border-l border-border bg-surface pr-[env(safe-area-inset-right)]"
               style={{ width: sideCitation ? panelWidth : 288 } as CSSProperties}
             >
               {sideCitation ? (
@@ -738,7 +743,7 @@ function DocumentScreen({
                 </>
               ) : (
                 <>
-                  <p className="m-0 border-b border-border px-5 py-3 text-[12px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                  <p className="m-0 border-b border-border px-5 py-3 text-caption font-semibold uppercase tracking-[0.08em] text-text-muted">
                     On this page
                   </p>
                   <div className="min-h-0 flex-1 overflow-y-auto">
@@ -754,7 +759,8 @@ function DocumentScreen({
               open={citation !== null}
               onOpenChange={(open) => !open && setCitation(null)}
               title="Source"
-              side="bottom"
+              placement="bottom"
+              flush
               testId="citation-sheet"
             >
               {citation !== null && (
@@ -770,7 +776,8 @@ function DocumentScreen({
               open={outlineOpen}
               onOpenChange={setOutlineOpen}
               title="Outline"
-              side={layout === "phone" ? "bottom" : "right"}
+              placement="side"
+              flush
               testId="outline-sheet"
             >
               <OutlinePanel items={outline} current={currentHeading} onJump={jumpToHeading} />
@@ -782,8 +789,9 @@ function DocumentScreen({
             onOpenChange={setHistoryOpen}
             title="Version history"
             description="Every saved change. Restoring keeps the current version too."
-            side={layout === "phone" ? "bottom" : "center"}
+            placement="center"
             wide
+            flush
             testId="history"
           >
             {historyOpen && (
@@ -791,7 +799,7 @@ function DocumentScreen({
                 compact={layout === "phone"}
                 onRestored={(n) => {
                   setHistoryOpen(false);
-                  toast.show(`Restored revision ${n}.`, { tone: "success" });
+                  toast.success(`Restored revision ${n}.`);
                 }}
               />
             )}
@@ -801,14 +809,8 @@ function DocumentScreen({
             blockId={request?.blockId ?? null}
             initialKind={request?.kind ?? "wrong"}
             onClose={() => setRequest(null)}
-            layout={layout}
           />
-          <PagePicker
-            open={picker !== null}
-            onClose={() => setPicker(null)}
-            onPick={onPick}
-            layout={layout}
-          />
+          <PagePicker open={picker !== null} onClose={() => setPicker(null)} onPick={onPick} />
           {insert && (
             <InsertMenu
               state={insert}
@@ -841,7 +843,7 @@ function ResizeHandle({ width, setWidth }: { width: number; setWidth: (w: number
       aria-valuemax={Math.round(window.innerWidth * 0.7)}
       tabIndex={0}
       data-testid="panel-resize"
-      className="group absolute top-0 bottom-0 -left-2 z-10 flex w-4 cursor-col-resize touch-none justify-center"
+      className="group absolute top-0 bottom-0 -left-2 z-(--z-raised) flex w-4 cursor-col-resize touch-none justify-center"
       onKeyDown={(e) => {
         if (e.key === "ArrowLeft") setWidth(clamp(width + 24));
         if (e.key === "ArrowRight") setWidth(clamp(width - 24));
@@ -860,8 +862,8 @@ function ResizeHandle({ width, setWidth }: { width: number; setWidth: (w: number
         window.addEventListener("pointerup", up);
       }}
     >
-      <span className="h-full w-0.5 bg-transparent transition-colors group-hover:bg-[var(--doc-blue-solid)] group-focus-visible:bg-[var(--doc-blue-solid)]" />
-      <span className="absolute top-1/2 h-10 w-1.5 -translate-y-1/2 rounded-full bg-border group-hover:bg-[var(--doc-blue-solid)]" />
+      <span className="h-full w-0.5 bg-transparent transition-colors group-hover:bg-selection group-focus-visible:bg-selection" />
+      <span className="absolute top-1/2 h-10 w-1.5 -translate-y-1/2 rounded-pill bg-border-strong group-hover:bg-selection" />
     </div>
   );
 }
@@ -878,7 +880,7 @@ function ReviewSummary({
   if (unverified === 0) {
     return (
       <p
-        className="mt-4 mb-0 inline-flex items-center gap-2 rounded-full border border-[var(--doc-green-border)] bg-[var(--doc-green-bg)] px-3 py-1 text-[13px] font-medium text-[var(--doc-green-fg)]"
+        className="mt-4 mb-0 inline-flex items-center gap-2 rounded-pill border border-success-border bg-success-soft px-3 py-1 text-label font-medium text-success"
         data-testid="all-reviewed"
       >
         <CircleCheckBig aria-hidden className="size-4" /> Everything here is reviewed
@@ -888,24 +890,21 @@ function ReviewSummary({
   return (
     <div className="@container mt-5">
       <div
-        className="flex flex-col gap-3 rounded-2xl border border-[var(--doc-yellow-border)] bg-[var(--doc-yellow-bg)] px-4 py-3 @[34rem]:flex-row @[34rem]:items-center"
+        className="flex flex-col gap-3 rounded-card border border-warning-border bg-warning-soft px-4 py-3 @[34rem]:flex-row @[34rem]:items-center"
         data-testid="review-summary"
       >
-        <TriangleAlert
-          aria-hidden
-          className="hidden size-5 shrink-0 text-[var(--doc-yellow-fg)] @[34rem]:block"
-        />
-        <p className="m-0 flex-1 text-[14px] leading-snug text-[var(--doc-yellow-fg)]">
+        <TriangleAlert aria-hidden className="hidden size-5 shrink-0 text-warning @[34rem]:block" />
+        <p className="m-0 flex-1 text-ui leading-snug text-warning">
           <strong className="font-semibold">
             {unverified} block{unverified === 1 ? "" : "s"} to review.
           </strong>{" "}
           An agent wrote {unverified === 1 ? "it" : "them"}; check against your sources.
         </p>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={onNext}>
+          <Button size="sm" variant="secondary" onClick={onNext}>
             <ArrowDown aria-hidden className="size-3.5" /> Next
           </Button>
-          <Button size="sm" variant="outline" onClick={onMarkAll} data-testid="mark-all-reviewed">
+          <Button size="sm" variant="secondary" onClick={onMarkAll} data-testid="mark-all-reviewed">
             <Check aria-hidden className="size-3.5" /> Mark all reviewed
           </Button>
         </div>
@@ -927,7 +926,7 @@ function SaveStatus({
     return (
       <span
         role="status"
-        className="inline-flex items-center gap-1.5 text-[13px] text-[var(--doc-red-fg)]"
+        className="inline-flex items-center gap-1.5 text-label text-danger"
         data-testid="save-status"
         data-status="failed"
       >
@@ -935,7 +934,7 @@ function SaveStatus({
         {!compact && (state.conflict ? "Changed elsewhere" : "Not saved")}
         <button
           type="button"
-          className="min-h-9 rounded-lg px-2 font-semibold underline underline-offset-2 pointer-coarse:min-h-11"
+          className="min-h-9 rounded-control px-2 font-semibold underline underline-offset-2 pointer-coarse:min-h-11"
           onClick={() => (state.conflict ? void controller.load() : controller.retry())}
         >
           {state.conflict ? "Reload" : "Retry"}
@@ -947,7 +946,7 @@ function SaveStatus({
   return (
     <span
       role="status"
-      className="inline-flex items-center gap-1.5 text-[13px] text-text-muted"
+      className="inline-flex items-center gap-1.5 text-label text-text-muted"
       data-testid="save-status"
       data-status={state.saveStatus}
     >
@@ -956,7 +955,7 @@ function SaveStatus({
       ) : (
         <CloudCheck aria-hidden className="size-4" />
       )}
-      <span className={cx(compact && "sr-only")}>{saving ? "Saving…" : "Saved"}</span>
+      <span className={cn(compact && "sr-only")}>{saving ? "Saving…" : "Saved"}</span>
     </span>
   );
 }
@@ -987,7 +986,7 @@ function TopBar({
   touch: boolean;
 }) {
   return (
-    <div className="sticky top-0 z-20 flex shrink-0 items-center gap-1 border-b border-border bg-surface/85 px-2 pt-[env(safe-area-inset-top)] backdrop-blur md:px-3">
+    <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-1 border-b border-border bg-surface/85 px-2 pt-[env(safe-area-inset-top)] backdrop-blur md:px-3">
       <div className="flex min-h-14 flex-1 items-center gap-1">
         <SaveStatus state={state} controller={controller} compact={compact} />
         {editing && !touch && (
@@ -1018,17 +1017,17 @@ function TopBar({
           onClick={onNext}
           data-testid="unverified-count"
           aria-label={`${unverified} unverified: jump to the next`}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[var(--doc-yellow-border)] bg-[var(--doc-yellow-bg)] px-3 text-[13px] font-semibold text-[var(--doc-yellow-fg)] tabular-nums pointer-coarse:min-h-11"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border border-warning-border bg-warning-soft px-3 text-label font-semibold text-warning tabular-nums pointer-coarse:min-h-11"
         >
           <TriangleAlert aria-hidden className="size-3.5" />
           <span data-testid="unverified-number">{unverified}</span>
-          <span className={cx(compact && "sr-only")}>to review</span>
+          <span className={cn(compact && "sr-only")}>to review</span>
           <ArrowDown aria-hidden className="size-3.5" />
         </button>
       )}
       <IconButton
         label="Outline"
-        aria-pressed={outlineOpen}
+        pressed={outlineOpen}
         onClick={onOutline}
         data-testid="outline-button"
       >
@@ -1038,7 +1037,7 @@ function TopBar({
         <History className="size-[18px]" />
       </IconButton>
       <Button
-        variant={editing ? "primary" : "outline"}
+        variant={editing ? "primary" : "secondary"}
         size="sm"
         onClick={() => setEditing(!editing)}
         data-testid="mode-toggle"

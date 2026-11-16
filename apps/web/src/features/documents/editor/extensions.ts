@@ -121,8 +121,9 @@ export const TokenHighlight = Mark.create({
     return {
       color: {
         default: "yellow",
-        parseHTML: (el) => el.getAttribute("data-color") ?? "yellow",
-        renderHTML: (attrs) => ({ "data-color": attrs.color }),
+        // data-hue picks the palette's highlighter shade (styles.css); data-color is the old name.
+        parseHTML: (el) => el.getAttribute("data-hue") ?? el.getAttribute("data-color") ?? "yellow",
+        renderHTML: (attrs) => ({ "data-hue": attrs.color }),
       },
     };
   },

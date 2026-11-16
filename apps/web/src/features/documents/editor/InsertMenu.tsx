@@ -18,8 +18,10 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { floatingPanelClass } from "../../../components/ui/popover";
+import { Sheet } from "../../../components/ui/sheet";
+import { cn } from "../../../lib/cn";
 import { INSERTABLE_TYPES } from "../model/gestures";
-import { cx, Sheet } from "../ui/primitives";
 
 const META: Partial<Record<BlockType, { icon: ReactNode; hint: string; words: string }>> = {
   paragraph: { icon: <Type />, hint: "Plain text", words: "text p" },
@@ -172,7 +174,7 @@ export function InsertMenu({
   const list = (
     <div role="listbox" aria-label="Block types" className="flex flex-col gap-0.5 p-1.5">
       {items.length === 0 && (
-        <p className="px-3 py-2 text-[13.5px] text-text-muted">No block called “{query}”</p>
+        <p className="px-3 py-2 text-label text-text-muted">No block called “{query}”</p>
       )}
       {items.map((type, i) => (
         <div
@@ -186,20 +188,20 @@ export function InsertMenu({
           onMouseEnter={() => setIndex(i)}
           onClick={() => onChoose(type)}
           onKeyDown={() => {}}
-          className={cx(
-            "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2.5 py-1.5",
+          className={cn(
+            "flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-2.5 py-1.5",
             i === index ? "bg-surface-muted" : "",
           )}
         >
           <span
             aria-hidden
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text-muted [&_svg]:size-4"
+            className="flex size-8 shrink-0 items-center justify-center rounded-control border border-border bg-surface text-text-muted [&_svg]:size-4"
           >
             {META[type]?.icon}
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-medium">{BLOCK_REGISTRY[type].label}</span>
-            <span className="block truncate text-[12.5px] text-text-muted">{META[type]?.hint}</span>
+            <span className="block text-ui font-medium">{BLOCK_REGISTRY[type].label}</span>
+            <span className="block truncate text-label text-text-muted">{META[type]?.hint}</span>
           </span>
         </div>
       ))}
@@ -219,7 +221,7 @@ export function InsertMenu({
           }}
           aria-label="Find a block type"
           placeholder="Find a block…"
-          className="w-full rounded-lg bg-surface-muted px-3 py-2 text-[14px] outline-none placeholder:text-text-muted"
+          className="w-full rounded-control bg-surface-muted px-3 py-2 text-ui outline-none placeholder:text-text-muted pointer-coarse:text-body"
         />
       </div>
     ) : null;
@@ -230,7 +232,8 @@ export function InsertMenu({
         open
         onOpenChange={(open) => !open && onClose()}
         title="Add a block"
-        side="bottom"
+        placement="bottom"
+        flush
         testId="insert-menu"
       >
         {searchField}
@@ -243,7 +246,10 @@ export function InsertMenu({
     <div
       ref={panel}
       data-testid="insert-menu"
-      className="doc-portal doc-root doc-anim-pop fixed z-50 flex w-[min(300px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-border bg-surface text-text shadow-[var(--doc-pop-shadow)]"
+      className={cn(
+        floatingPanelClass,
+        "fixed flex w-[min(300px,calc(100vw-24px))] flex-col overflow-hidden",
+      )}
       style={{
         top: pos.top,
         left: pos.left,

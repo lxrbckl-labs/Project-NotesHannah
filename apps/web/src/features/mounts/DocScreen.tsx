@@ -12,9 +12,9 @@ import {
 import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
+import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { appHttp, isApiError } from "../../lib/api";
-import { cn } from "../../lib/cn";
 import { DocumentView } from "../documents";
 import { useNode } from "../library/queries";
 import { AskButton, useAsk } from "./ask";
@@ -117,11 +117,11 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="doc-screen" data-mode={mode}>
       {mode === "page" ? (
-        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface/90 px-3 py-2 md:px-5">
+        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface px-3 py-2 md:px-5">
           <Link
             to={n.parentId ? `/library/${n.parentId}` : "/library"}
             aria-label="Back to the library"
-            className="flex size-11 items-center justify-center rounded-xl text-text-muted hover:bg-surface-muted xl:size-9"
+            className="flex size-11 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:size-9"
           >
             <ArrowLeft size={20} />
           </Link>
@@ -133,7 +133,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             <div
               role="tablist"
               aria-label="View"
-              className="flex gap-1 rounded-xl border border-border bg-surface-muted p-1"
+              className="inline-flex gap-1 rounded-card border border-border bg-surface-muted p-1"
             >
               {[
                 { label: "Page", to: base, on: true, icon: BookOpen },
@@ -144,10 +144,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
                   role="tab"
                   aria-selected={t.on}
                   to={t.to}
-                  className={cn(
-                    "flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium",
-                    t.on ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
-                  )}
+                  className={segmentItemClass(t.on)}
                 >
                   <t.icon size={15} aria-hidden />
                   {t.label}
@@ -157,7 +154,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             <Link
               to={`/library/${n.id}`}
               aria-label="Sources"
-              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl px-2 text-sm text-text-muted hover:bg-surface-muted sm:px-3 xl:min-h-9"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 text-sm text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text sm:px-3 xl:min-h-9"
             >
               <Paperclip size={15} aria-hidden />
               <span className="hidden sm:inline">Sources</span>

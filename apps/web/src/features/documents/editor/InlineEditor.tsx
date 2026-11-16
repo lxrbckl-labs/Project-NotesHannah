@@ -3,6 +3,7 @@ import { type Editor, Extension } from "@tiptap/core";
 import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useEffect, useMemo, useRef } from "react";
+import { cn } from "../../../lib/cn";
 import { useActions, useView } from "../context";
 import { markerCitation } from "../model/references";
 import {
@@ -14,7 +15,6 @@ import {
   splitRichText,
   type TiptapNode,
 } from "../model/richtext";
-import { cx } from "../ui/primitives";
 import { inlineExtensions } from "./extensions";
 import { type LineKind, listLinesExtension } from "./lines";
 
@@ -260,7 +260,7 @@ export function InlineEditor(props: InlineEditorProps) {
         "aria-label": ariaLabel,
         role: "textbox",
         "aria-multiline": "true",
-        class: cx(mode === "lines" && "doc-lines-editor"),
+        class: cn(mode === "lines" && "doc-lines-editor"),
         ...(props.testId ? { "data-testid": props.testId } : {}),
       },
     },

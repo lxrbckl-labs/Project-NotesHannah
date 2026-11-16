@@ -1,7 +1,7 @@
-import { BLOCK_LIMITS, type BlockOf, COLOR_TOKENS, type RichText } from "@notes/schema";
+import { BLOCK_LIMITS, type BlockOf, type RichText } from "@notes/schema";
 import { Sparkle } from "lucide-react";
+import { seriesHue } from "../../../lib/hues";
 import { RichField } from "../editor/RichField";
-import { toneVars } from "../ui/hooks";
 import { AddButton, Eyebrow, PlainInput, RemoveButton, useBlockEdit } from "./common";
 
 /** A mnemonic (D6): the device large, then each letter with what it stands for. */
@@ -10,20 +10,20 @@ export function MnemonicBlock({ block }: { block: BlockOf<"mnemonic"> }) {
   const { device, topic, parts, note } = block.content;
   const tools = editing && active;
   const base = block.style?.color;
-  const palette = ["purple", "blue", "teal", "green", "orange", "pink", "red", "yellow"] as const;
-  const toneFor = (i: number) => base ?? palette[i % palette.length] ?? COLOR_TOKENS[0];
+  // Each letter gets its own lively hue, unless the block has a colour of its own.
+  const toneFor = (i: number) => base ?? seriesHue(i);
   const setPart = (i: number, value: { key?: string; meaning?: RichText }) =>
     patch({ parts: parts.map((p, j) => (j === i ? { ...p, ...value } : p)) }, "Edit mnemonic");
 
   return (
     <section
       aria-label={`Mnemonic: ${device}`}
-      className="rounded-3xl border border-border bg-surface p-4 shadow-[var(--doc-sheet-shadow)] md:p-5"
+      className="rounded-panel border border-border bg-surface p-4 shadow-raised md:p-5"
     >
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--doc-purple-bg)] text-[var(--doc-purple-fg)]"
+          className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-control bg-hue-purple-soft text-hue-purple-text"
         >
           <Sparkle className="size-4.5" />
         </span>
@@ -45,11 +45,11 @@ export function MnemonicBlock({ block }: { block: BlockOf<"mnemonic"> }) {
               value={topic ?? ""}
               label="What it helps remember"
               placeholder="What it helps remember"
-              className="text-[14px] text-text-muted"
+              className="text-ui text-text-muted"
               onCommit={(v) => patch({ topic: v || undefined }, "Edit topic")}
             />
           ) : (
-            topic && <p className="m-0 text-[14px] text-text-muted">{topic}</p>
+            topic && <p className="m-0 text-ui text-text-muted">{topic}</p>
           )}
         </div>
       </div>
@@ -58,10 +58,10 @@ export function MnemonicBlock({ block }: { block: BlockOf<"mnemonic"> }) {
           <li
             // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional
             key={i}
-            className="doc-tone flex items-start gap-3 rounded-2xl border border-[var(--t-border)] bg-[var(--t-bg)] px-3 py-2.5"
-            style={toneVars(toneFor(i))}
+            data-hue={toneFor(i)}
+            className="flex items-start gap-3 rounded-card border border-tone-border bg-tone-soft px-3 py-2.5"
           >
-            <span className="flex min-h-9 min-w-10 max-w-24 shrink-0 items-center justify-center rounded-xl bg-[var(--t-hl)] px-2 py-1 text-[1.25rem] leading-tight font-bold text-[var(--t-fg)]">
+            <span className="flex min-h-9 min-w-10 max-w-24 shrink-0 items-center justify-center rounded-control bg-tone-mark px-2 py-1 text-[1.25rem] leading-tight font-bold text-tone-text">
               {editing ? (
                 <span className="block w-10">
                   <PlainInput
@@ -76,7 +76,7 @@ export function MnemonicBlock({ block }: { block: BlockOf<"mnemonic"> }) {
                 part.key
               )}
             </span>
-            <div className="min-w-0 flex-1 pt-0.5 text-[15px] leading-snug">
+            <div className="min-w-0 flex-1 pt-0.5 text-body leading-snug">
               <RichField
                 blockId={block.id}
                 field={`parts.${i}`}
@@ -107,7 +107,7 @@ export function MnemonicBlock({ block }: { block: BlockOf<"mnemonic"> }) {
         </div>
       )}
       {(note?.length || tools) && (
-        <div className="mt-3 text-[13.5px] text-text-muted">
+        <div className="mt-3 text-label text-text-muted">
           <RichField
             blockId={block.id}
             field="note"

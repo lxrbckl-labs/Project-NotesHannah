@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Download, FileSearch, RotateCw } from "lucid
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "../../components/ui/button";
+import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { api, originalUrl, pageImageUrl } from "../../lib/api";
 import { cn } from "../../lib/cn";
@@ -159,7 +160,7 @@ function ViewerHeader({
   void onRetry;
   return (
     <header className="flex flex-wrap items-start gap-3">
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-card bg-accent-soft text-accent">
         <FileTypeIcon type={file.type} size={24} />
       </span>
       <div className="min-w-0 flex-1 basis-60">
@@ -191,7 +192,7 @@ function ViewerHeader({
       <a
         href={originalUrl(file.id, true)}
         download
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-medium hover:bg-surface-muted xl:min-h-9"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-4 text-sm font-medium hover:bg-surface-muted xl:min-h-9"
       >
         <Download size={16} aria-hidden />
         Download original
@@ -247,7 +248,7 @@ function Thumbnails({
               data-testid="thumb"
               onClick={() => onPick(p)}
               className={cn(
-                "relative block overflow-hidden rounded-xl border-2 bg-surface-muted",
+                "relative block overflow-hidden rounded-control border-2 bg-surface-muted",
                 p.id === currentId
                   ? "border-accent"
                   : "border-transparent hover:border-border-strong",
@@ -259,7 +260,7 @@ function Thumbnails({
                 loading="lazy"
                 className="h-20 w-auto min-w-14 max-w-32 object-contain md:h-24"
               />
-              <span className="absolute bottom-1 left-1 rounded-md bg-surface/90 px-1.5 text-xs font-medium">
+              <span className="absolute bottom-1 left-1 rounded-inline bg-surface/90 px-1.5 text-xs font-medium">
                 {p.index}
               </span>
             </button>
@@ -296,7 +297,7 @@ function PageImage({ page, region }: { page: Page; region?: NormalizedBox | unde
           <div
             data-testid="region"
             title="Cited area"
-            className="pointer-events-none absolute rounded border-2 border-accent bg-accent/15"
+            className="pointer-events-none absolute rounded-inline border-2 border-accent bg-accent/15"
             style={{
               left: `${region.x * 100}%`,
               top: `${region.y * 100}%`,
@@ -342,7 +343,7 @@ function PhonePanes({
       <div
         role="tablist"
         aria-label="Page or transcript"
-        className="mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-surface-muted p-1"
+        className="mb-3 grid grid-cols-2 gap-1 rounded-card border border-border bg-surface-muted p-1"
       >
         {["Page", "Transcript"].map((label, i) => (
           <button
@@ -351,7 +352,7 @@ function PhonePanes({
             role="tab"
             aria-selected={tab === i}
             onClick={() => choose(i)}
-            className="min-h-11 rounded-xl text-sm font-medium text-text-muted aria-selected:bg-accent aria-selected:text-accent-contrast"
+            className={segmentItemClass(tab === i)}
           >
             {label}
           </button>

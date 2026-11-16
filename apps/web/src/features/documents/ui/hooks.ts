@@ -1,5 +1,4 @@
-import type { ColorToken } from "@notes/schema";
-import { type CSSProperties, useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 /** Layouts: phone < 768, tablet 768–1279, computer ≥ 1280 (the shell's breakpoints). */
 export type Layout = "phone" | "tablet" | "computer";
@@ -50,18 +49,6 @@ export function useIsTouch(): boolean {
 
 export function useReducedMotion(): boolean {
   return useMediaQuery("(prefers-reduced-motion: reduce)");
-}
-
-/** CSS variables for one colour token, read by the .doc-tone classes. */
-export function toneVars(token: ColorToken | undefined): CSSProperties {
-  const t = token ?? "gray";
-  return {
-    "--t-fg": `var(--doc-${t}-fg)`,
-    "--t-bg": `var(--doc-${t}-bg)`,
-    "--t-border": `var(--doc-${t}-border)`,
-    "--t-hl": `var(--doc-${t}-hl)`,
-    "--t-solid": `var(--doc-${t}-solid)`,
-  } as CSSProperties;
 }
 
 /** Height the on-screen keyboard covers, from the visual viewport (0 when none). */

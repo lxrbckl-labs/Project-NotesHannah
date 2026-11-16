@@ -8,10 +8,11 @@ import {
 } from "@notes/schema";
 import { ChevronLeft, ChevronRight, FileText, FileX, Locate, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { IconButton } from "../../../components/ui/button";
+import { DOCUMENT_HUE } from "../../../lib/roles";
 import { useActions, useView } from "../context";
 import { locateQuote, segmentTranscript } from "../model/references";
 import type { CitationSource } from "../store/types";
-import { cx, IconButton } from "../ui/primitives";
 import { ZoomableImage } from "../ui/ZoomableImage";
 
 const sourceCache = new Map<string, Promise<CitationSource>>();
@@ -122,7 +123,7 @@ export function CitationPanel({
           <ChevronLeft className="size-4.5" />
         </IconButton>
         <p
-          className="min-w-0 flex-1 text-center text-[13px] font-medium text-text-muted"
+          className="min-w-0 flex-1 text-center text-label font-medium text-text-muted"
           aria-live="polite"
         >
           Source <span className="font-semibold text-text tabular-nums">{number}</span> of {total}
@@ -146,12 +147,8 @@ export function CitationPanel({
         <div className="mb-3 flex items-start gap-2.5">
           <span
             aria-hidden
-            className={cx(
-              "mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl",
-              available
-                ? "bg-[var(--doc-blue-bg)] text-[var(--doc-blue-fg)]"
-                : "bg-surface-muted text-text-muted",
-            )}
+            data-hue={available ? DOCUMENT_HUE.citation : DOCUMENT_HUE.citationMissing}
+            className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text"
           >
             {available || !source ? (
               <FileText className="size-4.5" />
@@ -160,10 +157,10 @@ export function CitationPanel({
             )}
           </span>
           <div className="min-w-0">
-            <p className="m-0 truncate text-[15px] font-semibold" data-testid="source-file">
+            <p className="m-0 truncate text-body font-semibold" data-testid="source-file">
               {source?.fileName ?? (source ? "Deleted file" : "Loading…")}
             </p>
-            <p className="m-0 text-[13px] text-text-muted">
+            <p className="m-0 text-label text-text-muted">
               {citation.label ? `${citation.label} · ` : ""}
               {source?.pageIndex
                 ? `page ${source.pageIndex}${available ? ` of ${available.pageCount}` : ""}`
@@ -175,7 +172,7 @@ export function CitationPanel({
         {error && (
           <p
             role="alert"
-            className="rounded-xl bg-[var(--doc-red-bg)] p-3 text-sm text-[var(--doc-red-fg)]"
+            className="rounded-control border border-danger-border bg-danger-soft p-3 text-ui text-danger"
           >
             The source couldn’t be loaded. Check the connection and try again.
           </p>
@@ -183,11 +180,11 @@ export function CitationPanel({
 
         {source && source.status !== "available" && (
           <div
-            className="mb-4 rounded-2xl border border-dashed border-[var(--doc-gray-solid)] bg-surface-muted/70 p-4"
+            className="mb-4 rounded-card border border-dashed border-hue-gray-solid bg-surface-muted p-4"
             data-testid="source-unavailable"
           >
             <p className="m-0 font-semibold">Source unavailable</p>
-            <p className="mt-1 mb-0 text-[13.5px] text-text-muted">
+            <p className="mt-1 mb-0 text-label text-text-muted">
               {source.status === "source_trashed"
                 ? "This file is in the trash. Restore it from the library’s trash to see the page again."
                 : "This file was permanently deleted. Only the quoted passage remains."}
@@ -206,7 +203,7 @@ export function CitationPanel({
           />
         )}
 
-        <h3 className="mt-5 mb-2 flex items-center justify-between text-[12px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+        <h3 className="mt-5 mb-2 flex items-center justify-between text-caption font-semibold uppercase tracking-[0.06em] text-text-muted">
           {available ? "Transcript" : "Quoted passage"}
           {range?.loose && (
             <span className="font-normal normal-case tracking-normal">
@@ -218,7 +215,7 @@ export function CitationPanel({
           transcript ? (
             <div
               ref={transcriptBox}
-              className="relative max-h-[42vh] overflow-y-auto rounded-2xl border border-border bg-surface-muted/50 p-3.5 text-[14.5px] leading-relaxed whitespace-pre-wrap"
+              className="relative max-h-[42vh] overflow-y-auto rounded-card border border-border bg-surface-muted p-3.5 text-ui leading-relaxed whitespace-pre-wrap"
               data-testid="transcript"
             >
               {segments.map((segment, i) =>
@@ -243,10 +240,13 @@ export function CitationPanel({
           )
         ) : null}
         {(!available || (transcript && !range)) && (
-          <blockquote className="m-0 mt-2 rounded-2xl border-l-[3px] border-[var(--doc-yellow-solid)] bg-[var(--doc-yellow-bg)] px-3.5 py-2.5 text-[14.5px] italic">
+          <blockquote
+            data-hue={DOCUMENT_HUE.highlight}
+            className="m-0 mt-2 rounded-card border-l-[3px] border-tone-solid bg-tone-soft px-3.5 py-2.5 text-ui italic"
+          >
             “{citation.quote}”
             {available && transcript && !range && (
-              <span className="mt-1 block text-[12.5px] not-italic text-text-muted">
+              <span className="mt-1 block text-label not-italic text-tone-text">
                 These words weren’t found in the current transcript; it may have been corrected
                 since.
               </span>
@@ -256,7 +256,7 @@ export function CitationPanel({
 
         {uses.length > 0 && (
           <>
-            <h3 className="mt-5 mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+            <h3 className="mt-5 mb-2 text-caption font-semibold uppercase tracking-[0.06em] text-text-muted">
               Cited in this document
             </h3>
             <ul className="m-0 flex list-none flex-col gap-1 p-0">
@@ -267,7 +267,7 @@ export function CitationPanel({
                     <button
                       type="button"
                       onClick={() => jumpTo(use.blockId)}
-                      className="flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left text-[13.5px] hover:bg-surface-muted pointer-coarse:min-h-11"
+                      className="flex min-h-10 w-full items-center gap-2 rounded-control px-2.5 text-left text-label hover:bg-surface-muted pointer-coarse:min-h-11"
                     >
                       <Locate aria-hidden className="size-3.5 shrink-0 text-text-muted" />
                       <span className="truncate">{block ? blockTitle(block) : "A block"}</span>

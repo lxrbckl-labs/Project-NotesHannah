@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { Button } from "../../../components/ui/button";
+import { Sheet } from "../../../components/ui/sheet";
+import { cn } from "../../../lib/cn";
 import { REQUEST_LABELS } from "../blocks/BlockShell";
 import { useActions } from "../context";
 import { type PageChoice, REQUEST_KINDS, type RequestKind } from "../store/types";
-import type { Layout } from "../ui/hooks";
-import { Button, cx, Sheet } from "../ui/primitives";
 
 const HINTS: Record<RequestKind, string> = {
   wrong: "An agent will check it against your sources and correct it.",
@@ -17,12 +18,10 @@ export function RequestDialog({
   blockId,
   initialKind,
   onClose,
-  layout,
 }: {
   blockId: string | null;
   initialKind: RequestKind;
   onClose: () => void;
-  layout: Layout;
 }) {
   const actions = useActions();
   const [kind, setKind] = useState<RequestKind>(initialKind);
@@ -59,7 +58,8 @@ export function RequestDialog({
       onOpenChange={(open) => !open && onClose()}
       title="Ask about this block"
       description="An agent picks this up from your requests."
-      side={layout === "phone" ? "bottom" : "center"}
+      placement="center"
+      flush
       testId="request-dialog"
     >
       <div className="flex flex-col gap-4 px-5 pb-5">
@@ -68,10 +68,10 @@ export function RequestDialog({
           {REQUEST_KINDS.map((k) => (
             <label
               key={k}
-              className={cx(
-                "flex min-h-12 cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 text-[14px] transition-colors",
+              className={cn(
+                "flex min-h-12 cursor-pointer items-center gap-2.5 rounded-card border px-3.5 py-2.5 text-ui transition-colors duration-(--duration-instant)",
                 kind === k
-                  ? "border-[var(--doc-blue-solid)] bg-[var(--doc-blue-bg)] text-[var(--doc-blue-fg)]"
+                  ? "border-accent bg-accent-soft font-medium text-accent"
                   : "border-border hover:bg-surface-muted",
               )}
             >
@@ -81,14 +81,14 @@ export function RequestDialog({
                 value={k}
                 checked={kind === k}
                 onChange={() => setKind(k)}
-                className="accent-[var(--doc-blue-solid)]"
+                className="accent-accent"
               />
               {REQUEST_LABELS[k]}
             </label>
           ))}
         </fieldset>
-        <p className="m-0 -mt-1 text-[13px] text-text-muted">{HINTS[kind]}</p>
-        <label className="flex flex-col gap-1.5 text-[13.5px] font-medium">
+        <p className="m-0 -mt-1 text-label text-text-muted">{HINTS[kind]}</p>
+        <label className="flex flex-col gap-1.5 text-label font-medium">
           Anything to add? (optional)
           <textarea
             value={note}
@@ -98,11 +98,11 @@ export function RequestDialog({
             placeholder={
               kind === "wrong" ? "e.g. the slide says 25 mg, not 50 mg" : "Your words for the agent"
             }
-            className="resize-none rounded-2xl border border-border bg-surface px-3.5 py-2.5 text-[15px] font-normal outline-none focus:border-[var(--doc-focus)]"
+            className="resize-none rounded-control border border-border-strong bg-surface px-3.5 py-2.5 text-body font-normal outline-none focus:border-accent"
           />
         </label>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           <Button
@@ -124,12 +124,10 @@ export function PagePicker({
   open,
   onClose,
   onPick,
-  layout,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (page: PageChoice) => void;
-  layout: Layout;
 }) {
   const { store } = useActions();
   const [pages, setPages] = useState<PageChoice[] | null>(null);
@@ -150,8 +148,9 @@ export function PagePicker({
       onOpenChange={(o) => !o && onClose()}
       title="Choose a page"
       description="Pick one of your uploaded pages."
-      side={layout === "phone" ? "bottom" : "center"}
+      placement="center"
       wide
+      flush
     >
       <div className="grid grid-cols-2 gap-3 px-5 pb-5 sm:grid-cols-3 md:grid-cols-4">
         {pages === null && <p className="col-span-full text-sm text-text-muted">Loading pages…</p>}
@@ -165,15 +164,15 @@ export function PagePicker({
             key={page.pageId}
             type="button"
             onClick={() => onPick(page)}
-            className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface p-2 text-left transition-colors hover:border-[var(--doc-focus)]"
+            className="flex flex-col gap-1.5 rounded-card border border-border bg-surface p-2 text-left transition-colors duration-(--duration-instant) hover:border-accent"
           >
             <img
               src={page.thumbUrl}
               alt=""
-              className="aspect-[4/3] w-full rounded-lg border border-border object-cover object-top"
+              className="aspect-[4/3] w-full rounded-control border border-border object-cover object-top"
             />
-            <span className="truncate text-[12.5px] font-medium">{page.fileName}</span>
-            <span className="text-[12px] text-text-muted">Page {page.pageIndex}</span>
+            <span className="truncate text-label font-medium">{page.fileName}</span>
+            <span className="text-caption text-text-muted">Page {page.pageIndex}</span>
           </button>
         ))}
       </div>

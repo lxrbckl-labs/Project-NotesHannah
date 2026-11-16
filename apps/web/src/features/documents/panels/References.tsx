@@ -1,7 +1,8 @@
 import { citationKey } from "@notes/schema";
 import { BookOpen } from "lucide-react";
+import { cn } from "../../../lib/cn";
+import { DOCUMENT_HUE } from "../../../lib/roles";
 import { useActions, useView } from "../context";
-import { cx } from "../ui/primitives";
 
 /** The references list at the end of the document (K7): each source once, in order of first use. */
 export function References({
@@ -34,21 +35,22 @@ export function References({
                 type="button"
                 data-testid="reference"
                 onClick={() => openCitation(ref.number)}
-                className="group flex w-full items-start gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors hover:bg-surface"
+                className="group flex w-full items-start gap-3 rounded-card px-2.5 py-2 text-left transition-colors duration-(--duration-instant) hover:bg-surface"
               >
                 <span
-                  className={cx(
-                    "mt-0.5 flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1 text-[12px] font-semibold tabular-nums",
+                  data-hue={unavailable ? DOCUMENT_HUE.citationMissing : DOCUMENT_HUE.citation}
+                  className={cn(
+                    "mt-0.5 flex h-6 min-w-6 shrink-0 items-center justify-center rounded-pill border px-1 text-caption font-semibold text-tone-text tabular-nums",
                     unavailable
-                      ? "border border-dashed border-[var(--doc-gray-solid)] text-text-muted"
-                      : "bg-[var(--doc-blue-bg)] text-[var(--doc-blue-fg)]",
+                      ? "border-dashed border-tone-solid"
+                      : "border-tone-border bg-tone-soft",
                   )}
                 >
                   {ref.number}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[14.5px] leading-snug">“{ref.citation.quote}”</span>
-                  <span className="mt-0.5 block text-[12.5px] text-text-muted">
+                  <span className="block text-ui leading-snug">“{ref.citation.quote}”</span>
+                  <span className="mt-0.5 block text-label text-text-muted">
                     {unavailable
                       ? state === "source_trashed"
                         ? `Source in the trash${meta?.fileName ? ` · ${meta.fileName}` : ""}`

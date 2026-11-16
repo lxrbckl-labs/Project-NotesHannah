@@ -1,7 +1,6 @@
 import { BLOCK_LIMITS, type BlockOf, type CitedText, type RichText } from "@notes/schema";
+import { cn } from "../../../lib/cn";
 import { useActions } from "../context";
-import { toneVars } from "../ui/hooks";
-import { cx } from "../ui/primitives";
 import { CitedEntry } from "./cited";
 import { AddButton, PlainInput, RemoveButton, useBlockEdit } from "./common";
 
@@ -58,9 +57,9 @@ export function ComparisonBlock({ block }: { block: Comparison }) {
     );
 
   return (
-    <figure className="doc-tone m-0" style={toneVars(tone)} data-testid="comparison-table">
+    <figure className="m-0" data-hue={tone} data-testid="comparison-table">
       {(title || tools) && (
-        <figcaption className="mb-2 text-[15px] font-semibold">
+        <figcaption className="mb-2 text-body font-semibold">
           {tools ? (
             <PlainInput
               value={title ?? ""}
@@ -74,15 +73,15 @@ export function ComparisonBlock({ block }: { block: Comparison }) {
         </figcaption>
       )}
       <div
-        className="doc-scroll-x rounded-2xl border border-border bg-surface"
+        className="doc-scroll-x rounded-card border border-border bg-surface"
         data-testid="comparison-scroll"
       >
-        <table className="w-full min-w-max border-separate border-spacing-0 text-[14.5px] leading-snug">
+        <table className="w-full min-w-max border-separate border-spacing-0 text-ui leading-snug">
           <thead>
             <tr>
               <th
                 scope="col"
-                className="doc-sticky-col min-w-32 border-b border-[var(--t-border)] bg-[var(--t-bg)] px-3.5 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-[var(--t-fg)]"
+                className="doc-sticky-col min-w-32 border-b border-tone-border bg-tone-soft px-3.5 py-2.5 text-left text-caption font-semibold uppercase tracking-wide text-tone-text"
               >
                 <span className="sr-only">Drug</span>
               </th>
@@ -91,7 +90,7 @@ export function ComparisonBlock({ block }: { block: Comparison }) {
                   // biome-ignore lint/suspicious/noArrayIndexKey: attributes are positional
                   key={c}
                   scope="col"
-                  className="min-w-36 max-w-64 border-b border-l border-[var(--t-border)] border-l-border/60 bg-[var(--t-bg)] px-3.5 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-[var(--t-fg)]"
+                  className="min-w-36 max-w-64 border-b border-l border-tone-border border-l-border/60 bg-tone-soft px-3.5 py-2.5 text-left text-caption font-semibold uppercase tracking-wide text-tone-text"
                 >
                   {tools ? (
                     <span className="flex items-center gap-1">
@@ -121,7 +120,7 @@ export function ComparisonBlock({ block }: { block: Comparison }) {
               <tr key={r} className="group/row">
                 <th
                   scope="row"
-                  className={cx(
+                  className={cn(
                     "doc-sticky-col border-r border-border/60 bg-surface px-3.5 py-3 text-left align-top font-semibold shadow-[1px_0_0_var(--color-border)]",
                     r > 0 && "border-t border-t-border/60",
                   )}
@@ -157,7 +156,7 @@ export function ComparisonBlock({ block }: { block: Comparison }) {
                   <td
                     // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional
                     key={c}
-                    className={cx(
+                    className={cn(
                       "max-w-64 border-l border-border/60 px-3.5 py-3 align-top",
                       r > 0 && "border-t border-t-border/60",
                     )}

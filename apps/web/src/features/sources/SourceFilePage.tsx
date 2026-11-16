@@ -16,7 +16,7 @@ export function SourceFilePage() {
       <button
         type="button"
         onClick={back}
-        className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
+        className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
       >
         <ArrowLeft size={18} aria-hidden /> Back
       </button>

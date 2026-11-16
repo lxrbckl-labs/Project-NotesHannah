@@ -15,20 +15,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { IconButton } from "../ui/primitives";
+import { IconButton } from "../../../components/ui/button";
+import { hueVar, seriesHue } from "../../../lib/hues";
 import { AddButton, PlainInput, RemoveButton, useBlockEdit } from "./common";
 
-const BRANCH_TONES: ColorToken[] = [
-  "blue",
-  "orange",
-  "purple",
-  "green",
-  "pink",
-  "teal",
-  "red",
-  "brown",
-  "yellow",
-];
 const NODE_H = 34;
 const GAP_Y = 10;
 const GAP_X = 52;
@@ -98,10 +88,7 @@ export function layoutMindMap(root: MindMapNode, collapsed: ReadonlySet<string>)
     if (isCollapsed) return;
     let y = top;
     (n.children ?? []).forEach((child, i) => {
-      const childTone =
-        depth === 0
-          ? (child.color ?? BRANCH_TONES[i % BRANCH_TONES.length] ?? "blue")
-          : (child.color ?? laid.tone);
+      const childTone = depth === 0 ? (child.color ?? seriesHue(i)) : (child.color ?? laid.tone);
       const ch = height(child, `${key}.${i}`);
       place(child, `${key}.${i}`, depth + 1, x + w + GAP_X, y, childTone, laid);
       y += ch + GAP_Y;
@@ -230,11 +217,11 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
       <div
         ref={frame}
         data-testid="mind-map"
-        className="relative cursor-grab overflow-hidden rounded-3xl border border-border bg-surface active:cursor-grabbing"
+        className="relative cursor-grab overflow-hidden rounded-panel border border-border bg-surface active:cursor-grabbing"
         style={{
           height: frameHeight,
           touchAction: "pan-y",
-          backgroundImage: "radial-gradient(var(--color-border) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(var(--color-dot) 1.1px, transparent 1px)",
           backgroundSize: "18px 18px",
         }}
         onPointerDown={onDown}
@@ -256,7 +243,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
                   key={`e-${n.key}`}
                   d={`M ${n.parent.x + n.parent.w} ${n.parent.y} C ${n.parent.x + n.parent.w + GAP_X / 2} ${n.parent.y}, ${n.x - GAP_X / 2} ${n.y}, ${n.x} ${n.y}`}
                   fill="none"
-                  stroke={`var(--doc-${n.tone ?? "gray"}-solid)`}
+                  stroke={hueVar(n.tone ?? "gray", "solid")}
                   strokeOpacity={0.55}
                   strokeWidth={n.depth === 1 ? 2.5 : 1.75}
                 />
@@ -275,8 +262,8 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
                     width={n.w}
                     height={NODE_H}
                     rx={root ? 12 : 10}
-                    fill={root ? "var(--color-accent)" : `var(--doc-${tone}-bg)`}
-                    stroke={root ? "var(--color-accent)" : `var(--doc-${tone}-border)`}
+                    fill={root ? "var(--color-accent)" : hueVar(tone, "soft")}
+                    stroke={root ? "var(--color-accent)" : hueVar(tone, "border")}
                     strokeWidth={1.5}
                   />
                   <text
@@ -286,7 +273,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
                     dominantBaseline="middle"
                     fontSize={root ? 14.5 : 13}
                     fontWeight={root ? 700 : n.depth === 1 ? 600 : 500}
-                    fill={root ? "var(--color-accent-contrast)" : `var(--doc-${tone}-fg)`}
+                    fill={root ? "var(--color-accent-contrast)" : hueVar(tone, "text")}
                   >
                     {shown(n.node.label, n.w, root)}
                   </text>
@@ -313,7 +300,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
                         cy={n.y}
                         r={n.hidden ? 10 : 8}
                         fill="var(--color-surface)"
-                        stroke={`var(--doc-${tone}-solid)`}
+                        stroke={hueVar(tone, "solid")}
                         strokeWidth={1.5}
                       />
                       <text
@@ -323,7 +310,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
                         dominantBaseline="middle"
                         fontSize={n.hidden ? 10 : 12}
                         fontWeight={700}
-                        fill={`var(--doc-${tone}-fg)`}
+                        fill={hueVar(tone, "text")}
                       >
                         {n.hidden ? `+${n.hidden}` : "−"}
                       </text>
@@ -334,7 +321,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
             })}
           </g>
         </svg>
-        <div className="absolute right-2 bottom-2 flex gap-0.5 rounded-xl border border-border bg-surface/90 p-0.5 shadow-sm backdrop-blur">
+        <div className="absolute right-2 bottom-2 flex gap-0.5 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur">
           <IconButton label="Zoom out" size="sm" onClick={() => zoomAt(1 / 1.25)}>
             <Minus className="size-4" />
           </IconButton>
@@ -399,10 +386,10 @@ function MindMapOutline({
   };
   return (
     <div
-      className="mt-3 rounded-2xl border border-border bg-surface-muted/50 p-3"
+      className="mt-3 rounded-card border border-border bg-surface-muted/50 p-3"
       data-testid="mind-map-outline"
     >
-      <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-muted">
+      <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-text-muted">
         Edit the map
       </p>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
@@ -416,7 +403,7 @@ function MindMapOutline({
               value={node.label}
               required
               label={depth === 0 ? "Main idea" : `Idea: ${node.label}`}
-              className="text-[14px]"
+              className="text-ui"
               onCommit={(label) => apply(path, (n) => ({ ...n, label }))}
             />
             {depth < BLOCK_LIMITS.mindMapMaxDepth &&

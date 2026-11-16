@@ -1,9 +1,9 @@
 import type { Block } from "@notes/schema";
 import { Plus, X } from "lucide-react";
 import { type InputHTMLAttributes, type ReactNode, useEffect, useState } from "react";
+import { cn } from "../../../lib/cn";
 import { useActions, useSignal, useView } from "../context";
 import { patchContent, replaceContent } from "../model/gestures";
-import { cx } from "../ui/primitives";
 
 /** What a block renderer needs to edit itself. */
 export function useBlockEdit(block: Block) {
@@ -50,9 +50,9 @@ export function PlainInput({
     }
     if (next !== value) onCommit(next);
   };
-  const classes = cx(
-    "w-full min-w-0 rounded-lg border border-transparent bg-transparent px-1.5 -mx-1.5 outline-none transition-colors",
-    "hover:border-border focus:border-[var(--doc-focus)] focus:bg-surface placeholder:text-text-muted/70",
+  const classes = cn(
+    "w-full min-w-0 rounded-control border border-transparent bg-transparent px-1.5 -mx-1.5 outline-none transition-colors",
+    "hover:border-border-strong focus:border-accent focus:bg-surface placeholder:text-text-muted/70",
     className,
   );
   if (multiline) {
@@ -63,7 +63,7 @@ export function PlainInput({
         rows={2}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
-        className={cx(classes, "resize-none py-1")}
+        className={cn(classes, "resize-none py-1")}
         placeholder={rest.placeholder}
       />
     );
@@ -104,7 +104,7 @@ export function AddButton({
       type="button"
       data-testid={testId}
       onClick={onClick}
-      className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-dashed border-border px-3 text-[13px] font-medium text-text-muted transition-colors hover:border-[var(--doc-focus)] hover:text-text pointer-coarse:min-h-11"
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-dashed border-border-strong px-3 text-label font-medium text-text-muted transition-colors duration-(--duration-instant) hover:border-accent hover:text-text pointer-coarse:min-h-11"
     >
       <Plus aria-hidden className="size-3.5" />
       {children}
@@ -126,8 +126,8 @@ export function RemoveButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={cx(
-        "relative inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-[var(--doc-red-bg)] hover:text-[var(--doc-red-fg)] after:absolute after:-inset-2 after:content-['']",
+      className={cn(
+        "relative inline-flex size-7 shrink-0 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-danger-soft hover:text-danger after:absolute after:-inset-2 after:content-['']",
         className,
       )}
     >
@@ -140,8 +140,8 @@ export function RemoveButton({
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <p
-      className={cx(
-        "text-[11.5px] font-semibold uppercase tracking-[0.06em] text-text-muted",
+      className={cn(
+        "text-caption font-semibold uppercase tracking-[0.06em] text-text-muted",
         className,
       )}
     >

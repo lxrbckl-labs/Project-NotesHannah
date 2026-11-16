@@ -1,10 +1,12 @@
 import { BLOCK_LIMITS, type BlockOf, type ImageSource } from "@notes/schema";
 import { ImageOff, MousePointerClick } from "lucide-react";
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { Popover } from "../../../components/ui/popover";
+import { Sheet } from "../../../components/ui/sheet";
+import { cn } from "../../../lib/cn";
 import { useActions } from "../context";
 import { RichField } from "../editor/RichField";
 import type { PageImage } from "../store/types";
-import { cx, Popover, Sheet } from "../ui/primitives";
 import { ZoomableImage } from "../ui/ZoomableImage";
 import { PlainInput, RemoveButton, useBlockEdit } from "./common";
 import { RichTextView } from "./RichText";
@@ -62,8 +64,8 @@ export function CroppedImage({
     // biome-ignore lint/a11y/noStaticElementInteractions: placing a hotspot by tapping; the list below offers the same by keyboard
     // biome-ignore lint/a11y/useKeyWithClickEvents: as above
     <div
-      className={cx(
-        "relative w-full overflow-hidden rounded-2xl border border-border bg-[var(--doc-gray-bg)]",
+      className={cn(
+        "relative w-full overflow-hidden rounded-card border border-border bg-hue-gray-soft",
         className,
       )}
       style={{ aspectRatio: String(ratio) }}
@@ -87,7 +89,7 @@ export function CroppedImage({
 
 function ImagePlaceholder({ failed, alt }: { failed: boolean; alt: string }) {
   return (
-    <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface-muted text-[13.5px] text-text-muted">
+    <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-surface-muted text-label text-text-muted">
       {failed ? (
         <>
           <ImageOff aria-hidden className="size-5" />
@@ -102,7 +104,7 @@ function ImagePlaceholder({ failed, alt }: { failed: boolean; alt: string }) {
 }
 
 export function ImageBlock({ block }: { block: BlockOf<"image"> }) {
-  const { editing, active, patch, layout } = useBlockEdit(block);
+  const { editing, active, patch } = useBlockEdit(block);
   const { image, failed } = usePageImage(block.content.source);
   const [zoom, setZoom] = useState(false);
   return (
@@ -110,7 +112,7 @@ export function ImageBlock({ block }: { block: BlockOf<"image"> }) {
       {image ? (
         <button
           type="button"
-          className="block w-full cursor-zoom-in rounded-2xl"
+          className="block w-full cursor-zoom-in rounded-card"
           aria-label={`Open image: ${block.content.alt}`}
           onClick={() => setZoom(true)}
         >
@@ -124,7 +126,7 @@ export function ImageBlock({ block }: { block: BlockOf<"image"> }) {
         <ImagePlaceholder failed={failed} alt={block.content.alt} />
       )}
       {editing && active && (
-        <div className="mt-2 text-[13.5px]">
+        <div className="mt-2 text-label">
           <PlainInput
             value={block.content.alt}
             required
@@ -135,7 +137,7 @@ export function ImageBlock({ block }: { block: BlockOf<"image"> }) {
         </div>
       )}
       {(block.content.caption?.length || (editing && active)) && (
-        <figcaption className="mt-2 text-center text-[13.5px] text-text-muted">
+        <figcaption className="mt-2 text-center text-label text-text-muted">
           <RichField
             blockId={block.id}
             field="caption"
@@ -154,8 +156,9 @@ export function ImageBlock({ block }: { block: BlockOf<"image"> }) {
           open={zoom}
           onOpenChange={setZoom}
           title={block.content.alt}
-          side={layout === "phone" ? "bottom" : "center"}
+          placement="center"
           wide
+          flush
         >
           <div className="p-4 pt-1">
             <ZoomableImage
@@ -220,7 +223,7 @@ export function LabelledImageBlock({ block }: { block: BlockOf<"labelled_image">
           image={image}
           region={block.content.image.region}
           alt={block.content.alt}
-          className={cx(placing && "cursor-crosshair ring-2 ring-[var(--doc-focus)]")}
+          className={cn(placing && "cursor-crosshair ring-2 ring-selection")}
           onClick={place}
         >
           {hotspots.map((spot, i) => {
@@ -238,7 +241,8 @@ export function LabelledImageBlock({ block }: { block: BlockOf<"labelled_image">
                     type="button"
                     data-testid="hotspot"
                     aria-label={`${i + 1}: ${spot.label}`}
-                    className="absolute flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-[var(--doc-blue-solid)] text-[13px] font-bold text-white shadow-[0_2px_8px_rgb(0_0_0/0.35)] transition-transform hover:scale-110 after:absolute after:-inset-1.5 after:content-[''] aria-expanded:bg-[var(--doc-orange-solid)]"
+                    data-hue={open === i ? "orange" : "blue"}
+                    className="absolute flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-pill border-2 border-surface bg-tone-text text-label font-bold text-tone-soft shadow-[0_2px_8px_rgb(0_0_0/0.35)] transition-transform duration-(--duration-fast) hover:scale-110 after:absolute after:-inset-1.5 after:content-['']"
                     style={{ left: `${left}%`, top: `${top}%` }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -258,7 +262,7 @@ export function LabelledImageBlock({ block }: { block: BlockOf<"labelled_image">
                 {spot.concept && (
                   <button
                     type="button"
-                    className="doc-concept mt-2 text-[13px]"
+                    className="doc-concept mt-2 text-label"
                     onClick={() => actions.openConcept(spot.concept as string)}
                   >
                     Open concept
@@ -278,7 +282,7 @@ export function LabelledImageBlock({ block }: { block: BlockOf<"labelled_image">
               type="button"
               aria-pressed={placing}
               onClick={() => setPlacing((p) => !p)}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-[13px] font-medium aria-pressed:border-[var(--doc-focus)] aria-pressed:bg-[var(--doc-blue-bg)] aria-pressed:text-[var(--doc-blue-fg)] pointer-coarse:min-h-11"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-border px-3 text-label font-medium aria-pressed:border-hue-blue-border aria-pressed:bg-hue-blue-soft aria-pressed:text-hue-blue-text pointer-coarse:min-h-11"
             >
               <MousePointerClick aria-hidden className="size-3.5" />
               {placing ? "Tap the image to place it" : "Add a label"}
@@ -287,13 +291,13 @@ export function LabelledImageBlock({ block }: { block: BlockOf<"labelled_image">
         </div>
       )}
       <figcaption className="mt-3">
-        <ol className="m-0 grid list-none gap-1.5 p-0 text-[14.5px] sm:grid-cols-2">
+        <ol className="m-0 grid list-none gap-1.5 p-0 text-ui sm:grid-cols-2">
           {hotspots.map((spot, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: hotspots are positional
             <li key={i} className="flex items-start gap-2.5">
               <span
                 aria-hidden
-                className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--doc-blue-bg)] text-[12px] font-bold text-[var(--doc-blue-fg)]"
+                className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-pill bg-hue-blue-soft text-caption font-bold text-hue-blue-text"
               >
                 {i + 1}
               </span>
@@ -311,7 +315,7 @@ export function LabelledImageBlock({ block }: { block: BlockOf<"labelled_image">
                       value={(spot.detail ?? []).map((d) => ("text" in d ? d.text : "")).join("")}
                       label={`Detail ${i + 1}`}
                       placeholder="Detail (optional)"
-                      className="text-[13px] text-text-muted"
+                      className="text-label text-text-muted"
                       onCommit={(detail) =>
                         setSpot(i, { detail: detail ? [{ text: detail }] : undefined })
                       }
