@@ -15,6 +15,19 @@ export const ID_PREFIX = {
   transcript: "trn",
   job: "job",
   upload: "upl",
+  document: "doc",
+  block: "blk",
+  revision: "rev",
+  question: "qst",
+  practiceSession: "prs",
+  attempt: "att",
+  concept: "con",
+  relation: "rel",
+  request: "req",
+  exam: "exm",
+  card: "crd",
+  edge: "edg",
+  frame: "frm",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIX;
@@ -82,3 +95,16 @@ export const PageId = idSchema("page");
 export const TranscriptId = idSchema("transcript");
 export const JobId = idSchema("job");
 export const UploadId = idSchema("upload");
+export const DocumentId = idSchema("document");
+export const BlockId = idSchema("block");
+export const RevisionId = idSchema("revision");
+export const QuestionId = idSchema("question");
+export const PracticeSessionId = idSchema("practiceSession");
+export const AttemptId = idSchema("attempt");
+export const ConceptId = idSchema("concept");
+export const RelationId = idSchema("relation");
+export const RequestId = idSchema("request");
+export const ExamId = idSchema("exam");
+export const CardId = idSchema("card");
+export const EdgeId = idSchema("edge");
+export const FrameId = idSchema("frame");
