@@ -38,6 +38,19 @@ export const NotesPanel = memo(function NotesPanel({
   const toast = useToast();
   const [showDetached, setShowDetached] = useState(false);
   const [confirm, setConfirm] = useState<MarginNote | null>(null);
+  const list = useRef<HTMLDivElement>(null);
+
+  // In the phone's list, bring the note she is looking at into view (only this list scrolls).
+  useEffect(() => {
+    const box = list.current;
+    const id = state.focusedId;
+    if (mode !== "list" || !box || !id) return;
+    const card = box.querySelector<HTMLElement>(`[data-note-id="${id}"]`);
+    if (!card) return;
+    const top = card.offsetTop - box.offsetTop;
+    if (top < box.scrollTop || top + card.offsetHeight > box.scrollTop + box.clientHeight)
+      box.scrollTop = Math.max(0, top - 8);
+  }, [mode, state.focusedId]);
 
   const { attached, detached, resolvedCount } = useMemo(() => {
     const att: MarginNote[] = [];
@@ -185,7 +198,10 @@ export const NotesPanel = memo(function NotesPanel({
     return (
       <div className="flex min-h-0 flex-1 flex-col" data-testid="notes-panel" data-mode="list">
         {toolbar}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5">
+        <div
+          ref={list}
+          className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5"
+        >
           {empty}
           <div className="flex flex-col gap-2">
             {composer}

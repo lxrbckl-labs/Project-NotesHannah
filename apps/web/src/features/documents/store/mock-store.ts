@@ -72,6 +72,7 @@ export class MockDocumentStore implements DocumentStore {
     if (options.large) {
       const large = largeDocument();
       this.docs.set(large.id, large);
+      if (options.sideNotes !== false) this.notes.seed(large);
       this.revisions.set(large.id, [
         {
           id: newId("revision"),
