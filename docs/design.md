@@ -256,7 +256,7 @@ Defined in `styles.css`:
 | Class | What it does |
 | --- | --- |
 | `.prose-reading` | Study-guide prose: 17px, line height 1.7, 68ch measure, paragraph and list rhythm, styled `code` and `mark` (`<mark data-hue="blue">` picks a highlighter). |
-| `.dot-grid` | The faint dotted grid. |
+| `.dot-grid` | The faint dotted grid. For the page background and the sign-in screen only: cards and boxes are solid (Alex, 2026-11-16). |
 | `.hit-area` | Adds an invisible 44px hit area on coarse pointers, without changing the look. |
 | `.anim-fade`, `.anim-pop` | Fade in; fade and rise slightly. |
 | `.anim-sheet` | Rise from the bottom. |

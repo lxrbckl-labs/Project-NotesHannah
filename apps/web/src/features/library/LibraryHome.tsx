@@ -9,15 +9,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import {
-  lazy,
-  type ReactNode,
-  Suspense,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useBadges } from "../../app/badges";
 import { Page, SectionTitle } from "../../components/Page";
@@ -25,8 +17,6 @@ import { Badge } from "../../components/ui/badge";
 import { Button, buttonClass } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
-import { cn } from "../../lib/cn";
-import { useFinePointer } from "../../lib/useMedia";
 import { useMe } from "../auth/useAuth";
 import { UpcomingExamsCard } from "../exams";
 import { useStores } from "../mounts/services";
@@ -43,7 +33,6 @@ import { useTreeState } from "./treeState";
 
 // The animated dot field behind the greeting is an extra for a mouse: it loads after the first
 // paint, never blocks a tap or a scroll, and the header reads the same without it.
-const DotGrid = lazy(() => import("../../components/bits/DotGrid"));
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -130,7 +119,6 @@ export function LibraryHome() {
   const dialogs = useLibraryDialogs();
   const tree = useTreeState();
   const [busy, setBusy] = useState(false);
-  const fine = useFinePointer();
   const badges = useBadges();
 
   const { seed } = tree;
@@ -155,23 +143,9 @@ export function LibraryHome() {
         as="section"
         padding="none"
         aria-label="Welcome"
-        className={cn(
-          "relative mb-6 overflow-hidden rounded-panel px-5 py-5 md:px-8 md:py-7",
-          !fine && "dot-grid",
-        )}
+        // Solid, like every card: the dotted grid belongs to the page behind, not to cards.
+        className="relative mb-6 overflow-hidden rounded-panel px-5 py-5 md:px-8 md:py-7"
       >
-        {fine ? (
-          <div aria-hidden className="pointer-events-none absolute inset-0">
-            <Suspense fallback={null}>
-              <DotGrid
-                className="size-full"
-                opacity={0.45}
-                mouseInteraction={false}
-                clickShock={false}
-              />
-            </Suspense>
-          </div>
-        ) : null}
         <header className="relative">
           <p className="text-ui text-text-muted">{greeting()}</p>
           {me.data ? (

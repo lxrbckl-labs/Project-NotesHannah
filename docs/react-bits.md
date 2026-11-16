@@ -70,7 +70,7 @@ If a component needs three.js, ogl or another large WebGL library, ask first. No
 
 | Component | Suggested placement | Needs |
 | --- | --- | --- |
-| DotGrid | Behind the library and practice home headers, replacing the static dotted grid | raw WebGL2 |
+| DotGrid | Not placed in the app since 2026-11-16 (cards are solid); still in the gallery at `/design/bits` | raw WebGL2 |
 | SpotlightCard | Course and lecture cards in the library | nothing |
 | CountUp | Stat tiles (cards due, notebook size, scores) | `motion` |
 | AnimatedList | Activity feed and inbox | nothing |

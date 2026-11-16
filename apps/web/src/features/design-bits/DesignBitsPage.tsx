@@ -69,7 +69,7 @@ export function DesignBitsPage() {
 
   return (
     <Page>
-      <header className="dot-grid mb-6 rounded-3xl border border-border bg-surface px-5 py-5 md:px-8 md:py-7">
+      <header className="mb-6 rounded-3xl border border-border bg-surface px-5 py-5 md:px-8 md:py-7">
         <h1 className="text-3xl font-semibold">React Bits</h1>
         <p className="mt-1.5 max-w-prose text-sm text-text-muted">
           The small set of animated parts we copied in. Each one follows the colours of the theme

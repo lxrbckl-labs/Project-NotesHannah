@@ -48,7 +48,7 @@ export function DownloadPdf({ className }: { className?: string }) {
 
 function Hero() {
   return (
-    <header className="dot-grid relative mb-6 overflow-hidden rounded-panel border border-border bg-surface px-5 py-6 shadow-card md:px-8 md:py-8">
+    <header className="relative mb-6 overflow-hidden rounded-panel border border-border bg-surface px-5 py-6 shadow-card md:px-8 md:py-8">
       <div className="flex items-center gap-2.5">
         <AppMark className="size-9" />
         <span className="font-display text-body font-semibold">Notes</span>
@@ -100,7 +100,7 @@ function PartHeader({ part, number }: OutlinePart) {
   return (
     <div
       id={part.id}
-      className="guide-part dot-grid scroll-mt-20 rounded-panel border border-accent-border bg-accent-soft px-5 py-6 md:px-8 xl:scroll-mt-6"
+      className="guide-part scroll-mt-20 rounded-panel border border-accent-border bg-accent-soft px-5 py-6 md:px-8 xl:scroll-mt-6"
     >
       <p className="flex items-center gap-2 text-caption font-semibold tracking-wide text-accent uppercase">
         <span
