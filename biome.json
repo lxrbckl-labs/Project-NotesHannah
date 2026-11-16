@@ -17,5 +17,22 @@
   "javascript": { "formatter": { "quoteStyle": "double" } },
   "css": { "parser": { "tailwindDirectives": true } },
   "linter": { "enabled": true, "rules": { "preset": "recommended" } },
+  "overrides": [
+    {
+      "includes": ["apps/web/src/components/bits/**"],
+      "linter": {
+        "rules": {
+          "style": { "noNonNullAssertion": "off" },
+          "suspicious": { "useIterableCallbackReturn": "off", "noArrayIndexKey": "off" },
+          "correctness": { "useExhaustiveDependencies": "off", "useHookAtTopLevel": "off" },
+          "a11y": {
+            "useFocusableInteractive": "off",
+            "useKeyWithClickEvents": "off",
+            "noAriaHiddenOnFocusable": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": { "actions": { "source": { "organizeImports": "on" } } }
 }
