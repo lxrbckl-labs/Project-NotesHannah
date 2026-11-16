@@ -282,9 +282,12 @@ function TabBar() {
               <span className="relative">
                 <Icon size={22} aria-hidden />
                 {(count[to] ?? 0) > 0 ? (
-                  <span className="absolute -right-2.5 -top-1 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold text-accent-contrast">
+                  <span
+                    aria-hidden="true"
+                    title={`${count[to]} waiting`}
+                    className="absolute -right-2.5 -top-1 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold text-accent-contrast"
+                  >
                     {count[to]}
-                    <span className="sr-only"> waiting</span>
                   </span>
                 ) : null}
               </span>

@@ -165,7 +165,7 @@ test("the exam planner lists the exam and the picker chooses lectures", async ({
   await picker.getByRole("button", { name: /Autonomic overview/ }).click();
   await picker.getByRole("button", { name: "Use these" }).click();
   await page.getByTestId("exam-save").click();
-  await expect(page.getByTestId("exam-card").filter({ hasText: "Midterm" })).toBeVisible();
+  await expect(page.getByTestId("exam-card").filter({ hasText: "Midterm" }).first()).toBeVisible();
   // the library home shows the upcoming exams
   await page.getByRole("link", { name: "Library", exact: true }).first().click();
   await expect(page.getByTestId("upcoming-exams")).toBeVisible();

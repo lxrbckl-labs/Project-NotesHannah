@@ -108,6 +108,8 @@ test("upload a real file, watch the real converter turn it into pages, and open 
     .getByRole("link", { name: new RegExp(`Beta blockers II ${t}`) })
     .click();
 
+  // a lecture opens as its document; its source files and the upload button are on its library page
+  await page.getByRole("link", { name: "Sources" }).click();
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Upload files" }).click();
   await (await chooser).setFiles(fixture("lecture.pptx"));
@@ -196,7 +198,11 @@ test("search finds the transcript and opens the viewer on that page", async ({ p
     await page.keyboard.press("Control+k");
   }
   await page.getByRole("searchbox", { name: "Search your library" }).fill("metoprolol");
-  const hit = page.getByTestId("results-page").getByRole("link").first();
+  const hit = page
+    .getByTestId("results-page")
+    .getByRole("link")
+    .filter({ hasText: "lecture.pptx" })
+    .first();
   await expect(hit).toContainText("lecture.pptx");
   await hit.click();
   await expect(page.getByTestId("source-viewer")).toBeVisible();

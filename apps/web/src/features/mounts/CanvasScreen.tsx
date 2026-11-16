@@ -53,31 +53,34 @@ export default function CanvasScreen({
       </div>
     );
   return (
-    <div className="relative h-full" data-testid="canvas-screen">
-      {/* Always there, whatever the canvas's own bar is showing: the way back to the page. */}
-      <Link
-        to={`/doc/${nodeId}`}
-        aria-label="Switch to the page view"
-        className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-10 flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3.5 text-sm font-medium shadow-card hover:bg-surface-muted"
-      >
-        <BookOpen size={16} aria-hidden />
-        Page view
-      </Link>
-      <CanvasView
-        store={canvas.data}
-        documentId={documentId}
-        onSwitchToPage={() => navigate(`/doc/${nodeId}`)}
-        onOpenBlock={(blockId) => navigate(`/doc/${nodeId}?block=${blockId}`)}
-        topBarExtras={
-          <Link
-            to={parentId ? `/library/${parentId}` : "/library"}
-            aria-label={`Back to the library from ${title}`}
-            className="flex size-9 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-        }
-      />
+    <div className="flex h-full min-h-0 flex-col" data-testid="canvas-screen">
+      {/* The way back to the page, always there whatever the canvas's own bar is showing. */}
+      <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-1.5">
+        <Link
+          to={parentId ? `/library/${parentId}` : "/library"}
+          aria-label={`Back to the library from ${title}`}
+          className="flex size-10 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+        >
+          <ArrowLeft size={18} />
+        </Link>
+        <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
+        <Link
+          to={`/doc/${nodeId}`}
+          aria-label="Switch to the page view"
+          className="flex min-h-10 items-center gap-2 rounded-xl border border-border px-3.5 text-sm font-medium hover:bg-surface-muted"
+        >
+          <BookOpen size={16} aria-hidden />
+          Page view
+        </Link>
+      </div>
+      <div className="min-h-0 flex-1">
+        <CanvasView
+          store={canvas.data}
+          documentId={documentId}
+          onSwitchToPage={() => navigate(`/doc/${nodeId}`)}
+          onOpenBlock={(blockId) => navigate(`/doc/${nodeId}?block=${blockId}`)}
+        />
+      </div>
     </div>
   );
 }

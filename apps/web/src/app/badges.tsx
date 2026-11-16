@@ -46,8 +46,8 @@ export function NavBadge({
   if (count <= 0) return null;
   return (
     <span
-      role="img"
-      aria-label={`${count} ${label}`}
+      aria-hidden="true"
+      title={`${count} ${label}`}
       data-testid={`badge-${label.replace(/\s+/g, "-")}`}
       className={cn(
         "ml-auto min-w-5 rounded-full bg-accent-soft px-1.5 text-center text-xs font-medium text-accent",

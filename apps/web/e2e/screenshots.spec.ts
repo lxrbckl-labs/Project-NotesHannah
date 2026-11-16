@@ -193,7 +193,7 @@ for (const theme of ["light", "dark"] as const) {
     await shot(page, folder, "20-trash-with-file");
 
     // a feature that is not built yet
-    await page.goto("/practice");
+    await page.goto("/requests");
     await expect(page.getByText("Coming soon")).toBeVisible();
     await shot(page, folder, "21-coming-soon");
   });

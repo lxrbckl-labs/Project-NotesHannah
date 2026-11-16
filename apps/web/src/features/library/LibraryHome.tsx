@@ -154,7 +154,9 @@ export function LibraryHome() {
             </div>
           }
         >
-          <span id="tree-title">All files</span>
+          <span id="tree-title" className="whitespace-nowrap">
+            All files
+          </span>
         </SectionTitle>
         <div className="rounded-3xl border border-border bg-surface p-2 shadow-card md:p-3">
           {terms.isPending ? (

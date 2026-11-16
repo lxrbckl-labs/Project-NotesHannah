@@ -186,6 +186,29 @@ if (!converted) {
         },
         citations: [c2],
       },
+      { type: "heading", content: { level: 3, text: "Choosing an agent" } },
+      {
+        type: "paragraph",
+        content: {
+          text: "Cardioselective agents preferentially block beta-1 receptors, so they cause less bronchoconstriction.",
+        },
+        citations: [c2],
+      },
+      {
+        type: "paragraph",
+        content: { text: "Titrate to heart rate and blood pressure rather than to a fixed dose." },
+        citations: [c1],
+      },
+      {
+        type: "numbered_list",
+        content: { items: ["Check heart rate", "Check blood pressure", "Ask about dizziness"] },
+        citations: [c1],
+      },
+      {
+        type: "paragraph",
+        content: { text: "Non-selective agents such as propranolol also block beta-2 receptors." },
+        citations: [c2],
+      },
       {
         type: "callout",
         content: {

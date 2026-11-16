@@ -136,41 +136,43 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             <h1 className="truncate font-display text-lg font-semibold md:text-xl">{title}</h1>
             <p className="truncate text-xs text-text-muted">{n.path}</p>
           </div>
-          <div
-            role="tablist"
-            aria-label="View"
-            className="flex gap-1 rounded-xl border border-border bg-surface-muted p-1"
-          >
-            {[
-              { label: "Page", to: base, on: true, icon: BookOpen },
-              { label: "Canvas", to: `${base}/canvas`, on: false, icon: Layers },
-            ].map((t) => (
-              <Link
-                key={t.label}
-                role="tab"
-                aria-selected={t.on}
-                to={t.to}
-                className={cn(
-                  "flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium",
-                  t.on ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
-                )}
-              >
-                <t.icon size={15} aria-hidden />
-                {t.label}
-              </Link>
-            ))}
+          <div className="order-last flex basis-full flex-wrap items-center gap-2 md:order-none md:basis-auto">
+            <div
+              role="tablist"
+              aria-label="View"
+              className="flex gap-1 rounded-xl border border-border bg-surface-muted p-1"
+            >
+              {[
+                { label: "Page", to: base, on: true, icon: BookOpen },
+                { label: "Canvas", to: `${base}/canvas`, on: false, icon: Layers },
+              ].map((t) => (
+                <Link
+                  key={t.label}
+                  role="tab"
+                  aria-selected={t.on}
+                  to={t.to}
+                  className={cn(
+                    "flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium",
+                    t.on ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+                  )}
+                >
+                  <t.icon size={15} aria-hidden />
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+            <Link
+              to={`/library/${n.id}`}
+              className="flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted"
+            >
+              <Paperclip size={15} aria-hidden />
+              Sources
+            </Link>
+            <Button onClick={() => navigate(`/practice?node=${n.id}`)} aria-label="Practise this">
+              <GraduationCap size={16} aria-hidden />
+              <span className="hidden sm:inline">Practise this</span>
+            </Button>
           </div>
-          <Link
-            to={`/library/${n.id}`}
-            className="flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted"
-          >
-            <Paperclip size={15} aria-hidden />
-            Sources
-          </Link>
-          <Button onClick={() => navigate(`/practice?node=${n.id}`)} aria-label="Practise this">
-            <GraduationCap size={16} aria-hidden />
-            <span className="hidden sm:inline">Practise this</span>
-          </Button>
         </header>
       ) : null}
 
