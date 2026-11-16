@@ -5,9 +5,11 @@ export * from "./accounts.js";
 export * from "./blocks/index.js";
 export * from "./citations.js";
 export * from "./common.js";
+export * from "./concepts.js";
 export * from "./documents.js";
 export * from "./ids.js";
 export * from "./library.js";
 /** Practice questions, grading, sessions and scheduling. Namespaced: its names are generic. */
 export * as practice from "./practice/index.js";
+export * from "./requests.js";
 export * from "./sources.js";
