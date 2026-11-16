@@ -16,6 +16,7 @@
     "@notes/schema": "workspace:*",
     "better-sqlite3": "13.2.0",
     "drizzle-orm": "0.45.4",
+    "fractional-indexing": "4.0.0",
     "hono": "4.13.18",
     "zod": "4.6.7"
   },
