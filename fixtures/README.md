@@ -2,6 +2,9 @@
 
 Stand-in files for the converter's tests. All content is made up (no third-party material).
 
+- `demo/` is not a test fixture: it is the pharmacy demo set used by `pnpm local:seed:pharm` (six decks, two
+  typed PDFs, handwritten notes, two photos and `manifest.json` with the transcript of every page; original
+  sample material, rebuilt by `demo/generator/build.sh`). See the README.
 - `generated/` holds the files (about 3.5 MB, committed so tests need no Docker to read them).
 - `expectations.json` says what the converter must do with each one: type, page count, text and notes it
   must find, warnings, or the error code and reason. `apps/converter/scripts/integration-check.mjs` reads it.

@@ -64,6 +64,31 @@ has terms. Variables: `NOTES_LOCAL_DIR` (data directory), `NOTES_SERVER_PORT`, `
 `NOTES_CONVERTER=0` (skip the container), `NOTES_LOCAL_USER`, `NOTES_LOCAL_PASSWORD`. Two runs with
 different `NOTES_LOCAL_DIR` get their own converter container.
 
+#### The pharmacy demo set
+
+`pnpm local:seed:pharm` fills an **empty** account with a full, realistic sample term instead: two
+courses (Pharmacology II, PHAR 7340; Pharmacotherapy I, PHAR 7310) with six lectures and their slide
+decks, a calculations handout, a brand and generic sheet, handwritten notes and two photos (all in
+`fixtures/demo/files`, rebuilt by `fixtures/demo/generator/build.sh` in Docker). Through the real API it
+then saves a transcript for every page, files the notes, writes a cited study guide per lecture (all
+block types), about 75 practice questions of every type with some practice history, about 160 concepts
+with relations, three exams, requests in every state and two arranged canvases. What an agent would
+write goes through an app-issued key; what she does goes through her session. It takes about 30 seconds
+once the converter is up and refuses to run if the account already has library items, files, concepts or
+questions.
+
+```sh
+pnpm local                  # in one terminal, with Docker running (the converter is required)
+pnpm local:seed:pharm       # in another
+# another instance: run it where the server is reachable, with that account's credentials
+NOTES_SERVER_URL=http://localhost:8060 NOTES_APP_ORIGIN=https://notes.example.org \
+  NOTES_LOCAL_USER=someone NOTES_LOCAL_PASSWORD=... pnpm local:seed:pharm
+```
+
+`NOTES_SEED_WAIT` (seconds, default 300) is how long it waits for the converter. The content is original
+sample material written for this app (no textbook, guideline or slide text is copied); every file says
+"Sample study material. Not for clinical use."
+
 The web app without a server, for UI work and the unit tests, is the mock: `VITE_MOCK_API=1 pnpm --filter
 @notes/web dev` (in-memory library, simulated uploads and conversion; sign in as `hannah` /
 `study-notes-2026`). A normal build refuses to include it.

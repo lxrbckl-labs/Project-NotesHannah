@@ -19,7 +19,8 @@
     "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "local": "node tools/dev/local.mjs",
     "local:reset": "node tools/dev/reset.mjs",
-    "local:seed": "node tools/dev/seed.mjs"
+    "local:seed": "node tools/dev/seed.mjs",
+    "local:seed:pharm": "node tools/dev/seed-pharm.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
