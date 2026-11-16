@@ -5,6 +5,7 @@ import {
   COURSE_SECTIONS,
   CreateApiKeyInput,
   CreateNodeInput,
+  CreateReferenceInput,
   canContain,
   type FileType,
   isFixed,
@@ -15,9 +16,13 @@ import {
   type NodeWithLinks,
   newId,
   type Page,
+  type ReferenceKind,
+  referenceSourceOf,
+  type SavedReference,
   type SourceFile,
   type Transcript,
   UpdateNodeInput,
+  UpdateReferenceInput,
   type User,
 } from "@notes/schema";
 import {
@@ -40,6 +45,21 @@ export interface MockSnapshot {
   keys: Array<{ key: ApiKey; secret: string }>;
   signedIn: boolean;
   password: string;
+  /** Saved references (the references domain). Missing in snapshots from before it existed. */
+  references?: MockReference[];
+}
+
+/** A saved reference as the mock keeps it; places are resolved when it is read. */
+export interface MockReference {
+  id: string;
+  title: string;
+  url: string;
+  note: string;
+  kind: ReferenceKind | null;
+  favourite: boolean;
+  nodeIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MockOptions {
@@ -126,6 +146,7 @@ export function createMockBackend(options: MockOptions = {}) {
   const convertMs = options.convertMs ?? 0;
   let recents: string[];
   let keys: Array<{ key: ApiKey; secret: string }>;
+  let references: MockReference[] = [];
   let signedIn = false;
   let password = MOCK_PASSWORD;
   let failedLogins = 0;
@@ -141,6 +162,7 @@ export function createMockBackend(options: MockOptions = {}) {
       activity = snapshot.activity ?? [];
       recents = snapshot.recents;
       keys = snapshot.keys;
+      references = snapshot.references ?? [];
       signedIn = snapshot.signedIn;
       password = snapshot.password;
       user.id = nodes[0]?.userId ?? newId("user");
@@ -155,6 +177,7 @@ export function createMockBackend(options: MockOptions = {}) {
     blocks = seed.blocks;
     activity = seed.activity;
     recents = seed.recents;
+    references = [];
     signedIn = false;
     password = MOCK_PASSWORD;
     keys = [
@@ -626,6 +649,125 @@ export function createMockBackend(options: MockOptions = {}) {
   const ok = (json: Json, status = 200): Result => ({ status, json });
   const noContent = (): Result => ({ status: 204 });
 
+  /** A node, or one of its ancestors, is in the trash. */
+  const outOfSight = (n: LibraryNode) => !!n.trashedAt || ancestorsOf(n).some((a) => !!a.trashedAt);
+
+  function referenceView(r: MockReference): SavedReference {
+    return {
+      id: r.id,
+      title: r.title,
+      url: r.url,
+      note: r.note,
+      kind: r.kind,
+      source: referenceSourceOf(r.url),
+      favourite: r.favourite,
+      places: r.nodeIds.flatMap((id) => {
+        const n = byId(id);
+        if (!n) return [];
+        const linked = withLinks(n);
+        const course = [...ancestorsOf(n), n].find((a) => a.kind === "course");
+        return [
+          {
+            nodeId: n.id,
+            name: n.name,
+            kind: n.kind,
+            path: linked.path,
+            courseId: course?.id ?? null,
+            courseName: course?.name ?? null,
+            trashed: outOfSight(n),
+          },
+        ];
+      }),
+      createdBy: { type: "user", userId: user.id },
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    };
+  }
+
+  function checkPlaces(nodeIds: readonly string[]): string[] {
+    const unique = [...new Set(nodeIds)];
+    for (const id of unique) {
+      const n = byId(id);
+      if (!n) fail("not_found", `No such library item: ${id}.`);
+      if (!["course", "folder", "lecture", "document"].includes(n.kind))
+        fail(
+          "invalid_input",
+          `"${n.name}" is a ${n.kind}.`,
+          "Tie it to a course, folder, lecture or document.",
+        );
+      if (outOfSight(n)) fail("invalid_input", `"${n.name}" is in the trash.`, "Restore it first.");
+    }
+    return unique;
+  }
+
+  function referenceRoute(
+    method: string,
+    path: string,
+    query: URLSearchParams,
+    payload: unknown,
+  ): Result | undefined {
+    if (path === "/references" && method === "GET") {
+      const nodeId = query.get("nodeId");
+      const scope = nodeId
+        ? new Set(
+            [nodeId, ...descendantsOf(nodeId).map((n) => n.id)].filter((id) => {
+              const n = byId(id);
+              return n && !outOfSight(n);
+            }),
+          )
+        : null;
+      const items = references
+        .filter((r) => !scope || r.nodeIds.some((id) => scope.has(id)))
+        .sort((a, b) => Number(b.favourite) - Number(a.favourite) || (a.id < b.id ? 1 : -1))
+        .map(referenceView);
+      return ok({ items, nextCursor: null });
+    }
+    if (path === "/references" && method === "POST") {
+      const input = body(CreateReferenceInput, payload);
+      const now = iso();
+      const r: MockReference = {
+        id: newId("reference"),
+        title: input.title,
+        url: input.url,
+        note: input.note ?? "",
+        kind: input.kind ?? null,
+        favourite: input.favourite ?? false,
+        nodeIds: checkPlaces(input.nodeIds ?? []),
+        createdAt: now,
+        updatedAt: now,
+      };
+      references.push(r);
+      return ok({ reference: referenceView(r) }, 201);
+    }
+    const used = path.match(/^\/references\/([^/]+)\/used-in$/);
+    if (used && method === "GET") {
+      if (!references.some((x) => x.id === used[1])) fail("not_found", "No such reference.");
+      // The mock's study material carries no outside references.
+      return ok({ items: [] });
+    }
+    const m = path.match(/^\/references\/([^/]+)$/);
+    if (!m) return undefined;
+    const r = references.find((x) => x.id === m[1]);
+    if (!r) fail("not_found", "No such reference.");
+    if (method === "GET") return ok({ reference: referenceView(r) });
+    if (method === "PATCH") {
+      const input = body(UpdateReferenceInput, payload);
+      if (input.title !== undefined) r.title = input.title;
+      if (input.url !== undefined) r.url = input.url;
+      if (input.note !== undefined) r.note = input.note;
+      if (input.kind !== undefined) r.kind = input.kind;
+      if (input.favourite !== undefined) r.favourite = input.favourite;
+      if (input.nodeIds !== undefined) r.nodeIds = checkPlaces(input.nodeIds);
+      r.updatedAt = iso();
+      return ok({ reference: referenceView(r) });
+    }
+    if (method === "DELETE") {
+      references = references.filter((x) => x.id !== r.id);
+      return noContent();
+    }
+    return undefined;
+  }
+
   function route(method: string, path: string, query: URLSearchParams, payload: unknown): Result {
     if (method === "POST" && path === "/auth/login") {
       const input = body(LoginInput, payload);
@@ -806,7 +948,9 @@ export function createMockBackend(options: MockOptions = {}) {
           q: "beta",
         });
       const kindsParam = query.get("kinds");
-      const kinds = new Set(kindsParam ? kindsParam.split(",") : ["node", "page", "block"]);
+      const kinds = new Set(
+        kindsParam ? kindsParam.split(",") : ["node", "page", "block", "reference"],
+      );
       const limit = Number(query.get("limit") ?? 50);
       const items: Array<Record<string, unknown>> = [];
       if (kinds.has("node")) {
@@ -814,6 +958,22 @@ export function createMockBackend(options: MockOptions = {}) {
           if (n.trashedAt || n.kind === "section" || !n.name.toLowerCase().includes(q)) continue;
           const node = withLinks(n);
           items.push({ kind: "node", node, snippet: node.path });
+        }
+      }
+      if (kinds.has("reference")) {
+        const words = q.split(/\s+/).filter(Boolean);
+        for (const r of references) {
+          const text = `${r.title} ${r.note} ${r.url}`.toLowerCase();
+          if (!words.every((w) => text.includes(w))) continue;
+          items.push({
+            kind: "reference",
+            referenceId: r.id,
+            title: r.title,
+            url: r.url,
+            referenceKind: r.kind,
+            source: referenceSourceOf(r.url),
+            snippet: r.note || r.url,
+          });
         }
       }
       if (kinds.has("block")) {
@@ -851,6 +1011,9 @@ export function createMockBackend(options: MockOptions = {}) {
       }
       return ok({ items: items.slice(0, limit), nextCursor: null });
     }
+
+    const refs = referenceRoute(method, path, query, payload);
+    if (refs) return refs;
 
     const nodeMatch = path.match(/^\/nodes\/([^/]+)(?:\/(move|duplicate|trash|restore))?$/);
     if (nodeMatch) {
@@ -891,6 +1054,8 @@ export function createMockBackend(options: MockOptions = {}) {
         }
         const doomed = new Set([node.id, ...descendantsOf(node.id).map((n) => n.id)]);
         nodes = nodes.filter((n) => !doomed.has(n.id));
+        // Ties to places deleted for good go; the references stay.
+        for (const r of references) r.nodeIds = r.nodeIds.filter((id) => !doomed.has(id));
         recents = recents.filter((r) => !doomed.has(r));
         return noContent();
       }
@@ -1067,6 +1232,7 @@ export function createMockBackend(options: MockOptions = {}) {
       keys,
       signedIn,
       password,
+      references,
     });
   }
 

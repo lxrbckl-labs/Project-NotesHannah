@@ -193,3 +193,31 @@ Added 2026-11-16.
 - **N2** The same guide as a PDF at `/guide/notes-guide.pdf`, linked by a Download PDF button on the page, and a print layout so the browser's Print is clean too. The words live in `apps/web/src/features/help/content.ts`; `pnpm guide:pdf` regenerates the file.
 - **N3** Structure and design (2026-11-16): the thirteen sections are grouped into four parts (Start here, Your material, Study tools, Help and housekeeping), each section opens with its number, part and lead line, and the guide ends with a one-page quick reference of every typing shortcut, formatting mark and key. Nine numbered figures are real screenshots of the app on the pharmacy demo set (`pnpm guide:figures`); on `/help` they open larger to zoom. The page has a sticky contents list grouped by part on a computer, a slim "On this page" bar on a phone or tablet, and both mark the section being read.
 - **N4** The PDF is a designed booklet: a cover with the edition, a contents page with page numbers and working links, the showcase as a two-page spread, a full-page opener for each part, each section on a new page with a running head (part and section) and a page number, figures with their captions in the margin, and the quick reference as the last page. Letter, about 2.8 MB.
+
+## O. References
+
+Added 2026-11-16. Details: [references.md](references.md).
+
+- **O1** A References page at `/references`: in the sidebar on tablet and computer; on a phone from
+  the library home and Settings (the tab bar is full). Built-in sites come from a registry
+  (`REFERENCE_SITES` in `packages/schema`), PharmGuides first: what it is in our words, a search box
+  that opens its search in a new tab, tiles for its sections, its therapeutic areas as search chips,
+  and the line about checking primary sources.
+- **O2** Her saved references: title, address (http or https), note, kind (guideline, calculator,
+  chart, article, other), places in her library, pinned. Add, edit, delete (with a confirm), pin,
+  filter by kind, course and words. A pasted address fills the title and kind; a PharmGuides
+  address is tagged as from PharmGuides. "Where it is used" lists the notes that draw on it.
+- **O3** Where she studies: a course, folder, lecture or document page shows the references tied to
+  it (a course also those of everything inside it) with "Add a reference here"; a document's bar
+  has a References button; a concept page has "Look up on PharmGuides"; search and quick find show
+  her references and offer "Search PharmGuides for ..." under the results.
+- **O4** Attribution: a block can name the outside references it draws on. They show as their own
+  chip ("PharmGuides · DoseDex", opening the page in a new tab), apart from her numbered sources,
+  and in their own group in the document's references list. She adds one from the block menu
+  ("Add a reference...": a saved reference or a pasted address).
+- **O5** Agents: the `references` tool lists the trusted built-in sites and her saved references and
+  adds one when she asks; agents check and extend her notes against them, keep her slides first and
+  flag disagreements, and label anything from a reference. The app never fetches the sites.
+- **O6** The demo set (`pnpm local:seed:pharm`, or `pnpm local:seed:pharm:references` on an existing
+  one) saves eight references to guideline organisations' pages and PharmGuides sections, tied to
+  the lectures, and adds three agent blocks checked against them.

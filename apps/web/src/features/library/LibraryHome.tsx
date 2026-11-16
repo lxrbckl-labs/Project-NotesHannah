@@ -1,6 +1,7 @@
 import type { NodeWithLinks } from "@notes/schema";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  BookMarked,
   CalendarRange,
   ChevronsDownUp,
   ChevronsUpDown,
@@ -269,6 +270,13 @@ export function LibraryHome() {
             {badges.review} to review
           </Badge>
         ) : null}
+      </Link>
+      <Link
+        to="/references"
+        data-testid="home-references-link"
+        className={buttonClass({ className: "mr-2" })}
+      >
+        <BookMarked size={16} aria-hidden /> References
       </Link>
       <Link to="/trash" className={buttonClass()}>
         <Trash2 size={16} aria-hidden /> Trash

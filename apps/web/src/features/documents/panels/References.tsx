@@ -1,18 +1,22 @@
-import { citationKey } from "@notes/schema";
+import { type Block, citationKey } from "@notes/schema";
 import { BookOpen } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { DOCUMENT_HUE } from "../../../lib/roles";
+import { OutsideRefChip, outsideReferences } from "../blocks/outside";
 import { useActions, useView } from "../context";
 
 /** The references list at the end of the document (K7): each source once, in order of first use. */
 export function References({
   names,
+  blocks = [],
 }: {
   names: Map<string, { fileName: string | null; pageIndex: number | null }>;
+  blocks?: readonly Block[];
 }) {
   const { refs, status } = useView();
   const { openCitation } = useActions();
-  if (refs.references.length === 0) return null;
+  const outside = outsideReferences(blocks);
+  if (refs.references.length === 0 && outside.length === 0) return null;
   return (
     <section
       aria-labelledby="doc-references"
@@ -70,6 +74,24 @@ export function References({
           );
         })}
       </ol>
+      {outside.length > 0 ? (
+        // Outside references in their own group: what came from a reference never mixes with her sources.
+        <div className="mt-5" data-testid="outside-references">
+          <h3 className="mb-2 text-label font-semibold uppercase tracking-wide text-text-muted">
+            Outside references
+          </h3>
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+            {outside.map(({ reference, uses }) => (
+              <li key={reference.url} className="flex flex-wrap items-center gap-2 px-2.5">
+                <OutsideRefChip reference={reference} />
+                {uses > 1 ? (
+                  <span className="text-label text-text-muted">used {uses} times</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }

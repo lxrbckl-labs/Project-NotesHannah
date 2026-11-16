@@ -17,6 +17,7 @@ import type { ConceptsService } from "../domains/concepts/index.js";
 import type { ExamsService } from "../domains/exams/index.js";
 import type { LibraryService } from "../domains/library/index.js";
 import type { PracticeService } from "../domains/practice/index.js";
+import type { ReferencesService } from "../domains/references/index.js";
 import type { RequestsService } from "../domains/requests/index.js";
 import type { AuthContext } from "../http/auth-context.js";
 
@@ -206,6 +207,9 @@ export type ConceptsToolPort = Pick<
   | "suggestionsFor"
 >;
 
+/** Her saved outside references: read and add only; changing and deleting stay hers. */
+export type ReferencesToolPort = Pick<ReferencesService, "list" | "create">;
+
 /** The study map (docs/canvas.md): read, set the structure, change; validation problems come back, not thrown. */
 export type CanvasToolPort = CanvasPort;
 
@@ -221,4 +225,5 @@ export interface McpBackend {
   requests?: RequestsToolPort | undefined;
   concepts?: ConceptsToolPort | undefined;
   canvas?: CanvasToolPort | undefined;
+  references?: ReferencesToolPort | undefined;
 }

@@ -17,6 +17,7 @@ import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { appHttp, isApiError } from "../../lib/api";
 import { DocumentView } from "../documents";
 import { useNode } from "../library/queries";
+import { ReferencesButton } from "../references/ReferencesStrip";
 import { AskButton, useAsk } from "./ask";
 import { useStores } from "./services";
 
@@ -163,6 +164,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
               <Paperclip size={15} aria-hidden />
               <span className="hidden sm:inline">Sources</span>
             </Link>
+            <ReferencesButton place={{ nodeId: n.id, name: title, path: n.path }} />
             <AskButton
               target={{ type: "document", documentId }}
               label={title}

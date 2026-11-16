@@ -326,7 +326,7 @@ export const editLibrary = defineTool({
 // search_notes
 // ---------------------------------------------------------------------------
 
-const SEARCH_KIND_OPTIONS = ["node", "page", "block", "question", "concept"] as const;
+const SEARCH_KIND_OPTIONS = ["node", "page", "block", "question", "concept", "reference"] as const;
 
 function hitLine(hit: SearchHit): string {
   switch (hit.kind) {
@@ -340,6 +340,8 @@ function hitLine(hit: SearchHit): string {
       return `- question ${hit.questionId} (${hit.questionType})${hit.nodeId ? ` under ${hit.nodeId}` : ""}: ${hit.snippet}`;
     case "concept":
       return `- concept ${hit.conceptId} (${hit.conceptType}) "${hit.name}"${hit.genericName ? `, generic ${hit.genericName}` : ""}: ${hit.snippet}`;
+    case "reference":
+      return `- saved reference ${hit.referenceId} "${hit.title}" <${hit.url}>${hit.referenceKind ? ` (${hit.referenceKind})` : ""}: ${hit.snippet}`;
   }
 }
 
@@ -358,13 +360,19 @@ export function searchTool(options: { unified: boolean }): ReturnType<typeof def
   const SearchInput = z.strictObject({
     query: z.string().trim().min(1).max(200),
     ...(options.unified
-      ? { kinds: z.array(z.enum(SEARCH_KIND_OPTIONS)).min(1).max(3).optional() }
+      ? {
+          kinds: z
+            .array(z.enum(SEARCH_KIND_OPTIONS))
+            .min(1)
+            .max(SEARCH_KIND_OPTIONS.length)
+            .optional(),
+        }
       : {}),
     cursor: Cursor,
     limit: limit(50, 20),
   });
   const what = options.unified
-    ? "names of library items (terms, courses, folders, lectures, documents), the transcripts of source pages, and the text of document blocks, in one ranked list"
+    ? "names of library items (terms, courses, folders, lectures, documents), the transcripts of source pages, the text of document blocks, practice questions, concepts and her saved outside references (title, note, address), in one ranked list"
     : "names of library items (terms, courses, folders, lectures, documents)";
   return defineTool({
     name: "search_notes",
@@ -381,7 +389,7 @@ export function searchTool(options: { unified: boolean }): ReturnType<typeof def
       ...(options.unified
         ? {
             kinds:
-              'Only these kinds of hit: "node" (library names), "page" (transcribed source pages), "block" (document text). Default: all three.',
+              'Only these kinds of hit: "node" (library names), "page" (transcribed source pages), "block" (document text), "question", "concept", "reference" (her saved outside references). Default: all.',
           }
         : {}),
       cursor: CURSOR_TEXT,

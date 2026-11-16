@@ -41,14 +41,16 @@ export function countCitations(block: BlockInput): number {
 }
 
 /** Plain-language statement of the citation rule, used in errors and docs. */
-export const CITATION_RULE_TEXT = `Generated blocks must say where they came from. Add at least one citation to "citations", each naming the fileId, the pageId and the exact passage quoted from that page's transcript (plus a region on the page when you know it). If the content is not from her notes, set "generalKnowledge": true instead and it will be labelled "not from your notes". Exempt: ${CITATION_EXEMPT_TYPES.join(", ")}, and anything she writes herself.`;
+export const CITATION_RULE_TEXT = `Generated blocks must say where they came from. Add at least one citation to "citations", each naming the fileId, the pageId and the exact passage quoted from that page's transcript (plus a region on the page when you know it). If it comes from a trusted outside reference (a guideline, PharmGuides), put that in "references" ({"title", "url"}) and it is labelled with the reference, apart from her sources. If it is from neither, set "generalKnowledge": true and it will be labelled "not from your notes". Exempt: ${CITATION_EXEMPT_TYPES.join(", ")}, and anything she writes herself.`;
 
 /** The citation rule for one block, or null when it is satisfied. */
 export function citationRuleIssue(block: BlockInput, origin: Origin): BlockIssue | null {
   if (origin === "user") return null;
   const entry = BLOCK_REGISTRY[block.type];
   if (!entry.citationsRequired) return null;
-  if (block.generalKnowledge || countCitations(block) > 0) return null;
+  // A block drawn from an outside reference says where it came from too, with its own label.
+  if (block.generalKnowledge || countCitations(block) > 0 || (block.references?.length ?? 0) > 0)
+    return null;
   return {
     path: ["citations"],
     message: `This ${entry.label.toLowerCase()} has no citation. ${CITATION_RULE_TEXT} Example citation: ${JSON.stringify(EXAMPLE_CITATION)}`,

@@ -39,6 +39,10 @@ const PublishedBlock = z.object({
   style: BlockStyle.optional(),
   citations: z.array(PublishedCitation).max(20).optional(),
   generalKnowledge: z.boolean().optional(),
+  references: z
+    .array(z.object({ title: z.string(), url: z.string(), referenceId: z.string().optional() }))
+    .max(5)
+    .optional(),
   flags: z.array(BlockFlag).max(20).optional(),
 });
 const blocks = z.array(PublishedBlock);
@@ -59,6 +63,12 @@ const BLOCK_DESCRIPTIONS: Record<string, string> = {
   "style.background": "Background colour token (same list as color).",
   generalKnowledge:
     'True when nothing in the block is from her notes; it is labelled "not from your notes". Cannot be combined with citations.',
+  references:
+    "Trusted outside references this block draws on (a guideline page, PharmGuides DoseDex), at most 5. Each shows as its own labelled chip, apart from her numbered sources, so reference material never reads as her slides. Use with citations when her slides say it and the reference confirms or extends it; alone when the content comes only from the reference.",
+  "references[].title": 'Short name, e.g. "DoseDex" or "ACC/AHA high blood pressure guideline".',
+  "references[].url": "The page's full https address.",
+  "references[].referenceId":
+    'Optional: her saved reference it is, e.g. "ref_…" (references tool, list).',
   flags: 'Things she should check, e.g. every dose: {"kind": "dose", "quote": "25 mg"}.',
   "flags[].kind": "uncertain, illegible, dose, unit, decimal, drug_name or source_conflict.",
   "flags[].quote": "Optional: the exact text the flag is about.",
@@ -118,7 +128,7 @@ const WritePublished = z.strictObject({ ...CreateDocumentInput.shape, blocks: bl
 export const writeDocument = defineTool({
   name: "write_document",
   title: "Write a new document of study material",
-  description: `Create a document (study material made of typed blocks) and its first blocks in one call. Give exactly one of nodeId (fill an existing lecture or document node, e.g. a lecture's merged note) or parentId (create a new document node in a section or folder, e.g. the course's "Study guides" section). Kinds: lecture_note, study_guide, practice_set, free. Every generated text block must cite its source (fileId, pageId and a passage quoted exactly from that page's transcript) or set generalKnowledge: true. Up to 100 blocks per call; add more with edit_blocks. Block types and examples: start_here {"topic":"blocks"}.`,
+  description: `Create a document (study material made of typed blocks) and its first blocks in one call. Give exactly one of nodeId (fill an existing lecture or document node, e.g. a lecture's merged note) or parentId (create a new document node in a section or folder, e.g. the course's "Study guides" section). Kinds: lecture_note, study_guide, practice_set, free. Every generated text block must cite its source (fileId, pageId and a passage quoted exactly from that page's transcript), name the trusted outside reference it comes from in "references", or set generalKnowledge: true. Up to 100 blocks per call; add more with edit_blocks. Block types and examples: start_here {"topic":"blocks"}.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -205,7 +215,7 @@ export const editBlocks = defineTool({
         block:
           'update_block mode replace: the whole new block, shaped like an item of "blocks" ({"type", "content", "citations", ...}).',
         patch:
-          'update_block mode patch: the top-level fields to replace, e.g. {"content": {"text": "…"}}; inside content only the named fields change; "style": null clears the style.',
+          'update_block mode patch: the top-level fields to replace, e.g. {"content": {"text": "…"}} or {"references": [{"title": "DoseDex", "url": "https://www.pharmguides.com/dosedex/"}]}; inside content only the named fields change; "style": null clears the style.',
         blockIds: "move_blocks and delete_blocks: the blocks, in the order to keep.",
         toDocumentId: "move_blocks: move into this other document instead.",
         scope: "replace_generated: only regenerate these blocks; omit for the whole document.",

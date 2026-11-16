@@ -2,7 +2,8 @@
 // real API and leaves the account looking like a student's several weeks into a term: two courses,
 // lectures with their slides and notes, a transcript for every page, a cited study guide per lecture,
 // practice questions with some history, concepts and relations, exams, requests and arranged canvases,
-// and last the notes she wrote herself (pharm/own-notes.mjs, also `pnpm local:seed:pharm:notes`).
+// the notes she wrote herself (pharm/own-notes.mjs, also `pnpm local:seed:pharm:notes`), and last her saved
+// references (pharm/references.mjs, also `pnpm local:seed:pharm:references`).
 //
 // Like `pnpm local:seed`, it signs in as the user for what she does (library, uploads, exams, requests,
 // practice, reviews, pins) and uses an app-issued key for what an agent writes (transcripts, filing,
@@ -18,6 +19,7 @@ import { autonomicGuide, cholinergicGuide } from "./pharm/guides-autonomic.mjs";
 import { heartFailureGuide, hypertensionGuide } from "./pharm/guides-therapy.mjs";
 import { buildOwnNotes, writeOwnNotes } from "./pharm/own-notes.mjs";
 import { questions as questionSet } from "./pharm/questions.mjs";
+import { writeAttributedBlocks, writeReferences } from "./pharm/references.mjs";
 import { apiError, createSession, loadCredentials, signIn } from "./pharm/session.mjs";
 import { loadManifest, sourceHelpers } from "./pharm/sources.mjs";
 
@@ -726,10 +728,21 @@ const own = await writeOwnNotes({
 });
 const ownBlocks = own.written.reduce((n, d) => n + d.blocks, 0);
 
+// ---- her saved references, and three agent blocks checked against them (links only) ---------------------
+say("Saving her references and the reference-checked blocks");
+const refs = await writeReferences({ call, list, lectures });
+const attributed = await writeAttributedBlocks({
+  call,
+  agent: async () => agent,
+  guides: { adr: guides.adr.id, htn: guides.htn.id, hf: guides.hf.id },
+  ids: refs.ids,
+});
+
 say("Done");
 console.log(
   `\nSeeded the pharmacy demo set: ${Object.keys(uploads).length} files (${pageCount} pages), ${guideSpecs.length} guides ` +
     `(${blockTotal} blocks), ${allQuestions.length} questions, ${concepts.length} concepts, ${relations.length} relations, ` +
-    `3 exams, 7 requests, 2 arranged canvases, ${own.written.length} documents of her own (${ownBlocks} blocks) ` +
+    `3 exams, 7 requests, 2 arranged canvases, ${own.written.length} documents of her own (${ownBlocks} blocks), ` +
+    `${refs.saved.length} saved references with ${attributed} reference-checked blocks ` +
     `and her edits in the beta blocker guide.\nSign in at ${appOrigin} as ${credentials.username}.`,
 );

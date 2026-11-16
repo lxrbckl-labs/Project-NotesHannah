@@ -524,7 +524,7 @@ describe("writing claims", () => {
 });
 
 describe("the full surface", () => {
-  test("seventeen tools, each described field by field, small and valid; start_here within budget", async () => {
+  test("eighteen tools, each described field by field, small and valid; start_here within budget", async () => {
     const { AjvJsonSchemaValidator } = await import("@modelcontextprotocol/sdk/validation/ajv");
     const { undescribed } = await import("../src/mcp/schema.js");
     const s = await realSetup();
@@ -548,6 +548,7 @@ describe("the full surface", () => {
       "practice_questions",
       "study_progress",
       "exams",
+      "references",
     ]);
     const ajv = new AjvJsonSchemaValidator();
     for (const tool of tools) {

@@ -15,8 +15,8 @@ operations), [converter.md](converter.md) (how uploads become pages),
 
 Everything below is live on the shared services: `createApp` passes the one `Services`
 object to `mcpRoutes(deps, services)`, so MCP and the HTTP API run the same domain code.
-Seventeen tools are registered in production, covering the library, files, documents,
-the study map, requests, practice, exams and concepts. Proved end to end with the real server, the real
+Eighteen tools are registered in production, covering the library, files, documents,
+the study map, requests, practice, exams, concepts and trusted references (added 2026-11-16). Proved end to end with the real server, the real
 converter container and headless Claude Code and Codex sessions (see Live checks).
 
 ## Endpoint
@@ -39,7 +39,7 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 | `start_here` | Orientation, the whole job in order, the rules, content types, live facts (open requests, inbox); `topic` for detail | read-only |
 | `browse_library` | One level of the tree, or trash, favourites, recents; paged | read-only |
 | `get_item` | Any object by ID (nod_, fil_, pag_, doc_, blk_, req_, qst_, con_, exm_) with links to its neighbours; a file with `text: true` gives every page's text at once; a lecture shows who is writing for it | read-only |
-| `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts | read-only |
+| `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts, her saved references | read-only |
 | `edit_library` | create, update (rename), move, duplicate, trash, restore; claim and release any library item or document for writing | destructive |
 | `changes` | The change feed since a cursor | read-only |
 | `requests` | Her requests: list (waiting first, with target, path, preview), claim, release, complete with a reply and links (figures in the reply are checked against its sources), decline with a reason | write |
@@ -53,6 +53,7 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 | `practice_questions` | create in bulk (or validate only), list, update, trash, restore | destructive |
 | `study_progress` | Her weak areas, missed-questions notebook, due cards, sessions, a session's results | read-only |
 | `exams` | Upcoming exams with coverage and progress; create, update (never delete) | write |
+| `references` | Trusted outside references: `list` returns the built-in sites (PharmGuides and its sections, with its search address pattern, flagged trusted) and her saved references (optionally for one place and what is inside it); `add` saves one she asked for. No change or delete. The description carries the writing rule (below) | write |
 
 Why this list (and not more) and why ONE `study_map` tool: each tool is one job an agent recognises by name. Actions
 that share a subject fold into one tool with an `action` (requests, source_files, concepts,
@@ -76,6 +77,16 @@ shapes, while the exact checking stays with the canvas validators, whose errors 
 message, a minimal valid example) are passed through as the tool error.
 
 Decisions:
+
+- **Trusted references** (docs/references.md). Her notes are built from her slides and notes;
+  PharmGuides and her saved references are trusted outside resources to check and extend them.
+  The `references` tool and `start_here` tell agents to consult them with their own web access
+  (the app fetches nothing), to keep her slide where a reference disagrees (cite it, add a
+  `source_conflict` flag naming the reference), and to put anything from a reference in the
+  block's `references` ([{title, url, referenceId?}], at most 5), which renders as its own chip
+  apart from her numbered sources. Such a block satisfies the citation rule. Agents summarise in
+  their own words with the link and never paste long passages from a site. Agents can add a
+  saved reference only when she asks; they cannot change or delete hers.
 
 - **Exams.** Agents may create and update exams unprompted (an exam date in her
   material, or a request), because the activity log shows it and she can change it; they

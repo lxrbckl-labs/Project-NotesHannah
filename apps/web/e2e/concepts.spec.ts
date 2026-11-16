@@ -21,6 +21,19 @@ test.describe("concept page", () => {
     await expect(page.getByTestId("concepts-index")).toBeVisible();
   });
 
+  test("a quiet link looks the concept up on PharmGuides in a new tab", async ({ page }) => {
+    await page.route(/pharmguides\.com/, (route) => route.abort());
+    await openDemo(page, { concept: "metoprolol" });
+    const link = page.getByTestId("pharmguides-lookup");
+    await expect(link).toHaveAttribute(
+      "href",
+      "https://www.pharmguides.com/search/?query=Metoprolol",
+    );
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(link).toContainText("opens in a new tab");
+  });
+
   test("a citation chip reports the source it opens", async ({ page }) => {
     await openDemo(page, { concept: "acei" });
     const row = page.getByTestId("relation-item").filter({ hasText: "Dry cough" });

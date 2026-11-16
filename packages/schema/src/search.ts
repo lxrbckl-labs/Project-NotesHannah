@@ -9,12 +9,14 @@ import {
   NodeId,
   PageId,
   QuestionId,
+  ReferenceId,
   TranscriptId,
 } from "./ids.js";
 import { NodeWithLinks } from "./library.js";
+import { ReferenceKind, ReferenceSource } from "./references.js";
 
 /** What a search can find. */
-export const SearchKind = z.enum(["node", "page", "block", "question", "concept"]);
+export const SearchKind = z.enum(["node", "page", "block", "question", "concept", "reference"]);
 export type SearchKind = z.infer<typeof SearchKind>;
 
 export const SEARCH_KINDS: readonly SearchKind[] = SearchKind.options;
@@ -78,12 +80,25 @@ export const ConceptSearchHit = z.object({
 });
 export type ConceptSearchHit = z.infer<typeof ConceptSearchHit>;
 
+/** One of her saved references whose title, note or address matches. It opens outside the app. */
+export const ReferenceSearchHit = z.object({
+  kind: z.literal("reference"),
+  referenceId: ReferenceId,
+  title: z.string(),
+  url: z.string(),
+  referenceKind: ReferenceKind.nullable(),
+  source: ReferenceSource.nullable(),
+  snippet: z.string(),
+});
+export type ReferenceSearchHit = z.infer<typeof ReferenceSearchHit>;
+
 export const SearchHit = z.discriminatedUnion("kind", [
   NodeSearchHit,
   PageSearchHit,
   BlockSearchHit,
   QuestionSearchHit,
   ConceptSearchHit,
+  ReferenceSearchHit,
 ]);
 export type SearchHit = z.infer<typeof SearchHit>;
 
@@ -95,7 +110,7 @@ export const SearchQuery = z.object({
   q: z.string().trim().min(1).max(200),
   kinds: z
     .string()
-    .max(40)
+    .max(60)
     .transform((value, ctx) => {
       const parts = [
         ...new Set(

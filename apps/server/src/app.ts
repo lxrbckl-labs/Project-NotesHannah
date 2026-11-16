@@ -16,6 +16,7 @@ import { filesRoutes } from "./domains/files/index.js";
 import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
 import { practiceRoutes } from "./domains/practice/index.js";
+import { referencesRoutes } from "./domains/references/index.js";
 import { requestsRoutes } from "./domains/requests/index.js";
 import { searchRoutes } from "./domains/search/index.js";
 import type { AppEnv } from "./http/auth-context.js";
@@ -86,6 +87,7 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/api", practiceRoutes(deps, services.practice));
   app.route("/api", examsRoutes(deps, services.exams));
   app.route("/api", requestsRoutes(deps, {}, services.requests));
+  app.route("/api", referencesRoutes(services.references));
   // The drug-name check is off unless RXNORM_CHECK=1 (see docs/concepts.md).
   app.route("/api", conceptsRoutes(deps, {}, services.concepts));
   // The agent front door: POST /mcp (API key only) and GET /agents.txt.

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CITATION_LIMITS, type Citation, citationList } from "../citations.js";
 import { BlockId } from "../ids.js";
+import { MAX_REFERENCES_PER_BLOCK, ReferenceAttribution } from "../references.js";
 import {
   BlockFlag,
   BlockReview,
@@ -425,6 +426,16 @@ const writerEnvelope = {
   citations: citationList(CITATION_LIMITS.maxPerBlock),
   /** True when nothing in the block is from her notes; it is labelled "not from your notes". */
   generalKnowledge: z.boolean().default(false),
+  /**
+   * Outside references the block draws on (a guideline, DoseDex), shown as their own chips apart
+   * from her sources. Optional, so every block stored before it existed reads the same.
+   */
+  references: z
+    .array(ReferenceAttribution)
+    .max(MAX_REFERENCES_PER_BLOCK, {
+      error: `At most ${MAX_REFERENCES_PER_BLOCK} outside references on one block.`,
+    })
+    .optional(),
   /** Things she should check (D10). Always flag doses, units and decimals. */
   flags: z.array(BlockFlag).max(FLAG_LIMITS.maxPerBlock).default([]),
 };
@@ -433,6 +444,7 @@ interface Envelope {
   style?: BlockStyle | undefined;
   citations: Citation[];
   generalKnowledge: boolean;
+  references?: ReferenceAttribution[] | undefined;
   flags: BlockFlag[];
 }
 
@@ -457,6 +469,7 @@ export type BlockInputRaw = {
     style?: z.input<typeof BlockStyle>;
     citations?: z.input<typeof Citation>[];
     generalKnowledge?: boolean;
+    references?: z.input<typeof ReferenceAttribution>[];
     flags?: z.input<typeof BlockFlag>[];
   };
 }[BlockType];

@@ -123,6 +123,10 @@ function toolMap(f: Facts): string {
     ["practice_questions", "create (or validate), list, update, trash questions"],
     ["study_progress", "her weak areas, missed notebook, due cards, sessions (read only)"],
     ["exams", "upcoming exams with coverage and progress; create, update"],
+    [
+      "references",
+      "her saved outside references (guidelines, calculators); list, add; link, never copy",
+    ],
   ];
   return lines
     .filter(([name]) => has(f, name))
@@ -282,6 +286,7 @@ function citationRules(): string {
     "Citations are required. Every generated block or practice question must say where it came from, so she can tap through to the original page.",
     "- A citation is {fileId, pageId, quote, region?, label?}. The quote is copied character for character from that page's transcript (transcribe first); quotes that are not found are refused.",
     '- Content not from her notes must set "generalKnowledge": true instead (labelled "not from your notes"); never both on the same block.',
+    '- Content checked against or taken from a trusted outside reference (references tool, list: PharmGuides, her saved guidelines) names it in "references": [{"title","url"}]. It shows as its own chip, never as one of her sources. Her slides come first: where a reference disagrees with them, keep her slide, cite it, and add a source_conflict flag naming the reference. Summarise in your own words with the link; never paste long passages from a site.',
     `- Exempt types: ${CITATION_EXEMPT_TYPES.join(", ")}.`,
     '- Inside rich text, {"cite": 1} marks where citation 1 supports a claim. Drug card lines and comparison cells can carry their own citations and flags, so each dose can cite its source.',
     "- Regions are fractions of the page (0,0 top-left); best effort on handwriting.",
@@ -292,10 +297,10 @@ function citationRules(): string {
 
 function blockCatalogue(full: boolean): string {
   if (!full) {
-    return `Block types: ${BLOCK_TYPES.join(", ")}. Each block is {"type", "content", "citations"?, "generalKnowledge"?, "flags"?, "style"?}. Details and an example of each: start_here {"topic":"blocks"}.`;
+    return `Block types: ${BLOCK_TYPES.join(", ")}. Each block is {"type", "content", "citations"?, "references"?, "generalKnowledge"?, "flags"?, "style"?}. Details and an example of each: start_here {"topic":"blocks"}.`;
   }
   const lines = [
-    `A document is an ordered list of blocks (at most ${DOCUMENT_LIMITS.blocks}; ${DOCUMENT_LIMITS.blocksPerCall} per write). A block is {"type", "content", "citations"?, "generalKnowledge"?, "flags"?, "style"?}; the server assigns id, origin, review and provenance (do not send them).`,
+    `A document is an ordered list of blocks (at most ${DOCUMENT_LIMITS.blocks}; ${DOCUMENT_LIMITS.blocksPerCall} per write). A block is {"type", "content", "citations"?, "references"?, "generalKnowledge"?, "flags"?, "style"?}; the server assigns id, origin, review and provenance (do not send them).`,
     'Rich text: wherever text is expected, send a plain string, or a list of runs: {"text": "Metoprolol", "bold": true}, {"cite": 1}, {"concept": "con_…", "text": "propranolol"}. Marks: bold, italic, underline, strike, code, highlight (a colour), link.',
     `Colours are tokens only: ${COLOR_TOKENS.join(", ")}.`,
     "Types (cites = must cite or be general knowledge):",

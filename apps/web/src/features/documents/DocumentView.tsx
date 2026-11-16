@@ -782,7 +782,7 @@ function DocumentScreen({
                       <Plus aria-hidden className="size-4" /> Add a block
                     </button>
                   )}
-                  <References names={names} />
+                  <References names={names} blocks={doc.blocks} />
                 </article>
                 {drop && (
                   <div

@@ -110,6 +110,19 @@ stays where she put it. Never send coordinates. Her pinned or edited items are
 left alone unless you pass the requestId of her request about the whole document.
 start_here with topic "study_map" has every operation.
 
+Trusted references: her notes are built from her slides and handwriting, and
+trusted outside references check and extend them. Call references (action
+"list") before writing or revising notes on a topic: it returns the built-in
+sites (PharmGuides: the guideline index, AntibioticDex for spectrum, DoseDex for
+emergency doses, TNKalc, Pharmacy Notes, and its search address) and the pages
+she saved, tied to her lectures. Read them with your own web access; the app
+does not fetch pages for you. Her slides come first: where a reference
+disagrees, keep her slide, cite it, and add a source_conflict flag naming the
+reference. Anything taken from or checked against a reference goes in the
+block's "references" ([{"title", "url"}]): it shows as its own labelled chip,
+never as one of her sources. Summarise in your own words with the link; never
+paste long passages, tables or figures from a site.
+
 Answering a request: the numbers with units in your reply (doses, ranges,
 decimals) are checked against the page or block the request is about and what you
 link. Figures found nowhere come back as a warning and nothing is completed; link
@@ -119,8 +132,8 @@ from general knowledge (she then sees the reply flagged).
 Rules in one breath
 -------------------
 Transcribe verbatim and flag every dose, unit and decimal. Every generated
-block cites a page (with a quote copied exactly from its transcript) or is
-marked general knowledge. Never overwrite what she wrote or reviewed unless she
+block cites a page (with a quote copied exactly from its transcript), names
+the trusted reference it comes from, or is marked general knowledge. Never overwrite what she wrote or reviewed unless she
 asked: her request, claimed by you, is what lifts that protection (pass its
 requestId). Nothing is ever permanently deleted by an agent; trash is restorable.
 Errors explain the rule and include a valid example: read them and retry.

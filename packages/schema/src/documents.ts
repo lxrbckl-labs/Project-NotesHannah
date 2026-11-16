@@ -23,6 +23,7 @@ import {
 import { Citation, CitingLocation, citationKey, NormalizedBox } from "./citations.js";
 import { Actor, Timestamp } from "./common.js";
 import { BlockId, DocumentId, FileId, NodeId, PageId, RequestId, RevisionId } from "./ids.js";
+import { ReferenceAttribution } from "./references.js";
 import { ReviewStatus } from "./sources.js";
 
 /**
@@ -217,11 +218,13 @@ export const BlockPatch = z
     style: BlockStyle.nullable().optional(),
     citations: z.array(Citation).optional(),
     generalKnowledge: z.boolean().optional(),
+    /** Replaces the block's outside references; [] removes them. */
+    references: z.array(ReferenceAttribution).optional(),
     flags: z.array(BlockFlag).optional(),
   })
   .refine((patch) => Object.keys(patch).length > 0, {
     error:
-      "The patch is empty: give at least one of content, style, citations, generalKnowledge, flags.",
+      "The patch is empty: give at least one of content, style, citations, generalKnowledge, references, flags.",
   });
 export type BlockPatch = z.infer<typeof BlockPatch>;
 
@@ -408,6 +411,10 @@ export function applyBlockPatch(block: Block, patch: BlockPatch, options: Valida
   else if (patch.style !== undefined) next.style = patch.style;
   if (patch.citations !== undefined) next.citations = patch.citations;
   if (patch.generalKnowledge !== undefined) next.generalKnowledge = patch.generalKnowledge;
+  if (patch.references !== undefined) {
+    if (patch.references.length > 0) next.references = patch.references;
+    else delete next.references;
+  }
   if (patch.flags !== undefined) next.flags = patch.flags;
   return validateBlockInput(next, options);
 }

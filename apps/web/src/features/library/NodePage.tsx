@@ -10,6 +10,7 @@ import { api, isApiError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { IN_PROGRESS } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
+import { ReferencesStrip, SHOWS_REFERENCES } from "../references/ReferencesStrip";
 import { FileRow } from "../sources/FileRow";
 import { useFileDrop } from "../uploads/useFileDrop";
 import { useNodeActions } from "./actions";
@@ -88,6 +89,9 @@ function NodeView({ node }: { node: NodeWithLinks }) {
   return (
     <Page>
       <NodeHeader node={node} />
+      {SHOWS_REFERENCES.has(node.kind) ? (
+        <ReferencesStrip place={{ nodeId: node.id, name: nodeTitle(node), path: node.path }} />
+      ) : null}
       <DropArea node={node}>
         {canHoldFiles(node) ? <NodeFiles node={node} /> : null}
         {node.kind === "lecture" ? (

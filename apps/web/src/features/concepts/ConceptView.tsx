@@ -25,6 +25,8 @@ import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { describeError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { SEVERITY_HUE } from "../../lib/roles";
+import { ExternalLink } from "../references/ExternalLink";
+import { pharmGuidesSearch } from "../references/registry";
 import { relationSections, SEVERITY_LABEL } from "./model/relations";
 import { pluralise } from "./model/text";
 import { Neighbourhood } from "./Neighbourhood";
@@ -268,6 +270,15 @@ function Header({
           label="Ask about this"
         />
       </div>
+      <p className="text-ui">
+        <ExternalLink
+          href={pharmGuidesSearch(c.name)}
+          data-testid="pharmguides-lookup"
+          className="text-text-muted underline underline-offset-2 hover:text-accent"
+        >
+          Look up on PharmGuides
+        </ExternalLink>
+      </p>
     </Card>
   );
 }
