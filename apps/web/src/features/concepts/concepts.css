@@ -1,0 +1,103 @@
+@import "@xyflow/react/dist/base.css";
+
+/*
+ * Token colours for concept types. Each tone is a soft background with a text colour that
+ * passes WCAG AA on it (checked in tokens.test.ts). Light by default; dark follows the same
+ * switches as the app's own tokens.
+ */
+:root {
+  --cx-green-bg: #e3efea;
+  --cx-green-fg: #1f5c4b;
+  --cx-blue-bg: #e3edf8;
+  --cx-blue-fg: #1f4e86;
+  --cx-violet-bg: #ece8f6;
+  --cx-violet-fg: #4b3a8a;
+  --cx-teal-bg: #dff0f1;
+  --cx-teal-fg: #1b5760;
+  --cx-red-bg: #fbe9e7;
+  --cx-red-fg: #9c1f18;
+  --cx-amber-bg: #f8ecd6;
+  --cx-amber-fg: #7a4a07;
+  --cx-grey-bg: #efeee8;
+  --cx-grey-fg: #55534b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cx-green-bg: #1f3a32;
+    --cx-green-fg: #8fd6bf;
+    --cx-blue-bg: #1c2b3d;
+    --cx-blue-fg: #9cc4f0;
+    --cx-violet-bg: #2a2540;
+    --cx-violet-fg: #c1b3f2;
+    --cx-teal-bg: #1b3236;
+    --cx-teal-fg: #8ccdd6;
+    --cx-red-bg: #3b201d;
+    --cx-red-fg: #f4a199;
+    --cx-amber-bg: #3a2d14;
+    --cx-amber-fg: #e8bf72;
+    --cx-grey-bg: #262521;
+    --cx-grey-fg: #a8a69b;
+  }
+}
+
+:root[data-theme="dark"] {
+  --cx-green-bg: #1f3a32;
+  --cx-green-fg: #8fd6bf;
+  --cx-blue-bg: #1c2b3d;
+  --cx-blue-fg: #9cc4f0;
+  --cx-violet-bg: #2a2540;
+  --cx-violet-fg: #c1b3f2;
+  --cx-teal-bg: #1b3236;
+  --cx-teal-fg: #8ccdd6;
+  --cx-red-bg: #3b201d;
+  --cx-red-fg: #f4a199;
+  --cx-amber-bg: #3a2d14;
+  --cx-amber-fg: #e8bf72;
+  --cx-grey-bg: #262521;
+  --cx-grey-fg: #a8a69b;
+}
+
+/* The graph: calm, no attribution clutter, edges legible in both themes. */
+.cx-flow .react-flow__attribution {
+  display: none;
+}
+.cx-flow .react-flow__edge-path {
+  stroke: var(--color-border-strong);
+  stroke-width: 1.5;
+}
+.cx-flow .react-flow__edge-textbg {
+  fill: var(--color-surface);
+}
+.cx-flow .react-flow__edge-text {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+}
+.cx-flow .react-flow__node {
+  cursor: pointer;
+}
+
+/* The drill: a wrong pair shakes once; reduced motion removes it (see styles.css). */
+@keyframes cx-nudge {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+.cx-nudge {
+  animation: cx-nudge 220ms ease-in-out;
+}
+
+/* Hit area for small chips: 44px on touch without growing the visual chip. */
+.cx-hit {
+  position: relative;
+}
+@media (pointer: coarse) {
+  .cx-hit::after {
+    content: "";
+    position: absolute;
+    inset: -10px -6px;
+  }
+}
