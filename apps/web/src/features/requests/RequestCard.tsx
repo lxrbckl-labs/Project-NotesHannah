@@ -1,7 +1,7 @@
 import { ChevronDown, Pencil, RotateCcw, TriangleAlert, X } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
+import { Button, buttonClass } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { cn } from "../../lib/cn";
 import { formatAgo, formatDateTime } from "../../lib/format";
@@ -159,7 +159,7 @@ export function RequestCard({
             aria-expanded={showHistory}
             data-testid="history-toggle"
             onClick={() => setShowHistory((value) => !value)}
-            className="-ml-2 inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-ui font-medium text-text-muted hover:bg-surface-muted"
+            className={buttonClass({ size: "sm" })}
           >
             <ChevronDown
               size={16}

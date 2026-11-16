@@ -278,6 +278,10 @@ layouts; some get compact on the computer layout (from 1280px).
 Variants: `primary`, `secondary` (default), `subtle`, `ghost`, `ghostAccent`, `ghostDanger`,
 `danger`. Sizes: `sm`, `md` (default), `lg`. 44px tall on touch; 32, 36 or 48px on the computer.
 
+Every text button has an edge or a fill, so none disappears on the dotted page. The three `ghost` variants are
+outlined on the surface colour like `secondary` and differ only in text colour (body, accent, danger). For a link
+that should look like a button, use `buttonClass({ variant, size, className })` from the same file.
+
 ```tsx
 <Button variant="primary" onClick={save}>Save</Button>
 <Button size="sm" variant="ghost">Skip</Button>

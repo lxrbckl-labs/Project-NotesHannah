@@ -15,9 +15,14 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary:
     "border border-border-strong bg-surface text-text hover:bg-surface-muted active:bg-surface-muted",
   subtle: "bg-surface-muted text-text hover:bg-hue-gray-mark active:bg-hue-gray-mark",
-  ghost: "text-text hover:bg-surface-muted active:bg-surface-muted",
-  ghostDanger: "text-danger hover:bg-danger-soft active:bg-danger-soft",
-  ghostAccent: "text-accent hover:bg-accent-soft active:bg-accent-soft",
+  // The three "ghost" variants are outlined on the surface colour like `secondary`: a button with no edge and no
+  // fill disappears on the dotted page. They differ from `secondary` only in the colour of their text.
+  ghost:
+    "border border-border-strong bg-surface text-text hover:bg-surface-muted active:bg-surface-muted",
+  ghostDanger:
+    "border border-border-strong bg-surface text-danger hover:bg-danger-soft active:bg-danger-soft",
+  ghostAccent:
+    "border border-border-strong bg-surface text-accent hover:bg-accent-soft active:bg-accent-soft",
   danger: "bg-danger text-accent-contrast hover:brightness-110 active:brightness-95",
 };
 
@@ -36,6 +41,22 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   ref?: Ref<HTMLButtonElement>;
 }
 
+const BASE =
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-50";
+
+/** The button look as a class, for a link that should look like a button. */
+export function buttonClass({
+  variant = "secondary",
+  size = "md",
+  className,
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+} = {}): string {
+  return cn(BASE, SIZES[size], VARIANTS[variant], className);
+}
+
 /** 44px tall on touch layouts; compact on the computer layout. */
 export function Button({
   variant = "secondary",
@@ -44,18 +65,7 @@ export function Button({
   type = "button",
   ...props
 }: ButtonProps) {
-  return (
-    <button
-      type={type}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-50",
-        SIZES[size],
-        VARIANTS[variant],
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <button type={type} className={buttonClass({ variant, size, className })} {...props} />;
 }
 
 type IconButtonVariant = "ghost" | "subtle" | "secondary" | "primary" | "ghostDanger";

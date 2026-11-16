@@ -22,7 +22,7 @@ import { Link, useNavigate } from "react-router";
 import { useBadges } from "../../app/badges";
 import { Page, SectionTitle } from "../../components/Page";
 import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
+import { Button, buttonClass } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
@@ -261,7 +261,7 @@ export function LibraryHome() {
       <Link
         to="/concepts"
         data-testid="home-concepts-link"
-        className="mr-2 inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-ui text-text-muted hover:bg-surface-muted hover:text-text"
+        className={buttonClass({ className: "mr-2" })}
       >
         <Lightbulb size={16} aria-hidden /> Concepts
         {badges.review > 0 ? (
@@ -270,10 +270,7 @@ export function LibraryHome() {
           </Badge>
         ) : null}
       </Link>
-      <Link
-        to="/trash"
-        className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-ui text-text-muted hover:bg-surface-muted hover:text-text"
-      >
+      <Link to="/trash" className={buttonClass()}>
         <Trash2 size={16} aria-hidden /> Trash
       </Link>
     </Page>

@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useParams, useSearchParams } from "react-router";
 import { Page } from "../../components/Page";
+import { buttonClass } from "../../components/ui/button";
 import { useBack } from "../../lib/useBack";
 import { AskButton } from "../mounts/ask";
 import { SourceViewer } from "./SourceViewer";
@@ -13,11 +14,7 @@ export function SourceFilePage() {
   const quote = params.get("quote") ?? undefined;
   return (
     <Page className="max-w-7xl">
-      <button
-        type="button"
-        onClick={back}
-        className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
-      >
+      <button type="button" onClick={back} className={buttonClass({ className: "mb-3" })}>
         <ArrowLeft size={18} aria-hidden /> Back
       </button>
       <div className="mb-3 flex justify-end">
