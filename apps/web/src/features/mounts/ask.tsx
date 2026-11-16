@@ -88,9 +88,10 @@ export function AskButton({
       data-testid="ask-button"
       aria-label={iconOnly ? `${text}${options.label ? ` about ${options.label}` : ""}` : undefined}
       onClick={() => ask(options)}
-      className={cn("gap-1.5 px-3", iconOnly && "size-11 px-0 xl:size-9", className)}
+      // cn only joins classes, so the icon-only padding must win over the button size's own px-4.
+      className={cn("gap-1.5 px-3", iconOnly && "size-11 px-0! xl:size-9", className)}
     >
-      <MessageCirclePlus size={17} aria-hidden />
+      <MessageCirclePlus size={17} aria-hidden className="shrink-0" />
       {iconOnly ? null : <span>{text}</span>}
     </Button>
   );
