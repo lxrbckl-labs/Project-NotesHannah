@@ -9,9 +9,11 @@ import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { activityRoutes } from "./domains/activity/index.js";
 import { documentsRoutes } from "./domains/documents/index.js";
+import { examsRoutes } from "./domains/exams/index.js";
 import { filesRoutes } from "./domains/files/index.js";
 import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
+import { practiceRoutes } from "./domains/practice/index.js";
 import type { AppEnv } from "./http/auth-context.js";
 import { authenticate } from "./http/authenticate.js";
 import type { ServerDeps } from "./http/deps.js";
@@ -66,6 +68,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/", filesRoutes(deps));
   app.route("/api", documentsRoutes(deps));
   app.route("/api", activityRoutes(deps));
+  app.route("/api", practiceRoutes(deps));
+  app.route("/api", examsRoutes(deps));
 
   // Unknown API-ish paths are ApiError 404s, never the SPA shell.
   for (const prefix of ["/api", "/mcp"]) {
