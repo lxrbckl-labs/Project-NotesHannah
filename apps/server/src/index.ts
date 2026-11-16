@@ -4,6 +4,7 @@ import { ConfigError, loadConfig } from "./config.js";
 import { migrate, openDatabase } from "./db/client.js";
 import { startQueueWatcher, stopQueueWatcher } from "./domains/files/index.js";
 import { AppError } from "./http/errors.js";
+import { createServices } from "./services.js";
 import { bindStorage } from "./storage/binding.js";
 import { openStorage } from "./storage/storage.js";
 
@@ -15,9 +16,14 @@ try {
   const applied = migrate(db);
   if (applied.length > 0) console.log(`applied migrations: ${applied.join(", ")}`);
   bindStorage(db, storage);
-  const app = createApp(config, { db });
+  // One instance of every domain service, shared by the routes and the queue watcher.
+  const services = createServices({ config, db, now: Date.now }, { files: { storage } });
+  const app = createApp(config, { db, services });
   // Ingest the converter's result files (queue/done, queue/failed) and fail stuck jobs.
-  const queueWatcher = startQueueWatcher({ config, db, now: Date.now });
+  const queueWatcher = startQueueWatcher(
+    { config, db, now: Date.now },
+    { service: services.files },
+  );
   const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
     console.log(`notes server listening on :${info.port} (${config.NODE_ENV})`);
     console.log(`storage ${storage.root} (id ${storage.marker.storageId})`);
