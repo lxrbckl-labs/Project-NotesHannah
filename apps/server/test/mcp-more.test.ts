@@ -564,3 +564,18 @@ describe("the full surface", () => {
     expect(start.text).toContain("Check her requests FIRST");
   });
 });
+
+describe("robustness", () => {
+  test("an array argument sent as a JSON string is read as the array", async () => {
+    const s = await realSetup();
+    const a = await s.agent();
+    const r = await a.ok("concepts", {
+      action: "upsert",
+      concepts: JSON.stringify([{ type: "drug", name: "lorvanol", generalKnowledge: true }]),
+    });
+    expect(r.text).toContain("Applied: 1 created");
+    // A string where an array is wanted, that is not JSON, still gets the schema error.
+    const bad = await a.fail("concepts", { action: "upsert", concepts: "lorvanol" });
+    expect(bad.error.message).toContain("concepts");
+  });
+});

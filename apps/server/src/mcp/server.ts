@@ -93,6 +93,35 @@ function successResult(output: ToolOutput): CallToolResult {
   };
 }
 
+/**
+ * Some models send an array or object argument as a JSON string (seen: haiku
+ * sending "concepts": "[{…}]" five times in a row). Where the tool's schema
+ * says a top-level field is an array or an object and a string arrives that
+ * parses as one, use the parsed value.
+ */
+export function unstringify(tool: ToolDef, args: unknown): unknown {
+  if (args === null || typeof args !== "object" || Array.isArray(args)) return args;
+  const props = (tool.inputSchema.properties ?? {}) as Record<string, { type?: unknown }>;
+  const out: Record<string, unknown> = { ...(args as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(out)) {
+    const want = props[key]?.type;
+    if (typeof value !== "string" || (want !== "array" && want !== "object")) continue;
+    const text = value.trim();
+    if (!(text.startsWith("[") || text.startsWith("{"))) continue;
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (
+        want === "array" ? Array.isArray(parsed) : parsed !== null && typeof parsed === "object"
+      ) {
+        out[key] = parsed;
+      }
+    } catch {
+      // leave it: the schema error will name the field
+    }
+  }
+  return out;
+}
+
 /** Run one tool call: rate limit, parse, scope check, run. Never throws. */
 export async function callTool(
   tools: ToolDef[],
@@ -121,7 +150,7 @@ export async function callTool(
   let writes = false;
   let action: string | null = null;
   try {
-    const input = tool.parse(args);
+    const input = tool.parse(unstringify(tool, args));
     writes = tool.writes(input);
     action = tool.action(input);
     if (writes && ctx.scope !== "write") {
