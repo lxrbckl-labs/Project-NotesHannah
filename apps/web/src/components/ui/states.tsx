@@ -43,8 +43,9 @@ export function EmptyState({
   const Heading = headingLevel === 3 ? "h3" : "h2";
   return (
     <div
+      // No dotted grid of its own: the box is see-through, and a second grid over the page's shows as doubled dots.
       className={cn(
-        "dot-grid flex flex-col items-center rounded-panel border border-dashed border-border-strong text-center",
+        "flex flex-col items-center rounded-panel border border-dashed border-border-strong text-center",
         compact ? "px-4 py-8" : "px-6 py-12",
       )}
     >
