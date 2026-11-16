@@ -824,13 +824,13 @@ export function createPracticeService(
 
   function decodeSeq(cursor: string | undefined): number {
     if (cursor === undefined) return 0;
-    const n = Number(Buffer.from(cursor, "base64url").toString("utf8"));
-    if (!Number.isInteger(n) || n < 0) {
+    const text = Buffer.from(cursor, "base64url").toString("utf8");
+    if (!/^\d{1,15}$/.test(text)) {
       throw new AppError("invalid_input", "The cursor is not valid.", {
         hint: "Pass the nextCursor value from the previous page unchanged, or omit cursor.",
       });
     }
-    return n;
+    return Number(text);
   }
   const encodeSeq = (seq: number) => Buffer.from(String(seq), "utf8").toString("base64url");
 
