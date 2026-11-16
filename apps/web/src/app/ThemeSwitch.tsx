@@ -9,7 +9,7 @@ const OPTIONS: { value: ThemeChoice; label: string }[] = [
 export function ThemeSwitch() {
   const [choice, setChoice] = useTheme();
   return (
-    <fieldset className="flex gap-1 rounded-lg border border-border bg-surface-muted p-1">
+    <fieldset className="inline-flex gap-1 rounded-2xl border border-border bg-surface-muted p-1">
       <legend className="sr-only">Theme</legend>
       {OPTIONS.map(({ value, label }) => (
         <button
@@ -17,7 +17,7 @@ export function ThemeSwitch() {
           type="button"
           aria-pressed={choice === value}
           onClick={() => setChoice(value)}
-          className="rounded-md px-3 py-1 text-sm text-text-muted aria-pressed:bg-accent aria-pressed:text-accent-contrast"
+          className="min-h-11 rounded-xl px-4 text-sm font-medium text-text-muted transition-colors hover:text-text aria-pressed:bg-accent aria-pressed:text-accent-contrast xl:min-h-8"
         >
           {label}
         </button>

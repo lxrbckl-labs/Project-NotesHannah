@@ -9,11 +9,17 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "pnpm --filter @notes/schema build && playwright test"
   },
   "dependencies": {
+    "@notes/schema": "workspace:*",
+    "@tanstack/react-query": "5.107.1",
+    "lucide-react": "1.73.0",
+    "radix-ui": "1.8.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "react-router": "8.5.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",

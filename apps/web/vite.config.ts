@@ -4,6 +4,11 @@ import { defineConfig } from "vitest/config";
 
 const target = process.env.SERVER_URL ?? "http://localhost:3000";
 
+// The in-memory mock API is for dev, unit tests and Playwright only: never let it into a build.
+if (process.argv.includes("build") && process.env.VITE_MOCK_API === "1") {
+  throw new Error("Refusing to build with VITE_MOCK_API=1: the mock API must not ship.");
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
