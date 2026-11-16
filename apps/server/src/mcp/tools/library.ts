@@ -283,7 +283,7 @@ export const editLibrary = defineTool({
 // search_notes
 // ---------------------------------------------------------------------------
 
-const SEARCH_KIND_OPTIONS = ["node", "page", "block"] as const;
+const SEARCH_KIND_OPTIONS = ["node", "page", "block", "question", "concept"] as const;
 
 function hitLine(hit: SearchHit): string {
   switch (hit.kind) {
@@ -291,8 +291,12 @@ function hitLine(hit: SearchHit): string {
       return `${nodeLine(nodeItem(hit.node))} at "${hit.node.path}"`;
     case "page":
       return `- page ${hit.pageId} (page ${hit.pageIndex} of "${hit.fileName}", file ${hit.fileId}): ${hit.snippet}`;
-    default:
+    case "block":
       return `- block ${hit.blockId} (${hit.blockType}) in "${hit.documentTitle}" (document ${hit.documentId}): ${hit.snippet}`;
+    case "question":
+      return `- question ${hit.questionId} (${hit.questionType})${hit.nodeId ? ` under ${hit.nodeId}` : ""}: ${hit.snippet}`;
+    case "concept":
+      return `- concept ${hit.conceptId} (${hit.conceptType}) "${hit.name}"${hit.genericName ? `, generic ${hit.genericName}` : ""}: ${hit.snippet}`;
   }
 }
 
