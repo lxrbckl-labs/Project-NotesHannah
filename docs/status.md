@@ -6,8 +6,11 @@ As of 2026-11-16, after the design pass and the first deployment. Feature IDs re
 
 The app is built and runs locally end to end on the real server with the real file
 converter (`pnpm local`, then <http://localhost:5273>). It is **deployed on the mini** at
-<https://notes.hannahporras.app> since 2026-11-16 (commit `6cdd4fe`, port 8060, one account: `alex`; details in
-[mini-handoff.md](mini-handoff.md)). **Its scheduled backups do not work yet** (see Known gaps). It has **not** been used on a real iPad or phone, and has **not** seen any of
+<https://notes.hannahporras.app> since 2026-11-16 (commit `6cdd4fe`, port 8060; details in
+[mini-handoff.md](mini-handoff.md)). Three accounts there: `alex` (empty), `demo` (the small sample) and `pharmacy`
+(the pharmacy demo set, `pnpm local:seed:pharm`). **The live build is still `6cdd4fe`**: later changes reach it
+only through a rollout (see [deploy.md](deploy.md), "Rolling out a change"), and the Docker Hub login the
+workflow uses is rejected until the org's `DOCKERHUB_TOKEN` is renewed. **Its scheduled backups do not work yet** (see Known gaps). It has **not** been used on a real iPad or phone, and has **not** seen any of
 her real lecture material. Nothing has been through a pull request; work was merged
 locally and pushed to `main` at checkpoints.
 
@@ -69,6 +72,7 @@ into a frame on the canvas at tablet and computer sizes (see Known gaps).
 
 ## Waiting on Alex
 
+- Renewing the org secret `DOCKERHUB_TOKEN`, then his word for the first `publish` commit.
 - At the mini's keyboard: the removable-volumes grant for `/bin/bash`, then the reboot test.
 - A remote backup location; where the backup password is kept. (Drive paths are set: data on NVME1, backup copies on NVME2.)
 - Changing the `alex` password, which was relayed through chat.

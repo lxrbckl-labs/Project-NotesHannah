@@ -175,14 +175,14 @@ describe("creating in the library", () => {
     expect(await screen.findByText("10 · Vasodilators · Nov 4")).toBeInTheDocument();
   });
 
-  it("shows a lecture as a placeholder page with breadcrumbs", async () => {
+  it("shows a lecture page with a place for her notes, and breadcrumbs", async () => {
     await startBackend();
     const { list } = await pharm2Ids();
     await renderReady(`/library/${list[6]?.id}`);
     expect(
       await screen.findByRole("heading", { level: 1, name: "07 · Beta blockers · Oct 14" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Content arrives in a later stage")).toBeInTheDocument();
+    expect(await screen.findByText("No notes of your own yet")).toBeInTheDocument();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     await waitFor(() =>
       expect(within(crumbs).getByRole("link", { name: "Pharmacology II" })).toBeInTheDocument(),

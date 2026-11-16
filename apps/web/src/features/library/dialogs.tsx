@@ -10,7 +10,7 @@ import { api } from "../../lib/api";
 import { useNodeActions } from "./actions";
 import { fileSubject, nodeSubject, TreePicker } from "./picker";
 import { nodeKeys, useNode } from "./queries";
-import { type CreatableKind, KIND_NAME } from "./rules";
+import { type CreatableKind, KIND_NAME, nodeHref } from "./rules";
 
 interface DialogApi {
   openCreate: (parent: NodeWithLinks | null, kind: CreatableKind) => void;
@@ -119,6 +119,9 @@ function CreateForm({
       lecture,
     });
     if (node && (kind === "term" || kind === "course")) navigate(`/library/${node.id}`);
+    // A new document is something she is about to write in: open it with the caret ready.
+    const href = node ? nodeHref(node) : "";
+    if (kind === "document" && href.startsWith("/doc/")) navigate(`${href}?write=1`);
   }
 
   const placeholder: Record<string, string> = {

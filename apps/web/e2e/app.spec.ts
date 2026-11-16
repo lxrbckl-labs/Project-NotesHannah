@@ -56,7 +56,7 @@ test.describe("library", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "07 · Beta blockers · Oct 14" }),
     ).toBeVisible();
-    await expect(page.getByText("Content arrives in a later stage")).toBeVisible();
+    await expect(page.getByText("No notes of your own yet")).toBeVisible();
     const crumbs = page.getByRole("navigation", { name: "Breadcrumb" });
     await expect(crumbs.getByRole("link", { name: "Pharmacology II" })).toBeVisible();
     await crumbs.getByRole("link", { name: "Fall 2026" }).click();
@@ -305,7 +305,7 @@ test.describe("the whole library as one tree", () => {
     // a document
     await tree.getByRole("treeitem", { name: "Slide transcript" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Slide transcript" })).toBeVisible();
-    await expect(page.getByText("Content arrives in a later stage")).toBeVisible();
+    await expect(page.getByText("This is a document")).toBeVisible();
     await page.goBack();
     await expect(tree.getByRole("treeitem", { name: "Slide transcript" })).toBeVisible();
     await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeGreaterThan(before - 8);

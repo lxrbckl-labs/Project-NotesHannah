@@ -1,6 +1,6 @@
 import type { NodeWithLinks } from "@notes/schema";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, FolderOpen, Hourglass, RotateCcw } from "lucide-react";
+import { FileText, FolderOpen, PenLine, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { Page } from "../../components/Page";
@@ -90,8 +90,10 @@ function NodeView({ node }: { node: NodeWithLinks }) {
       <NodeHeader node={node} />
       <DropArea node={node}>
         {canHoldFiles(node) ? <NodeFiles node={node} /> : null}
-        {node.kind === "lecture" || node.kind === "document" ? (
-          <ContentPlaceholder node={node} />
+        {node.kind === "lecture" ? (
+          <LectureNotes node={node} />
+        ) : node.kind === "document" ? (
+          <DocumentPlaceholder node={node} />
         ) : (
           <Children node={node} />
         )}
@@ -140,16 +142,61 @@ function NodeFiles({ node }: { node: NodeWithLinks }) {
   );
 }
 
-function ContentPlaceholder({ node }: { node: NodeWithLinks }) {
+/**
+ * Her own notes for a lecture: the documents filed under it. The lecture's main page (the study
+ * guide) opens from the header; these are the extra pages she starts herself.
+ */
+function LectureNotes({ node }: { node: NodeWithLinks }) {
+  const query = useChildren(node.id);
+  const dialogs = useLibraryDialogs();
+  const fine = useFinePointer();
+  const hue = useCourseHue(node);
+  if (query.isPending) return <LoadingList rows={1} label="Loading notes" />;
+  if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+  const items = query.data;
+  return (
+    <section aria-labelledby="lecture-notes-title">
+      <h2 id="lecture-notes-title" className="mb-3 text-body font-semibold">
+        Your notes
+      </h2>
+      {items.length === 0 ? (
+        <EmptyState
+          icon={<PenLine size={26} />}
+          hue={hue ?? "accent"}
+          title="No notes of your own yet"
+          action={
+            <Button variant="primary" onClick={() => dialogs.openCreate(node, "document")}>
+              <PenLine size={16} aria-hidden />
+              Start a note
+            </Button>
+          }
+        >
+          Type your own notes for {nodeTitle(node)} here, beside its slides and study guide.
+        </EmptyState>
+      ) : (
+        <ul className="grid gap-2.5" aria-label="Your notes">
+          {items.map((n, i) => (
+            <NodeRow
+              key={n.id}
+              node={n}
+              parent={node}
+              previousId={items[i - 1]?.id ?? null}
+              dnd={fine}
+              hue={hue}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** A document's library page holds only its source files; the writing is on its page. */
+function DocumentPlaceholder({ node }: { node: NodeWithLinks }) {
   const hue = useCourseHue(node);
   return (
-    <EmptyState
-      icon={node.kind === "lecture" ? <Hourglass size={26} /> : <FileText size={26} />}
-      hue={hue ?? "accent"}
-      title="Content arrives in a later stage"
-    >
-      {nodeTitle(node)} will hold its slides, transcript and study notes here. For now you can
-      rename it, move it and keep it organised.
+    <EmptyState icon={<FileText size={26} />} hue={hue ?? "accent"} title="This is a document">
+      Open the page to read or write {nodeTitle(node)}. Files you upload here are kept with it.
     </EmptyState>
   );
 }

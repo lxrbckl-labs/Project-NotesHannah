@@ -42,7 +42,8 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   const stores = useStores();
   const navigate = useNavigate();
   const ask = useAsk();
-  const [writing, setWriting] = useState(false);
+  // `?write=1` comes from "New document": she just made it to write in it.
+  const [writing, setWriting] = useState(search.get("write") === "1");
 
   const doc = useQuery({
     queryKey: ["document", "of-node", nodeId],
@@ -102,7 +103,10 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   const light = doc.data;
   if (!light) return <Skeleton className="m-6 h-64" />;
   const documentId = light.document.id;
-  const empty = light.blocks.length === 0 && !writing;
+  // A document she created has nothing to offer but writing; only a lecture's page shows the choice
+  // between asking an agent and writing herself.
+  const blank = light.blocks.length === 0;
+  const empty = blank && !writing && n.kind === "lecture";
   const title = n.kind === "lecture" ? lectureLabel(n.name, n.lecture) : n.name;
   const base = `/doc/${nodeId}`;
 
@@ -205,6 +209,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             store={stores.documents}
             documentId={documentId}
             focusBlockId={search.get("block") ?? undefined}
+            startWriting={blank}
             onAskAboutBlock={({ blockId, kind }) =>
               ask({
                 target: { type: "block", documentId, blockId },
