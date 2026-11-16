@@ -1,0 +1,30 @@
+/*
+ * Token colours for request states. Each pair is a soft background with a text colour that passes
+ * WCAG AA on it (checked in tests/contrast.test.ts). Light by default; dark follows the same
+ * switches as the app's own tokens.
+ */
+:root {
+  --rq-amber-bg: #f8ecd6;
+  --rq-amber-fg: #7a4a07;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rq-amber-bg: #3a2d14;
+    --rq-amber-fg: #e8bf72;
+  }
+}
+
+:root[data-theme="dark"] {
+  --rq-amber-bg: #3a2d14;
+  --rq-amber-fg: #e8bf72;
+}
+
+@keyframes rq-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rq-spin {
+  animation: rq-spin 1.6s linear infinite;
+}
