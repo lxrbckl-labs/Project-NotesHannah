@@ -1,7 +1,7 @@
-import { mkdir, writeFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
-import { ConvertError } from './errors.js';
-import { Deadline, run } from './exec.js';
+import { mkdir, readdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { ConvertError } from "./errors.js";
+import { type Deadline, run } from "./exec.js";
 
 /**
  * A fresh profile per run: nothing persists between files, so one document cannot influence the next.
@@ -18,28 +18,44 @@ const REGISTRY = `<?xml version="1.0" encoding="UTF-8"?>
 </oor:items>
 `;
 
-export async function pptxToPdf(inputPptx: string, scratch: string, deadline: Deadline): Promise<string> {
-  const profile = path.join(scratch, 'lo-profile');
-  const outDir = path.join(scratch, 'lo-out');
-  await mkdir(path.join(profile, 'user'), { recursive: true });
+export async function pptxToPdf(
+  inputPptx: string,
+  scratch: string,
+  deadline: Deadline,
+): Promise<string> {
+  const profile = path.join(scratch, "lo-profile");
+  const outDir = path.join(scratch, "lo-out");
+  await mkdir(path.join(profile, "user"), { recursive: true });
   await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(profile, 'user', 'registrymodifications.xcu'), REGISTRY);
-  const filter = 'pdf:impress_pdf_Export:{"ExportHiddenSlides":{"type":"boolean","value":"true"},"ExportNotesPages":{"type":"boolean","value":"false"}}';
+  await writeFile(path.join(profile, "user", "registrymodifications.xcu"), REGISTRY);
+  const filter =
+    'pdf:impress_pdf_Export:{"ExportHiddenSlides":{"type":"boolean","value":"true"},"ExportNotesPages":{"type":"boolean","value":"false"}}';
   const res = await run(
     deadline,
-    'soffice',
+    "soffice",
     [
       `-env:UserInstallation=file://${profile}`,
-      '--headless', '--invisible', '--norestore', '--nolockcheck', '--nodefault', '--nologo', '--nofirststartwizard',
-      '--convert-to', filter,
-      '--outdir', outDir,
+      "--headless",
+      "--invisible",
+      "--norestore",
+      "--nolockcheck",
+      "--nodefault",
+      "--nologo",
+      "--nofirststartwizard",
+      "--convert-to",
+      filter,
+      "--outdir",
+      outDir,
       inputPptx,
     ],
-    { env: { PATH: process.env.PATH ?? '', HOME: scratch, LANG: 'C.UTF-8', TMPDIR: scratch } },
+    { env: { PATH: process.env.PATH ?? "", HOME: scratch, LANG: "C.UTF-8", TMPDIR: scratch } },
   );
-  const produced = (await readdir(outDir)).filter((f) => f.endsWith('.pdf'));
+  const produced = (await readdir(outDir)).filter((f) => f.endsWith(".pdf"));
   if (produced.length !== 1) {
-    throw new ConvertError('CORRUPT_FILE', `LibreOffice could not convert the presentation (exit ${res.code}): ${res.stderr.trim().slice(0, 300)}`);
+    throw new ConvertError(
+      "CORRUPT_FILE",
+      `LibreOffice could not convert the presentation (exit ${res.code}): ${res.stderr.trim().slice(0, 300)}`,
+    );
   }
   return path.join(outDir, produced[0]!);
 }

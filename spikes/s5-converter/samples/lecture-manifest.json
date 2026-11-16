@@ -144,26 +144,10 @@
           {
             "kind": "table",
             "rows": [
-              [
-                "Receptor",
-                "Main location",
-                "Effect of stimulation"
-              ],
-              [
-                "beta-1",
-                "Heart, kidney",
-                "Raises heart rate and contractility"
-              ],
-              [
-                "beta-2",
-                "Bronchi, vascular smooth muscle",
-                "Relaxation, bronchodilation"
-              ],
-              [
-                "beta-3",
-                "Adipose tissue",
-                "Lipolysis"
-              ]
+              ["Receptor", "Main location", "Effect of stimulation"],
+              ["beta-1", "Heart, kidney", "Raises heart rate and contractility"],
+              ["beta-2", "Bronchi, vascular smooth muscle", "Relaxation, bronchodilation"],
+              ["beta-3", "Adipose tissue", "Lipolysis"]
             ]
           }
         ]
@@ -262,26 +246,10 @@
           {
             "kind": "table",
             "rows": [
-              [
-                "Class",
-                "Examples",
-                "Note"
-              ],
-              [
-                "Non-selective",
-                "Propranolol, nadolol",
-                "Block beta-1 and beta-2"
-              ],
-              [
-                "Cardioselective",
-                "Metoprolol, atenolol",
-                "Selectivity lost at high doses"
-              ],
-              [
-                "Mixed alpha/beta",
-                "Carvedilol, labetalol",
-                "Add vasodilation"
-              ]
+              ["Class", "Examples", "Note"],
+              ["Non-selective", "Propranolol, nadolol", "Block beta-1 and beta-2"],
+              ["Cardioselective", "Metoprolol, atenolol", "Selectivity lost at high doses"],
+              ["Mixed alpha/beta", "Carvedilol, labetalol", "Add vasodilation"]
             ]
           }
         ]
@@ -549,31 +517,11 @@
           {
             "kind": "table",
             "rows": [
-              [
-                "Drug",
-                "Usual daily dose",
-                "Frequency"
-              ],
-              [
-                "Metoprolol tartrate",
-                "50-200 mg",
-                "Twice daily"
-              ],
-              [
-                "Atenolol",
-                "25-100 mg",
-                "Once daily"
-              ],
-              [
-                "Propranolol",
-                "40-320 mg",
-                "Divided doses"
-              ],
-              [
-                "Carvedilol",
-                "6.25-25 mg",
-                "Twice daily with food"
-              ]
+              ["Drug", "Usual daily dose", "Frequency"],
+              ["Metoprolol tartrate", "50-200 mg", "Twice daily"],
+              ["Atenolol", "25-100 mg", "Once daily"],
+              ["Propranolol", "40-320 mg", "Divided doses"],
+              ["Carvedilol", "6.25-25 mg", "Twice daily with food"]
             ]
           }
         ]

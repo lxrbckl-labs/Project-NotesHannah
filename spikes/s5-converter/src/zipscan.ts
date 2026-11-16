@@ -1,6 +1,6 @@
-import yauzl from 'yauzl';
-import { ConvertError } from './errors.js';
-import type { Limits } from './config.js';
+import yauzl from "yauzl";
+import type { Limits } from "./config.js";
+import { ConvertError } from "./errors.js";
 
 export interface ZipScan {
   entries: string[];
@@ -16,94 +16,135 @@ export interface ZipScan {
  */
 export function scanZip(path: string, limits: Limits): Promise<ZipScan> {
   return new Promise((resolve, reject) => {
-    yauzl.open(path, { lazyEntries: true, autoClose: true, validateEntrySizes: true, strictFileNames: true }, (err, zip) => {
-      if (err || !zip) {
-        reject(new ConvertError('CORRUPT_FILE', `not a readable zip archive: ${err?.message ?? 'unknown'}`));
-        return;
-      }
-      const entries: string[] = [];
-      let declared = 0;
-      let actual = 0;
-      let contentTypesXml = '';
-      const fail = (e: ConvertError) => {
-        zip.close();
-        reject(e);
-      };
-      if (zip.entryCount > limits.maxZipEntries) {
-        fail(new ConvertError('DECOMPRESSION_BOMB', `zip has ${zip.entryCount} entries (limit ${limits.maxZipEntries})`));
-        return;
-      }
-      zip.on('error', (e) => fail(new ConvertError('CORRUPT_FILE', `zip read error: ${e.message}`)));
-      zip.on('end', () => resolve({ entries, declaredBytes: declared, actualBytes: actual, contentTypesXml }));
-      zip.on('entry', (entry: yauzl.Entry) => {
-        entries.push(entry.fileName);
-        declared += entry.uncompressedSize;
-        if (declared > limits.maxZipUncompressedBytes) {
-          fail(new ConvertError('DECOMPRESSION_BOMB', `zip declares ${declared} bytes uncompressed (limit ${limits.maxZipUncompressedBytes})`, { declared }));
+    yauzl.open(
+      path,
+      { lazyEntries: true, autoClose: true, validateEntrySizes: true, strictFileNames: true },
+      (err, zip) => {
+        if (err || !zip) {
+          reject(
+            new ConvertError(
+              "CORRUPT_FILE",
+              `not a readable zip archive: ${err?.message ?? "unknown"}`,
+            ),
+          );
           return;
         }
-        if (/\/$/.test(entry.fileName)) {
-          zip.readEntry();
+        const entries: string[] = [];
+        let declared = 0;
+        let actual = 0;
+        let contentTypesXml = "";
+        const fail = (e: ConvertError) => {
+          zip.close();
+          reject(e);
+        };
+        if (zip.entryCount > limits.maxZipEntries) {
+          fail(
+            new ConvertError(
+              "DECOMPRESSION_BOMB",
+              `zip has ${zip.entryCount} entries (limit ${limits.maxZipEntries})`,
+            ),
+          );
           return;
         }
-        if (entry.isEncrypted()) {
-          fail(new ConvertError('ENCRYPTED', `zip entry ${entry.fileName} is encrypted`));
-          return;
-        }
-        zip.openReadStream(entry, (e2, stream) => {
-          if (e2 || !stream) {
-            fail(new ConvertError('CORRUPT_FILE', `cannot read zip entry ${entry.fileName}: ${e2?.message ?? 'unknown'}`));
+        zip.on("error", (e) =>
+          fail(new ConvertError("CORRUPT_FILE", `zip read error: ${e.message}`)),
+        );
+        zip.on("end", () =>
+          resolve({ entries, declaredBytes: declared, actualBytes: actual, contentTypesXml }),
+        );
+        zip.on("entry", (entry: yauzl.Entry) => {
+          entries.push(entry.fileName);
+          declared += entry.uncompressedSize;
+          if (declared > limits.maxZipUncompressedBytes) {
+            fail(
+              new ConvertError(
+                "DECOMPRESSION_BOMB",
+                `zip declares ${declared} bytes uncompressed (limit ${limits.maxZipUncompressedBytes})`,
+                { declared },
+              ),
+            );
             return;
           }
-          const keep = entry.fileName === '[Content_Types].xml';
-          const chunks: Buffer[] = [];
-          stream.on('data', (d: Buffer) => {
-            actual += d.length;
-            if (actual > limits.maxZipUncompressedBytes) {
-              stream.destroy();
-              fail(new ConvertError('DECOMPRESSION_BOMB', `zip inflates past ${limits.maxZipUncompressedBytes} bytes`, { actual }));
+          if (/\/$/.test(entry.fileName)) {
+            zip.readEntry();
+            return;
+          }
+          if (entry.isEncrypted()) {
+            fail(new ConvertError("ENCRYPTED", `zip entry ${entry.fileName} is encrypted`));
+            return;
+          }
+          zip.openReadStream(entry, (e2, stream) => {
+            if (e2 || !stream) {
+              fail(
+                new ConvertError(
+                  "CORRUPT_FILE",
+                  `cannot read zip entry ${entry.fileName}: ${e2?.message ?? "unknown"}`,
+                ),
+              );
               return;
             }
-            if (keep && chunks.length < 64) chunks.push(d);
-          });
-          stream.on('error', (e3) => fail(new ConvertError('CORRUPT_FILE', `zip entry ${entry.fileName}: ${e3.message}`)));
-          stream.on('end', () => {
-            if (keep) contentTypesXml = Buffer.concat(chunks).toString('utf8');
-            zip.readEntry();
+            const keep = entry.fileName === "[Content_Types].xml";
+            const chunks: Buffer[] = [];
+            stream.on("data", (d: Buffer) => {
+              actual += d.length;
+              if (actual > limits.maxZipUncompressedBytes) {
+                stream.destroy();
+                fail(
+                  new ConvertError(
+                    "DECOMPRESSION_BOMB",
+                    `zip inflates past ${limits.maxZipUncompressedBytes} bytes`,
+                    { actual },
+                  ),
+                );
+                return;
+              }
+              if (keep && chunks.length < 64) chunks.push(d);
+            });
+            stream.on("error", (e3) =>
+              fail(new ConvertError("CORRUPT_FILE", `zip entry ${entry.fileName}: ${e3.message}`)),
+            );
+            stream.on("end", () => {
+              if (keep) contentTypesXml = Buffer.concat(chunks).toString("utf8");
+              zip.readEntry();
+            });
           });
         });
-      });
-      zip.readEntry();
-    });
+        zip.readEntry();
+      },
+    );
   });
 }
 
 /** Read a few named entries (capped) after the scan has proven the archive is sane. */
-export function readEntries(path: string, wanted: (name: string) => boolean, maxBytes: number): Promise<Map<string, string>> {
+export function readEntries(
+  path: string,
+  wanted: (name: string) => boolean,
+  maxBytes: number,
+): Promise<Map<string, string>> {
   return new Promise((resolve, reject) => {
     yauzl.open(path, { lazyEntries: true, autoClose: true }, (err, zip) => {
       if (err || !zip) {
-        reject(new ConvertError('CORRUPT_FILE', `cannot reopen zip: ${err?.message}`));
+        reject(new ConvertError("CORRUPT_FILE", `cannot reopen zip: ${err?.message}`));
         return;
       }
       const out = new Map<string, string>();
-      zip.on('error', (e) => reject(new ConvertError('CORRUPT_FILE', e.message)));
-      zip.on('end', () => resolve(out));
-      zip.on('entry', (entry: yauzl.Entry) => {
+      zip.on("error", (e) => reject(new ConvertError("CORRUPT_FILE", e.message)));
+      zip.on("end", () => resolve(out));
+      zip.on("entry", (entry: yauzl.Entry) => {
         if (!wanted(entry.fileName) || entry.uncompressedSize > maxBytes) {
           zip.readEntry();
           return;
         }
         zip.openReadStream(entry, (e2, stream) => {
           if (e2 || !stream) {
-            reject(new ConvertError('CORRUPT_FILE', e2?.message ?? 'read failed'));
+            reject(new ConvertError("CORRUPT_FILE", e2?.message ?? "read failed"));
             return;
           }
           const chunks: Buffer[] = [];
-          stream.on('data', (d: Buffer) => chunks.push(d));
-          stream.on('error', (e3) => reject(new ConvertError('CORRUPT_FILE', e3.message)));
-          stream.on('end', () => {
-            out.set(entry.fileName, Buffer.concat(chunks).toString('utf8'));
+          stream.on("data", (d: Buffer) => chunks.push(d));
+          stream.on("error", (e3) => reject(new ConvertError("CORRUPT_FILE", e3.message)));
+          stream.on("end", () => {
+            out.set(entry.fileName, Buffer.concat(chunks).toString("utf8"));
             zip.readEntry();
           });
         });
