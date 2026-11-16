@@ -10,7 +10,8 @@ import { errorCode, makeTestApp } from "./helpers.js";
 describe("routing and headers", () => {
   test("unknown /api and /mcp paths are ApiError 404s", async () => {
     const t = makeTestApp();
-    for (const path of ["/api/nope", "/api", "/mcp", "/mcp/x", "/elsewhere"]) {
+    // /mcp itself is the MCP endpoint now (401 without a key; see mcp-auth.test.ts).
+    for (const path of ["/api/nope", "/api", "/mcp/x", "/elsewhere"]) {
       const res = await t.request(path);
       expect(res.status).toBe(404);
       expect(errorCode(res.body)).toBe("not_found");
