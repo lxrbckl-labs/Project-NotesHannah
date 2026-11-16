@@ -110,3 +110,31 @@ test.describe("document header actions", () => {
     });
   }
 });
+
+test.describe("practice start bar", () => {
+  for (const size of [
+    { width: 375, height: 812 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`the Start bar rests on the tab bar at ${size.width} wide`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await signInBuilt(page);
+      await page.goto("/practice");
+      const start = page.getByTestId("start-session");
+      await expect(start).toBeVisible();
+      // Scrolled a little, as she would be when choosing what to practise: no strip of page may show
+      // between the bar and the tab bar, and the bar must not sit behind it either.
+      const gap = await page.evaluate(() => {
+        const main = document.querySelector("main");
+        const bar = document.querySelector('[data-testid="start-session"]')?.parentElement;
+        const tabs = document.querySelector('[data-testid="tab-bar"]');
+        if (!main || !bar || !tabs) return null;
+        if (main.scrollHeight - main.clientHeight < 200) return 0; // too short to scroll: nothing to check
+        main.scrollTop = 120;
+        return Math.round(tabs.getBoundingClientRect().top - bar.getBoundingClientRect().bottom);
+      });
+      expect(gap).not.toBeNull();
+      expect(Math.abs(gap ?? 99)).toBeLessThanOrEqual(1);
+    });
+  }
+});

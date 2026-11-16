@@ -545,6 +545,16 @@ h3 {
   border-radius: 6px;
 }
 
+/*
+ * A sticky bar that rests on the phone's tab bar. The main area keeps 6rem of padding under its content
+ * so nothing ends up behind the tab bar, and a sticky bar is held above that padding, which left a strip of
+ * page showing between the two. This moves the bar down by the difference: the padding less the tab bar's
+ * height (3.5rem, its 1px edge, and the home-indicator inset).
+ */
+.above-tabbar {
+  bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom) - 6rem);
+}
+
 /* The faint dotted grid motif. */
 .dot-grid {
   background-image: radial-gradient(var(--color-dot) 1.1px, transparent 1.2px);
@@ -731,8 +741,10 @@ h3 {
  * The tab bar has its own name so it stays still. Browsers without view transitions just change page.
  */
 /* Named only while a tab change is running (html.tab-sliding, set by the tab bar and cleared after):
- * a named element forms its own layer, which would otherwise trap a screen's own fixed bars under the tab bar. */
-.tab-sliding .vt-page {
+ * a named element forms its own layer, which would otherwise trap a screen's own fixed bars under the tab bar.
+ * The name goes on the main area itself, never on a wrapper: an extra box around the page changed what
+ * full-height screens and sticky bars measured against. */
+.tab-sliding #main {
   view-transition-name: page;
 }
 .tab-sliding .vt-tabbar {
