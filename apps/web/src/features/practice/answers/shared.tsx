@@ -31,7 +31,7 @@ export function Prompt({
   emphasiseNumbers?: boolean;
 }) {
   return (
-    <div id={id} className="text-[1.08rem] font-medium leading-relaxed md:text-lg">
+    <div id={id} className="text-reading font-medium md:text-title">
       <Markdown text={text} {...(emphasiseNumbers ? { emphasiseNumbers } : {})} />
     </div>
   );

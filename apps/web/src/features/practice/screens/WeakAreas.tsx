@@ -1,8 +1,16 @@
-import { Tabs } from "radix-ui";
+import { Check, Minus, TriangleAlert } from "lucide-react";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
+import { Notice } from "../../../components/ui/notice";
+import { PageHeader } from "../../../components/ui/page-header";
+import { ProgressBar } from "../../../components/ui/progress";
+import { Tab, TabList, TabPanel, Tabs } from "../../../components/ui/segmented";
+import { EmptyState, Spinner } from "../../../components/ui/states";
+import { FEEDBACK_HUE } from "../../../lib/roles";
 import { useAsync } from "../lib/hooks";
 import { percent } from "../lib/results";
 import type { AreaRow, PracticeStore, SessionScope, SessionState, WeakAreasView } from "../types";
-import { Button, Card, Chip, Empty, ErrorNote, ProgressBar, Spinner } from "../ui/primitives";
 
 export function WeakAreas({
   store,
@@ -18,7 +26,19 @@ export function WeakAreas({
     [store, refreshKey],
   );
   if (loading && !data) return <Spinner label="Looking at your answers" />;
-  if (error) return <ErrorNote message={error} onRetry={reload} />;
+  if (error)
+    return (
+      <Notice
+        tone="danger"
+        action={
+          <Button size="sm" onClick={reload}>
+            Try again
+          </Button>
+        }
+      >
+        {error}
+      </Notice>
+    );
   if (!data) return null;
 
   const practise = async (scope: SessionScope) =>
@@ -40,43 +60,26 @@ export function WeakAreas({
 
   return (
     <div className="space-y-6" data-testid="weak-areas">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Weak areas</h1>
-        <p className="max-w-prose text-text-muted">
-          Accuracy by topic, from {data.totalAttempts} answers so far. We only say something once
-          there is enough to go on: at least {data.thresholds.minAttempts} answers across{" "}
-          {data.thresholds.minQuestions} different questions.
-        </p>
-      </header>
-      <Tabs.Root defaultValue="concept">
-        <Tabs.List
-          aria-label="Group by"
-          className="mb-5 inline-flex gap-1 rounded-full border border-border bg-surface-muted p-1"
-        >
-          {[
-            ["concept", "Topics"],
-            ["tag", "Tags"],
-            ["node", "Lectures"],
-          ].map(([v, label]) => (
-            <Tabs.Trigger
-              key={v}
-              value={v as string}
-              className="min-h-11 rounded-full px-4 text-sm font-medium text-text-muted data-[state=active]:bg-surface data-[state=active]:text-text data-[state=active]:shadow-sm"
-            >
-              {label}
-            </Tabs.Trigger>
-          ))}
-        </Tabs.List>
-        <Tabs.Content value="concept">
+      <PageHeader
+        title="Weak areas"
+        description={`Accuracy by topic, from ${data.totalAttempts} answers so far. We only say something once there is enough to go on: at least ${data.thresholds.minAttempts} answers across ${data.thresholds.minQuestions} different questions.`}
+      />
+      <Tabs defaultValue="concept">
+        <TabList label="Group by">
+          <Tab value="concept">Topics</Tab>
+          <Tab value="tag">Tags</Tab>
+          <Tab value="node">Lectures</Tab>
+        </TabList>
+        <TabPanel value="concept">
           <AreaList rows={data.byConcept} view={data} onPractise={practise} />
-        </Tabs.Content>
-        <Tabs.Content value="tag">
+        </TabPanel>
+        <TabPanel value="tag">
           <AreaList rows={data.byTag} view={data} onPractise={practise} />
-        </Tabs.Content>
-        <Tabs.Content value="node">
+        </TabPanel>
+        <TabPanel value="node">
           <AreaList rows={data.byNode} view={data} onPractise={practise} />
-        </Tabs.Content>
-      </Tabs.Root>
+        </TabPanel>
+      </Tabs>
     </div>
   );
 }
@@ -92,9 +95,9 @@ function AreaList({
 }) {
   if (rows.length === 0)
     return (
-      <Empty title="Nothing to show yet">
+      <EmptyState title="Nothing to show yet" headingLevel={3} compact>
         Answer some questions and your areas will appear here.
-      </Empty>
+      </EmptyState>
     );
   return (
     <ul className="grid gap-3 lg:grid-cols-2">
@@ -118,24 +121,40 @@ function AreaCard({
 }) {
   const { stat } = row;
   const enough = stat.status !== "insufficient_data";
-  const tone = stat.status === "weak" ? "part" : stat.status === "ok" ? "ok" : "neutral";
-  const bar =
+  // Needs attention is the partial role (yellow), going well the correct role (green), too early grey.
+  const hue =
     stat.status === "weak"
-      ? "var(--pr-partial)"
+      ? FEEDBACK_HUE.partial
       : stat.status === "ok"
-        ? "var(--pr-correct)"
-        : "var(--color-text-muted)";
+        ? FEEDBACK_HUE.correct
+        : FEEDBACK_HUE.skipped;
   return (
-    <Card className="h-full space-y-3 p-5" data-testid="area-card" data-status={stat.status}>
+    <Card
+      padding="lg"
+      className="h-full space-y-3"
+      data-testid="area-card"
+      data-status={stat.status}
+    >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-[1.02rem] font-semibold first-letter:uppercase">{row.label}</h3>
-        <Chip tone={tone}>
+        <h3 className="text-body font-semibold first-letter:uppercase">{row.label}</h3>
+        <Badge
+          hue={hue}
+          icon={
+            stat.status === "weak" ? (
+              <TriangleAlert />
+            ) : stat.status === "ok" ? (
+              <Check />
+            ) : (
+              <Minus />
+            )
+          }
+        >
           {stat.status === "weak"
             ? "Needs attention"
             : stat.status === "ok"
               ? "Going well"
               : "Not enough yet"}
-        </Chip>
+        </Badge>
       </div>
       {enough ? (
         <>
@@ -143,16 +162,15 @@ function AreaCard({
             value={Math.round(stat.accuracy * 100)}
             max={100}
             label={`${row.label} accuracy`}
-            color={bar}
-            className="!h-2"
+            hue={hue}
           />
-          <p className="text-sm text-text-muted">
+          <p className="text-ui text-text-muted">
             {stat.correct} of {stat.attempts} answers right ({percent(stat.accuracy)}) across{" "}
             {stat.questions} questions
           </p>
         </>
       ) : (
-        <p className="text-sm text-text-muted" data-testid="insufficient">
+        <p className="text-ui text-text-muted" data-testid="insufficient">
           Not enough attempts yet: {stat.attempts} {stat.attempts === 1 ? "answer" : "answers"} on{" "}
           {stat.questions} {stat.questions === 1 ? "question" : "questions"}. We need at least{" "}
           {view.thresholds.minAttempts} answers across {view.thresholds.minQuestions} questions

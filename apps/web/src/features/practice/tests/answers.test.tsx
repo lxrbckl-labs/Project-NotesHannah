@@ -191,7 +191,7 @@ describe("matching", () => {
         result={result}
       />,
     );
-    expect(container.querySelectorAll("li.pr-bad").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('li[data-feedback="incorrect"]').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^Correct: /).length).toBeGreaterThan(0);
   });
 });
@@ -237,8 +237,8 @@ describe("fill in the blank", () => {
     const { container } = render(
       <FillBlank question={q} value={answer} onChange={() => undefined} disabled result={result} />,
     );
-    expect(container.querySelectorAll("input.pr-ok")).toHaveLength(1);
-    expect(container.querySelectorAll("input.pr-bad")).toHaveLength(1);
+    expect(container.querySelectorAll('input[data-feedback="correct"]')).toHaveLength(1);
+    expect(container.querySelectorAll('input[data-feedback="incorrect"]')).toHaveLength(1);
     expect(screen.getByText("(heart rate)")).toBeInTheDocument();
   });
 });
@@ -367,10 +367,13 @@ describe("flashcard", () => {
     expect(commit).toHaveBeenCalledWith({ type: "flashcard", rating: "easy" });
   });
 
-  test("the flip is a CSS transition that is switched off for reduced motion", () => {
-    const css = readFileSync(resolve(process.cwd(), "src/features/practice/practice.css"), "utf8");
-    expect(css).toMatch(
-      /prefers-reduced-motion: reduce[\s\S]*\.pr-flip-inner[\s\S]*transition: none/,
+  test("the flip is a CSS transition, and the app-wide reduced-motion rule switches it off", () => {
+    const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
+    expect(read("src/features/practice/practice.css")).toMatch(
+      /\.pr-flip-inner \{[^}]*transition: transform var\(--duration-slow\)/,
+    );
+    expect(read("src/app/styles.css")).toMatch(
+      /prefers-reduced-motion: reduce[\s\S]*transition-duration: 0\.01ms/,
     );
   });
 });

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Notice } from "../../components/ui/notice";
+import { segmentItemClass } from "../../components/ui/segmented";
 import { ExamPlanner, UpcomingExamsCard } from "../exams";
 import type { PickNodes } from "../exams/types";
 import "./practice.css";
@@ -9,7 +11,6 @@ import { Results } from "./screens/Results";
 import { Start } from "./screens/Start";
 import { WeakAreas } from "./screens/WeakAreas";
 import type { PracticeStore, SessionResults, SessionScope, SourceCitation } from "./types";
-import { ErrorNote } from "./ui/primitives";
 
 export type PracticeView = "start" | "cards" | "notebook" | "weak" | "exams";
 
@@ -157,7 +158,8 @@ export function PracticeApp({
           aria-label="Practice sections"
           className="-mx-4 mb-7 overflow-x-auto px-4 md:mx-0 md:px-0"
         >
-          <ul className="grid grid-cols-5 gap-0.5 rounded-full border border-border bg-surface-muted p-1 sm:inline-flex sm:gap-1">
+          {/* The shared segmented look; the items are buttons so each keeps its test id. */}
+          <ul className="grid grid-cols-[repeat(5,auto)] gap-1 rounded-card border border-border bg-surface-muted p-1 sm:inline-grid">
             {NAV.map((n) => (
               <li key={n.view}>
                 <button
@@ -168,7 +170,7 @@ export function PracticeApp({
                     setProblem(null);
                     setView(n.view);
                   }}
-                  className="min-h-11 whitespace-nowrap w-full rounded-full px-1 text-[0.8rem] sm:px-4 sm:text-sm font-medium text-text-muted transition-colors hover:text-text aria-[current=page]:bg-surface aria-[current=page]:text-text aria-[current=page]:shadow-sm"
+                  className={`w-full max-sm:px-2 max-sm:text-label ${segmentItemClass(view === n.view, "segment")}`}
                 >
                   {n.label}
                 </button>
@@ -178,9 +180,9 @@ export function PracticeApp({
         </nav>
       )}
       {problem && (
-        <div className="mb-5">
-          <ErrorNote message={problem} />
-        </div>
+        <Notice tone="danger" className="mb-5">
+          {problem}
+        </Notice>
       )}
       {results ? (
         <Results

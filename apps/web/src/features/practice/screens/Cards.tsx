@@ -1,13 +1,17 @@
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
+import { Notice } from "../../../components/ui/notice";
+import { PageHeader } from "../../../components/ui/page-header";
+import { Spinner } from "../../../components/ui/states";
 import { formatDay } from "../lib/dates";
 import { useAsync } from "../lib/hooks";
 import type { DueByDay, PracticeStore, SessionState } from "../types";
-import { Button, Card, ErrorNote, Spinner } from "../ui/primitives";
 
 export function DueChart({ days }: { days: DueByDay["days"] }) {
   const max = Math.max(1, ...days.map((d) => d.count));
   return (
     <figure className="space-y-3" data-testid="due-chart">
-      <figcaption className="text-sm font-medium text-text-muted">
+      <figcaption className="text-ui font-medium text-text-muted">
         Cards due, next two weeks
       </figcaption>
       <div className="flex h-40 items-end gap-1 sm:gap-1.5" aria-hidden>
@@ -16,9 +20,9 @@ export function DueChart({ days }: { days: DueByDay["days"] }) {
             key={d.date}
             className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
           >
-            <span className="text-[0.7rem] tabular-nums text-text-muted">{d.count || ""}</span>
+            <span className="text-caption tabular-nums text-text-muted">{d.count || ""}</span>
             <div
-              className={`w-full max-w-8 rounded-t-lg ${i === 0 ? "bg-accent" : "bg-accent/45"}`}
+              className={`w-full max-w-8 rounded-t-control ${i === 0 ? "bg-accent" : "bg-accent/45"}`}
               style={{ height: `${d.count === 0 ? 3 : (d.count / max) * 100}%`, minHeight: 3 }}
               data-count={d.count}
             />
@@ -29,7 +33,7 @@ export function DueChart({ days }: { days: DueByDay["days"] }) {
         {days.map((d, i) => (
           <span
             key={d.date}
-            className="min-w-0 flex-1 text-center text-[0.65rem] leading-tight text-text-muted sm:text-xs"
+            className="min-w-0 flex-1 text-center text-caption leading-tight text-text-muted"
           >
             {i === 0
               ? "Today"
@@ -72,7 +76,19 @@ export function Cards({
     [store, refreshKey],
   );
   if (loading && !data) return <Spinner label="Counting your cards" />;
-  if (error) return <ErrorNote message={error} onRetry={reload} />;
+  if (error)
+    return (
+      <Notice
+        tone="danger"
+        action={
+          <Button size="sm" onClick={reload}>
+            Try again
+          </Button>
+        }
+      >
+        {error}
+      </Notice>
+    );
   if (!data) return null;
   const upcoming = data.days.slice(1).reduce((n, d) => n + d.count, 0);
   const start = async () =>
@@ -86,22 +102,24 @@ export function Cards({
     );
   return (
     <div className="space-y-6" data-testid="cards">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Flashcards</h1>
-        <p className="max-w-prose text-text-muted">
-          Cards come back just before you would forget them. No need to catch up on a missed day.
-        </p>
-      </header>
-      <Card className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <PageHeader
+        title="Flashcards"
+        description="Cards come back just before you would forget them. No need to catch up on a missed day."
+      />
+      <Card
+        padding="lg"
+        className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div>
-          <p className="text-sm text-text-muted">Due today</p>
+          <p className="text-ui text-text-muted">Due today</p>
           <p
-            className="text-5xl font-semibold tabular-nums tracking-tight"
+            data-hue="blue"
+            className="font-display text-5xl font-semibold tabular-nums tracking-tight text-tone-text"
             data-testid="cards-due-today"
           >
             {data.today}
           </p>
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-1 text-ui text-text-muted">
             {data.newCards} new {data.newCards === 1 ? "card" : "cards"} still to meet · {upcoming}{" "}
             coming up
           </p>
@@ -118,7 +136,7 @@ export function Cards({
             : `Review ${data.today} ${data.today === 1 ? "card" : "cards"}`}
         </Button>
       </Card>
-      <Card className="p-5 md:p-6">
+      <Card padding="lg">
         <DueChart days={data.days} />
       </Card>
     </div>

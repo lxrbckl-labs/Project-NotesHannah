@@ -1,7 +1,10 @@
+import { Check, X } from "lucide-react";
 import { useState } from "react";
+import { Chip } from "../../../components/ui/badge";
+import { Disclosure } from "../../../components/ui/disclosure";
+import { FEEDBACK_HUE } from "../../../lib/roles";
 import { keepVisibleOnFocus } from "../lib/hooks";
 import type { Rounding, ServedCalculation } from "../types";
-import { Disclosure } from "../ui/primitives";
 import { type AnswerProps, Prompt } from "./shared";
 
 type CalcAnswer = { type: "calculation"; response: string; unit?: string };
@@ -38,7 +41,12 @@ export function Calculation({
     );
   };
   const fb = result?.feedback[0];
-  const tone = result ? (result.correct ? "pr-ok" : "pr-bad") : "border-border bg-surface";
+  const hue = result ? (result.correct ? FEEDBACK_HUE.correct : FEEDBACK_HUE.incorrect) : undefined;
+  const tone = result
+    ? "border-tone-border bg-tone-soft text-tone-text"
+    : "border-border-strong bg-surface";
+  const field =
+    "min-h-13 w-full rounded-card border px-4 text-title outline-none transition-colors duration-(--duration-instant) focus:border-accent";
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       e.preventDefault();
@@ -49,13 +57,13 @@ export function Calculation({
     <div className="space-y-5" data-testid="answer-calculation">
       <Prompt text={question.prompt} emphasiseNumbers />
       {note && (
-        <p className="text-sm text-text-muted" data-testid="rounding-note">
+        <p className="text-ui text-text-muted" data-testid="rounding-note">
           {note}
         </p>
       )}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex-1">
-          <label htmlFor="calc-value" className="mb-1.5 block text-sm font-medium text-text-muted">
+          <label htmlFor="calc-value" className="mb-1.5 block text-ui font-medium text-text-muted">
             Your answer
           </label>
           <input
@@ -74,11 +82,13 @@ export function Calculation({
             spellCheck={false}
             placeholder="e.g. 2.5"
             data-testid="calc-value"
-            className={`min-h-13 w-full rounded-2xl border px-4 text-xl tabular-nums outline-none transition-colors focus:border-accent ${tone}`}
+            data-hue={hue}
+            data-feedback={result ? (result.correct ? "correct" : "incorrect") : undefined}
+            className={`${field} tabular-nums ${tone}`}
           />
         </div>
         <div className="sm:w-44">
-          <label htmlFor="calc-unit" className="mb-1.5 block text-sm font-medium text-text-muted">
+          <label htmlFor="calc-unit" className="mb-1.5 block text-ui font-medium text-text-muted">
             Unit
           </label>
           <input
@@ -97,7 +107,9 @@ export function Calculation({
             spellCheck={false}
             placeholder="e.g. mg"
             data-testid="calc-unit"
-            className={`min-h-13 w-full rounded-2xl border px-4 text-xl outline-none transition-colors focus:border-accent ${tone}`}
+            data-hue={hue}
+            data-feedback={result ? (result.correct ? "correct" : "incorrect") : undefined}
+            className={`${field} ${tone}`}
           />
           <datalist id="calc-units">
             {question.unitChoices.map((u) => (
@@ -110,24 +122,28 @@ export function Calculation({
         <fieldset className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
           <legend className="sr-only">Unit choices</legend>
           {question.unitChoices.map((u) => (
-            <button
+            <Chip
               key={u}
-              type="button"
-              aria-pressed={unit.trim().toLowerCase() === u.toLowerCase()}
+              pressed={unit.trim().toLowerCase() === u.toLowerCase()}
               onClick={() => update({ unit: unit.trim() === u ? "" : u })}
-              className="min-h-11 min-w-11 rounded-full border border-border bg-surface px-3.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted aria-pressed:border-accent aria-pressed:bg-[var(--pr-accent-soft)] aria-pressed:text-accent"
+              className="min-w-11 justify-center"
             >
               {u}
-            </button>
+            </Chip>
           ))}
         </fieldset>
       )}
       {result && fb && (
         <p
-          className={`rounded-2xl border px-4 py-3 text-[0.95rem] ${tone}`}
+          className={`flex items-start gap-2 rounded-card border px-4 py-3 text-body ${tone}`}
           data-testid="calc-feedback"
+          data-hue={hue}
+          data-feedback={result.correct ? "correct" : "incorrect"}
         >
-          {fb.message}
+          <span aria-hidden className="mt-0.5 shrink-0">
+            {result.correct ? <Check size={18} /> : <X size={18} />}
+          </span>
+          <span>{fb.message}</span>
         </p>
       )}
       <Disclosure label="Scratchpad (not marked)">
@@ -139,7 +155,7 @@ export function Calculation({
           rows={4}
           spellCheck={false}
           placeholder="Work it out here"
-          className="mt-1 w-full rounded-2xl border border-border bg-surface p-3 font-mono text-sm outline-none focus:border-accent"
+          className="mt-1 w-full rounded-card border border-border-strong bg-surface p-3 font-mono text-ui outline-none focus:border-accent"
         />
       </Disclosure>
     </div>

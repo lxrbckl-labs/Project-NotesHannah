@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../../../components/ui/button";
+import { Card } from "../../../components/ui/card";
+import { Notice } from "../../../components/ui/notice";
+import { RATING_HUE } from "../../../lib/roles";
 import type {
   GradeResult,
   Reveal,
@@ -7,7 +11,6 @@ import type {
   ServedFreeResponse,
 } from "../types";
 import { Markdown } from "../ui/Markdown";
-import { Button } from "../ui/primitives";
 import { type AnswerProps, Prompt } from "./shared";
 
 type FlashAnswer = { type: "flashcard"; rating: ReviewRating };
@@ -99,42 +102,41 @@ export function Flashcard({
     <div className="space-y-5" data-testid="answer-flashcard">
       <div className="pr-flip" data-flipped={flipped}>
         <div className="pr-flip-inner">
-          <div
-            className="pr-flip-face pr-card flex min-h-56 flex-col items-center justify-center gap-3 p-6 text-center md:min-h-64"
+          <Card
+            padding="lg"
+            className="pr-flip-face flex min-h-56 flex-col items-center justify-center gap-3 text-center md:min-h-64"
             aria-hidden={flipped}
             inert={flipped}
           >
-            <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <span className="text-label font-semibold uppercase tracking-wide text-text-muted">
               Front
             </span>
-            <div className="text-xl font-medium leading-snug md:text-2xl" data-testid="card-front">
+            <div className="text-title font-medium md:text-heading" data-testid="card-front">
               <Markdown text={question.front} />
             </div>
-          </div>
-          <div
-            className="pr-flip-face pr-flip-back pr-card flex min-h-56 flex-col items-center justify-center gap-3 border-accent bg-[var(--pr-accent-soft)] p-6 text-center md:min-h-64"
+          </Card>
+          <Card
+            hue="accent"
+            padding="lg"
+            className="pr-flip-face pr-flip-back flex min-h-56 flex-col items-center justify-center gap-3 text-center md:min-h-64"
             aria-hidden={!flipped}
             inert={!flipped}
           >
-            <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <span className="text-label font-semibold uppercase tracking-wide text-tone-text">
               Back
             </span>
-            <div className="text-xl font-medium leading-snug md:text-2xl" data-testid="card-back">
+            <div className="text-title font-medium md:text-heading" data-testid="card-back">
               <Markdown text={back?.back ?? ""} />
             </div>
             {back?.explanation && (
-              <div className="max-w-prose text-sm text-text-muted">
+              <div className="max-w-prose text-ui">
                 <Markdown text={back.explanation} />
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
-      {error && (
-        <p role="alert" className="pr-bad rounded-xl border px-3 py-2 text-sm">
-          {error}
-        </p>
-      )}
+      {error && <Notice tone="danger">{error}</Notice>}
       {!flipped ? (
         <Button variant="primary" size="lg" className="w-full" onClick={show} disabled={busy}>
           {busy ? "Turning over..." : "Show answer"}
@@ -150,10 +152,22 @@ export function Flashcard({
               onClick={() => rate(rating)}
               aria-pressed={value?.rating === rating}
               data-testid={`rate-${rating}`}
-              className="flex min-h-16 flex-col items-center justify-center rounded-2xl border border-border bg-surface px-2 py-2 transition-colors enabled:hover:bg-surface-muted aria-pressed:border-accent aria-pressed:bg-[var(--pr-accent-soft)] disabled:opacity-70"
+              data-hue={value?.rating === rating ? RATING_HUE[rating] : undefined}
+              className={`flex min-h-16 flex-col items-center justify-center rounded-card border px-2 py-2 transition-colors duration-(--duration-instant) disabled:opacity-70 ${
+                value?.rating === rating
+                  ? "border-tone-border bg-tone-soft text-tone-text"
+                  : "border-border bg-surface enabled:hover:bg-surface-muted"
+              }`}
             >
-              <span className="font-semibold">{label}</span>
-              <span className="text-xs text-text-muted">
+              <span className="flex items-center gap-1.5 font-semibold">
+                <span
+                  aria-hidden
+                  data-hue={RATING_HUE[rating]}
+                  className="size-2.5 rounded-pill bg-tone-solid"
+                />
+                {label}
+              </span>
+              <span className={`text-caption ${value?.rating === rating ? "" : "text-text-muted"}`}>
                 <span className="sr-only">{hint}, next review in </span>
                 {formatInterval(back?.intervals[rating] ?? 1)}
               </span>
@@ -230,7 +244,7 @@ export function FreeResponse({
     <div className="space-y-5" data-testid="answer-free_response">
       <Prompt text={question.prompt} />
       <div>
-        <label htmlFor="fr-text" className="mb-1.5 block text-sm font-medium text-text-muted">
+        <label htmlFor="fr-text" className="mb-1.5 block text-ui font-medium text-text-muted">
           Your answer
         </label>
         <textarea
@@ -249,7 +263,7 @@ export function FreeResponse({
             )
           }
           placeholder="Write it in your own words"
-          className="w-full rounded-2xl border border-border bg-surface p-3.5 text-base leading-relaxed outline-none focus:border-accent"
+          className="w-full rounded-card border border-border-strong bg-surface p-3.5 text-body leading-relaxed outline-none focus:border-accent"
         />
       </div>
       {!shown && (
@@ -263,31 +277,28 @@ export function FreeResponse({
           {busy ? "Loading..." : "Show model answer"}
         </Button>
       )}
-      {error && (
-        <p role="alert" className="pr-bad rounded-xl border px-3 py-2 text-sm">
-          {error}
-        </p>
-      )}
+      {error && <Notice tone="danger">{error}</Notice>}
       {shown && (
-        <div className="pr-fade space-y-4">
-          <div className="rounded-2xl border border-accent bg-[var(--pr-accent-soft)] p-4">
-            <h3 className="mb-1 text-sm font-semibold text-text-muted">Model answer</h3>
+        <div className="anim-fade space-y-4">
+          <div
+            data-hue="accent"
+            className="rounded-card border border-tone-border bg-tone-soft p-4"
+          >
+            <h3 className="mb-1 text-ui font-semibold text-tone-text">Model answer</h3>
             <div data-testid="model-answer">
               <Markdown text={shown.modelAnswer} />
             </div>
           </div>
           <fieldset>
-            <legend className="mb-2 text-sm font-semibold">Tick the key points you covered</legend>
+            <legend className="mb-2 text-ui font-semibold">Tick the key points you covered</legend>
             <ul className="space-y-2" data-testid="rubric">
               {shown.rubric.map((r, i) => {
                 const got = covered.includes(i);
                 return (
                   <li key={r.point}>
                     <label
-                      className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
-                        got
-                          ? "border-accent bg-[var(--pr-accent-soft)]"
-                          : "border-border bg-surface"
+                      className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-card border px-3.5 py-2.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
+                        got ? "border-accent bg-accent-soft" : "border-border bg-surface"
                       }`}
                     >
                       <input
@@ -297,8 +308,8 @@ export function FreeResponse({
                         disabled={disabled}
                         onChange={() => toggle(i)}
                       />
-                      <span className="flex-1 text-[0.97rem]">{r.point}</span>
-                      <span className="text-sm text-text-muted">
+                      <span className="flex-1 text-body">{r.point}</span>
+                      <span className={`text-ui ${got ? "" : "text-text-muted"}`}>
                         {r.points} {r.points === 1 ? "pt" : "pts"}
                       </span>
                     </label>
@@ -306,7 +317,7 @@ export function FreeResponse({
                 );
               })}
             </ul>
-            <p className="mt-2 text-sm text-text-muted" aria-live="polite">
+            <p className="mt-2 text-ui text-text-muted" aria-live="polite">
               {pts} of {max} points
             </p>
           </fieldset>

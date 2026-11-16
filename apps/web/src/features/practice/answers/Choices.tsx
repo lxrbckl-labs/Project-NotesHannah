@@ -1,3 +1,5 @@
+import { Check, X } from "lucide-react";
+import { FEEDBACK_HUE } from "../../../lib/roles";
 import type { ServedMultipleChoice, ServedSelectAll } from "../types";
 import { type AnswerProps, LETTERS, Prompt, useOptionShortcuts } from "./shared";
 
@@ -22,16 +24,20 @@ function ChoiceRow({
   state: OptionState;
   onToggle: () => void;
 }) {
-  const tone =
+  const hue =
     state === "correct"
-      ? "pr-ok"
+      ? FEEDBACK_HUE.correct
       : state === "wrong"
-        ? "pr-bad"
+        ? FEEDBACK_HUE.incorrect
         : state === "missed"
-          ? "pr-part"
-          : checked
-            ? "border-accent bg-[var(--pr-accent-soft)]"
-            : "border-border bg-surface hover:bg-surface-muted";
+          ? FEEDBACK_HUE.partial
+          : undefined;
+  const tone = hue
+    ? "border-tone-border bg-tone-soft text-tone-text"
+    : checked
+      ? "border-accent bg-accent-soft"
+      : "border-border bg-surface hover:bg-surface-muted";
+  // The words that go with the colour: visible, and read by screen readers.
   const status =
     state === "correct"
       ? checked || !multi
@@ -44,9 +50,19 @@ function ChoiceRow({
           : "";
   return (
     <label
-      className={`relative flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-3 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${tone} ${disabled ? "cursor-default" : ""}`}
+      className={`relative flex min-h-14 cursor-pointer items-center gap-3 rounded-card border px-3.5 py-3 transition-colors duration-(--duration-instant) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${tone} ${disabled ? "cursor-default" : ""}`}
       data-state={state}
       data-checked={checked}
+      data-hue={hue}
+      data-feedback={
+        state === "correct"
+          ? "correct"
+          : state === "wrong"
+            ? "incorrect"
+            : state === "missed"
+              ? "partial"
+              : undefined
+      }
     >
       <input
         type={multi ? "checkbox" : "radio"}
@@ -58,16 +74,26 @@ function ChoiceRow({
       />
       <span
         aria-hidden
-        className={`grid size-8 shrink-0 place-items-center rounded-full border text-sm font-semibold ${
-          checked && state === "idle"
-            ? "border-accent bg-accent text-accent-contrast"
-            : "border-current/30 text-text-muted"
-        } ${multi ? "rounded-lg" : ""}`}
+        className={`grid size-8 shrink-0 place-items-center border text-ui font-semibold ${multi ? "rounded-control" : "rounded-pill"} ${
+          hue
+            ? "border-tone-solid bg-surface"
+            : checked
+              ? "border-accent bg-accent text-accent-contrast"
+              : "border-border-strong text-text-muted"
+        }`}
       >
-        {state === "correct" ? "✓" : state === "wrong" ? "✗" : (LETTERS[index] ?? index + 1)}
+        {state === "correct" || state === "missed" ? (
+          <Check size={16} />
+        ) : state === "wrong" ? (
+          <X size={16} />
+        ) : (
+          (LETTERS[index] ?? index + 1)
+        )}
       </span>
-      <span className="flex-1 text-[1rem] leading-snug">{text}</span>
-      {status && <span className="sr-only">{status}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block text-body leading-snug">{text}</span>
+        {status && <span className="mt-0.5 block text-caption font-medium">{status}</span>}
+      </span>
     </label>
   );
 }
@@ -91,7 +117,7 @@ export function MultipleChoice({
       <legend className="mb-4 w-full">
         <Prompt text={question.prompt} />
       </legend>
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {question.options.map((o, i) => (
           <ChoiceRow
             key={o.id}
@@ -142,8 +168,8 @@ export function SelectAll({
       <legend className="mb-4 w-full">
         <Prompt text={question.prompt} />
       </legend>
-      <p className="text-sm text-text-muted">Select all that apply.</p>
-      <div className="space-y-2.5">
+      <p className="text-ui text-text-muted">Select all that apply.</p>
+      <div className="space-y-3">
         {question.options.map((o, i) => {
           const isPicked = picked.includes(o.id);
           const isRight = correctIds.has(o.id);
