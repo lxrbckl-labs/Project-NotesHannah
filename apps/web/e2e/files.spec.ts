@@ -350,12 +350,8 @@ test.describe("search, activity and mount points", () => {
     ).toBeVisible();
   });
 
-  test("feature mount points show coming soon until their modules exist", async ({ page }) => {
-    for (const [path, title] of [
-      ["/practice", "Practice"],
-      ["/exams", "Exams"],
-      ["/requests", "Requests"],
-    ] as const) {
+  test("a feature module that has not landed (requests) shows coming soon", async ({ page }) => {
+    for (const [path, title] of [["/requests", "Requests"]] as const) {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
       await expect(page.getByText("Coming soon")).toBeVisible();

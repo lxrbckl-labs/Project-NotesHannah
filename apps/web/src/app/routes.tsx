@@ -65,6 +65,25 @@ const mount =
     return { Component: module[name] as () => React.JSX.Element };
   };
 
+/** The mounted feature modules, each loaded on first use (Tiptap, React Flow and ELK stay out of the first load). */
+const doc: Record<"page" | "canvas", RouteObject["lazy"]> = {
+  page: async () => ({ Component: (await import("../features/mounts/DocScreen")).DocPageRoute }),
+  canvas: async () => ({
+    Component: (await import("../features/mounts/DocScreen")).DocCanvasRoute,
+  }),
+};
+const practice: Record<"practice" | "exams" | "session", RouteObject["lazy"]> = {
+  practice: async () => ({
+    Component: (await import("../features/mounts/PracticeScreen")).PracticeRoute,
+  }),
+  exams: async () => ({
+    Component: (await import("../features/mounts/PracticeScreen")).ExamsRoute,
+  }),
+  session: async () => ({
+    Component: (await import("../features/mounts/PracticeScreen")).SessionRoute,
+  }),
+};
+
 export const routes: RouteObject[] = [
   { path: "/login", element: <LoginPage /> },
   {
@@ -83,12 +102,12 @@ export const routes: RouteObject[] = [
           { path: "trash", lazy: screens.trash, HydrateFallback: Loading },
           { path: "settings", lazy: screens.settings, HydrateFallback: Loading },
           { path: "activity", lazy: screens.activity, HydrateFallback: Loading },
-          // Mount points for the feature modules (see apps/web/INTEGRATION.md).
-          { path: "doc/:nodeId", lazy: mount("DocumentsMount") },
-          { path: "doc/:nodeId/canvas", lazy: mount("CanvasMount") },
-          { path: "practice", lazy: mount("PracticeMount") },
-          { path: "practice/session/:id", lazy: mount("PracticeSessionMount") },
-          { path: "exams", lazy: mount("ExamsMount") },
+          { path: "doc/:nodeId", lazy: doc.page },
+          { path: "doc/:nodeId/canvas", lazy: doc.canvas },
+          { path: "practice", lazy: practice.practice },
+          { path: "practice/session/:id", lazy: practice.session },
+          { path: "exams", lazy: practice.exams },
+          // Built by another module; the mount shows "coming soon" until it lands.
           { path: "requests", lazy: mount("RequestsMount") },
           { path: "concepts/:id", lazy: mount("ConceptsMount") },
           { path: "*", element: <NotFound /> },

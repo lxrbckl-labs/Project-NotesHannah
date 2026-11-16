@@ -58,3 +58,15 @@ export function moveBlockedReason(node: NodeWithLinks, dest: Destination | null)
 export function toDestination(node: NodeWithLinks, folderDepth: number): Destination {
   return { id: node.id, kind: node.kind, folderDepth, ancestors: node.ancestors };
 }
+
+const MOCK = import.meta.env.VITE_MOCK_API === "1";
+
+/**
+ * Where a library item opens: a lecture or document opens as its document page; everything else
+ * is a library page. (The in-memory mock has no documents, so it keeps the placeholder page.)
+ */
+export function nodeHref(node: { id: string; kind: NodeKind }): string {
+  return !MOCK && (node.kind === "lecture" || node.kind === "document")
+    ? `/doc/${node.id}`
+    : `/library/${node.id}`;
+}

@@ -11,7 +11,7 @@ import { useRowDnd } from "./dnd";
 import { InlineName } from "./InlineName";
 import { NodeIcon } from "./NodeIcon";
 import { folderDepthOf } from "./queries";
-import { type Destination, isPending, KIND_NAME, toDestination } from "./rules";
+import { type Destination, isPending, KIND_NAME, nodeHref, toDestination } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
 
 export function nodeTitle(node: NodeWithLinks): string {
@@ -104,7 +104,7 @@ export function NodeRow({
           </div>
         ) : (
           <Link
-            to={`/library/${node.id}`}
+            to={nodeHref(node)}
             draggable={false}
             className="flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-xl py-2"
           >

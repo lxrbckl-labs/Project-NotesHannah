@@ -191,20 +191,3 @@ describe("search and activity", () => {
     );
   });
 });
-
-describe("mount points", () => {
-  it("shows coming soon where a feature module does not exist yet", async () => {
-    await startBackend();
-    for (const [path, title] of [
-      ["/doc/nod_x", "Documents"],
-      ["/doc/nod_x/canvas", "Canvas"],
-      ["/practice", "Practice"],
-      ["/exams", "Exams"],
-    ] as const) {
-      const view = await renderReady(path);
-      expect(await screen.findByRole("heading", { level: 1, name: title })).toBeInTheDocument();
-      expect(screen.getByText("Coming soon")).toBeInTheDocument();
-      view.unmount();
-    }
-  });
-});

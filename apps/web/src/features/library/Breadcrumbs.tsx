@@ -3,6 +3,7 @@ import { useQueries } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 import { nodeQuery } from "./queries";
+import { nodeHref } from "./rules";
 
 /** Library > Term > Course > Section, each a link; the current item is plain text. */
 export function Breadcrumbs({ node }: { node: NodeWithLinks }) {
@@ -21,7 +22,7 @@ export function Breadcrumbs({ node }: { node: NodeWithLinks }) {
             {q.data ? (
               <Link
                 className="max-w-40 truncate rounded-md px-1 hover:text-text hover:underline"
-                to={`/library/${q.data.id}`}
+                to={nodeHref(q.data)}
               >
                 {q.data.name}
               </Link>

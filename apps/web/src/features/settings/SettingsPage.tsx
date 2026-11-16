@@ -1,4 +1,4 @@
-import { Bot, ChevronRight, Trash2 } from "lucide-react";
+import { Bot, ChevronRight, MessageSquarePlus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { MOD_KEY } from "../../app/AppShell";
@@ -58,6 +58,14 @@ export function SettingsPage() {
         <ApiKeys />
 
         <Card title="Library">
+          <Link
+            to="/requests"
+            className="mb-2 flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-bg px-4 hover:border-border-strong"
+          >
+            <MessageSquarePlus size={18} aria-hidden className="text-text-muted" />
+            <span className="flex-1 text-sm font-medium">Requests</span>
+            <ChevronRight size={16} aria-hidden className="text-text-muted" />
+          </Link>
           <Link
             to="/activity"
             className="mb-2 flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-bg px-4 hover:border-border-strong"

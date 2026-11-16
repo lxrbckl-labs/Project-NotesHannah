@@ -1,93 +1,95 @@
-# Mounting a feature module
+# How the feature modules are mounted
 
-The app shell (`src/app`), the library, the inbox, the source viewer, settings and the activity
-screen are owned by the web shell. Documents, practice, exams, canvas, requests and concepts are
-separate modules in their own folders. The shell mounts each at a fixed route and **finds the
-module by folder name**: nothing in the shell has to be edited when a module appears. Until a
-module exists (or while it lacks the exports below) its route shows a "Coming soon" page.
+The shell (`src/app`), the library, uploads, inbox, source viewer, search and activity belong to the
+shell. Documents, practice (with exams), the canvas, requests and concepts are modules in their own
+folders under `src/features/`. This file is what is true today; the code is in
+`src/features/mounts/`.
 
-## Routes
+## What is mounted, and how
 
-| Route | Feature key | Folder | Root export |
+| Route | Module | Mounted by | Against |
 |---|---|---|---|
-| `/doc/:nodeId` | `documents` | `src/features/documents` | `DocumentView` |
-| `/doc/:nodeId/canvas` | `canvas` | `src/features/canvas` | `CanvasView` |
-| `/practice` | `practice` | `src/features/practice` | `PracticeHome` |
-| `/practice/session/:id` | `practiceSession` | `src/features/practice` | `PracticeSessionView` |
-| `/exams` | `exams` | `src/features/exams` | `ExamsView` |
-| `/requests` | `requests` | `src/features/requests` | `RequestsView` |
-| `/concepts/:id` | `concepts` | `src/features/concepts` | `ConceptView` |
+| `/doc/:nodeId` | `documents` (`DocumentView`) | `mounts/DocScreen.tsx` | the real server, via `HttpDocumentStore` |
+| `/doc/:nodeId/canvas` | `canvas` (`CanvasView`) | `mounts/CanvasScreen.tsx` | the real document, interim store (below) |
+| `/practice`, `/practice/session/:id` | `practice` (`PracticeApp`) | `mounts/PracticeScreen.tsx` | the real server, via `mounts/practiceStore.ts` |
+| `/exams` | `exams` (`ExamPlanner`, inside `PracticeApp`) | `mounts/PracticeScreen.tsx` | the same store |
+| `/requests`, `/concepts/:id` | `requests`, `concepts` | `mounts/Mount.tsx` | "Coming soon" until the modules land |
 
-The table lives in code in `src/features/mounts/modules.ts` (`CONTRACT`); change it there if a
-name differs, in one place.
+Lectures and documents open as `/doc/:nodeId` from the tree, lists, breadcrumbs, search and
+activity (`nodeHref` in `features/library/rules.ts`); the library page of a lecture
+(`/library/:id`) keeps its source files and an "Open the page" button. The in-memory mock has no
+documents, so in mock mode (`VITE_MOCK_API=1`) lectures keep their placeholder page.
 
-## What each module must export
+All three heavy modules are loaded on demand (route-level `lazy`): Tiptap with documents, React Flow
+and ELK with the canvas, and practice. The first load does not include them.
 
-From `src/features/<folder>/index.ts` (or `index.tsx`):
+## Documents
 
-1. **The root component** named in the table. It receives `store` plus the mount context.
-2. **A store factory**: `createHttpDocumentStore`, `createHttpCanvasStore`,
-   `createHttpPracticeStore` (used by practice, practice session and exams),
-   `createHttpRequestsStore`, `createHttpConceptsStore`. Each is `(http: AppHttp) => Store`.
-   `AppHttp` (from `src/lib/api.ts`) is the app's own HTTP client: same `/api` base path, same
-   session cookie, errors raised as `ApiClientError` with the server's `code`, `message` and `hint`.
-   It does not parse responses: validate with your own schemas.
+- **First open creates the document.** The server holds one document per node and refuses a second
+  (`create_document` with an existing `nodeId` is `conflict`), so `DocScreen` asks
+  `GET /api/nodes/:id/document` and, on `not_found`, creates it with the node's name as its title
+  (`lecture_note` for a lecture, `study_guide` for a document, `practice_set` in a Practice section).
+- A document with no blocks shows an empty state that says an agent can write it, with a button that
+  leaves a request ("Write a study guide for this lecture", `POST /api/requests`) and a way to start
+  writing herself.
+- `HttpDocumentStore` ran unchanged against the real server except `createRequest`, which sent
+  `target.kind` and `note`; the server wants `target.type` and `message` (fixed in the store).
+- `?block=<id>` scrolls to a block and flashes it (`DocumentView` got a `focusBlockId` prop): this is
+  where block search hits and activity links land.
+- **Citations** open the documents module's own citation panel (fed by the real page images and
+  transcripts through `HttpDocumentStore.resolveCitation`). The shell's `SourceViewer` stays for
+  everything else: source files in the tree and inbox, search hits on pages, and citation chips in
+  practice feedback and results (`/files/:id?page=<pageId>&quote=<text>`).
 
-```ts
-// from "src/lib/api"
-interface AppHttp {
-  get<T>(path: string, query?: Record<string, string | number | undefined>): Promise<T>;
-  post<T>(path: string, body?: unknown): Promise<T>;
-  patch<T>(path: string, body?: unknown): Promise<T>;
-  put<T>(path: string, body?: unknown): Promise<T>;
-  del<T>(path: string): Promise<T>;
-}
-// paths are below /api, e.g. http.get("/documents/doc_...")
-```
+## Practice and exams: where the module and the server differ
 
-The root component's props are `{ store } & MountContext`:
+`practiceStore.ts` is the only place that knows. The module was written against assumed routes:
 
-```ts
-interface MountContext {
-  params: Record<string, string | undefined>; // :nodeId, :id
-  search: URLSearchParams;                    // e.g. ?block=blk_...
-  openSource(target: { fileId: string; pageId?: string; quote?: string }): void;
-  openNode(nodeId: string): void;
-  SourceViewer: ComponentType<SourceViewerProps>; // the embeddable viewer
-}
-```
+| Module assumed | Real server | Adapter |
+|---|---|---|
+| `GET /practice/overview` | none | start-screen scopes assembled from the question list, exams, notebook, due deck and active sessions |
+| question with `lefts`/`rights`, `blanks`, `unitChoices`, `rubricSize` | `left`/`right`, `blankCount`, `needsUnit` | mapped; `unitChoices` is a fixed list (any valid unit spelling grades) |
+| `POST .../answers {index}` | `POST .../answer {position}` | mapped; the key (`reveal`, citations) becomes the outcome's explanation |
+| `POST .../skip` | none | skipping is kept in the browser per session; the server's "first unanswered" is overridden |
+| `POST .../reveal` returning intervals | `{ reveal }` with `back`, `modelAnswer`, `rubric` | mapped; intervals use the default 0/1/3/7 days |
+| "cards due" scope flag | scope `{ kind: "due" }` | `dueOnly` becomes the due scope |
+| `GET /practice/cards/due` | `GET /practice/due` with `counts.byDay` | mapped |
+| notebook rows with a "reason" | none | the reason is not shown |
+| exams with a free-text course | exams belong to a course node (`courseId`) | found from the covered lectures' ancestors |
+| session results with questions | results carry text and her answer only | the questions she saw are cached in the browser; after a reload the review shows the prompt text |
+| `retry one question` (`questionIds`) | not supported | ignored: the session starts on the scope |
 
-Keep the store a plain object (so it can be faked in your tests) and keep the root component free
-of router and query-client assumptions beyond React: the shell supplies a React Query client, a
-router and a toast provider, but a module that wants none of them can ignore them.
+`PracticeApp` got two small props: `initialSessionId` (resume from a URL) and `autoStart` (a scope to
+start at once: "Practise this"). The shell guards navigation while a session is on screen
+(`onActiveChange` plus `useBlocker`).
 
-## Opening a source from a citation
+The exam planner's node picker (`pickNodes`) is the shell's own sheet (`library/pickNodes.tsx`).
 
-Call `openSource({ fileId, pageId, quote })` from a citation chip: it navigates to
-`/files/:fileId?page=<pageId>&quote=<text>`, which opens the viewer on that page with the quote
-highlighted in the transcript. To show the viewer inline instead (a popover or a side panel), render
-`context.SourceViewer`:
+## Canvas
 
-```tsx
-<SourceViewer
-  fileId={citation.fileId}
-  pageId={citation.pageId}
-  highlightQuote={citation.quote}
-  region={citation.region}   // optional NormalizedBox {x, y, width, height}, 0..1
-/>
-```
+The canvas server does not exist yet. `CanvasScreen` asks `GET /api/documents/:id/canvas`: when it
+answers, `HttpCanvasStore` takes over with no other change; until then it builds a canvas from the
+real document's blocks (`deriveCanvas`, through `MemoryCanvasStore`) and keeps pins in this browser
+(`localStorage`, prefix `notes-canvas`). Cards use the canvas module's own compact block renderer: the
+documents module's block renderers need the page editor's context and were not wired through
+`renderBlock`.
 
-The viewer needs a router and a React Query provider above it, which the shell supplies.
+## What a module that lands later must export
 
-## Links the shell produces for you
+Requests and concepts (not yet merged) are mounted by folder name, so nothing in the shell changes
+when they appear. From `src/features/<folder>/index.ts(x)`:
 
-- Search: a block hit opens `/doc/:nodeId?block=:blockId`. The documents module should scroll to
-  and highlight that block.
-- Activity: document and block links open `/doc/:nodeId` and `/doc/:nodeId?block=:blockId`.
-- Library: a `document` node opens `/library/:nodeId` today (a placeholder page). When the documents
-  module is live, the shell will open `/doc/:nodeId` for documents and lectures; tell the shell owner.
+- requests: `RequestsView` and `createHttpRequestsStore(http)`;
+- concepts: `ConceptView` and `createHttpConceptsStore(http)`.
 
-## Checking the mount
+`http` is `AppHttp` from `src/lib/api.ts` (same `/api` base, cookie and typed errors, no parsing). The
+root component receives `{ store, params, search, openSource, openNode, SourceViewer }`
+(`mounts/modules.ts`, `MountContext`). If the real module uses other names, change the table in
+`mounts/modules.ts` (`CONTRACT`) or write a thin adapter next to it, as for practice.
 
-`pnpm --filter @notes/web test` includes a test that every route renders "Coming soon" while the
-folders are empty. Drop a module in and the test for that route is replaced by your own.
+## Links the shell produces
+
+- Search: `node` and `page` as before; `block` opens `/doc/:nodeId?block=:blockId`; `question` opens
+  the node it is filed under; `concept` opens `/concepts/:id`.
+- Activity: document and block links open `/doc/:nodeId[?block=]`.
+- "Practise this" (lecture page, library page): `/practice?node=:id`; an exam: `/practice?exam=:id`.

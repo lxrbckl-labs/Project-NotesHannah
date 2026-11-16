@@ -9,7 +9,7 @@ import { useNodeActions } from "./actions";
 import { InlineName } from "./InlineName";
 import { NodeIcon } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
-import { isPending } from "./rules";
+import { isPending, nodeHref } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
 
 /** A rounded card for a term, course or section. Sections (fixed) have no menu. */
@@ -52,7 +52,7 @@ export function NodeCard({ node, large }: { node: NodeWithLinks; large?: boolean
           />
         ) : (
           <Link
-            to={`/library/${node.id}`}
+            to={nodeHref(node)}
             className="block rounded-lg font-display text-base font-semibold after:absolute after:inset-0 after:rounded-3xl after:content-['']"
           >
             <span className="flex items-center gap-1.5">

@@ -1,5 +1,5 @@
 import type { NodeWithLinks } from "@notes/schema";
-import { ArrowLeft, MoreHorizontal, Plus, Star } from "lucide-react";
+import { ArrowLeft, BookOpen, GraduationCap, MoreHorizontal, Plus, Star } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button, IconButton } from "../../components/ui/button";
@@ -16,6 +16,8 @@ import { nodeMeta, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { creatableIn, KIND_NAME } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
+
+const MOCK = import.meta.env.VITE_MOCK_API === "1";
 
 /** Back link, breadcrumbs, title (renamable in place), favourite, New and the "..." menu. */
 export function NodeHeader({ node }: { node: NodeWithLinks }) {
@@ -89,7 +91,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
         </div>
       </div>
 
-      {creatable.length > 0 || canHoldFiles(node) ? (
+      {creatable.length > 0 || canHoldFiles(node) || node.kind === "document" ? (
         <div className="mt-5 flex flex-wrap gap-2">
           {creatable.map((kind, i) => (
             <Button
@@ -101,6 +103,18 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
               New {KIND_NAME[kind].toLowerCase()}
             </Button>
           ))}
+          {!MOCK && (node.kind === "lecture" || node.kind === "document") ? (
+            <Button variant="primary" onClick={() => navigate(`/doc/${node.id}`)}>
+              <BookOpen size={16} aria-hidden />
+              Open the page
+            </Button>
+          ) : null}
+          {!MOCK && ["lecture", "folder", "course", "term"].includes(node.kind) ? (
+            <Button onClick={() => navigate(`/practice?node=${node.id}`)}>
+              <GraduationCap size={16} aria-hidden />
+              Practise this
+            </Button>
+          ) : null}
           {canHoldFiles(node) ? (
             <UploadButton nodeId={node.id} target={node.name}>
               Upload files

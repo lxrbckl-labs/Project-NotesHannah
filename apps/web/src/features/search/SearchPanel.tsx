@@ -8,10 +8,13 @@ import { cn } from "../../lib/cn";
 import { NodeIcon } from "../library/NodeIcon";
 import { nodeTitle } from "../library/NodeRow";
 import { useSearch } from "../library/queries";
+import { nodeHref } from "../library/rules";
 
 const GROUPS: Array<{ kind: SearchHit["kind"]; title: string }> = [
   { kind: "node", title: "In your library" },
+  { kind: "concept", title: "Concepts" },
   { kind: "block", title: "In your study material" },
+  { kind: "question", title: "Practice questions" },
   { kind: "page", title: "In your transcripts" },
   { kind: "question", title: "In your practice questions" },
   { kind: "concept", title: "Drugs and concepts" },
@@ -34,7 +37,7 @@ function hitKey(hit: SearchHit): string {
 
 /** Where a hit opens: a library item, a page of a source file (with the match marked), a block of a document. */
 export function hitHref(hit: SearchHit, q: string): string {
-  if (hit.kind === "node") return `/library/${hit.node.id}`;
+  if (hit.kind === "node") return nodeHref(hit.node);
   if (hit.kind === "page") {
     return `/files/${hit.fileId}?page=${hit.pageId}&quote=${encodeURIComponent(q)}`;
   }

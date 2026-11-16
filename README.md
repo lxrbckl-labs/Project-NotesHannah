@@ -51,10 +51,10 @@ One command, no mock. On the first run it:
 4. starts the server on `:3210` and the web dev server on `:5273` (strict port; chosen so they do not collide with other dev servers on 3000 and 5173), with `APP_ORIGIN`
    and the Vite proxy agreeing, so sign-in works. Open <http://localhost:5273>.
 
-Ctrl-C stops the server, the web app and the converter container.
+Ctrl-C stops the server, the web app and the converter container. `NOTES_LOCAL_SEED=1 pnpm local` seeds once it is up.
 
 ```sh
-pnpm local:seed     # a small library (terms, courses, lectures) and the fixture files uploaded through the real API
+pnpm local:seed     # a small library, the fixture files, and (needs the converter) a cited study guide, four questions and an exam
 pnpm local:reset    # wipes ./data/local after you type "reset": database, uploads and users
 ```
 

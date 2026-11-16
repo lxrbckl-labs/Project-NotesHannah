@@ -38,7 +38,7 @@ import { NodeIcon } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
-import { type Destination, isPending, toDestination } from "./rules";
+import { type Destination, isPending, nodeHref, toDestination } from "./rules";
 import { useTreeState } from "./treeState";
 import { useNodeMenu } from "./useNodeMenu";
 
@@ -529,7 +529,7 @@ function TreeItem({
       case "Enter":
       case " ":
         stop();
-        tree.go(`/library/${node.id}`);
+        tree.go(nodeHref(node));
         break;
       case "F2":
         if (node.kind !== "section" && !isPending(node)) {
@@ -560,7 +560,7 @@ function TreeItem({
       data-drop={dropMode ?? undefined}
       onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(node.id)}
       onKeyDown={onKeyDown}
-      onClick={() => !renaming && tree.go(`/library/${node.id}`)}
+      onClick={() => !renaming && tree.go(nodeHref(node))}
       {...dragProps}
       {...dropProps}
       className={cn(

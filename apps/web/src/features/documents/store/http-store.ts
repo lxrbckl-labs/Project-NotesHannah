@@ -25,7 +25,7 @@ import { StoreError } from "./types";
 /**
  * The store against the server's routes (docs/api.md, "Documents" and
  * "Files, pages and inbox"). Cookie session; the browser sends Origin on
- * writes. Not yet exercised against a live server.
+ * writes. Exercised against the real server by the web-mount journeys (apps/web/e2e/real).
  */
 export interface HttpStoreOptions {
   /** Her actor, from GET /api/me. */
@@ -281,12 +281,12 @@ export class HttpDocumentStore implements DocumentStore {
     );
   }
 
-  /** Requests (L1) have no route in docs/api.md yet; this assumes `POST /api/requests`. */
+  /** A request on a block (L1, L5): `POST /api/requests` with a block target and a quick kind. */
   createRequest(input: BlockRequestInput) {
-    return this.request<{ id: string }>("POST", "/requests", {
-      target: { kind: "block", documentId: input.documentId, blockId: input.blockId },
+    return this.request<{ request: { id: string } }>("POST", "/requests", {
+      target: { type: "block", documentId: input.documentId, blockId: input.blockId },
       kind: input.kind,
-      ...(input.note ? { note: input.note } : {}),
-    });
+      ...(input.note ? { message: input.note } : {}),
+    }).then((r) => ({ id: r.request.id }));
   }
 }
