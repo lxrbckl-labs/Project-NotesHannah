@@ -1,0 +1,25 @@
+CASE                     RESULT     DETAIL                 WALL_S  PEAK_MB  VERDICT
+lecture-pptx             ok         ok:pptx:12                3.1      188  PASS
+text-layer-pdf           ok         ok:pdf:5                  1.2       94  PASS
+image-only-pdf           ok         ok:pdf:4                  1.6       95  PASS
+photo-exif6-jpg          ok         ok:jpeg:1                 0.6       55  PASS
+photo-exif3-png          ok         ok:png:1                  0.6       52  PASS
+photo-heic               ok         ok:heic:1                 0.7       54  PASS
+lies-pptx-named-pdf      ok         ok:pptx:12                3.0      187  PASS
+lies-png-named-jpg       ok         ok:png:1                  0.6       49  PASS
+lies-pdf-named-pptx      ok         ok:pdf:5                  1.2       93  PASS
+encrypted-ownerpw-only   ok         ok:pdf:5                  1.3       88  PASS
+encrypted-userpw-pdf     rejected   ENCRYPTED                 0.3           PASS
+encrypted-pptx           rejected   ENCRYPTED                 0.3           PASS
+truncated-pptx           rejected   CORRUPT_FILE              0.3           PASS
+junkxml-pptx             rejected   CORRUPT_FILE              0.7           PASS
+corrupt-pdf              rejected   CORRUPT_FILE              0.3           PASS
+truncated-jpg            rejected   CORRUPT_FILE              0.3           PASS
+zipbomb-pptx             rejected   DECOMPRESSION_BOMB        0.3           PASS
+pixelbomb-png            rejected   PIXEL_BOMB                0.3           PASS
+toomany-301pages         rejected   TOO_MANY_PAGES            0.3           PASS
+toomany-override         rejected   TOO_MANY_PAGES            0.4           PASS
+toolarge-override        rejected   FILE_TOO_LARGE            0.3           PASS
+timeout-override         rejected   TIMEOUT                   1.5           PASS
+docx-unsupported         rejected   UNSUPPORTED_TYPE          0.3           PASS
+plain-text-named-pdf     rejected   UNSUPPORTED_TYPE          0.3           PASS

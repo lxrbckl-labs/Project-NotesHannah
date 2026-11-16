@@ -1,0 +1,21 @@
+uid/gid                            10001 10001 
+capabilities (CapEff)              CapEff: 0000000000000000 NoNewPrivs: 1 Seccomp: 2 
+interfaces (net none)              bonding_masters erspan0 gre0 gretap0 ip6_vti0 ip6gre0 ip6tnl0 ip_vti0 lo sit0 tunl0 
+DNS lookup                         dns blocked 
+TCP 1.1.1.1:443                    bash: connect: Network is unreachable bash: line 1: /dev/tcp/1.1.1.1/443: Network is unreachable tcp blocked 
+TCP to host gateway                bash: connect: Network is unreachable bash: line 1: /dev/tcp/192.168.65.254/80: Network is unreachable tcp blocked 
+write to / (/etc)                  touch: cannot touch '/etc/x': Read-only file system 
+write to /opt/converter            touch: cannot touch '/opt/converter/x': Read-only file system 
+write to /tmp                      tmp writable 
+exec from /tmp (noexec)            sh: 1: /tmp/t: Permission denied 
+write to input mount               sh: 1: cannot create /input/file: Read-only file system 
+write to /output                   output writable 
+mount syscall                      mount: /mnt: must be superuser to use mount. 
+setuid escalation (su)             Password: su: Authentication failure 
+docker socket / host paths         ls: cannot access '/var/run/docker.sock': No such file or directory ls: cannot access '/Users': No such file or directory 
+cpu.max / memory.max               200000 100000 2147483648 256 
+fork bomb (400 sleeps)             sh: 0: Cannot fork spawned shells; pids in use: 5 
+memory hog (2g limit)              exit=137 (137 = OOM-killed)
+tmpfs fill (1g limit)              1073741824 bytes (1.1 GB, 1.0 GiB) copied, 0.501691 s, 2.1 GB/s 
+host output dir listing after probes:
+probe.txt

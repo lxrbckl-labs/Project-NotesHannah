@@ -1,0 +1,22 @@
+{
+  "name": "s5-converter",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Spike S5: sandboxed file converter (PPTX/PDF/JPEG/PNG/HEIC to per-page WebP plus native text)",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.2.5",
+    "sharp": "^0.34.3",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/yauzl": "^2.10.3",
+    "typescript": "^5.9.0"
+  }
+}
