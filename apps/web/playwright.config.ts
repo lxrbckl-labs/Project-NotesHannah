@@ -1,9 +1,11 @@
 import { defineConfig } from "@playwright/test";
 
-const PORT = 4173;
+const PORT = Number(process.env.E2E_PORT ?? 4173);
 
 export default defineConfig({
   testDir: "./e2e",
+  // e2e/real runs against the real server: playwright.real.config.ts
+  testIgnore: /e2e\/real\//,
   reporter: [["list"]],
   timeout: 60_000,
   expect: { timeout: 7_000 },
