@@ -14,6 +14,7 @@ import { FileRow } from "../sources/FileRow";
 import { useFileDrop } from "../uploads/useFileDrop";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { useCourseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
 import { NodeCard } from "./NodeCard";
 import { NodeHeader } from "./NodeHeader";
@@ -107,7 +108,7 @@ function DropArea({ node, children }: { node: NodeWithLinks; children: ReactNode
     <div
       {...drop.props}
       data-drop={drop.over ? "into" : undefined}
-      className={cn("rounded-3xl", drop.over && "outline-2 outline-accent outline-offset-4")}
+      className={cn("rounded-panel", drop.over && "outline-2 outline-accent outline-offset-4")}
     >
       {children}
     </div>
@@ -127,7 +128,7 @@ function NodeFiles({ node }: { node: NodeWithLinks }) {
   if (files.data.length === 0) return null;
   return (
     <section aria-labelledby="node-files-title" className="mb-6">
-      <h2 id="node-files-title" className="mb-3 text-base font-semibold">
+      <h2 id="node-files-title" className="mb-3 text-body font-semibold">
         Source files
       </h2>
       <ul className="grid gap-2.5" aria-label="Source files">
@@ -140,17 +141,16 @@ function NodeFiles({ node }: { node: NodeWithLinks }) {
 }
 
 function ContentPlaceholder({ node }: { node: NodeWithLinks }) {
+  const hue = useCourseHue(node);
   return (
-    <div className="dot-grid flex flex-col items-center rounded-3xl border border-dashed border-border-strong px-6 py-16 text-center">
-      <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
-        {node.kind === "lecture" ? <Hourglass size={26} /> : <FileText size={26} />}
-      </div>
-      <h2 className="text-lg font-semibold">Content arrives in a later stage</h2>
-      <p className="mt-1.5 max-w-sm text-sm text-text-muted">
-        {nodeTitle(node)} will hold its slides, transcript and study notes here. For now you can
-        rename it, move it and keep it organised.
-      </p>
-    </div>
+    <EmptyState
+      icon={node.kind === "lecture" ? <Hourglass size={26} /> : <FileText size={26} />}
+      hue={hue ?? "accent"}
+      title="Content arrives in a later stage"
+    >
+      {nodeTitle(node)} will hold its slides, transcript and study notes here. For now you can
+      rename it, move it and keep it organised.
+    </EmptyState>
   );
 }
 
@@ -158,6 +158,7 @@ function Children({ node }: { node: NodeWithLinks }) {
   const query = useChildren(node.id);
   const dialogs = useLibraryDialogs();
   const fine = useFinePointer();
+  const hue = useCourseHue(node);
 
   const files = useQuery({
     queryKey: fileKeys.of(node.id),
@@ -205,7 +206,7 @@ function Children({ node }: { node: NodeWithLinks }) {
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" aria-label="Sections">
         {items.map((n) => (
           <li key={n.id}>
-            <NodeCard node={n} large />
+            <NodeCard node={n} large hue={hue} />
           </li>
         ))}
       </ul>
@@ -220,6 +221,7 @@ function Children({ node }: { node: NodeWithLinks }) {
           parent={node}
           previousId={items[i - 1]?.id ?? null}
           dnd={fine}
+          hue={hue}
         />
       ))}
     </ul>

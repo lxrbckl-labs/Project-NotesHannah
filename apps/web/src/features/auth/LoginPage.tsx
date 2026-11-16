@@ -4,7 +4,9 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { ThemeSwitch } from "../../app/ThemeSwitch";
 import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { Field, TextInput } from "../../components/ui/field";
+import { Notice } from "../../components/ui/notice";
 import { api, isApiError } from "../../lib/api";
 import { meKey, useMe } from "./useAuth";
 
@@ -73,74 +75,69 @@ export function LoginPage() {
       </div>
       <main className="w-full max-w-sm">
         <div className="mb-7 flex flex-col items-center text-center">
-          <div className="mb-4 flex size-16 items-center justify-center rounded-3xl bg-accent text-accent-contrast shadow-card">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-panel bg-accent text-accent-contrast shadow-card">
             <NotebookPen size={30} aria-hidden />
           </div>
-          <h1 className="text-2xl font-semibold">Welcome back</h1>
-          <p className="mt-1.5 text-sm text-text-muted">Sign in to your study notes.</p>
+          <h1 className="font-display text-heading font-semibold">Welcome back</h1>
+          <p className="mt-1.5 text-ui text-text-muted">Sign in to your study notes.</p>
         </div>
 
-        <form
-          onSubmit={submit}
-          noValidate
-          className="grid gap-4 rounded-3xl border border-border bg-surface p-6 shadow-card"
-        >
-          {error ? (
-            <div
-              role="alert"
-              className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-sm font-medium text-danger"
+        <Card as="div" padding="lg" className="rounded-panel">
+          <form onSubmit={submit} noValidate className="grid gap-4">
+            {error ? (
+              <Notice tone="danger">
+                {error}
+                {limited ? (
+                  <span className="mt-0.5 block" aria-live="off">
+                    Try again in {remaining} {remaining === 1 ? "second" : "seconds"}.
+                  </span>
+                ) : null}
+              </Notice>
+            ) : null}
+            <Field label="Username">
+              {(p) => (
+                <TextInput
+                  {...p}
+                  name="username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              )}
+            </Field>
+            <Field label="Password">
+              {(p) => (
+                <TextInput
+                  {...p}
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              )}
+            </Field>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={busy || limited || !username || !password}
+              className="w-full"
             >
-              {error}
-              {limited ? (
-                <span className="mt-0.5 block font-normal" aria-live="off">
-                  Try again in {remaining} {remaining === 1 ? "second" : "seconds"}.
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-          <Field label="Username">
-            {(p) => (
-              <TextInput
-                {...p}
-                name="username"
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            )}
-          </Field>
-          <Field label="Password">
-            {(p) => (
-              <TextInput
-                {...p}
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            )}
-          </Field>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={busy || limited || !username || !password}
-            className="w-full"
-          >
-            {limited ? `Wait ${remaining}s` : busy ? "Signing in" : "Sign in"}
-          </Button>
-        </form>
+              {limited ? `Wait ${remaining}s` : busy ? "Signing in" : "Sign in"}
+            </Button>
+          </form>
+        </Card>
 
-        <p className="mt-5 text-center text-xs text-text-muted">
+        <p className="mt-5 text-center text-caption text-text-muted">
           Accounts are created for you. There is no sign-up.
         </p>
         {MOCK ? (
-          <p className="mt-3 rounded-xl bg-surface-muted px-3 py-2 text-center text-xs text-text-muted">
+          <p className="mt-3 rounded-control bg-surface-muted px-3 py-2 text-center text-caption text-text-muted">
             Demo mode, no server. Sign in as <code>hannah</code> with <code>study-notes-2026</code>.
           </p>
         ) : null}

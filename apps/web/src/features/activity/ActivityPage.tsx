@@ -2,7 +2,10 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Bot } from "lucide-react";
 import { Link } from "react-router";
 import { Page } from "../../components/Page";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
+import { PageHeader } from "../../components/ui/page-header";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { type ActivityEntry, type ActivityLink, api } from "../../lib/api";
 import { formatDateTime } from "../../lib/format";
@@ -31,14 +34,10 @@ function Entry({ entry }: { entry: ActivityEntry }) {
     return href ? [{ link, href }] : [];
   });
   return (
-    <li
-      data-testid="activity-entry"
-      className="rounded-2xl border border-border bg-surface p-3.5 shadow-card"
-    >
-      <p className="text-[15px]">{entry.summary}</p>
-      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-text-muted">
-        <span>{entry.keyLabel ?? "An agent"}</span>
-        <span aria-hidden>·</span>
+    <Card as="li" data-testid="activity-entry" padding="sm">
+      <p className="text-body">{entry.summary}</p>
+      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-ui text-text-muted">
+        <Badge icon={<Bot />}>{entry.keyLabel ?? "An agent"}</Badge>
         <time dateTime={entry.at}>{formatDateTime(entry.at)}</time>
       </p>
       {links.length > 0 ? (
@@ -47,14 +46,14 @@ function Entry({ entry }: { entry: ActivityEntry }) {
             <Link
               key={`${link.type}-${link.id}`}
               to={href}
-              className="rounded-full bg-accent-soft px-3 py-1 text-sm text-accent hover:underline"
+              className="hit-area inline-flex min-h-7 items-center rounded-pill border border-accent-border bg-accent-soft px-3 text-label font-medium text-accent hover:underline"
             >
               {link.label ?? `Open ${link.type}`}
             </Link>
           ))}
         </p>
       ) : null}
-    </li>
+    </Card>
   );
 }
 
@@ -70,12 +69,11 @@ export function ActivityPage() {
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
   return (
     <Page>
-      <header className="mb-6">
-        <h1 className="text-3xl font-semibold">Activity</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          What agents like Claude Code did in your library.
-        </p>
-      </header>
+      <PageHeader
+        title="Activity"
+        description="What agents like Claude Code did in your library."
+        icon={<Bot />}
+      />
       {query.isPending ? (
         <LoadingList label="Loading activity" />
       ) : query.isError ? (

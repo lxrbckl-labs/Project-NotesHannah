@@ -2,9 +2,12 @@ import type { ApiKey, CreatedApiKey } from "@notes/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, KeyRound, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Card, CardTitle } from "../../components/ui/card";
 import { ConfirmDialog, Modal } from "../../components/ui/dialog";
-import { Badge, Field, TextInput } from "../../components/ui/field";
+import { Field, TextInput } from "../../components/ui/field";
+import { Notice } from "../../components/ui/notice";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { useToast } from "../../components/ui/toast";
 import { api, describeError } from "../../lib/api";
@@ -28,27 +31,20 @@ export function ApiKeys() {
   });
 
   return (
-    <section
-      aria-labelledby="keys-title"
-      className="rounded-3xl border border-border bg-surface p-5 shadow-card md:p-6"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 basis-64">
-          <h2 id="keys-title" className="text-lg font-semibold">
-            API keys
-          </h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Keys let an agent such as Claude Code or Codex work in your library. Give each its own
-            key so you can revoke one without touching the rest.
-          </p>
-        </div>
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          <Plus size={16} aria-hidden />
-          New key
-        </Button>
-      </div>
+    <Card as="section" aria-labelledby="keys-title" padding="lg">
+      <CardTitle
+        id="keys-title"
+        title="API keys"
+        description="Keys let an agent such as Claude Code or Codex work in your library. Give each its own key so you can revoke one without touching the rest."
+        action={
+          <Button variant="primary" onClick={() => setCreating(true)}>
+            <Plus size={16} aria-hidden />
+            New key
+          </Button>
+        }
+      />
 
-      <div className="mt-5">
+      <div>
         {query.isPending ? (
           <LoadingList rows={2} label="Loading keys" />
         ) : query.isError ? (
@@ -80,20 +76,19 @@ export function ApiKeys() {
           if (key) revoke.mutate(key);
         }}
       />
-    </section>
+    </Card>
   );
 }
 
 function KeyRow({ apiKey, onRevoke }: { apiKey: ApiKey; onRevoke: () => void }) {
   const revoked = !!apiKey.revokedAt;
   return (
-    <li
+    <Card
+      as="li"
+      flat
       data-testid="key-row"
       data-revoked={revoked}
-      className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-border bg-bg p-4",
-        revoked && "opacity-75",
-      )}
+      className={cn("flex flex-wrap items-center gap-x-4 gap-y-3", revoked && "opacity-75")}
     >
       <div className="min-w-0 flex-1 basis-56">
         <div className="flex flex-wrap items-center gap-2">
@@ -103,7 +98,7 @@ function KeyRow({ apiKey, onRevoke }: { apiKey: ApiKey; onRevoke: () => void }) 
           </Badge>
           {revoked ? <Badge tone="danger">Revoked</Badge> : null}
         </div>
-        <p className="mt-1 font-mono text-sm text-text-muted">{apiKey.preview}…</p>
+        <p className="mt-1 font-mono text-ui text-text-muted">{apiKey.preview}…</p>
         <p className="mt-1 text-sm text-text-muted">
           Created {formatDate(apiKey.createdAt)} ·{" "}
           {apiKey.lastUsedAt ? `Last used ${formatDateTime(apiKey.lastUsedAt)}` : "Never used"}
@@ -115,7 +110,7 @@ function KeyRow({ apiKey, onRevoke }: { apiKey: ApiKey; onRevoke: () => void }) 
           Revoke
         </Button>
       ) : null}
-    </li>
+    </Card>
   );
 }
 
@@ -177,11 +172,7 @@ function CreateKeyForm({
 
   return (
     <form onSubmit={submit} className="grid gap-4">
-      {error ? (
-        <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
       <Field label="Name" hint="For example, Claude Code on the MacBook.">
         {(p) => (
           <TextInput
@@ -204,7 +195,7 @@ function CreateKeyForm({
           <label
             key={value}
             className={cn(
-              "flex min-h-14 cursor-pointer items-start gap-3 rounded-2xl border p-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
+              "flex min-h-14 cursor-pointer items-start gap-3 rounded-card border p-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
               scope === value
                 ? "border-accent bg-accent-soft"
                 : "border-border hover:bg-surface-muted",
@@ -249,22 +240,21 @@ function SecretView({ created, onDone }: { created: CreatedApiKey; onDone: () =>
 
   return (
     <div className="grid gap-4">
-      <p
-        role="alert"
-        className="rounded-xl bg-accent-soft px-3.5 py-2.5 text-sm font-medium text-accent"
-      >
-        You will not see this again. Copy it now: once you close this, the key cannot be shown.
-      </p>
+      <div role="alert">
+        <Notice tone="warning">
+          You will not see this again. Copy it now: once you close this, the key cannot be shown.
+        </Notice>
+      </div>
       <div>
         <p className="mb-1.5 text-sm font-medium">{created.key.name}</p>
         <code
           data-testid="api-secret"
-          className="block break-all rounded-xl border border-border-strong bg-bg p-3.5 font-mono text-sm"
+          className="block break-all rounded-control border border-border-strong bg-bg p-3.5 font-mono text-ui"
         >
           {created.secret}
         </code>
         {copied === "failed" ? (
-          <p className="mt-2 text-sm text-danger">
+          <p className="mt-2 text-ui text-danger">
             Copying was blocked. Select the key above and copy it by hand.
           </p>
         ) : null}

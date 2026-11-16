@@ -10,6 +10,8 @@ import {
   ListChecks,
   Presentation,
 } from "lucide-react";
+import { cn } from "../../lib/cn";
+import type { Hue } from "../../lib/hues";
 
 const SECTION_ICON = {
   sources: Inbox,
@@ -47,4 +49,38 @@ export function NodeIcon({
     case "document":
       return <FileText {...props} />;
   }
+}
+
+/**
+ * An item's icon in a tinted square. `hue` is the course colour (see courseHue); without one
+ * the square is neutral grey, as for terms. Colour never carries the meaning alone: the kind is
+ * also the icon and the words beside it.
+ */
+export function NodeTile({
+  kind,
+  section,
+  hue,
+  size = "md",
+  className,
+}: {
+  kind: NodeKind;
+  section?: SectionKind | null;
+  hue?: Hue | null | undefined;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  return (
+    <span
+      data-hue={hue ?? undefined}
+      className={cn(
+        "flex shrink-0 items-center justify-center bg-tone-soft text-tone-text",
+        size === "sm" && "size-6 rounded-inline",
+        size === "md" && "size-10 rounded-control",
+        size === "lg" && "size-12 rounded-card",
+        className,
+      )}
+    >
+      <NodeIcon kind={kind} section={section} size={size === "sm" ? 15 : size === "lg" ? 24 : 20} />
+    </span>
+  );
 }

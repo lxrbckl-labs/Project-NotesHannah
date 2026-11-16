@@ -22,20 +22,23 @@ import {
   useState,
 } from "react";
 import { useMatch, useNavigate } from "react-router";
-import { Badge } from "../../components/ui/field";
+import { Badge } from "../../components/ui/badge";
 import { ContextActions, type MenuEntry } from "../../components/ui/menu";
 import { MiddleTruncate } from "../../components/ui/middle-truncate";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import type { Hue } from "../../lib/hues";
 import { IN_PROGRESS } from "../../lib/messages";
+import { FILE_STATUS_HUE } from "../../lib/roles";
 import { useFinePointer } from "../../lib/useMedia";
 import { useUploadManager } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
+import { courseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
 import { fileLeafDragProps, useInboxDrop, useRowDnd } from "./dnd";
 import { useFileActions } from "./fileActions";
 import { InlineName } from "./InlineName";
-import { NodeIcon } from "./NodeIcon";
+import { NodeIcon, NodeTile } from "./NodeIcon";
 import { lectureParts, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
@@ -133,7 +136,7 @@ export function LibraryTree({
         role="tree"
         aria-label={label}
         className={cn(
-          "grid gap-px [--indent:12px] md:[--indent:16px]",
+          "grid grid-cols-[minmax(0,1fr)] gap-px [--indent:12px] md:[--indent:16px]",
           variant === "sidebar" ? "px-2" : "gap-0.5",
         )}
       >
@@ -145,6 +148,7 @@ export function LibraryTree({
             depth={0}
             parent={null}
             previousId={roots.data[i - 1]?.id ?? null}
+            hue={null}
           />
         ))}
       </ul>
@@ -152,7 +156,15 @@ export function LibraryTree({
   );
 }
 
-function TreeBranch({ parent, depth }: { parent: NodeWithLinks; depth: number }) {
+function TreeBranch({
+  parent,
+  depth,
+  hue,
+}: {
+  parent: NodeWithLinks;
+  depth: number;
+  hue: Hue | null;
+}) {
   const children = useChildren(parent.id);
   const pad = { paddingLeft: `calc(var(--indent) * ${depth} + 40px)` };
   const hasFiles = parent.kind === "lecture" || parent.kind === "folder";
@@ -186,10 +198,11 @@ function TreeBranch({ parent, depth }: { parent: NodeWithLinks; depth: number })
           depth={depth}
           parent={parent}
           previousId={children.data[i - 1]?.id ?? null}
+          hue={hue}
         />
       ))}
       {files.data?.map((file) => (
-        <FileLeaf key={file.id} file={file} depth={depth} />
+        <FileLeaf key={file.id} file={file} depth={depth} hue={hue} />
       ))}
       {hasFiles && files.isPending ? (
         <li role="none" className="py-1 text-xs text-text-muted" style={pad}>
@@ -226,17 +239,11 @@ export function FileTypeIcon({ type, size = 17 }: { type: SourceFile["type"]; si
 }
 
 export function FileStatusBadge({ status }: { status: SourceFile["status"] }) {
-  const tone =
-    status === "failed"
-      ? "danger"
-      : status === "transcribed" || status === "filed"
-        ? "accent"
-        : "neutral";
-  return <Badge tone={tone}>{STATUS_LABEL[status]}</Badge>;
+  return <Badge hue={FILE_STATUS_HUE[status]}>{STATUS_LABEL[status]}</Badge>;
 }
 
 /** A source file as a leaf: opens the source viewer; move, rename and trash like any item. */
-function FileLeaf({ file, depth }: { file: SourceFile; depth: number }) {
+function FileLeaf({ file, depth, hue }: { file: SourceFile; depth: number; hue: Hue | null }) {
   const tree = useTree();
   const nameId = useId();
   const actions = useFileActions();
@@ -296,6 +303,7 @@ function FileLeaf({ file, depth }: { file: SourceFile; depth: number }) {
       tabIndex={tree.tabbableId === file.id ? 0 : -1}
       data-testid="tree-file"
       data-type={file.type}
+      data-hue={hue ?? undefined}
       title={file.originalName}
       onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(file.id)}
       onClick={() => !renaming && tree.go(`/files/${file.id}`)}
@@ -316,12 +324,12 @@ function FileLeaf({ file, depth }: { file: SourceFile; depth: number }) {
       }}
       {...fileLeafDragProps(file, tree.dnd)}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-xl py-1.5 pr-2 text-text hover:bg-surface-muted",
-        tree.variant === "page" ? "min-h-12 text-[15px]" : "min-h-11 text-sm xl:min-h-8",
+        "flex cursor-pointer items-center gap-2 rounded-control py-1.5 pr-2 text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted",
+        tree.variant === "page" ? "min-h-12 text-body" : "min-h-11 text-ui xl:min-h-8",
       )}
       style={{ paddingLeft: `calc(var(--indent) * ${depth} + 40px)` }}
     >
-      <span className="shrink-0 text-text-muted">
+      <span className={cn("shrink-0", hue ? "text-tone-text" : "text-text-muted")}>
         <FileTypeIcon type={file.type} />
       </span>
       <span className="min-w-0 flex-1">
@@ -342,7 +350,7 @@ function FileLeaf({ file, depth }: { file: SourceFile; depth: number }) {
           </span>
         )}
         {tree.variant === "page" && !renaming ? (
-          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption text-text-muted">
             {pages ? <span>{pages}</span> : null}
             <FileStatusBadge status={file.status} />
           </span>
@@ -391,16 +399,15 @@ function InboxRow() {
             treeArrowKeys(e, 0);
           }
         }}
-        className="flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-transparent pl-1 pr-3 text-[15px] hover:border-border"
+        className="flex min-h-12 cursor-pointer items-center gap-2 rounded-control border border-transparent pl-1 pr-3 text-body transition-colors duration-(--duration-instant) hover:border-border hover:bg-surface-muted"
       >
         <span className="size-9 shrink-0" aria-hidden />
         <Inbox size={17} className="shrink-0 opacity-80" aria-hidden />
         <span className="ml-1.5 flex-1 font-medium">Inbox</span>
-        <span
-          data-testid="inbox-count"
-          className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent"
-        >
-          {inbox.isPending ? "…" : inbox.isError ? "!" : inbox.data.length}
+        <span data-testid="inbox-count">
+          <Badge tone="accent">
+            {inbox.isPending ? "…" : inbox.isError ? "!" : inbox.data.length}
+          </Badge>
         </span>
       </div>
     </li>
@@ -440,12 +447,17 @@ function TreeItem({
   depth,
   parent,
   previousId,
+  hue: inherited,
 }: {
   node: NodeWithLinks;
   depth: number;
   parent: NodeWithLinks | null;
   previousId: string | null;
+  /** The course colour carried down from above; terms and the top have none. */
+  hue: Hue | null;
 }) {
+  // A course starts its own colour, a term has none, everything below carries its course's.
+  const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
   const tree = useTree();
   const open_ = useTreeState();
   const titleId = useId();
@@ -558,6 +570,7 @@ function TreeItem({
       tabIndex={tree.tabbableId === node.id ? 0 : -1}
       data-testid="tree-item"
       data-kind={node.kind}
+      data-hue={hue ?? undefined}
       data-drop={dropMode ?? undefined}
       onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(node.id)}
       onKeyDown={onKeyDown}
@@ -565,10 +578,10 @@ function TreeItem({
       {...dragProps}
       {...dropProps}
       className={cn(
-        "flex cursor-pointer items-center gap-1 rounded-xl pr-2",
+        "flex cursor-pointer items-center gap-1 rounded-control pr-2 transition-colors duration-(--duration-instant)",
         tree.variant === "page"
-          ? "min-h-12 border border-transparent text-[15px] hover:border-border"
-          : "min-h-11 text-sm xl:min-h-8",
+          ? "min-h-12 border border-transparent text-body hover:border-border"
+          : "min-h-11 text-ui xl:min-h-8",
         selected ? "bg-accent-soft font-medium text-accent" : "text-text hover:bg-surface-muted",
         isPending(node) && "opacity-60",
       )}
@@ -583,14 +596,26 @@ function TreeItem({
             e.stopPropagation();
             open_.toggle(node.id);
           }}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-border/50 xl:size-6"
+          className="hit-area flex size-9 shrink-0 items-center justify-center rounded-inline text-text-muted hover:bg-border/50 xl:size-6"
         >
-          <ChevronRight size={15} className={cn("transition-transform", open && "rotate-90")} />
+          <ChevronRight
+            size={15}
+            className={cn("transition-transform duration-(--duration-fast)", open && "rotate-90")}
+          />
         </button>
       ) : (
         <span className="size-9 shrink-0 xl:size-6" aria-hidden />
       )}
-      <NodeIcon kind={node.kind} section={node.section} size={17} className="shrink-0 opacity-80" />
+      {node.kind === "course" ? (
+        <NodeTile kind="course" hue={hue} size="sm" />
+      ) : (
+        <NodeIcon
+          kind={node.kind}
+          section={node.section}
+          size={17}
+          className={cn("shrink-0", hue ? "text-tone-text" : "opacity-80")}
+        />
+      )}
       {renaming ? (
         <InlineName
           value={node.name}
@@ -610,7 +635,7 @@ function TreeItem({
               <span aria-hidden className="flex min-w-0 flex-1 items-baseline gap-2">
                 <MiddleTruncate text={lectureParts(node).text} />
                 {lectureParts(node).date ? (
-                  <span className="shrink-0 text-xs text-text-muted">
+                  <span className="shrink-0 text-caption text-text-muted">
                     {lectureParts(node).date}
                   </span>
                 ) : null}
@@ -621,6 +646,13 @@ function TreeItem({
           )}
         </span>
       )}
+      {tree.variant === "page" && !renaming && node.kind !== "lecture" && node.childCount > 0 ? (
+        <span aria-hidden className="hidden shrink-0 sm:block">
+          <Badge hue={hue ?? "gray"} size="sm">
+            {node.childCount}
+          </Badge>
+        </span>
+      ) : null}
     </div>
   );
 
@@ -629,8 +661,13 @@ function TreeItem({
       <ContextActions entries={entries}>{row}</ContextActions>
       {open ? (
         // biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern
-        <ul role="group" className="grid gap-px">
-          <TreeBranch parent={node} depth={depth + 1} />
+        <ul
+          role="group"
+          data-hue={hue ?? undefined}
+          style={{ ["--guide" as string]: `calc(var(--indent) * ${depth} + 22px)` }}
+          className="relative grid grid-cols-[minmax(0,1fr)] gap-px before:pointer-events-none before:absolute before:inset-y-1 before:left-(--guide) before:w-px before:bg-tone-border before:opacity-60 xl:before:left-[calc(var(--guide)-6px)]"
+        >
+          <TreeBranch parent={node} depth={depth + 1} hue={hue} />
         </ul>
       ) : null}
     </li>

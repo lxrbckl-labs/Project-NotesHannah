@@ -9,23 +9,41 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Link, useNavigate } from "react-router";
+import { useBadges } from "../../app/badges";
 import { Page, SectionTitle } from "../../components/Page";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
+import { cn } from "../../lib/cn";
+import { useFinePointer } from "../../lib/useMedia";
 import { useMe } from "../auth/useAuth";
 import { UpcomingExamsCard } from "../exams";
 import { useStores } from "../mounts/services";
 import { UploadButton } from "../uploads/UploadButton";
+import { useCourseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
 import { GreetingTitle } from "./GreetingTitle";
 import { LibraryTree } from "./LibraryTree";
-import { NodeIcon } from "./NodeIcon";
+import { NodeTile } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { childrenQuery, useChildren, useFavourites, useRecents } from "./queries";
 import { nodeHref } from "./rules";
 import { useTreeState } from "./treeState";
+
+// The animated dot field behind the greeting is an extra for a mouse: it loads after the first
+// paint, never blocks a tap or a scroll, and the header reads the same without it.
+const DotGrid = lazy(() => import("../../components/bits/DotGrid"));
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -112,6 +130,8 @@ export function LibraryHome() {
   const dialogs = useLibraryDialogs();
   const tree = useTreeState();
   const [busy, setBusy] = useState(false);
+  const fine = useFinePointer();
+  const badges = useBadges();
 
   const { seed } = tree;
   useEffect(() => {
@@ -131,17 +151,39 @@ export function LibraryHome() {
 
   return (
     <Page>
-      <header className="dot-grid mb-6 rounded-3xl border border-border bg-surface px-5 py-5 md:px-8 md:py-7">
-        <p className="text-sm text-text-muted">{greeting()}</p>
-        {me.data ? (
-          <GreetingTitle text={`Hello, ${me.data.displayName}`} />
-        ) : (
-          <h1 className="mt-0.5 text-3xl font-semibold">Library</h1>
+      <Card
+        as="section"
+        padding="none"
+        aria-label="Welcome"
+        className={cn(
+          "relative mb-6 overflow-hidden rounded-panel px-5 py-5 md:px-8 md:py-7",
+          !fine && "dot-grid",
         )}
-        <p className="mt-1.5 text-sm text-text-muted">
-          All your terms, courses, lectures and files, in one tree.
-        </p>
-      </header>
+      >
+        {fine ? (
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <Suspense fallback={null}>
+              <DotGrid
+                className="size-full"
+                opacity={0.45}
+                mouseInteraction={false}
+                clickShock={false}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+        <header className="relative">
+          <p className="text-ui text-text-muted">{greeting()}</p>
+          {me.data ? (
+            <GreetingTitle text={`Hello, ${me.data.displayName}`} />
+          ) : (
+            <h1 className="mt-0.5 font-display text-display font-semibold">Library</h1>
+          )}
+          <p className="mt-1.5 text-ui text-text-muted">
+            All your terms, courses, lectures and files, in one tree.
+          </p>
+        </header>
+      </Card>
 
       <section aria-labelledby="tree-title" className="mb-10">
         <SectionTitle
@@ -149,18 +191,18 @@ export function LibraryHome() {
             <div className="flex flex-wrap items-center justify-end gap-1.5">
               <Button onClick={expandAll} disabled={busy} aria-label="Expand all">
                 <ChevronsUpDown size={16} aria-hidden />
-                <span className="hidden sm:inline">Expand all</span>
+                <span className="hidden lg:inline">Expand all</span>
               </Button>
               <Button onClick={() => tree.collapseAll()} aria-label="Collapse all">
                 <ChevronsDownUp size={16} aria-hidden />
-                <span className="hidden sm:inline">Collapse all</span>
+                <span className="hidden lg:inline">Collapse all</span>
               </Button>
               <UploadButton nodeId={null} target="the inbox" variant="secondary">
-                <span className="hidden sm:inline">Upload</span>
+                <span className="hidden lg:inline">Upload</span>
               </UploadButton>
               <Button onClick={() => dialogs.openCreate(null, "term")} aria-label="New term">
                 <Plus size={16} aria-hidden />
-                <span className="hidden sm:inline">New term</span>
+                <span className="hidden lg:inline">New term</span>
               </Button>
             </div>
           }
@@ -169,7 +211,7 @@ export function LibraryHome() {
             All files
           </span>
         </SectionTitle>
-        <div className="rounded-3xl border border-border bg-surface p-2 shadow-card md:p-3">
+        <Card padding="sm" className="p-2 md:p-3">
           {terms.isPending ? (
             <LoadingList rows={4} label="Loading library" />
           ) : terms.isError ? (
@@ -189,7 +231,7 @@ export function LibraryHome() {
           ) : (
             <LibraryTree label="All files" variant="page" withInbox />
           )}
-        </div>
+        </Card>
       </section>
 
       {import.meta.env.VITE_MOCK_API === "1" ? null : <ExamsStrip />}
@@ -219,13 +261,18 @@ export function LibraryHome() {
       <Link
         to="/concepts"
         data-testid="home-concepts-link"
-        className="mr-2 inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
+        className="mr-2 inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-ui text-text-muted hover:bg-surface-muted hover:text-text"
       >
         <Lightbulb size={16} aria-hidden /> Concepts
+        {badges.review > 0 ? (
+          <Badge tone="warning" size="sm">
+            {badges.review} to review
+          </Badge>
+        ) : null}
       </Link>
       <Link
         to="/trash"
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
+        className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-ui text-text-muted hover:bg-surface-muted hover:text-text"
       >
         <Trash2 size={16} aria-hidden /> Trash
       </Link>
@@ -253,7 +300,7 @@ function ItemStrip({
   const items = query.data ?? [];
   if (items.length === 0) {
     return (
-      <p className="flex items-center gap-3 rounded-2xl border border-dashed border-border-strong px-4 py-4 text-sm text-text-muted">
+      <p className="flex items-center gap-3 rounded-card border border-dashed border-border-strong px-4 py-4 text-ui text-text-muted">
         {icon}
         {empty}
       </p>
@@ -263,21 +310,25 @@ function ItemStrip({
     <ul className="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-3">
       {items.map((n) => (
         <li key={n.id} className="min-w-64 md:min-w-0">
-          <Link
-            to={nodeHref(n)}
-            className="flex min-h-16 items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-card hover:border-border-strong"
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <NodeIcon kind={n.kind} section={n.section} />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate font-medium">{nodeTitle(n)}</span>
-              <span className="block truncate text-sm text-text-muted">{n.path}</span>
-            </span>
-          </Link>
+          <StripItem node={n} />
         </li>
       ))}
     </ul>
+  );
+}
+
+function StripItem({ node }: { node: NodeWithLinks }) {
+  const hue = useCourseHue(node);
+  return (
+    <Link to={nodeHref(node)} className="block rounded-card focus-visible:outline-offset-2">
+      <Card padding="sm" interactive className="flex min-h-16 items-center gap-3">
+        <NodeTile kind={node.kind} section={node.section} hue={hue} />
+        <span className="min-w-0">
+          <span className="block truncate font-medium">{nodeTitle(node)}</span>
+          <span className="block truncate text-ui text-text-muted">{node.path}</span>
+        </span>
+      </Card>
+    </Link>
   );
 }
 

@@ -4,7 +4,9 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Page } from "../../components/Page";
 import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { ConfirmDialog } from "../../components/ui/dialog";
+import { PageHeader } from "../../components/ui/page-header";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { useToast } from "../../components/ui/toast";
 import { api } from "../../lib/api";
@@ -12,7 +14,7 @@ import { formatAgo } from "../../lib/format";
 import { useNodeActions } from "./actions";
 import { useFileActions } from "./fileActions";
 import { FileTypeIcon } from "./LibraryTree";
-import { NodeIcon } from "./NodeIcon";
+import { NodeTile } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { fileKeys, useTrash } from "./queries";
 
@@ -25,12 +27,12 @@ export function TrashPage() {
 
   return (
     <Page>
-      <header className="mb-6">
-        <h1 className="text-3xl font-semibold">Trash</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Restore things you removed by mistake. Deleting from here is permanent.
-        </p>
-      </header>
+      <PageHeader
+        title="Trash"
+        description="Restore things you removed by mistake. Deleting from here is permanent."
+        icon={<Trash2 />}
+        hue="gray"
+      />
 
       <TrashedFiles files={trashedFiles.data ?? []} />
 
@@ -45,17 +47,17 @@ export function TrashPage() {
       ) : query.data.length === 0 ? null : (
         <ul className="grid gap-2.5" aria-label="Trashed items">
           {query.data.map((node) => (
-            <li
+            <Card
+              as="li"
               key={node.id}
               data-testid="trash-row"
-              className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-card"
+              padding="sm"
+              className="flex flex-wrap items-center gap-3"
             >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-text-muted">
-                <NodeIcon kind={node.kind} section={node.section} />
-              </span>
+              <NodeTile kind={node.kind} section={node.section} />
               <div className="min-w-0 flex-1 basis-48">
                 <p className="truncate font-medium">{nodeTitle(node)}</p>
-                <p className="truncate text-sm text-text-muted">
+                <p className="truncate text-ui text-text-muted">
                   From {node.path.split(" / ").slice(0, -1).join(" / ") || "the top of the library"}
                   {node.trashedAt ? ` · ${formatAgo(node.trashedAt)}` : ""}
                 </p>
@@ -79,7 +81,7 @@ export function TrashPage() {
                   Delete forever
                 </Button>
               </div>
-            </li>
+            </Card>
           ))}
         </ul>
       )}
@@ -112,24 +114,26 @@ function TrashedFiles({ files: list }: { files: SourceFile[] }) {
   if (list.length === 0) return null;
   return (
     <section aria-labelledby="trashed-files-title" className="mb-8">
-      <h2 id="trashed-files-title" className="mb-3 text-base font-semibold">
+      <h2 id="trashed-files-title" className="mb-3 text-body font-semibold">
         Files
       </h2>
       <ul className="grid gap-2.5" aria-label="Trashed files">
         {list.map((file) => (
-          <li
+          <Card
+            as="li"
             key={file.id}
             data-testid="trash-file-row"
-            className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-card"
+            padding="sm"
+            className="flex flex-wrap items-center gap-3"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-text-muted">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
               <FileTypeIcon type={file.type} size={20} />
             </span>
             <div className="min-w-0 flex-1 basis-48">
               <p className="break-words font-medium [overflow-wrap:anywhere]">
                 {file.originalName}
               </p>
-              <p className="text-sm text-text-muted">
+              <p className="text-ui text-text-muted">
                 {file.trashedAt ? formatAgo(file.trashedAt) : ""}
               </p>
             </div>
@@ -149,7 +153,7 @@ function TrashedFiles({ files: list }: { files: SourceFile[] }) {
                 Delete forever
               </Button>
             </div>
-          </li>
+          </Card>
         ))}
       </ul>
       <ConfirmDialog

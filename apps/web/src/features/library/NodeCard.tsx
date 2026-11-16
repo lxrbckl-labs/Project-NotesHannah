@@ -1,44 +1,52 @@
 import type { NodeWithLinks } from "@notes/schema";
 import { MoreHorizontal, Star } from "lucide-react";
-import { useState } from "react";
+import { type CSSProperties, lazy, type ReactNode, Suspense, useState } from "react";
 import { Link } from "react-router";
 import { IconButton } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { ActionMenu, ContextActions } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
+import type { Hue } from "../../lib/hues";
 import { useNodeActions } from "./actions";
+import { courseHue } from "./courseHue";
 import { InlineName } from "./InlineName";
-import { NodeIcon } from "./NodeIcon";
+import { NodeTile } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
 import { isPending, nodeHref } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
 
-/** A rounded card for a term, course or section. Sections (fixed) have no menu. */
-export function NodeCard({ node, large }: { node: NodeWithLinks; large?: boolean }) {
+// The spotlight glow is an extra: it loads on its own and the plain card shows until then.
+const SpotlightCard = lazy(() => import("../../components/bits/SpotlightCard"));
+
+/**
+ * A rounded card for a term, course or section. Sections (fixed) have no menu. A course card and
+ * the section cards under a course carry the course colour (`hue`); a term stays neutral.
+ */
+export function NodeCard({
+  node,
+  large,
+  hue: inherited,
+}: {
+  node: NodeWithLinks;
+  large?: boolean;
+  hue?: Hue | null | undefined;
+}) {
+  const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
   const actions = useNodeActions();
   const [renaming, setRenaming] = useState(false);
   const fixed = node.kind === "section";
   const { entries } = useNodeMenu(node, { onRename: () => setRenaming(true) });
 
-  const body = (
-    <div
-      data-testid="node-card"
-      data-kind={node.kind}
-      className={cn(
-        "group relative flex gap-3 rounded-3xl border border-border bg-surface p-4 shadow-card transition-colors hover:border-border-strong",
-        large
-          ? "min-h-24 items-center md:min-h-36 md:flex-col md:items-start md:justify-between"
-          : "min-h-24 items-start",
-        isPending(node) && "opacity-60",
-      )}
-    >
-      <span
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent",
-          large ? "size-12" : "size-11",
-        )}
-      >
-        <NodeIcon kind={node.kind} section={node.section} size={large ? 24 : 22} />
-      </span>
+  const cardClass = cn(
+    "group relative flex gap-3",
+    large
+      ? "min-h-24 items-center md:min-h-36 md:flex-col md:items-start md:justify-between"
+      : "min-h-24 items-start",
+    isPending(node) && "opacity-60",
+  );
+  const inner: ReactNode = (
+    <>
+      <NodeTile kind={node.kind} section={node.section} hue={hue} size={large ? "lg" : "md"} />
       <div className="min-w-0 flex-1 md:w-full">
         {renaming ? (
           <InlineName
@@ -53,7 +61,7 @@ export function NodeCard({ node, large }: { node: NodeWithLinks; large?: boolean
         ) : (
           <Link
             to={nodeHref(node)}
-            className="block rounded-lg font-display text-base font-semibold after:absolute after:inset-0 after:rounded-3xl after:content-['']"
+            className="block rounded-inline font-display text-body font-semibold after:absolute after:inset-0 after:rounded-card after:content-['']"
           >
             <span className="flex items-center gap-1.5">
               <span className="truncate">{nodeTitle(node)}</span>
@@ -67,7 +75,7 @@ export function NodeCard({ node, large }: { node: NodeWithLinks; large?: boolean
             </span>
           </Link>
         )}
-        <p className="mt-0.5 truncate text-sm text-text-muted">{nodeMeta(node)}</p>
+        <p className="mt-0.5 truncate text-ui text-text-muted">{nodeMeta(node)}</p>
       </div>
       {!fixed ? (
         <div className="relative z-10 -mr-2 -mt-2 shrink-0 self-start md:absolute md:right-3 md:top-3 md:m-0">
@@ -81,7 +89,40 @@ export function NodeCard({ node, large }: { node: NodeWithLinks; large?: boolean
           />
         </div>
       ) : null}
-    </div>
+    </>
   );
+  const plain = (
+    <Card
+      data-testid="node-card"
+      data-kind={node.kind}
+      hue={hue ?? undefined}
+      interactive
+      className={cardClass}
+    >
+      {inner}
+    </Card>
+  );
+  const body =
+    node.kind === "section" && hue && typeof IntersectionObserver !== "undefined" ? (
+      <Suspense fallback={plain}>
+        <SpotlightCard
+          data-testid="node-card"
+          data-kind={node.kind}
+          data-hue={hue}
+          intensity={0.1}
+          style={
+            {
+              "--spotlight-card-surface": "var(--tone-soft)",
+              "--spotlight-card-border": "var(--tone-border)",
+            } as CSSProperties
+          }
+          className={cn(cardClass, "rounded-card! p-4! md:p-5!")}
+        >
+          {inner}
+        </SpotlightCard>
+      </Suspense>
+    ) : (
+      plain
+    );
   return fixed ? body : <ContextActions entries={entries}>{body}</ContextActions>;
 }
