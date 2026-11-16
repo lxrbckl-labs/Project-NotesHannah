@@ -129,7 +129,16 @@ pnpm e2e                # Playwright: the mock suite, then the same journeys aga
 
 ### The user guide
 
-The in-app guide (`/help`) is written in `apps/web/src/features/help/content.ts`. Its PDF, `apps/web/public/guide/notes-guide.pdf`, is committed. **Regenerate it with `pnpm guide:pdf` whenever the guide's words change** (needs Chromium: `pnpm exec playwright install chromium`). The script starts the web dev server on port 4391 (`GUIDE_PORT` to change it), prints `/help/print` (the guide alone, with no sign-in and no API) to Letter, and stops the server.
+The in-app guide (`/help`) is written in `apps/web/src/features/help/content.ts`: four parts, thirteen numbered sections, a "what makes this different" spread, nine figures and a one-page quick reference. Its PDF, `apps/web/public/guide/notes-guide.pdf`, is committed. **Regenerate it with `pnpm guide:pdf` whenever the guide changes** (needs Chromium: `pnpm exec playwright install chromium`). The script starts the web dev server on port 4391 (`GUIDE_PORT` to change it), prints `/help/print` (the guide as a booklet, with no sign-in and no API) to Letter twice, the second time with the contents page numbers it read from the first, and stops the server. Running heads and page numbers are CSS named pages; on a Mac the headings embed SF Rounded.
+
+The figures are screenshots of the app, committed under `apps/web/public/guide/figures/` (WebP, sizes in `apps/web/src/features/help/figures.json`). `pnpm guide:pdf` only reads them. To retake them, run a real instance on its own ports with the pharmacy set, then `pnpm guide:figures` with the same variables (`GUIDE_FIGURES=canvas,requests` retakes only those):
+
+```sh
+export NOTES_LOCAL_DIR=$(mktemp -d) NOTES_SERVER_PORT=3330 NOTES_WEB_PORT=5393
+pnpm local                 # leave running; Ctrl-C stops it afterwards
+pnpm local:seed:pharm      # in a second terminal, same variables
+pnpm guide:figures && pnpm guide:pdf
+```
 
 Layout: `apps/web` (React, Vite, Tailwind 4), `apps/server` (Hono: API, MCP endpoint, static
 files), `apps/converter` (file conversion worker), `packages/schema` (shared Zod schema),
