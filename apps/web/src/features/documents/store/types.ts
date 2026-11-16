@@ -2,8 +2,10 @@ import type {
   Actor,
   Citation,
   CitationStatus,
+  ColorToken,
   DocumentWithBlocks,
   ImageSource,
+  MarginNote,
   NormalizedBox,
   Reference,
   Revision,
@@ -61,6 +63,31 @@ export interface DocumentStore {
 
   /** Ask an agent about a block (L1, L5). */
   createRequest(input: BlockRequestInput): Promise<{ id: string }>;
+
+  /** Her side notes on the document (P1 to P8), oldest first. Stored apart from its blocks. */
+  listMarginNotes(documentId: string): Promise<MarginNote[]>;
+  createMarginNote(documentId: string, input: MarginNoteDraft): Promise<MarginNote>;
+  updateMarginNote(documentId: string, noteId: string, patch: MarginNotePatch): Promise<MarginNote>;
+  deleteMarginNote(documentId: string, noteId: string): Promise<void>;
+  /** Move a note (usually a detached one) onto another block. */
+  reattachMarginNote(
+    documentId: string,
+    noteId: string,
+    input: { blockId: string; quote?: string | null },
+  ): Promise<MarginNote>;
+}
+
+export interface MarginNoteDraft {
+  blockId: string;
+  text: string;
+  quote?: string | null;
+  colour?: ColorToken | null;
+}
+
+export interface MarginNotePatch {
+  text?: string;
+  colour?: ColorToken | null;
+  resolved?: boolean;
 }
 
 export interface ReferenceWithStatus extends Reference {

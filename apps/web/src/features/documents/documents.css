@@ -349,6 +349,12 @@ img.ProseMirror-separator {
 .doc-flash {
   animation: doc-flash 1.2s ease-out;
 }
+
+/* A block and its entry in the Resources panel light up together while either is pointed at. */
+.doc-block[data-linked="true"] > .doc-block-body {
+  border-radius: var(--radius-control);
+  box-shadow: 0 0 0 2px var(--color-accent-border);
+}
 @keyframes doc-flash {
   0% {
     box-shadow: 0 0 0 3px var(--hue-yellow-solid);

@@ -4,6 +4,7 @@ import {
   type DocumentWithBlocks,
   type ImageSource,
   listReferences,
+  type MarginNote,
   newId,
   type Revision,
   type RevisionSummary,
@@ -11,11 +12,14 @@ import {
 } from "@notes/schema";
 import { applyCalls, applyReview, type OperationCall, OperationError } from "../model/ops";
 import { guideDocument, guideRevisions, HER, largeDocument } from "./fixture";
+import { MockNotes } from "./mock-notes";
 import { findPage, MOCK_FILES, pageImage, regionForQuote } from "./mock-pages";
 import {
   type BlockRequestInput,
   type CitationSource,
   type DocumentStore,
+  type MarginNoteDraft,
+  type MarginNotePatch,
   type PageChoice,
   type PageImage,
   type ReferenceWithStatus,
@@ -31,6 +35,8 @@ export interface MockStoreOptions {
   failWrites?: boolean;
   /** Extra documents to hold (tests). */
   documents?: DocumentWithBlocks[];
+  /** Start the guide with a few of her side notes (default true). */
+  sideNotes?: boolean;
 }
 
 const clone = <T>(value: T): T => structuredClone(value);
@@ -50,6 +56,7 @@ export class MockDocumentStore implements DocumentStore {
   failNext = 0;
   private docs = new Map<string, DocumentWithBlocks>();
   private revisions = new Map<string, Revision[]>();
+  private notes = new MockNotes((id) => this.get(id));
 
   constructor(options: MockStoreOptions = {}) {
     this.latency = options.latency ?? 120;
@@ -57,6 +64,7 @@ export class MockDocumentStore implements DocumentStore {
     const guide = guideDocument();
     this.docs.set(guide.id, guide);
     this.revisions.set(guide.id, guideRevisions(guide));
+    if (options.sideNotes !== false) this.notes.seed(guide);
     for (const doc of options.documents ?? []) {
       this.docs.set(doc.id, doc);
       this.revisions.set(doc.id, []);
@@ -111,6 +119,7 @@ export class MockDocumentStore implements DocumentStore {
     const now = new Date().toISOString();
     const saved = { ...next, revision: next.revision + 1, updatedAt: now, lastEditedBy: HER };
     this.docs.set(saved.id, saved);
+    this.notes.follow(saved, now);
     const list = this.revisions.get(saved.id) ?? [];
     list.push({
       id: newId("revision"),
@@ -268,6 +277,52 @@ export class MockDocumentStore implements DocumentStore {
     const id = newId("request");
     this.requests.push({ ...input, id });
     return { id };
+  }
+
+  // ---- side notes (see mock-notes.ts) ----
+
+  private failIfOffline() {
+    if (this.failWrites || this.failNext > 0) {
+      if (this.failNext > 0) this.failNext -= 1;
+      throw new StoreError("The server could not be reached.", "storage_unavailable", 503);
+    }
+  }
+
+  async listMarginNotes(documentId: string): Promise<MarginNote[]> {
+    await this.wait();
+    return this.notes.list(documentId);
+  }
+
+  async createMarginNote(documentId: string, input: MarginNoteDraft): Promise<MarginNote> {
+    await this.wait();
+    this.failIfOffline();
+    return this.notes.create(documentId, input);
+  }
+
+  async updateMarginNote(
+    documentId: string,
+    noteId: string,
+    patch: MarginNotePatch,
+  ): Promise<MarginNote> {
+    await this.wait();
+    this.failIfOffline();
+    return this.notes.update(documentId, noteId, patch);
+  }
+
+  async deleteMarginNote(documentId: string, noteId: string): Promise<void> {
+    await this.wait();
+    this.failIfOffline();
+    this.notes.remove(documentId, noteId);
+  }
+
+  async reattachMarginNote(
+    documentId: string,
+    noteId: string,
+    input: { blockId: string; quote?: string | null },
+  ): Promise<MarginNote> {
+    await this.wait();
+    this.failIfOffline();
+    return this.notes.reattach(documentId, noteId, input.blockId, input.quote ?? null);
   }
 }
 

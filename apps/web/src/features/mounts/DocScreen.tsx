@@ -222,6 +222,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             store={stores.documents}
             documentId={documentId}
             focusBlockId={search.get("block") ?? undefined}
+            focusNoteId={search.get("note") ?? undefined}
             startWriting={blank}
             onAskAboutBlock={({ blockId, kind }) =>
               ask({
