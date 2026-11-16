@@ -30,6 +30,7 @@ import {
 } from "../../storage/storage.js";
 import { sha256 as digest, digestsEqual, randomToken, TOKEN_PATTERN } from "../accounts/secrets.js";
 import type { ActivityLink, ActivityPort } from "../activity/index.js";
+import { plural } from "../activity/trace.js";
 import {
   type ChangeRecorder,
   createLibraryService,
@@ -100,6 +101,14 @@ export interface FilesServiceOptions extends Partial<QueueOptions> {
   changes?: ChangeRecorder;
   /** What agents do is logged here in plain words (entries for the user are ignored by the log). */
   activity?: ActivityPort;
+}
+
+/** What an agent may add when it files a file whose pages are not all transcribed. */
+export interface FileUnderOptions {
+  /** File it anyway. Needs a `reason`. */
+  force?: boolean | undefined;
+  /** Why, in a few words; recorded in the activity log. */
+  reason?: string | undefined;
 }
 
 export interface ListFilesOptions {
@@ -614,10 +623,51 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
     return view(needFile(uid(who), id));
   }
 
-  function fileUnder(auth: AuthContext, id: string, nodeId: string | null): SourceFile {
+  /** 1-based numbers of the converted pages that still have no transcript. */
+  function untranscribedPages(fileId: string): number[] {
+    return (
+      db
+        .prepare("SELECT idx FROM pages WHERE file_id = ? AND transcript_id IS NULL ORDER BY idx")
+        .all(fileId) as Array<{ idx: number }>
+    ).map((r) => r.idx);
+  }
+
+  /**
+   * File (or move) a file. An AGENT may not put a file into a place while some of its pages have no
+   * transcript: it is refused with the page numbers, unless it passes `force` with a short reason
+   * (kept in the activity log). She (a browser session) can always file, and anyone may send a file
+   * back to the inbox.
+   */
+  function fileUnder(
+    auth: AuthContext,
+    id: string,
+    nodeId: string | null,
+    options: FileUnderOptions = {},
+  ): SourceFile {
     assertWrite(auth);
     const file = needLive(auth.userId, id, "filed");
     const place = nodeId === null ? null : checkPlace(auth.userId, nodeId);
+    let forced: string | null = null;
+    if (place !== null && auth.actor.type === "agent") {
+      const missing = untranscribedPages(file.id);
+      if (missing.length > 0) {
+        const reason = options.force ? options.reason?.trim() : undefined;
+        if (!reason) {
+          const shown = missing.slice(0, 20).join(", ");
+          throw new AppError(
+            "invalid_input",
+            options.force
+              ? `"force" needs a short "reason" (why this file is filed before page ${shown} is transcribed).`
+              : `${file.original_name} has ${plural(missing.length, "page")} without a transcript (page ${shown}${missing.length > 20 ? ", …" : ""}), so it cannot be filed yet.`,
+            {
+              hint: `Read each of those pages and save its transcript (save_transcript over MCP, PUT /api/pages/<pageId>/transcript over HTTP), then file again. Only if a page truly cannot be transcribed, file again with "force": true and a short "reason"; the reason is recorded in the activity log.`,
+              example: { nodeId: place, force: true, reason: "page 3 is a blank scan" },
+            },
+          );
+        }
+        forced = `${plural(missing.length, "page")} not transcribed: ${reason.slice(0, 200)}`;
+      }
+    }
     db.transaction(() => {
       db.prepare(
         "UPDATE source_files SET node_id = ?, parked_node_id = NULL, updated_at = ? WHERE id = ?",
@@ -627,7 +677,7 @@ export function createFilesService(deps: FilesDeps, options: FilesServiceOptions
       if (place !== null) {
         note(auth.actor, {
           action: "file.filed",
-          summary: `Filed ${file.original_name} under ${placeWords(library.get(auth.userId, place))}`,
+          summary: `Filed ${file.original_name} under ${placeWords(library.get(auth.userId, place))}${forced ? ` (forced; ${forced})` : ""}`,
           file: after,
         });
       } else if (file.node_id !== null) {

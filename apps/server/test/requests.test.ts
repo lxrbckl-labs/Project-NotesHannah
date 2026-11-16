@@ -144,10 +144,10 @@ describe("the full lifecycle over HTTP", () => {
       )
       .all(t.alice) as Array<{ action: string }>;
     expect(logged.map((r) => r.action)).toEqual([
-      "request.claim",
-      "request.complete",
-      "request.claim",
-      "request.decline",
+      "request.claimed",
+      "request.completed",
+      "request.claimed",
+      "request.declined",
     ]);
   });
 

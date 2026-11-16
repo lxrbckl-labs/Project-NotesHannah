@@ -1,5 +1,6 @@
 import {
   CreateNodeInput,
+  DocumentId,
   MoveNodeInput,
   NodeId,
   type NodeWithLinks,
@@ -13,6 +14,7 @@ import { exampleId, translateLibraryError } from "../errors.js";
 import { childKindsOf, json, type NodeItem, nodeItem, nodeLine, placementRule } from "../format.js";
 import { describe, flattenActions, jsonOf } from "../schema.js";
 import { defineTool, parseAction, parseWith, type ToolContext } from "../tool.js";
+import { holderName } from "../write-claims.js";
 
 const NODE = exampleId("node");
 const Cursor = PageRequest.shape.cursor;
@@ -123,6 +125,8 @@ export const browseLibrary = defineTool({
 // ---------------------------------------------------------------------------
 
 const IdOnly = z.strictObject({ id: NodeId });
+/** A writing claim can be taken on any library item (a section, folder, lecture, document) or on a document by its doc_ ID. */
+const ClaimTarget = z.union([NodeId, DocumentId]);
 
 const EDIT_BRANCHES = {
   create: z.strictObject(CreateNodeInput.shape),
@@ -131,10 +135,18 @@ const EDIT_BRANCHES = {
   duplicate: IdOnly,
   trash: IdOnly,
   restore: IdOnly,
-  claim: z.strictObject({ id: NodeId, note: z.string().trim().max(200).optional() }),
-  release: IdOnly,
+  claim: z.strictObject({ id: ClaimTarget, note: z.string().trim().max(200).optional() }),
+  release: z.strictObject({ id: ClaimTarget }),
 };
 type EditAction = keyof typeof EDIT_BRANCHES;
+
+/** The library node of a claim target: a node ID as is, a document ID by its node. */
+function claimNodeId(ctx: ToolContext, id: string): string {
+  if (!id.startsWith("doc_")) return id;
+  const documents = ctx.backend.documents;
+  if (!documents) throw new AppError("not_found", "Documents are not available on this server.");
+  return documents.getDocument(ctx.auth, id, { offset: 0, limit: 1 }).document.nodeId;
+}
 
 export const EDIT_EXAMPLES: Record<EditAction, Record<string, unknown>> = {
   create: {
@@ -157,7 +169,7 @@ const editSchema = describe(
   flattenActions(
     "action",
     Object.fromEntries(Object.entries(EDIT_BRANCHES).map(([k, v]) => [k, jsonOf(v)])),
-    'What to do: "create" a node; "update" its name or details (rename); "move" it to another parent or position; "duplicate" it with everything inside; "trash" it with everything inside (restorable); "restore" it from the trash; "claim" a lecture, folder or document you are about to write material for (writes there by other agents are refused for 30 minutes, renewed by your writes); "release" it when done.',
+    'What to do: "create" a node; "update" its name or details (rename); "move" it to another parent or position; "duplicate" it with everything inside; "trash" it with everything inside (restorable); "restore" it from the trash; "claim" any library item you are about to write material for: a lecture, folder, document (its nod_ or doc_ ID) or a section such as the course\'s Study guides (writes there by other agents are refused for 30 minutes, renewed by your writes); "release" it when done.',
   ),
   {
     id: `The node to change, e.g. "${NODE}".`,
@@ -225,7 +237,7 @@ export const editLibrary = defineTool({
     };
     const id = typeof value.id === "string" ? value.id : undefined;
     if (action === "claim" || action === "release") {
-      const target = ctx.library.get(ctx.userId, id as string);
+      const target = ctx.library.get(ctx.userId, claimNodeId(ctx, id as string));
       if (action === "release") {
         const released = ctx.claims.release(ctx.userId, target.id, ctx.keyId);
         return {
@@ -242,8 +254,12 @@ export const editLibrary = defineTool({
         { keyId: ctx.keyId, label },
         (value.note as string | undefined) ?? null,
       );
+      const others = ctx.claims
+        .under(ctx.userId, target.id)
+        .filter((c) => c.keyId !== ctx.keyId)
+        .map((c) => `${c.nodeId} by ${holderName(c)} until ${c.expiresAt}`);
       return {
-        text: `You hold the writing claim on ${target.kind} "${target.path}" (${target.id}) until ${claim.expiresAt}; your writes under it renew it. Other agents' writes there are refused meanwhile. Release it when done: edit_library {"action":"release","id":"${target.id}"}.`,
+        text: `You hold the writing claim on ${target.kind} "${target.path}" (${target.id}) until ${claim.expiresAt}; your writes under it renew it. Other agents' writes there are refused meanwhile. Release it when done: edit_library {"action":"release","id":"${target.id}"}.${others.length ? ` Note: others are already writing below it: ${others.join("; ")}.` : ""}${target.kind === "lecture" ? " A study guide for this lecture lives in the course's Study guides section, outside this claim: claim that section or the guide itself too." : ""}`,
         structured: { action, claim },
       };
     }

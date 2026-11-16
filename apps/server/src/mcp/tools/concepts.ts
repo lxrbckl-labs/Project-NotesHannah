@@ -1,5 +1,4 @@
 import {
-  Citation,
   CONCEPT_EXAMPLES,
   ComparisonInput,
   ConceptId,

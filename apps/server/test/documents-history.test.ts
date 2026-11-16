@@ -338,11 +338,7 @@ describe("library node hooks", () => {
     expect(t.service.getFull(t.she, made.documentId).blocks).toHaveLength(1);
     expect(t.service.getDocument(t.she, made.documentId).document.trashedAt).toBeNull();
     const actions = t.feed.changesSince(t.alice, "0", 50).items.map((c) => c.action);
-    expect(actions).toEqual([
-      "document.created",
-      "document.trashed",
-      "document.restored_from_trash",
-    ]);
+    expect(actions).toEqual(["document.created", "document.trashed", "document.untrashed"]);
   });
 
   it("delete removes the document, blocks, revisions, citations and search entries", () => {

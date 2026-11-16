@@ -11,6 +11,7 @@ import {
   UPLOAD_LIMITS,
 } from "@notes/schema";
 import { z } from "zod";
+import { MUST_FLAG } from "../../domains/files/figures.js";
 import { AppError } from "../../http/errors.js";
 import { exampleId } from "../errors.js";
 import { clip, json } from "../format.js";
@@ -57,6 +58,33 @@ const UploadInput = z.strictObject({
     .min(1)
     .max(UPLOAD_LIMITS.maxBatch),
 });
+/** File or move, turning the domain's refusal for untranscribed pages into a tool example. */
+function fileUnder(
+  port: FilesPort,
+  ctx: ToolContext,
+  v: { fileId: string; nodeId?: string | null; force?: boolean; reason?: string },
+) {
+  try {
+    return port.fileUnder(ctx.auth, v.fileId, v.nodeId ?? null, {
+      force: v.force,
+      reason: v.reason,
+    });
+  } catch (error) {
+    const example = error instanceof AppError ? (error.example as { force?: boolean }) : null;
+    if (!(error instanceof AppError) || !example || example.force !== true) throw error;
+    throw new AppError(error.code, error.message, {
+      hint: 'Read each of those pages (get_page) and save_transcript it, then file again. Only if a page truly cannot be transcribed, file again with "force": true and a short "reason" (recorded in the activity log).',
+      example: {
+        action: "file",
+        fileId: v.fileId,
+        nodeId: v.nodeId,
+        force: true,
+        reason: "page 3 is a blank scan",
+      },
+    });
+  }
+}
+
 /** Upload links for local files (source_files "upload_links"). */
 function uploadLinks(ctx: ToolContext, input: z.output<typeof UploadInput>) {
   const tickets = files(ctx).requestUploads(ctx.auth, {
@@ -74,6 +102,12 @@ function uploadLinks(ctx: ToolContext, input: z.output<typeof UploadInput>) {
   return { text: lines.join("\n"), structured: { tickets } };
 }
 
+/** Filing a file whose pages are not all transcribed is refused unless forced with a reason. */
+const FORCE = {
+  force: z.boolean().optional(),
+  reason: z.string().trim().min(3).max(200).optional(),
+};
+
 const FILE_BRANCHES = {
   upload_links: UploadInput,
   list: z.strictObject({
@@ -88,8 +122,8 @@ const FILE_BRANCHES = {
   }),
   claim: z.strictObject({ fileId: FileId }),
   release: z.strictObject({ fileId: FileId }),
-  file: z.strictObject({ fileId: FileId, nodeId: NodeId }),
-  move: z.strictObject({ fileId: FileId, nodeId: NodeId.nullable() }),
+  file: z.strictObject({ fileId: FileId, nodeId: NodeId, ...FORCE }),
+  move: z.strictObject({ fileId: FileId, nodeId: NodeId.nullable(), ...FORCE }),
   retry: z.strictObject({ fileId: FileId }),
 };
 type FileAction = keyof typeof FILE_BRANCHES;
@@ -111,7 +145,7 @@ const pending = (f: SourceFile) => f.status === "converting" || f.status === "up
 export const sourceFiles = defineTool({
   name: "source_files",
   title: "Uploaded files: inbox, conversion, filing and moving",
-  description: `Her uploaded source files (slides, PDFs, photos of handwritten notes). To upload files from your machine: "upload_links" (one per file; size optional), then one bare curl per file with its absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture.pdf" "<url>" (links are single use, last ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key; PDF, PPTX, JPEG, PNG, HEIC up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB). Each upload is converted to page images (status converting, then converted; or failed), then transcribed (transcribed), then filed under a lecture, folder or Sources section (filed). Actions: "list" the inbox with each file's status and how many pages are transcribed (with nodeId: the files filed there); "wait" until files finish converting (waits up to ${MAX_WAIT_SECONDS} s per call, call again if still converting); "claim" a file before transcribing it so no other agent works on it (claims expire after a while; claim again to renew); "release" it when done or if you stop; "file" it under the right lecture (allowed before every page is transcribed, with a warning); "move" a filed file to another place, or back to the inbox with nodeId null; "retry" a failed conversion. Library items (folders, lectures, documents) move with edit_library instead.`,
+  description: `Her uploaded source files (slides, PDFs, photos of handwritten notes). To upload files from your machine: "upload_links" (one per file; size optional), then one bare curl per file with its absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture.pdf" "<url>" (links are single use, last ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key; PDF, PPTX, JPEG, PNG, HEIC up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB). Each upload is converted to page images (status converting, then converted; or failed), then transcribed (transcribed), then filed under a lecture, folder or Sources section (filed). Actions: "list" the inbox with each file's status and how many pages are transcribed (with nodeId: the files filed there); "wait" until files finish converting (waits up to ${MAX_WAIT_SECONDS} s per call, call again if still converting); "claim" a file before transcribing it so no other agent works on it (claims expire after a while; claim again to renew); "release" it when done or if you stop; "file" it under the right lecture (refused while any page has no transcript, naming the pages; only if a page truly cannot be transcribed, pass "force": true with a short "reason", which is logged); "move" a filed file to another place, or back to the inbox with nodeId null; "retry" a failed conversion. Library items (folders, lectures, documents) move with edit_library instead.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -135,6 +169,9 @@ export const sourceFiles = defineTool({
       "files[].name": 'upload_links: the file name, e.g. "lecture-07.pdf".',
       "files[].bytes":
         "upload_links, optional: the size in bytes or an upper bound (the link accepts up to this many); leave it out if you cannot measure the file.",
+      force:
+        'file, move: file anyway although some pages have no transcript (only if they truly cannot be transcribed); needs "reason".',
+      reason: 'file, move: with "force", why, in a few words; it is recorded in the activity log.',
       nodeId: `upload_links: optionally file the uploads here once converted. file and move: the lecture, folder or Sources section to put it under, e.g. "${NODE}"; for move, null returns it to the inbox. list: show the files filed under this node instead of the inbox.`,
     },
   ),
@@ -208,7 +245,12 @@ export const sourceFiles = defineTool({
         },
       };
     }
-    const v = value as unknown as { fileId: string; nodeId?: string | null };
+    const v = value as unknown as {
+      fileId: string;
+      nodeId?: string | null;
+      force?: boolean;
+      reason?: string;
+    };
     const before = action === "move" ? port.getFile(ctx.auth, v.fileId) : null;
     const file =
       action === "claim"
@@ -217,14 +259,14 @@ export const sourceFiles = defineTool({
           ? port.release(ctx.auth, v.fileId)
           : action === "retry"
             ? port.retry(ctx.auth, v.fileId)
-            : port.fileUnder(ctx.auth, v.fileId, v.nodeId ?? null);
+            : fileUnder(port, ctx, v);
     const progress = progressOf(pagesIfAny(port, ctx.auth, file));
     const warning = untranscribedWarning(progress);
     const said: Record<Exclude<FileAction, "list" | "wait" | "upload_links">, string> = {
       claim: `Claimed (a claim expires after a while; claim again to renew it on long work):\n${fileLine(file, progress)}\nNext: get_item {"id":"${file.id}"} lists its pages; get_page shows each one.`,
       release: `Released:\n${fileLine(file, progress)}`,
       retry: `Queued for conversion again:\n${fileLine(file, progress)}\nWait with source_files {"action":"wait","fileIds":["${file.id}"]}.`,
-      file: `Filed:\n${fileLine(file, progress)}${warning ? `\n${warning}` : ""}\nRelease the claim when you are done with it.`,
+      file: `Filed${v.force ? " (forced, reason recorded)" : ""}:\n${fileLine(file, progress)}${warning ? `\n${warning}` : ""}\nRelease the claim when you are done with it.`,
       move:
         v.nodeId === null
           ? `Returned to the inbox (was under ${before?.nodeId ?? "nothing"}):\n${fileLine(file, progress)}`
@@ -358,9 +400,6 @@ export const getPage = defineTool({
 
 const SaveInput = z.strictObject(SaveTranscriptInput.shape);
 
-/** Numbers that must be flagged: decimals, and numbers with a dose or lab unit. */
-const MUST_FLAG =
-  /\b\d+(?:[.,]\d+)?\s?(?:mg\/kg|mcg|µg|mg|g|kg|mL|ml|L|units?|IU|mEq|mmol|mL\/min|%)(?![A-Za-z])|\b\d+\.\d+\b/g;
 const FLAGGING_KINDS = new Set(["dose", "unit", "decimal", "uncertain", "illegible"]);
 
 /**

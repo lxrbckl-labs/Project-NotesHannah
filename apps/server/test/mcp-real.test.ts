@@ -136,12 +136,31 @@ describe("MCP over the real services", () => {
       nodeId: lecture.id,
     });
     expect(filedDeck.text).not.toContain("Warning");
-    const filedNotes = await a.ok("source_files", {
+    // An agent cannot file a file with untranscribed pages: refused with the page numbers.
+    const refusedNotes = await a.fail("source_files", {
       action: "file",
       fileId: notesId,
       nodeId: lecture.id,
     });
+    expect(refusedNotes.error.message).toContain("1 page without a transcript (page 2)");
+    expect(refusedNotes.error.hint).toContain('"force": true');
+    expect((refusedNotes.error.example as { action: string }).action).toBe("file");
+    const noReason = await a.fail("source_files", {
+      action: "file",
+      fileId: notesId,
+      nodeId: lecture.id,
+      force: true,
+    });
+    expect(noReason.error.message).toContain('"force" needs a short "reason"');
+    const filedNotes = await a.ok("source_files", {
+      action: "file",
+      fileId: notesId,
+      nodeId: lecture.id,
+      force: true,
+      reason: "page 2 is a blank scan",
+    });
     expect(filedNotes.text).toContain("Warning: 1 of 2 page(s) have no transcript yet");
+    expect(filedNotes.text).toContain("forced");
     const badPlace = await a.fail("source_files", {
       action: "move",
       fileId: notesId,
@@ -149,7 +168,13 @@ describe("MCP over the real services", () => {
     });
     expect(badPlace.error.message).toBe("A source file cannot be filed under a term.");
     expect(badPlace.error.hint).toContain("lecture, a folder, or the Sources section");
-    await a.ok("source_files", { action: "move", fileId: notesId, nodeId: sourcesId });
+    await a.ok("source_files", {
+      action: "move",
+      fileId: notesId,
+      nodeId: sourcesId,
+      force: true,
+      reason: "page 2 is a blank scan",
+    });
     const lectureView = await a.ok("get_item", { id: lecture.id });
     expect(lectureView.text).toContain("Source files filed here:");
     expect(lectureView.text).toContain("No document yet.");
@@ -236,7 +261,7 @@ describe("MCP over the real services", () => {
       "transcript.saved",
       "library.created",
       "file.filed",
-      "create_document",
+      "document.created",
       "file.released",
     ]) {
       expect(actions, action).toContain(action);

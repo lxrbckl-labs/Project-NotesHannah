@@ -813,7 +813,7 @@ export function createPracticeService(
         for (const r of out) byType.set(r.type, (byType.get(r.type) ?? 0) + 1);
         const mix = [...byType].map(([t, n]) => `${n} ${typeWords(t)}`).join(", ");
         leaveTrace(ports, auth.userId, auth.actor, {
-          action: "question.created",
+          action: "question.authored",
           objectType: "question",
           objectIds: out.map((r) => r.id),
           nodeId: nodeIds[0] ?? null,
