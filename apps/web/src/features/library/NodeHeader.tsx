@@ -1,12 +1,25 @@
 import type { NodeWithLinks } from "@notes/schema";
-import { ArrowLeft, BookOpen, GraduationCap, MoreHorizontal, Plus, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  BookPlus,
+  CalendarPlus,
+  FilePlus,
+  FolderPlus,
+  GraduationCap,
+  MoreHorizontal,
+  Presentation,
+  Star,
+  Upload,
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Button, IconButton } from "../../components/ui/button";
+import { ActionBar, ActionButton, ActionDivider } from "../../components/ui/action-bar";
+import { IconButton } from "../../components/ui/button";
 import { ActionMenu } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
 import { useBack } from "../../lib/useBack";
-import { UploadButton } from "../uploads/UploadButton";
+import { useUploadPicker } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { useCourseHue } from "./courseHue";
@@ -15,10 +28,22 @@ import { InlineName } from "./InlineName";
 import { NodeTile } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
-import { creatableIn, KIND_NAME } from "./rules";
+import { type CreatableKind, creatableIn, KIND_NAME } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
 
 const MOCK = import.meta.env.VITE_MOCK_API === "1";
+
+/** What each "New ..." action looks like in the bar. */
+function KindIcon({ kind }: { kind: CreatableKind }) {
+  const Icon = {
+    term: CalendarPlus,
+    course: BookPlus,
+    folder: FolderPlus,
+    lecture: Presentation,
+    document: FilePlus,
+  }[kind];
+  return <Icon aria-hidden />;
+}
 
 /** Back link, breadcrumbs, title (renamable in place), favourite, New and the "..." menu. */
 export function NodeHeader({ node }: { node: NodeWithLinks }) {
@@ -34,6 +59,9 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
   });
   const creatable = creatableIn(node.kind);
   const fixed = node.kind === "section";
+  const pick = useUploadPicker();
+  const opensAsPage = !MOCK && (node.kind === "lecture" || node.kind === "document");
+  const canPractise = !MOCK && ["lecture", "folder", "course", "term"].includes(node.kind);
 
   return (
     <header data-hue={hue ?? undefined} className="mb-6">
@@ -87,35 +115,44 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
       </div>
 
       {creatable.length > 0 || canHoldFiles(node) || node.kind === "document" ? (
-        <div className="mt-5 flex flex-wrap gap-2">
+        // One bar, one line, an icon for every action (components/ui/action-bar).
+        <ActionBar label={`Actions for ${node.name}`} className="mt-5">
           {creatable.map((kind, i) => (
-            <Button
+            <ActionButton
               key={kind}
-              variant={i === 0 && !fixed ? "primary" : "secondary"}
+              icon={<KindIcon kind={kind} />}
+              label={`New ${KIND_NAME[kind].toLowerCase()}`}
+              primary={i === 0 && !fixed && !opensAsPage}
               onClick={() => dialogs.openCreate(node, kind)}
-            >
-              <Plus size={16} aria-hidden />
-              New {KIND_NAME[kind].toLowerCase()}
-            </Button>
+            />
           ))}
-          {!MOCK && (node.kind === "lecture" || node.kind === "document") ? (
-            <Button variant="primary" onClick={() => navigate(`/doc/${node.id}`)}>
-              <BookOpen size={16} aria-hidden />
-              Open the page
-            </Button>
+          {opensAsPage ? (
+            <>
+              {creatable.length > 0 ? <ActionDivider /> : null}
+              <ActionButton
+                icon={<BookOpen aria-hidden />}
+                label="Open the page"
+                primary
+                onClick={() => navigate(`/doc/${node.id}`)}
+              />
+            </>
           ) : null}
-          {!MOCK && ["lecture", "folder", "course", "term"].includes(node.kind) ? (
-            <Button onClick={() => navigate(`/practice?node=${node.id}`)}>
-              <GraduationCap size={16} aria-hidden />
-              Practise this
-            </Button>
+          {canPractise || canHoldFiles(node) ? <ActionDivider /> : null}
+          {canPractise ? (
+            <ActionButton
+              icon={<GraduationCap aria-hidden />}
+              label="Practise this"
+              onClick={() => navigate(`/practice?node=${node.id}`)}
+            />
           ) : null}
           {canHoldFiles(node) ? (
-            <UploadButton nodeId={node.id} target={node.name}>
-              Upload files
-            </UploadButton>
+            <ActionButton
+              icon={<Upload aria-hidden />}
+              label="Upload files"
+              onClick={() => pick({ nodeId: node.id, label: node.name })}
+            />
           ) : null}
-        </div>
+        </ActionBar>
       ) : null}
     </header>
   );

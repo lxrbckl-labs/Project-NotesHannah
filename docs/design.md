@@ -297,6 +297,16 @@ with the accent fill. Wrap it in a `Tooltip` on the computer if the icon is not 
 <IconButton label="Bold" pressed={isBold} onClick={toggleBold}><Bold size={18} /></IconButton>
 ```
 
+### Action bar (`action-bar.tsx`)
+
+`ActionBar`, `ActionButton`, `ActionLink`, `ActionDivider`. A page's row of actions is one bar: one line at every
+width, an icon for every action, thin dividers between groups, the main action filled. With room the actions carry
+their words; with less only the main one does; on a phone they are icons (each named for a screen reader and on
+hover). It scrolls sideways inside itself before it would ever wrap. Use it wherever a page offers several actions
+together (every library page's header, the library home's All files bar): do not lay loose buttons out in a wrapping
+row (Alex, 2026-11-16). The bar is the edge, so its items need no border of their own. `labels="never"` is for a bar
+tucked beside a title, where it is always icons.
+
 ### Card (`card.tsx`)
 
 The rounded paper card. `as` picks the element, `padding` is `none`, `sm`, `md` (default) or `lg`,

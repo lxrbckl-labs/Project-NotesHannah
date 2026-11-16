@@ -2,25 +2,27 @@ import type { NodeWithLinks } from "@notes/schema";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BookMarked,
+  CalendarPlus,
   CalendarRange,
   ChevronsDownUp,
   ChevronsUpDown,
   Lightbulb,
-  Plus,
   Star,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useBadges } from "../../app/badges";
 import { Page, SectionTitle } from "../../components/Page";
+import { ActionBar, ActionButton, ActionDivider, ActionLink } from "../../components/ui/action-bar";
 import { Badge } from "../../components/ui/badge";
 import { Button, buttonClass } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { UpcomingExamsCard } from "../exams";
 import { useStores } from "../mounts/services";
-import { UploadButton } from "../uploads/UploadButton";
+import { useUploadPicker } from "../uploads/UploadProvider";
 import { useCourseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
 import { LibraryTree } from "./LibraryTree";
@@ -107,6 +109,7 @@ export function LibraryHome() {
   const favourites = useFavourites();
   const recents = useRecents();
   const dialogs = useLibraryDialogs();
+  const pick = useUploadPicker();
   const tree = useTreeState();
   const [busy, setBusy] = useState(false);
   const badges = useBadges();
@@ -148,27 +151,32 @@ export function LibraryHome() {
       <section aria-labelledby="tree-title" className="mb-10">
         <SectionTitle
           action={
-            <div className="flex flex-wrap items-center justify-end gap-1.5">
-              <Button onClick={expandAll} disabled={busy} aria-label="Expand all">
-                <ChevronsUpDown size={16} aria-hidden />
-                <span className="hidden lg:inline">Expand all</span>
-              </Button>
-              <Button onClick={() => tree.collapseAll()} aria-label="Collapse all">
-                <ChevronsDownUp size={16} aria-hidden />
-                <span className="hidden lg:inline">Collapse all</span>
-              </Button>
-              <UploadButton nodeId={null} target="the inbox" variant="secondary">
-                <span className="hidden lg:inline">Upload</span>
-              </UploadButton>
-              <Button onClick={() => dialogs.openCreate(null, "term")} aria-label="New term">
-                <Plus size={16} aria-hidden />
-                <span className="hidden lg:inline">New term</span>
-              </Button>
-              {/* Icon only at every size (Alex, 2026-11-16): the trash is a place she visits, not an action on the tree. */}
-              <Link to="/trash" aria-label="Trash" className={buttonClass()}>
-                <Trash2 size={16} aria-hidden />
-              </Link>
-            </div>
+            <ActionBar label="Library actions" labels="never">
+              <ActionButton
+                icon={<ChevronsUpDown aria-hidden />}
+                label="Expand all"
+                onClick={expandAll}
+                disabled={busy}
+              />
+              <ActionButton
+                icon={<ChevronsDownUp aria-hidden />}
+                label="Collapse all"
+                onClick={() => tree.collapseAll()}
+              />
+              <ActionDivider />
+              <ActionButton
+                icon={<Upload aria-hidden />}
+                label="Upload files"
+                onClick={() => pick({ nodeId: null, label: "the inbox" })}
+              />
+              <ActionButton
+                icon={<CalendarPlus aria-hidden />}
+                label="New term"
+                onClick={() => dialogs.openCreate(null, "term")}
+              />
+              <ActionDivider />
+              <ActionLink to="/trash" icon={<Trash2 aria-hidden />} label="Trash" />
+            </ActionBar>
           }
         >
           <span id="tree-title" className="whitespace-nowrap">
