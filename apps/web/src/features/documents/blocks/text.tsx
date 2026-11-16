@@ -104,19 +104,23 @@ export function ParagraphBlock({ block }: { block: BlockOf<"paragraph"> }) {
   const keys = useTextKeys(block);
   const commit = useTextCommit(block);
   const color = block.style?.color;
+  // The shared reading style (measure, hyphenation) sits on a wrapper: its spacing between
+  // siblings must not reach the chips inside the text.
   return (
-    <RichField
-      blockId={block.id}
-      value={block.content.text}
-      onCommit={commit}
-      block={block}
-      flags={block.flags}
-      keys={keys}
-      label="Paragraph"
-      placeholder="Type, or press / for blocks"
-      className={cn("prose-reading min-h-[1.7em]", color && "text-tone-text")}
-      as="p"
-    />
+    <div className="prose-reading">
+      <RichField
+        blockId={block.id}
+        value={block.content.text}
+        onCommit={commit}
+        block={block}
+        flags={block.flags}
+        keys={keys}
+        label="Paragraph"
+        placeholder="Type, or press / for blocks"
+        className={cn("min-h-[1.7em]", color && "text-tone-text")}
+        as="p"
+      />
+    </div>
   );
 }
 
@@ -240,17 +244,18 @@ export function CalloutBlock({ block }: { block: BlockOf<"callout"> }) {
             )}
           </div>
         )}
-        <RichField
-          blockId={block.id}
-          value={block.content.text}
-          onCommit={commit}
-          block={block}
-          flags={block.flags}
-          keys={keys}
-          label={`${meta.label} text`}
-          className="prose-reading"
-          placeholder="Write the note…"
-        />
+        <div className="prose-reading">
+          <RichField
+            blockId={block.id}
+            value={block.content.text}
+            onCommit={commit}
+            block={block}
+            flags={block.flags}
+            keys={keys}
+            label={`${meta.label} text`}
+            placeholder="Write the note…"
+          />
+        </div>
       </div>
     </aside>
   );
