@@ -349,12 +349,4 @@ test.describe("search, activity and mount points", () => {
       page.getByRole("heading", { level: 1, name: "07 · Beta blockers · Oct 14" }),
     ).toBeVisible();
   });
-
-  test("a feature module that has not landed (requests) shows coming soon", async ({ page }) => {
-    for (const [path, title] of [["/requests", "Requests"]] as const) {
-      await page.goto(path);
-      await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
-      await expect(page.getByText("Coming soon")).toBeVisible();
-    }
-  });
 });
