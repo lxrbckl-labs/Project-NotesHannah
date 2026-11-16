@@ -33,15 +33,47 @@ export interface ElkLike {
 
 const ROOT = "__root";
 
-function options(kind: "root" | "frame"): LayoutOptions {
+/** How the map is shaped: wide screens read left to right, a phone top to bottom. */
+export interface LayoutShape {
+  /** Flow between frames and top-level cards. */
+  direction: "RIGHT" | "DOWN";
+  /** Flow of connected cards inside a frame. */
+  frameDirection: "RIGHT" | "DOWN";
+  /** Target width/height of the whole map. */
+  aspectRatio: number;
+  /** Target width/height inside a frame. */
+  frameAspectRatio: number;
+}
+
+export const DEFAULT_SHAPE: LayoutShape = {
+  direction: "RIGHT",
+  frameDirection: "RIGHT",
+  aspectRatio: 1.5,
+  frameAspectRatio: 1.25,
+};
+
+/** The shape that suits a viewport: phones get a tall, top-to-bottom map. */
+export function shapeFor(width: number, height: number): LayoutShape {
+  if (width < 768)
+    return { direction: "DOWN", frameDirection: "DOWN", aspectRatio: 0.5, frameAspectRatio: 0.45 };
+  const ratio = Math.min(2, Math.max(0.7, width / Math.max(1, height)));
+  return {
+    direction: "RIGHT",
+    frameDirection: "RIGHT",
+    aspectRatio: ratio,
+    frameAspectRatio: Math.min(1.4, Math.max(0.9, ratio * 0.9)),
+  };
+}
+
+function options(kind: "root" | "frame", shape: LayoutShape): LayoutOptions {
   return {
     "elk.algorithm": "layered",
-    "elk.direction": "RIGHT",
+    "elk.direction": kind === "root" ? shape.direction : shape.frameDirection,
     "elk.hierarchyHandling": "SEPARATE_CHILDREN",
     "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
     "elk.layered.considerModelOrder.components": "MODEL_ORDER",
     "elk.separateConnectedComponents": "true",
-    "elk.aspectRatio": kind === "root" ? "1.5" : "1.25",
+    "elk.aspectRatio": String(kind === "root" ? shape.aspectRatio : shape.frameAspectRatio),
     "elk.spacing.nodeNode": String(LAYOUT_SPACING.card),
     "elk.spacing.componentComponent": String(
       kind === "root" ? LAYOUT_SPACING.group : LAYOUT_SPACING.card,
@@ -58,7 +90,7 @@ function options(kind: "root" | "frame"): LayoutOptions {
 }
 
 /** Build the ELK graph for the free part of a layout input. Exported for tests. */
-export function buildElkGraph(input: LayoutInput): ElkNode {
+export function buildElkGraph(input: LayoutInput, shape: LayoutShape = DEFAULT_SHAPE): ElkNode {
   const frameParent = new Map<string, string | null>();
   const known = new Set(input.frames.map((f) => f.id));
   for (const f of input.frames)
@@ -88,7 +120,12 @@ export function buildElkGraph(input: LayoutInput): ElkNode {
   const included = (frame: string) => hasFree.has(frame) || !occupied.has(frame);
 
   const nodes = new Map<string, ElkNode>();
-  const root: ElkNode = { id: ROOT, layoutOptions: options("root"), children: [], edges: [] };
+  const root: ElkNode = {
+    id: ROOT,
+    layoutOptions: options("root", shape),
+    children: [],
+    edges: [],
+  };
   nodes.set(ROOT, root);
   for (const f of input.frames) {
     if (!included(f.id)) continue;
@@ -97,7 +134,7 @@ export function buildElkGraph(input: LayoutInput): ElkNode {
       f.id,
       empty
         ? { id: f.id, width: EMPTY_FRAME_SIZE.width, height: EMPTY_FRAME_SIZE.height }
-        : { id: f.id, layoutOptions: options("frame"), children: [], edges: [] },
+        : { id: f.id, layoutOptions: options("frame", shape), children: [], edges: [] },
     );
   }
   // Frames are listed parents first, so a parent node exists before its children attach.
@@ -171,9 +208,13 @@ export interface TimedLayout extends LayoutResult {
 }
 
 /** Run the full layout: ELK over free cards, then the constraint pass. */
-export async function computeLayout(input: LayoutInput, elk: ElkLike): Promise<TimedLayout> {
+export async function computeLayout(
+  input: LayoutInput,
+  elk: ElkLike,
+  shape: LayoutShape = DEFAULT_SHAPE,
+): Promise<TimedLayout> {
   const t0 = performance.now();
-  const graph = buildElkGraph(input);
+  const graph = buildElkGraph(input, shape);
   let rects: Record<string, Rect> = {};
   if ((graph.children?.length ?? 0) > 0) {
     try {

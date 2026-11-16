@@ -692,3 +692,45 @@ describe("applyCanvasChange", () => {
     expect(canvasIntegrityProblems(result)).toEqual([]);
   });
 });
+
+describe("insert_items", () => {
+  it("puts deleted items back with their IDs, for undo", () => {
+    const { canvas } = baseCanvas();
+    const frame = framesInOrder(canvas)[1];
+    const [m1, m2] = frame?.members ?? [];
+    const linked = applyCanvasChange(
+      canvas,
+      {
+        documentId: docId,
+        ops: [{ op: "add_connector", connector: { from: m1, to: m2, label: "then" } }],
+      },
+      { actor: hannah, now },
+    );
+    if (!linked.ok) throw new Error("link failed");
+    const before = linked.canvas;
+    const removed = applyCanvasChange(
+      before,
+      { documentId: docId, ops: [{ op: "remove_card", id: m1 }] },
+      { actor: hannah, now },
+    );
+    if (!removed.ok) throw new Error("remove failed");
+    const card = before.cards.find((c) => c.id === m1);
+    const restored = applyCanvasChange(
+      removed.canvas,
+      {
+        documentId: docId,
+        ops: [{ op: "insert_items", cards: [card], connectors: before.connectors }],
+      },
+      { actor: hannah, now },
+    );
+    if (!restored.ok) throw new Error(JSON.stringify(restored.problems));
+    expect(restored.canvas.cards.map((c) => c.id)).toContain(m1);
+    expect(restored.canvas.connectors).toHaveLength(1);
+    const agentTry = applyCanvasChange(
+      removed.canvas,
+      { documentId: docId, ops: [{ op: "insert_items", cards: [card] }] },
+      { actor: agent, now },
+    );
+    expect(agentTry.ok).toBe(false);
+  });
+});

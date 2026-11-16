@@ -440,6 +440,18 @@ export const CanvasOp = z.discriminatedUnion(
       /** Also forget sizes she gave cards. Default true. */
       sizes: z.boolean().optional(),
     }),
+    /**
+     * Insert fully formed items with their IDs: how the app adds what she
+     * creates (IDs made on her device, so an optimistic update matches the
+     * server) and how it undoes a delete. Frames keep only members that
+     * exist; a member leaves any other frame. Not for agents.
+     */
+    z.strictObject({
+      op: z.literal("insert_items"),
+      cards: z.array(Card).max(CANVAS_LIMITS.cards).default([]),
+      connectors: z.array(Connector).max(CANVAS_LIMITS.connectors).default([]),
+      frames: z.array(Frame).max(CANVAS_LIMITS.frames).default([]),
+    }),
   ],
   { error: 'Each op needs a valid "op"; see the examples.' },
 );
@@ -460,10 +472,15 @@ export const CANVAS_OP_NAMES = [
   "remove_from_frame",
   "place_cards",
   "release_pins",
+  "insert_items",
 ] as const satisfies readonly CanvasOpName[];
 
 /** Ops only she can make: agents describe structure, never placement. */
-export const USER_ONLY_OPS: readonly CanvasOpName[] = ["place_cards", "release_pins"];
+export const USER_ONLY_OPS: readonly CanvasOpName[] = [
+  "place_cards",
+  "release_pins",
+  "insert_items",
+];
 
 export const CanvasChangeInput = z.strictObject({
   documentId: DocumentId,
@@ -565,6 +582,19 @@ const OP_EXAMPLES: Record<CanvasOpName, unknown> = {
     placements: [{ id: CANVAS_EXAMPLE_IDS.card, x: 120, y: 80 }],
   },
   release_pins: { op: "release_pins", ids: [CANVAS_EXAMPLE_IDS.card] },
+  insert_items: {
+    op: "insert_items",
+    cards: [
+      {
+        id: CANVAS_EXAMPLE_IDS.card,
+        content: { kind: "note", text: "Back again" },
+        size: "auto",
+        origin: "user",
+        position: null,
+        dimensions: null,
+      },
+    ],
+  },
 };
 
 /** A minimal valid op of each kind. */
@@ -1695,6 +1725,47 @@ export function applyCanvasChange(
           if (op.sizes !== false) c.dimensions = null;
           report.updated.push(c.id);
         }
+        return;
+      }
+      case "insert_items": {
+        const cardIds = new Set(next.cards.map((c) => c.id));
+        op.cards.forEach((c, j) => {
+          if (cardIds.has(c.id))
+            fail(`.cards[${j}].id`, `Card "${c.id}" is already on the canvas.`);
+          else {
+            next.cards.push(c);
+            cardIds.add(c.id);
+            report.added.push(c.id);
+          }
+        });
+        const frameIds = new Set(next.frames.map((f) => f.id));
+        op.frames.forEach((f, j) => {
+          if (frameIds.has(f.id)) {
+            fail(`.frames[${j}].id`, `Frame "${f.id}" is already on the canvas.`);
+            return;
+          }
+          const members = f.members.filter((m) => cardIds.has(m));
+          const taken = new Set(members);
+          for (const other of next.frames)
+            other.members = other.members.filter((m) => !taken.has(m));
+          next.frames.push({ ...f, members });
+          frameIds.add(f.id);
+          report.added.push(f.id);
+        });
+        for (const f of next.frames) if (f.parent && !frameIds.has(f.parent)) delete f.parent;
+        const edgeIds = new Set(next.connectors.map((e) => e.id));
+        op.connectors.forEach((e, j) => {
+          if (edgeIds.has(e.id))
+            fail(`.connectors[${j}].id`, `Connector "${e.id}" is already on the canvas.`);
+          else if (!cardIds.has(e.from) || !cardIds.has(e.to))
+            fail(`.connectors[${j}]`, "Both ends of an inserted connector must be on the canvas.");
+          else {
+            next.connectors.push(e);
+            edgeIds.add(e.id);
+            report.added.push(e.id);
+          }
+        });
+        renumberFrames(next);
         return;
       }
     }

@@ -1,5 +1,5 @@
 import type { LayoutInput } from "@notes/schema";
-import { computeLayout, type ElkLike, type TimedLayout } from "./elk-layout";
+import { computeLayout, type ElkLike, type LayoutShape, type TimedLayout } from "./elk-layout";
 
 /**
  * Runs layouts in a dedicated worker when the browser has one, so ELK never
@@ -9,7 +9,7 @@ import { computeLayout, type ElkLike, type TimedLayout } from "./elk-layout";
  * stale layout.
  */
 export interface LayoutRunner {
-  run(input: LayoutInput): Promise<TimedLayout>;
+  run(input: LayoutInput, shape?: LayoutShape): Promise<TimedLayout>;
   dispose(): void;
 }
 
@@ -49,13 +49,13 @@ export function createLayoutRunner(options: { worker?: boolean } = {}): LayoutRu
     }
   }
   return {
-    async run(input) {
-      if (!worker) return computeLayout(input, await mainThreadElk());
+    async run(input, shape) {
+      if (!worker) return computeLayout(input, await mainThreadElk(), shape);
       const id = ++next;
       return new Promise<TimedLayout>((resolve, reject) => {
         pending.set(id, { resolve, reject });
-        worker?.postMessage({ id, input });
-      }).catch(async () => computeLayout(input, await mainThreadElk()));
+        worker?.postMessage({ id, input, shape });
+      }).catch(async () => computeLayout(input, await mainThreadElk(), shape));
     },
     dispose() {
       worker?.terminate();
