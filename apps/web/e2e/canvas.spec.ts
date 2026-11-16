@@ -47,7 +47,7 @@ test.describe("canvas", () => {
     // Fit brings every card back on screen.
     if (isPhone(info)) await page.getByRole("button", { name: "One frame at a time" }).click();
     if (isPhone(info)) await page.getByRole("button", { name: "Whole map" }).first().click();
-    else await page.getByRole("button", { name: /Zoom to fit/ }).click();
+    else await page.getByRole("button", { name: /Whole map/ }).click();
     await page.waitForTimeout(600);
     const size = page.viewportSize() as { width: number; height: number };
     for (const node of await page.locator(".react-flow__node-card").all()) {

@@ -31,7 +31,7 @@ for (const run of runs) {
     await page.waitForTimeout(1500);
     const layoutMs = await view.getAttribute("data-layout-ms");
     // Zoom so a good share of the map is on screen: the hardest case without culling.
-    await page.getByRole("button", { name: /Zoom to fit/ }).click();
+    await page.getByRole("button", { name: /Whole map/ }).click();
     await page.waitForTimeout(500);
     for (let i = 0; i < (run.close ? 4 : 1); i++) {
       await page.getByRole("button", { name: "Zoom in" }).click();

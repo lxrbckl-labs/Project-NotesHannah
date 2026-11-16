@@ -3,12 +3,12 @@ import { card, isPhone, isTouch, openDemo, tap } from "./canvas-helpers";
 
 /**
  * Screenshots of the canvas's main states, at every size, in both themes,
- * into apps/web/screenshots/canvas/. Run on demand:
+ * into apps/web/screenshots-out/canvas/. Run on demand:
  *   CANVAS_SCREENSHOTS=1 pnpm exec playwright test e2e/canvas-screens.spec.ts
  */
 test.skip(!process.env.CANVAS_SCREENSHOTS, "set CANVAS_SCREENSHOTS=1 to capture");
 
-const DIR = "screenshots/canvas";
+const DIR = "screenshots-out/canvas";
 
 for (const theme of ["light", "dark"] as const) {
   test(`main states in ${theme}`, async ({ page }, info) => {
@@ -42,7 +42,7 @@ for (const theme of ["light", "dark"] as const) {
 
     // A card selected, with its toolbar.
     if (!isPhone(info)) {
-      await page.getByRole("button", { name: /Zoom to fit/ }).click();
+      await page.getByRole("button", { name: /Whole map/ }).click();
       await page.waitForTimeout(400);
     } else {
       await page.getByRole("button", { name: "Whole map" }).first().click();
