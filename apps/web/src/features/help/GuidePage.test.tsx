@@ -52,11 +52,10 @@ test("the download link points at the PDF asset", () => {
   expect(GUIDE_PDF_PATH).toBe("/guide/notes-guide.pdf");
 });
 
-test("the editor section marks its stub", () => {
+test("the editor section describes the toolbar", () => {
   renderAt("/help");
-  const stub = document.querySelector('[data-guide-note="stub"]');
-  expect(stub).not.toBeNull();
-  expect(stub).toHaveTextContent("Editor details to come");
+  expect(screen.getByRole("heading", { name: "The toolbar" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Formatting as you type" })).toBeInTheDocument();
 });
 
 test("the print page renders the whole guide with no app around it", () => {

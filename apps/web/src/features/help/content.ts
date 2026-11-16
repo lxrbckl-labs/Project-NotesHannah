@@ -13,7 +13,7 @@ export type GuideBlock =
   | { kind: "table"; head: string[]; rows: string[][]; caption?: string; keys?: boolean }
   | {
       kind: "note";
-      tone: "tip" | "limit" | "stub";
+      tone: "tip" | "limit";
       title?: string;
       text: string;
     };
@@ -409,13 +409,64 @@ export const SECTIONS: GuideSection[] = [
       { kind: "h3", text: "Undo and version history" },
       {
         kind: "p",
-        text: "Undo and redo are in the toolbar, and `Ctrl` or `⌘` with `Z` does the same. For anything bigger, Version history lists every saved change. Pick one to see what the document looked like, and restore it. Restoring does not throw anything away: the version you were on stays in the history too.",
+        text: "Undo and redo are at the left of the toolbar, and `Ctrl` or `⌘` with `Z` does the same. For anything bigger, Version history lists every saved change. Pick one to see what the document looked like, and restore it. Restoring does not throw anything away: the version you were on stays in the history too.",
+      },
+      { kind: "h3", text: "The toolbar" },
+      {
+        kind: "p",
+        text: "While you are editing, a toolbar sits across the top of the page, much like a word processor. Tap into any text and it lights up to show what is there: the kind of line you are on, and whether the text is bold, italic or highlighted. Tapping a button never moves your place in the text.",
+      },
+      {
+        kind: "table",
+        head: ["Part of the toolbar", "What it does"],
+        rows: [
+          ["Undo and redo", "Step back or forward through your changes."],
+          [
+            "Style menu",
+            "Shows what the current line is (Text, Heading 1 to 3, Quote, Bulleted list, Numbered list, Checklist or Callout) and changes it when you pick another.",
+          ],
+          [
+            "Bold, italic, underline, strikethrough, code",
+            "Format the selected words, or what you type next.",
+          ],
+          [
+            "Highlight, block colour, link",
+            "Highlight words in a colour, colour a whole block, or turn words into a link.",
+          ],
+          ["Lists, indent and outdent", "Start a list, and move a list line in or out a level."],
+          [
+            "Insert",
+            "Add a table, callout, divider or any other kind of block where your cursor is.",
+          ],
+          ["Keyboard button", "A reminder of every typing shortcut and key combination."],
+        ],
+      },
+      {
+        kind: "p",
+        text: "On a narrower screen the less used buttons fold into a More menu. On a phone the same tools sit in a bar just above the keyboard, and it scrolls sideways. On a computer, selecting text also shows a small bar right beside the selection.",
+      },
+      { kind: "h3", text: "Formatting as you type" },
+      {
+        kind: "p",
+        text: "You can also format without leaving the keyboard. Wrap words in these marks and they change as you finish typing.",
+      },
+      {
+        kind: "table",
+        keys: true,
+        head: ["Type", "You get"],
+        rows: [
+          ["`**words**`", "Bold"],
+          ["`*words*`", "Italic"],
+          ["A backtick on each side of the words", "Code"],
+          ["`~~words~~`", "Strikethrough"],
+          ["`==words==`", "Highlight"],
+        ],
       },
       {
         kind: "note",
-        tone: "stub",
-        title: "Editor details to come",
-        text: "The editor is being redesigned. This section will describe the toolbar once it is settled. In general terms: select text to format it (bold, italic, underline, strikethrough, code, highlight colours, links), use the “/” menu or the add button to insert blocks, drag a block by its handle to move it, and use the block menu for actions such as marking it reviewed.",
+        tone: "limit",
+        title: "Not there yet",
+        text: "You cannot change the font, the text size or the alignment, and a colour applies to a whole block, not to single words. Highlighting works on single words.",
       },
     ],
   },
