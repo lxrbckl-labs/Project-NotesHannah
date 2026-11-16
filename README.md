@@ -122,10 +122,43 @@ pnpm format             # apply Biome formatting and safe fixes
 pnpm exec playwright install chromium   # once, for the end-to-end layout check
 pnpm e2e                # Playwright: the mock suite, then the same journeys against the real server
                         # (E2E_PORT / E2E_REAL_* variables: see apps/web/playwright.real.config.ts)
+pnpm e2e:built          # Playwright against the built app, served by the production server (see "Testing")
+pnpm gate:full          # before a deploy: pnpm gate, then the mock, real and built browser suites
+pnpm smoke <url>        # after a deploy: read-only check of the live site (docs/deploy.md)
 # Screenshots go to apps/web/screenshots-out/ (git-ignored). The committed set in apps/web/screenshots/
 # (16 states, three sizes, both themes, JPEG) is refreshed on purpose:
 #   SHOTS=curated pnpm --filter @notes/web exec playwright test -c playwright.real.config.ts screenshots
 ```
+
+### Testing: four layers and a smoke check
+
+Each layer catches what the one before it cannot. Times are from this machine (an Apple Silicon Mac, one run,
+Chromium already installed, Docker running).
+
+| Layer | Command | What it catches | Time |
+|---|---|---|---|
+| 1. Unit | `pnpm test` (part of `pnpm gate`) | logic in the server, the web app's models and components (jsdom), the schema | seconds; the whole gate is about 35 s |
+| 2. Mock browser | `pnpm --filter @notes/web e2e:mock` | screens and journeys at phone, tablet and computer sizes, against Vite's dev server and an in-memory mock API: layout, touch, keyboard, every state a real server is slow to produce | about 3.5 minutes |
+| 3. Real-server browser | `pnpm --filter @notes/web e2e:real` | the same journeys against the real server and database (and the converter when Docker is running), still on Vite's dev server: API contract drift, sign-in, uploads, agent writes | about 6.5 minutes with the converter (the first run also builds its image) |
+| 4. Built-app browser | `pnpm e2e:built` | the app as it is deployed: the production build split into lazily loaded files, served by the server in production mode. A broken build, a missing or mistyped file, the server's static serving, caching and security headers, a console error under the production Content-Security-Policy, and a tab left open across a redeploy | about 2 minutes, most of it the production build |
+
+`pnpm gate` (lint, typecheck, unit tests, build) stays quick (about 35 seconds) and does not run a browser; run it
+before every commit. `pnpm gate:full` is the one command before a deploy: the gate, then layers 2, 3 and 4, stopping
+at the first failure (about 12 minutes in all).
+
+The built-app suite (`apps/web/playwright.built.config.ts`, tests in `apps/web/e2e/built/`) starts
+`tools/dev/built.mjs`: it runs `pnpm build`, creates a throwaway data directory under `data/e2e-built/` with a test
+user, seeds a small library, and starts the server with `NODE_ENV=production` on port 3460 (`E2E_BUILT_PORT`,
+`E2E_BUILT_DIR`). Production needs `APP_ORIGIN` to equal the browser's origin (`http://localhost:3460`, set for
+you); its `Secure` session cookie is accepted by Chromium on `http://localhost`, so nothing else changes. The converter
+is not started (`E2E_BUILT_CONVERTER=1` starts it; the one upload test is skipped without it). `E2E_BUILT_SKIP_BUILD=1`
+reuses the last build while you work on a test. Its tests visit every routed screen (and fail when the router gets a
+route the list lacks), request every built file, and replay the stale-tab case: a lazily loaded file that no longer
+exists, after which the app reloads itself once and no more than once a minute.
+
+After a deploy, `pnpm smoke https://your-site` checks the live site without signing in and without writing anything
+(shell and caching headers, every built file's type, a missing file is a 404, the guide PDF, `/healthz`, `/api/me`
+is 401, `/mcp` refuses without a key). It is documented with the deploy steps in [docs/deploy.md](docs/deploy.md).
 
 ### The user guide
 
