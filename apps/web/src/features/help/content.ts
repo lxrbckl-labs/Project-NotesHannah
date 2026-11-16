@@ -1,28 +1,41 @@
 /**
- * The words of the guide. Edit text here; GuideBody.tsx only lays it out.
+ * The words of the guide. Edit text here; the components only lay it out.
  *
  * Inline marks inside any string: **bold** and `keys` (shown as a keyboard key).
- * After editing, run `pnpm guide:pdf` so the downloadable PDF matches.
+ * After editing, run `pnpm guide:pdf` so the downloadable PDF matches. The figures are screenshots
+ * of the app (`pnpm guide:figures`, see tools/guide-figures.mjs); their sizes are in figures.json.
  * Spelling follows the app: British (practise, organised, favourites), "Practice" for the screen name.
  */
+import FIGURE_SIZES from "./figures.json";
+
+export type FigureId = keyof typeof FIGURE_SIZES;
+
+export interface GuideTable {
+  kind: "table";
+  head: string[];
+  rows: string[][];
+  caption?: string;
+  keys?: boolean;
+}
 
 export type GuideBlock =
   | { kind: "p"; text: string }
   | { kind: "h3"; text: string }
   | { kind: "list"; items: string[]; ordered?: boolean }
-  | { kind: "table"; head: string[]; rows: string[][]; caption?: string; keys?: boolean }
+  | GuideTable
   | {
       kind: "note";
       tone: "tip" | "limit";
       title?: string;
       text: string;
-    };
+    }
+  | { kind: "figure"; id: FigureId };
 
 export interface GuideSection {
   id: string;
   title: string;
   /** One line under the title. */
-  lead?: string;
+  lead: string;
   blocks: GuideBlock[];
 }
 
@@ -32,8 +45,30 @@ export interface Showcase {
   why: string;
 }
 
+export interface GuidePart {
+  id: string;
+  /** "Part one" and so on. */
+  label: string;
+  title: string;
+  lead: string;
+  /** Section ids, in reading order. */
+  sections: string[];
+}
+
+export interface GuideFigure {
+  src: string;
+  width: number;
+  height: number;
+  /** What the picture shows, for screen readers. */
+  alt: string;
+  caption: string;
+  /** A phone screenshot is tall and narrow, so it is set smaller. */
+  shape?: "phone" | "square" | "short" | "compact";
+}
+
 export const GUIDE_TITLE = "Guide";
 export const GUIDE_HEADING = "Your guide to Notes";
+export const GUIDE_SUBTITLE = "Everything in the app, in the order you are likely to need it.";
 export const GUIDE_BYLINE = "Built for you, by Alex.";
 export const GUIDE_PDF_PATH = "/guide/notes-guide.pdf";
 export const GUIDE_PDF_NAME = "Notes-guide.pdf";
@@ -105,6 +140,51 @@ export const SHOWCASE: Showcase[] = [
   },
 ];
 
+/** Tables shared by a section and the quick reference card. */
+export const TYPING_SHORTCUTS: GuideTable = {
+  kind: "table",
+  keys: true,
+  head: ["Type", "You get"],
+  rows: [
+    ["`# `", "A large heading"],
+    ["`## `", "A medium heading"],
+    ["`### `", "A small heading"],
+    ["`- `", "A bulleted list"],
+    ["`1. `", "A numbered list"],
+    ["`[] `", "A checklist you can tick off"],
+    ["`> `", "A quote"],
+    ["`!! `", "A warning callout"],
+    ["`?? `", "A tip callout"],
+    ["`---` then `Enter`", "A divider line"],
+  ],
+};
+
+export const FORMATTING_MARKS: GuideTable = {
+  kind: "table",
+  keys: true,
+  head: ["Type", "You get"],
+  rows: [
+    ["`**words**`", "Bold"],
+    ["`*words*`", "Italic"],
+    ["A backtick on each side of the words", "Code"],
+    ["`~~words~~`", "Strikethrough"],
+    ["`==words==`", "Highlight"],
+  ],
+};
+
+export const COMPUTER_KEYS: GuideTable = {
+  kind: "table",
+  keys: true,
+  head: ["Keys", "What they do (computer)"],
+  rows: [
+    ["`⌘K` or `Ctrl+K`", "Quick find"],
+    ["`/`", "Quick find, when you are not typing in a box"],
+    ["`⌘\\` or `Ctrl+\\`", "Show or hide the sidebar"],
+    ["`F2`", "Rename the focused item in the sidebar"],
+    ["`Delete`", "Move the focused item to the trash"],
+  ],
+};
+
 export const SECTIONS: GuideSection[] = [
   {
     id: "what-this-is",
@@ -156,6 +236,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "On a computer or tablet the sidebar shows this tree and you can open it up level by level. On a phone, Library is the first tab at the bottom. The library home is the whole tree on one page, including your uploaded files, and it remembers which rows you had open when you come back to it.",
       },
+      { kind: "figure", id: "library-home" },
       {
         kind: "p",
         text: "To add something, open the place it belongs and use the New button: New term, New course, New folder, New lecture or New document. You can rename or move anything from the “…” menu beside it. On a computer you can also drag it.",
@@ -312,11 +393,13 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "Open a lecture from the library and choose Open the page. You will see the study guide as a page of blocks: headings, paragraphs, tables, drug cards and so on. The outline lets you jump between headings. The page for a lecture such as Beta blockers is built from your slides and notes for that day.",
       },
+      { kind: "figure", id: "lecture-page" },
       { kind: "h3", text: "Source chips" },
       {
         kind: "p",
         text: "Numbers on a block are source chips. Tap one and the original page opens beside the document, with the passage that supports the claim highlighted. A block built from several sources lists each one. If a source has been moved to the trash, the chip says so instead of breaking. At the end of the document, a Sources list shows everything cited.",
       },
+      { kind: "figure", id: "source-page" },
       {
         kind: "p",
         text: "A block marked **Not from your notes** was written from general knowledge, not from your slides. Treat it as a suggestion and check it.",
@@ -355,23 +438,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "At the start of a line, type these and the line changes shape.",
       },
-      {
-        kind: "table",
-        keys: true,
-        head: ["Type", "You get"],
-        rows: [
-          ["`# `", "A large heading"],
-          ["`## `", "A medium heading"],
-          ["`### `", "A small heading"],
-          ["`- `", "A bulleted list"],
-          ["`1. `", "A numbered list"],
-          ["`[] `", "A checklist you can tick off"],
-          ["`> `", "A quote"],
-          ["`!! `", "A warning callout"],
-          ["`?? `", "A tip callout"],
-          ["`---` then `Enter`", "A divider line"],
-        ],
-      },
+      TYPING_SHORTCUTS,
       {
         kind: "p",
         text: "Each shortcut needs the space after it, except the divider. In a list, `Enter` makes the next item.",
@@ -416,6 +483,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "While you are editing, a toolbar sits across the top of the page, much like a word processor. Tap into any text and it lights up to show what is there: the kind of line you are on, and whether the text is bold, italic or highlighted. Tapping a button never moves your place in the text.",
       },
+      { kind: "figure", id: "editor" },
       {
         kind: "table",
         head: ["Part of the toolbar", "What it does"],
@@ -450,18 +518,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "You can also format without leaving the keyboard. Wrap words in these marks and they change as you finish typing.",
       },
-      {
-        kind: "table",
-        keys: true,
-        head: ["Type", "You get"],
-        rows: [
-          ["`**words**`", "Bold"],
-          ["`*words*`", "Italic"],
-          ["A backtick on each side of the words", "Code"],
-          ["`~~words~~`", "Strikethrough"],
-          ["`==words==`", "Highlight"],
-        ],
-      },
+      FORMATTING_MARKS,
       {
         kind: "note",
         tone: "limit",
@@ -479,6 +536,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "Any lecture or document can be viewed as a canvas as well as a page. At the top of the document, switch between Page and Canvas. It is the same content either way. Changing a block changes it in both.",
       },
+      { kind: "figure", id: "canvas" },
       {
         kind: "list",
         items: [
@@ -514,6 +572,7 @@ export const SECTIONS: GuideSection[] = [
           "**Drill** is the brand and generic drill: it shows a name and you match it to its partner. Drugs you get wrong come back around.",
         ],
       },
+      { kind: "figure", id: "concept" },
       {
         kind: "p",
         text: "Concepts that an assistant added are marked unverified until you review them. The Concepts item in the sidebar shows how many are waiting.",
@@ -529,6 +588,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "Practice is the second tab on a phone and an item in the sidebar on a larger screen. Choose what to work on (a course, a lecture, a folder, a concept or an exam), which kinds of question, and how many. Then start. You can also press Practise this on any lecture, folder or course.",
       },
+      { kind: "figure", id: "practice-question" },
       { kind: "h3", text: "Question types" },
       {
         kind: "table",
@@ -627,6 +687,7 @@ export const SECTIONS: GuideSection[] = [
           ["Cancelled", "You withdrew it."],
         ],
       },
+      { kind: "figure", id: "requests" },
       {
         kind: "note",
         tone: "limit",
@@ -642,6 +703,7 @@ export const SECTIONS: GuideSection[] = [
   {
     id: "finding-and-keeping",
     title: "Search, favourites and the trash",
+    lead: "Finding things again, keeping them close, and getting them back.",
     blocks: [
       {
         kind: "list",
@@ -657,7 +719,9 @@ export const SECTIONS: GuideSection[] = [
   {
     id: "settings-and-devices",
     title: "Appearance, signing in and devices",
+    lead: "How the app looks, how you sign in, and how it fits each device.",
     blocks: [
+      { kind: "figure", id: "phone" },
       {
         kind: "list",
         items: [
@@ -668,18 +732,7 @@ export const SECTIONS: GuideSection[] = [
           "**Devices:** the app has three layouts. A phone shows one page at a time with tabs at the bottom. A tablet adds a sidebar. A computer adds a details panel in the library and keyboard shortcuts.",
         ],
       },
-      {
-        kind: "table",
-        keys: true,
-        head: ["Keys", "What they do (computer)"],
-        rows: [
-          ["`⌘K` or `Ctrl+K`", "Quick find"],
-          ["`/`", "Quick find, when you are not typing in a box"],
-          ["`⌘\\` or `Ctrl+\\`", "Show or hide the sidebar"],
-          ["`F2`", "Rename the focused item in the sidebar"],
-          ["`Delete`", "Move the focused item to the trash"],
-        ],
-      },
+      COMPUTER_KEYS,
       {
         kind: "p",
         text: "The Settings page also holds the keys that let an assistant into your library. You can create one, name it, make it read only or read and write, and revoke it at any time.",
@@ -711,5 +764,135 @@ export const SECTIONS: GuideSection[] = [
         ],
       },
     ],
+  },
+];
+
+/** The four parts the sections are grouped into. Every section is in exactly one part. */
+export const PARTS: GuidePart[] = [
+  {
+    id: "part-start-here",
+    label: "Part one",
+    title: "Start here",
+    lead: "What the app is, how your library is laid out, and the one idea it was built around.",
+    sections: ["what-this-is", "finals"],
+  },
+  {
+    id: "part-your-material",
+    label: "Part two",
+    title: "Your material",
+    lead: "Getting your slides and notes in, reading a lecture, and writing notes of your own.",
+    sections: ["getting-material-in", "reading-a-lecture", "writing-your-own-notes"],
+  },
+  {
+    id: "part-study-tools",
+    label: "Part three",
+    title: "Study tools",
+    lead: "The canvas, concepts, practice and exams: four ways to learn from what is in your library.",
+    sections: ["canvas", "concepts", "practice", "exams"],
+  },
+  {
+    id: "part-help-and-housekeeping",
+    label: "Part four",
+    title: "Help and housekeeping",
+    lead: "Asking for help, finding things again, your settings, and what is not finished yet.",
+    sections: ["asking-for-help", "finding-and-keeping", "settings-and-devices", "good-to-know"],
+  },
+];
+
+const figure = (
+  id: FigureId,
+  rest: Omit<GuideFigure, "src" | "width" | "height">,
+): GuideFigure => ({
+  src: `/guide/figures/${id}.webp`,
+  ...FIGURE_SIZES[id],
+  ...rest,
+});
+
+/** The pictures of the app, each used once. Numbered in reading order. */
+export const FIGURES: Record<FigureId, GuideFigure> = {
+  "library-home": figure("library-home", {
+    alt: "The library home on a computer: the sidebar, the tree of terms and courses, and the upcoming exams with their days left and progress bars.",
+    caption:
+      "The library home: your whole library as one tree, with your next exams, the days left and your progress below it.",
+  }),
+  "lecture-page": figure("lecture-page", {
+    alt: "The Beta blockers lecture page, with numbered source chips under a paragraph and the outline of headings on the right.",
+    caption:
+      "A lecture page. The numbered chips under a block are its sources, and the outline on the right jumps between headings.",
+  }),
+  "source-page": figure("source-page", {
+    alt: "A source chip opened beside the document: the original slide, and its transcript with the cited words highlighted.",
+    caption:
+      "Tap a source chip and the original slide opens beside the document, with the passage that supports the claim highlighted.",
+  }),
+  editor: figure("editor", {
+    alt: "A note being edited: the toolbar across the top and the style menu open, listing Text, three headings, Quote, lists, Checklist and Callout with their typing shortcuts.",
+    caption:
+      "Writing a note. The toolbar sits across the top, and the style menu shows the kind of line you are on, with the typing shortcut for each style.",
+  }),
+  canvas: figure("canvas", {
+    shape: "compact",
+    alt: "The Beta blockers lecture as a canvas, stepping through its first frame, How they work, with cards joined by a labelled arrow.",
+    caption:
+      "The Beta blockers lecture drawn as a canvas, stepping through its frames one at a time.",
+  }),
+  concept: figure("concept", {
+    shape: "square",
+    alt: "The graph on the metoprolol tartrate page: its class, cardioselective beta blockers, the other drugs in that class, and CYP2D6 inhibition.",
+    caption:
+      "The small graph on a drug’s page: metoprolol tartrate, its class, the other drugs in that class, and an interaction.",
+  }),
+  "practice-question": figure("practice-question", {
+    shape: "short",
+    alt: "A multiple choice practice question about propranolol and hypoglycaemia, with four answers labelled A to D.",
+    caption:
+      "A multiple choice question in a practice session. The answer key does not reach your device until you have answered.",
+  }),
+  requests: figure("requests", {
+    alt: "The Requests screen: the requests grouped by status on the left, and each request with the assistant’s reply on it.",
+    caption:
+      "The Requests screen: what you asked for, where it stands, and the assistant’s answer on the request itself.",
+  }),
+  phone: figure("phone", {
+    shape: "phone",
+    alt: "The Beta blockers lecture page on a phone, with source chips under a paragraph and the tabs along the bottom.",
+    caption: "The same lecture on a phone: one page at a time, with the tabs along the bottom.",
+  }),
+};
+
+export interface QuickReferenceGroup {
+  title: string;
+  /** A short line under the group title. */
+  note?: string;
+  rows: string[][];
+}
+
+export const QUICK_REFERENCE_ID = "quick-reference";
+export const QUICK_REFERENCE_TITLE = "Quick reference";
+export const QUICK_REFERENCE_LEAD =
+  "Every typing shortcut, formatting mark and key combination on one card. Print it and keep it close.";
+
+export const QUICK_REFERENCE: QuickReferenceGroup[] = [
+  {
+    title: "Start a line with",
+    note: "Each needs the space after it, except the divider.",
+    rows: TYPING_SHORTCUTS.rows,
+  },
+  {
+    title: "Wrap words in",
+    note: "The words change as you finish typing.",
+    rows: FORMATTING_MARKS.rows,
+  },
+  {
+    title: "While you write",
+    rows: [
+      ["`/`", "On an empty line: everything you can add"],
+      ["`Enter`", "In a list: the next item"],
+      ["`Ctrl` `Z` or `⌘` `Z`", "Undo"],
+    ],
+  },
+  {
+    title: "On a computer",
+    rows: COMPUTER_KEYS.rows,
   },
 ];

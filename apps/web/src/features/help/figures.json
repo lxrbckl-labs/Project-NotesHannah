@@ -1,0 +1,38 @@
+{
+  "canvas": {
+    "width": 1600,
+    "height": 1250
+  },
+  "concept": {
+    "width": 1228,
+    "height": 1352
+  },
+  "editor": {
+    "width": 1600,
+    "height": 1000
+  },
+  "lecture-page": {
+    "width": 1600,
+    "height": 1250
+  },
+  "library-home": {
+    "width": 1600,
+    "height": 1250
+  },
+  "phone": {
+    "width": 1170,
+    "height": 2532
+  },
+  "practice-question": {
+    "width": 1600,
+    "height": 700
+  },
+  "requests": {
+    "width": 1600,
+    "height": 1250
+  },
+  "source-page": {
+    "width": 1600,
+    "height": 1250
+  }
+}
