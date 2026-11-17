@@ -256,7 +256,7 @@ export function NoteCard({
           {focused && (
             <>
               {onShowBlock && !detached && (
-                <IconButton label="Show in the page" size="sm" onClick={onShowBlock}>
+                <IconButton variant="bare" label="Show in the page" size="sm" onClick={onShowBlock}>
                   <Link2 className="size-4" />
                 </IconButton>
               )}
@@ -267,6 +267,7 @@ export function NoteCard({
               ) : null}
               {!detached && (
                 <IconButton
+                  variant="bare"
                   label={note.resolved ? "Reopen" : "Mark as done"}
                   size="sm"
                   data-testid="note-resolve"
@@ -276,6 +277,7 @@ export function NoteCard({
                 </IconButton>
               )}
               <IconButton
+                variant="bare"
                 label="Change"
                 size="sm"
                 data-testid="note-edit"

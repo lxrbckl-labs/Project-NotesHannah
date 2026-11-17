@@ -426,6 +426,7 @@ function PanelFrame({
         {def.actions}
         {place === "overlay" && index === 0 && (
           <IconButton
+            variant="bare"
             label="Close sidebar"
             size="sm"
             onClick={() => dock.setPeek(null)}

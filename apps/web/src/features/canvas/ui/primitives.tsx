@@ -60,8 +60,13 @@ export function ToolButton({
       <IconButton
         label={label}
         pressed={pressed}
-        variant={danger ? "ghostDanger" : "ghost"}
-        className={cn("nc-tool", className)}
+        // Bare: canvas tools sit inside the canvas's own bars, which are the edge.
+        variant="bare"
+        className={cn(
+          "nc-tool",
+          danger && "text-danger hover:bg-danger-soft hover:text-danger",
+          className,
+        )}
         {...rest}
       >
         {icon && <Icon name={icon} />}

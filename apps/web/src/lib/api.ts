@@ -262,7 +262,8 @@ export const api = {
   deleteForever: (id: string) => request("DELETE", `/nodes/${id}`),
   trash: () => listAll("/trash"),
   recents: () =>
-    request("GET", "/recents", { query: { limit: 8 }, schema: NodeList }).then((r) => r.items),
+    // Five, no more (Alex, 2026-11-16): opening a sixth thing pushes the oldest off the list.
+    request("GET", "/recents", { query: { limit: 5 }, schema: NodeList }).then((r) => r.items),
   favourites: () => listAll("/favourites"),
   /** Source files filed under a lecture or folder. */
   filesOf: (nodeId: string) => listFiles({ nodeId }),

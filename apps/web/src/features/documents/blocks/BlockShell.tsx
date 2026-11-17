@@ -614,6 +614,7 @@ export const BlockShell = memo(function BlockShell({
           )}
         >
           <IconButton
+            variant="bare"
             label="Insert a block below"
             size="sm"
             onClick={(e) => addAfter(e.currentTarget.getBoundingClientRect())}
@@ -656,6 +657,7 @@ export const BlockShell = memo(function BlockShell({
           data-testid="touch-actions"
         >
           <IconButton
+            variant="bare"
             label="Move up"
             disabled={index === 0}
             onClick={() => {
@@ -671,6 +673,7 @@ export const BlockShell = memo(function BlockShell({
             <ArrowUp className="size-4.5" />
           </IconButton>
           <IconButton
+            variant="bare"
             label="Move down"
             disabled={index === count - 1}
             onClick={() => {
@@ -695,6 +698,7 @@ export const BlockShell = memo(function BlockShell({
             <GripVertical className="size-4.5" />
           </button>
           <IconButton
+            variant="bare"
             label="Insert a block below"
             onClick={(e) => addAfter(e.currentTarget.getBoundingClientRect())}
           >
@@ -707,7 +711,7 @@ export const BlockShell = memo(function BlockShell({
             open={menuOpen}
             onOpenChange={setMenuOpen}
             trigger={
-              <IconButton label="Block actions" data-testid="block-menu-touch">
+              <IconButton variant="bare" label="Block actions" data-testid="block-menu-touch">
                 <span aria-hidden className="text-lg leading-none">
                   ⋯
                 </span>

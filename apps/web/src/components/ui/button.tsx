@@ -76,14 +76,23 @@ export function Button({
 export const backButtonClass =
   "flex size-11 shrink-0 items-center justify-center rounded-control border border-border-strong bg-surface text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted active:bg-surface-muted xl:size-9";
 
-type IconButtonVariant = "ghost" | "subtle" | "secondary" | "primary" | "ghostDanger";
+type IconButtonVariant = "ghost" | "subtle" | "secondary" | "primary" | "ghostDanger" | "bare";
 
+/**
+ * An icon she can press is a solid square with an edge, like every other button (Alex, 2026-11-16): the
+ * default (`ghost`) and `ghostDanger` are outlined on the surface colour, so a star or a "..." reads as a
+ * button on the dotted page. `bare` has no edge or fill and is only for an icon that sits inside a bar
+ * which is itself the edge: the editor ribbon, the canvas toolbars, a block's margin handles.
+ */
 const ICON_VARIANTS: Record<IconButtonVariant, string> = {
-  ghost: "text-text-muted hover:bg-surface-muted hover:text-text active:bg-surface-muted",
+  ghost:
+    "border border-border-strong bg-surface text-text-muted hover:bg-surface-muted hover:text-text active:bg-surface-muted",
   subtle: "bg-surface-muted text-text hover:bg-hue-gray-mark",
   secondary: "border border-border-strong bg-surface text-text hover:bg-surface-muted",
   primary: "bg-accent text-accent-contrast hover:brightness-110",
-  ghostDanger: "text-danger hover:bg-danger-soft",
+  ghostDanger:
+    "border border-border-strong bg-surface text-danger hover:bg-danger-soft active:bg-danger-soft",
+  bare: "text-text-muted hover:bg-surface-muted hover:text-text active:bg-surface-muted",
 };
 
 export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -114,7 +123,7 @@ export function IconButton({
         "inline-flex size-11 shrink-0 items-center justify-center rounded-control transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-50",
         size === "sm" ? "xl:size-8" : "xl:size-9",
         ICON_VARIANTS[variant],
-        "aria-pressed:bg-accent aria-pressed:text-accent-contrast",
+        "aria-pressed:border-transparent aria-pressed:bg-accent aria-pressed:text-accent-contrast",
         className,
       )}
       {...props}

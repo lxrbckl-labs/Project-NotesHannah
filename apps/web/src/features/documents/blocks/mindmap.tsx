@@ -322,13 +322,13 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
           </g>
         </svg>
         <div className="absolute right-2 bottom-2 flex gap-0.5 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur">
-          <IconButton label="Zoom out" size="sm" onClick={() => zoomAt(1 / 1.25)}>
+          <IconButton variant="bare" label="Zoom out" size="sm" onClick={() => zoomAt(1 / 1.25)}>
             <Minus className="size-4" />
           </IconButton>
-          <IconButton label="Fit the map" size="sm" onClick={fit}>
+          <IconButton variant="bare" label="Fit the map" size="sm" onClick={fit}>
             <Maximize2 className="size-3.5" />
           </IconButton>
-          <IconButton label="Zoom in" size="sm" onClick={() => zoomAt(1.25)}>
+          <IconButton variant="bare" label="Zoom in" size="sm" onClick={() => zoomAt(1.25)}>
             <Plus className="size-4" />
           </IconButton>
         </div>
@@ -410,6 +410,7 @@ function MindMapOutline({
               total < BLOCK_LIMITS.mindMapNodes &&
               (node.children?.length ?? 0) < BLOCK_LIMITS.mindMapChildren && (
                 <IconButton
+                  variant="bare"
                   label={`Add an idea under ${node.label}`}
                   size="sm"
                   onClick={() =>

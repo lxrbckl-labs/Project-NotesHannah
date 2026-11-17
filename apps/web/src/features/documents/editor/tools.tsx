@@ -64,6 +64,7 @@ export function ToolButton({
 }) {
   const button = (
     <IconButton
+      variant="bare"
       label={label}
       pressed={active}
       disabled={disabled}

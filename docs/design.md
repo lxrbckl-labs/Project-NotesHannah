@@ -297,6 +297,12 @@ with the accent fill. Wrap it in a `Tooltip` on the computer if the icon is not 
 <IconButton label="Bold" pressed={isBold} onClick={toggleBold}><Bold size={18} /></IconButton>
 ```
 
+An icon she can press is a solid square with an edge, like every other button (Alex, 2026-11-16): the default and
+`ghostDanger` are outlined on the surface colour, so a favourite star, a "..." menu or a back arrow reads as a button on
+the dotted page. `variant="bare"` (no edge, no fill) is only for an icon inside a bar that is itself the edge: the editor
+ribbon, the canvas toolbars, a block's margin handles, a side note's action row. Back arrows that are links use
+`backButtonClass`.
+
 ### Action bar (`action-bar.tsx`)
 
 `ActionBar`, `ActionButton`, `ActionLink`, `ActionDivider`. A page's row of actions is one bar: one line at every

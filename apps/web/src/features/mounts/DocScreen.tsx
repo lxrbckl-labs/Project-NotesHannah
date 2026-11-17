@@ -166,7 +166,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
             <Link
               to={`/library/${n.id}`}
               aria-label="Sources"
-              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 text-sm text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:min-h-9 xl:px-3"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface px-2 text-sm text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:min-h-9 xl:px-3"
             >
               <Paperclip size={15} aria-hidden />
               <span className="hidden xl:inline">Sources</span>
