@@ -23,9 +23,15 @@ own table.
 
 - The person using the app is a pharmacy student, mostly on an iPad and a phone. Readability beats
   decoration.
-- The base stays as it was: warm paper neutrals, the faint dotted grid, rounded cards, calm motion.
-  The reference is AFFiNE's edgeless canvas.
-- Green stays the brand accent. It marks the main action, the current selection and focus.
+- The look is a pharmacy's (Hannah asked, 2026-11-17): clean, cool whites with a faint mint tint
+  in place of the old warm paper, the faint dotted grid, rounded cards, calm motion. The layout
+  reference is still AFFiNE's edgeless canvas.
+- The brand accent is pharmacy green (a teal green, `#08756a` in light, `#5ccfb6` in dark). It marks
+  the main action, the current selection and focus.
+- Pill art (`components/art/pills.tsx`: `Capsule`, `Tablet`, `Caplet`, `PillCluster`, `PillMark`) is
+  our own drawing, coloured from the palette, decoration only (`aria-hidden`, never tappable). It
+  sits where there is room: the sign-in page, the app's mark, the library title, roomy empty
+  states and the browser tab icon. Do not put it inside cards of content, toolbars or reading text.
 - Colour now carries meaning across the app. Ten named hues give courses, concept types, callouts,
   statuses and canvas cards their own friendly colour, always soft and never loud.
 - One source of truth. A feature never picks a hex value. It names a token or a role.

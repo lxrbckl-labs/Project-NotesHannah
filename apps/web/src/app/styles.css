@@ -15,23 +15,23 @@
       which point at the palette so there is one source of truth. */
 :root {
   color-scheme: light;
-  --color-bg: #f7f6f2;
+  --color-bg: #f2f8f6;
   --color-surface: #ffffff;
-  --color-surface-muted: #efeee8;
-  --color-border: #e1dfd5;
-  --color-border-strong: #c9c6b9;
-  --color-text: #1f1e1a;
-  --color-text-muted: #5f5d55;
-  --color-accent: #2f6f5e;
+  --color-surface-muted: #e6f0ed;
+  --color-border: #d3e2dd;
+  --color-border-strong: #b3c9c2;
+  --color-text: #13231f;
+  --color-text-muted: #4d5f5a;
+  --color-accent: #08756a;
   --color-accent-contrast: #ffffff;
-  --color-accent-soft: #e3efea;
-  --color-accent-border: #b7d5ca;
-  --color-dot: #d3d0c3;
+  --color-accent-soft: #daf0ea;
+  --color-accent-border: #a6d5c9;
+  --color-dot: #c4d8d1;
   --color-chrome: rgb(255 255 255 / 0.92);
-  --color-overlay: rgb(31 30 26 / 0.42);
-  --shadow-card: 0 1px 2px rgb(31 30 26 / 0.04), 0 4px 14px rgb(31 30 26 / 0.05);
-  --shadow-raised: 0 2px 4px rgb(31 30 26 / 0.06), 0 12px 28px rgb(31 30 26 / 0.12);
-  --shadow-pop: 0 10px 40px rgb(31 30 26 / 0.18);
+  --color-overlay: rgb(19 35 31 / 0.42);
+  --shadow-card: 0 1px 2px rgb(19 35 31 / 0.04), 0 4px 14px rgb(19 35 31 / 0.05);
+  --shadow-raised: 0 2px 4px rgb(19 35 31 / 0.06), 0 12px 28px rgb(19 35 31 / 0.12);
+  --shadow-pop: 0 10px 40px rgb(19 35 31 / 0.18);
 
   /* The palette. */
   --hue-green-solid: #3c9e5f;
@@ -89,19 +89,19 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-bg: #121211;
-    --color-surface: #1b1a18;
-    --color-surface-muted: #262521;
-    --color-border: #33312c;
-    --color-border-strong: #4a4740;
-    --color-text: #ecebe4;
-    --color-text-muted: #a8a69b;
-    --color-accent: #6fc1a9;
-    --color-accent-contrast: #0f1e19;
-    --color-accent-soft: #1f3a32;
-    --color-accent-border: #2f5a4d;
-    --color-dot: #34322c;
-    --color-chrome: rgb(27 26 24 / 0.94);
+    --color-bg: #0c1413;
+    --color-surface: #131d1b;
+    --color-surface-muted: #1c2a27;
+    --color-border: #293a36;
+    --color-border-strong: #3e534d;
+    --color-text: #e5efec;
+    --color-text-muted: #9cb0aa;
+    --color-accent: #5ccfb6;
+    --color-accent-contrast: #06201b;
+    --color-accent-soft: #143a33;
+    --color-accent-border: #22594e;
+    --color-dot: #2a3b37;
+    --color-chrome: rgb(19 29 27 / 0.94);
     --color-overlay: rgb(0 0 0 / 0.6);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
     --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);
@@ -162,19 +162,19 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #121211;
-  --color-surface: #1b1a18;
-  --color-surface-muted: #262521;
-  --color-border: #33312c;
-  --color-border-strong: #4a4740;
-  --color-text: #ecebe4;
-  --color-text-muted: #a8a69b;
-  --color-accent: #6fc1a9;
-  --color-accent-contrast: #0f1e19;
-  --color-accent-soft: #1f3a32;
-  --color-accent-border: #2f5a4d;
-  --color-dot: #34322c;
-  --color-chrome: rgb(27 26 24 / 0.94);
+  --color-bg: #0c1413;
+  --color-surface: #131d1b;
+  --color-surface-muted: #1c2a27;
+  --color-border: #293a36;
+  --color-border-strong: #3e534d;
+  --color-text: #e5efec;
+  --color-text-muted: #9cb0aa;
+  --color-accent: #5ccfb6;
+  --color-accent-contrast: #06201b;
+  --color-accent-soft: #143a33;
+  --color-accent-border: #22594e;
+  --color-dot: #2a3b37;
+  --color-chrome: rgb(19 29 27 / 0.94);
   --color-overlay: rgb(0 0 0 / 0.6);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);

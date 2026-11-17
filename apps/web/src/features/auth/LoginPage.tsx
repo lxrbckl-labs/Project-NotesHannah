@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { NotebookPen } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { ThemeSwitch } from "../../app/ThemeSwitch";
+import { Caplet, Capsule, PillMark, Tablet } from "../../components/art/pills";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { Field, TextInput } from "../../components/ui/field";
@@ -73,10 +73,25 @@ export function LoginPage() {
       <div className="absolute right-4 top-4 pt-safe">
         <ThemeSwitch />
       </div>
-      <main className="w-full max-w-sm">
+      {/* Pill art in the corners: decoration only, behind the form, never in the way of a tap. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <Capsule hue="teal" className="absolute left-[6%] top-[12%] h-9 w-20 -rotate-[28deg]" />
+        <Tablet hue="pink" className="absolute left-[14%] top-[30%] size-7 max-sm:hidden" />
+        <Caplet hue="yellow" className="absolute right-[8%] top-[22%] rotate-[18deg]" />
+        <Capsule
+          hue="red"
+          className="absolute bottom-[14%] right-[7%] h-8 w-[4.5rem] rotate-[32deg]"
+        />
+        <Tablet hue="blue" className="absolute bottom-[10%] left-[9%] size-9" />
+        <Caplet
+          hue="purple"
+          className="absolute bottom-[30%] right-[16%] -rotate-12 max-sm:hidden"
+        />
+      </div>
+      <main className="relative w-full max-w-sm">
         <div className="mb-7 flex flex-col items-center text-center">
           <div className="mb-4 flex size-16 items-center justify-center rounded-panel bg-accent text-accent-contrast shadow-card">
-            <NotebookPen size={30} aria-hidden />
+            <PillMark size={34} />
           </div>
           <h1 className="font-display text-heading font-semibold">Welcome back</h1>
           <p className="mt-1.5 text-ui text-text-muted">Sign in to your study notes.</p>

@@ -40,7 +40,7 @@ function marginBoxes(left: string, right: string) {
     @top-left { content: ${cssString(left)}; ${HEAD} vertical-align: bottom; padding-bottom: 16pt; }
     @top-right { content: ${cssString(right)}; ${HEAD} vertical-align: bottom; padding-bottom: 16pt; }
     @bottom-left { content: ${cssString(GUIDE_HEADING)}; ${FOOT} vertical-align: top; padding-top: 16pt; }
-    @bottom-right { content: counter(page); ${FOOT} font-weight: 600; color: #2f6f5e; vertical-align: top; padding-top: 16pt; }`;
+    @bottom-right { content: counter(page); ${FOOT} font-weight: 600; color: #08756a; vertical-align: top; padding-top: 16pt; }`;
 }
 
 /** The running heads: one named page per section, plus the showcase and the quick reference. */

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { describeError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import type { Tone } from "../../lib/hues";
+import { Caplet, Capsule, Tablet } from "../art/pills";
 import { Button } from "./button";
 
 export function Skeleton({ className }: { className?: string }) {
@@ -45,10 +46,18 @@ export function EmptyState({
     <div
       // No dotted grid of its own: the box is see-through, and a second grid over the page's shows as doubled dots.
       className={cn(
-        "flex flex-col items-center rounded-panel border border-dashed border-border-strong text-center",
+        "relative flex flex-col items-center overflow-hidden rounded-panel border border-dashed border-border-strong text-center",
         compact ? "px-4 py-8" : "px-6 py-12",
       )}
     >
+      {compact ? null : (
+        // A little pill art in two corners, for the roomy empty states only.
+        <div aria-hidden className="pointer-events-none absolute inset-0 max-sm:hidden">
+          <Capsule hue="teal" className="absolute -left-3 bottom-5 h-6 w-14 -rotate-[30deg]" />
+          <Tablet hue="pink" className="absolute right-5 top-4 size-6" />
+          <Caplet hue="yellow" className="absolute -right-2 bottom-6 h-5 w-10 rotate-[24deg]" />
+        </div>
+      )}
       {icon ? (
         <div
           data-hue={hue}

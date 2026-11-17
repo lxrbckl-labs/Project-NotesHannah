@@ -14,6 +14,7 @@ import {
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useBadges } from "../../app/badges";
+import { PillCluster } from "../../components/art/pills";
 import { Page, SectionTitle } from "../../components/Page";
 import { ActionBar, ActionButton, ActionDivider, ActionLink } from "../../components/ui/action-bar";
 import { Badge } from "../../components/ui/badge";
@@ -133,9 +134,12 @@ export function LibraryHome() {
   return (
     <Page>
       {/* No greeting card (Alex, 2026-11-16): the page opens on what she had open last. */}
-      <h1 className="mb-5 font-display text-heading font-semibold leading-tight md:text-display">
-        Library
-      </h1>
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <h1 className="font-display text-heading font-semibold leading-tight md:text-display">
+          Library
+        </h1>
+        <PillCluster className="-mb-1" />
+      </div>
 
       <section aria-labelledby="recents-title" className="mb-8">
         <SectionTitle>

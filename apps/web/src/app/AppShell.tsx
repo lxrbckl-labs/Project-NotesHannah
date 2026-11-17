@@ -8,7 +8,6 @@ import {
   Lightbulb,
   LogOut,
   MessageSquarePlus,
-  NotebookPen,
   PanelLeft,
   PanelRight,
   Search,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useMatch } from "react-router";
+import { PillMark } from "../components/art/pills";
 import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
 import { useMe, useSignOut } from "../features/auth/useAuth";
@@ -195,7 +195,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
     >
       <div className="flex items-center gap-2.5 px-4 py-3">
         <span className="flex size-9 items-center justify-center rounded-control bg-accent text-accent-contrast">
-          <NotebookPen size={18} aria-hidden />
+          <PillMark size={20} />
         </span>
         <span className="flex-1 font-display text-lg font-semibold">Notes</span>
         <IconButton aria-label="Hide sidebar" onClick={onCollapse}>

@@ -2,6 +2,15 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Pharmacy theme (2026-11-17)
+
+Hannah asked for a more pharmaceutical look. The base colours are now cool mint whites with a
+pharmacy-green accent (light and dark, contrast test passing), and there is pill art on the sign-in
+page, the app's mark, the library title, roomy empty states and the tab icon. See `docs/design.md`,
+Direction. Still owed: the guide's figures and PDF show the old colours until `pnpm guide:figures`
+and `pnpm guide:pdf` are run again. `pnpm local` takes `NOTES_WEB_HOST=0.0.0.0` (with
+`NOTES_APP_ORIGIN`) to serve the local copy to the home network.
+
 ## Where it stands
 
 The app is built and runs locally end to end on the real server with the real file

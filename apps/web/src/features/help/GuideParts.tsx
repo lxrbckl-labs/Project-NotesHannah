@@ -1,4 +1,4 @@
-import { NotebookPen } from "lucide-react";
+import { PillMark } from "../../components/art/pills";
 import { cn } from "../../lib/cn";
 import { QUICK_REFERENCE, type Showcase } from "./content";
 import { Inline, SHOWCASE_LOOK } from "./GuideBlocks";
@@ -13,7 +13,7 @@ export function AppMark({ className, size = 18 }: { className?: string; size?: n
         className,
       )}
     >
-      <NotebookPen size={size} />
+      <PillMark size={size} />
     </span>
   );
 }

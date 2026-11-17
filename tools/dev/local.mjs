@@ -96,7 +96,17 @@ say(`starting the web app on :${webPort}, proxying /api to ${serverUrl}`);
 children.push(
   spawn(
     "pnpm",
-    ["--filter", "@notes/web", "exec", "vite", "--port", String(webPort), "--strictPort"],
+    [
+      "--filter",
+      "@notes/web",
+      "exec",
+      "vite",
+      "--port",
+      String(webPort),
+      "--strictPort",
+      // NOTES_WEB_HOST=0.0.0.0 serves the web app to the home network (set NOTES_APP_ORIGIN to match).
+      ...(process.env.NOTES_WEB_HOST ? ["--host", process.env.NOTES_WEB_HOST] : []),
+    ],
     {
       cwd: root,
       env: { ...env, SERVER_URL: serverUrl },
