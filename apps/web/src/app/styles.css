@@ -570,6 +570,21 @@ h3 {
   padding-bottom: var(--tabbar-h);
 }
 
+/* A branch of the library tree opening and closing (LibraryTree.tsx, Collapse): the rows' height runs
+ * from nothing to their own height, with a fade. Reduced motion makes it instant (the rule further down). */
+.tree-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 200ms var(--ease-calm),
+    opacity 160ms ease-out;
+}
+.tree-collapse[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
 /* The faint dotted grid motif. */
 .dot-grid {
   background-image: radial-gradient(var(--color-dot) 1.1px, transparent 1.2px);

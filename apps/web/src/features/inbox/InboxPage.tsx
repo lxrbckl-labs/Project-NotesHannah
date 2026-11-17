@@ -57,7 +57,13 @@ export function InboxPage() {
           description="New uploads wait here until they are filed under a lecture or folder."
           icon={<Inbox />}
           actions={
-            <UploadButton nodeId={null} target="the inbox" variant="primary">
+            <UploadButton
+              nodeId={null}
+              target="the inbox"
+              variant="primary"
+              // The page's one action: as wide as the screen on a phone, easy to hit with a thumb.
+              className="max-md:w-full"
+            >
               Upload files
             </UploadButton>
           }

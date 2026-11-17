@@ -157,6 +157,47 @@ export function LibraryTree({
   );
 }
 
+/** How long a branch takes to open or close; styles.css (.tree-collapse) uses the same figure. */
+const COLLAPSE_MS = 200;
+
+/**
+ * A branch that opens and closes with a short slide instead of appearing and vanishing: its rows grow
+ * from nothing and shrink back, fading as they go. The rows stay mounted until the closing slide has
+ * finished (untouchable meanwhile), and a branch that is already open when the tree loads does not animate.
+ */
+function Collapse({ open, children }: { open: boolean; children: ReactNode }) {
+  const [present, setPresent] = useState(open);
+  // `shown` drives the slide; `settled` lifts the clipping once open, so focus rings are not cut off.
+  const [shown, setShown] = useState(open);
+  const [settled, setSettled] = useState(open);
+  useEffect(() => {
+    const still =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const wait = still ? 0 : COLLAPSE_MS;
+    if (open) {
+      setPresent(true);
+      // One frame after mounting, so the browser has the closed state to slide from.
+      const frame = requestAnimationFrame(() => setShown(true));
+      const done = setTimeout(() => setSettled(true), wait + 20);
+      return () => {
+        cancelAnimationFrame(frame);
+        clearTimeout(done);
+      };
+    }
+    setSettled(false);
+    setShown(false);
+    const gone = setTimeout(() => setPresent(false), wait);
+    return () => clearTimeout(gone);
+  }, [open]);
+  if (!present) return null;
+  return (
+    <div className="tree-collapse" data-open={shown} inert={!open}>
+      <div className={cn("min-h-0", !settled && "overflow-hidden")}>{children}</div>
+    </div>
+  );
+}
+
 function TreeBranch({
   parent,
   depth,
@@ -601,7 +642,11 @@ function TreeItem({
         >
           <ChevronRight
             size={15}
-            className={cn("transition-transform duration-(--duration-fast)", open && "rotate-90")}
+            // The arrow turns with the branch, at the same pace and curve as the rows opening.
+            className={cn(
+              "transition-transform duration-(--duration-base) ease-(--ease-calm)",
+              open && "rotate-90",
+            )}
           />
         </button>
       ) : (
@@ -660,8 +705,8 @@ function TreeItem({
   return (
     <li role="none">
       <ContextActions entries={entries}>{row}</ContextActions>
-      {open ? (
-        // biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern
+      <Collapse open={open}>
+        {/* biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern */}
         <ul
           role="group"
           data-hue={hue ?? undefined}
@@ -670,7 +715,7 @@ function TreeItem({
         >
           <TreeBranch parent={node} depth={depth + 1} hue={hue} />
         </ul>
-      ) : null}
+      </Collapse>
     </li>
   );
 }

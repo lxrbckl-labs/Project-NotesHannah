@@ -35,7 +35,10 @@ describe("sidebar tree", () => {
     );
 
     await user.click(sidebar().getByRole("button", { name: "Collapse Fall 2026" }));
-    expect(sidebar().queryByRole("treeitem", { name: "Pharmacology II" })).toBeNull();
+    // The branch slides shut before its rows leave the page.
+    await waitFor(() =>
+      expect(sidebar().queryByRole("treeitem", { name: "Pharmacology II" })).toBeNull(),
+    );
   });
 
   it("highlights the current item, opens its ancestors, and labels lectures", async () => {
