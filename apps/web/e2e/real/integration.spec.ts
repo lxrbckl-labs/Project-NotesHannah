@@ -386,7 +386,8 @@ test("the composer opens from every entry point", async ({ page }, info) => {
   await close();
 
   // 5. a source page
-  const files = await api<{ items: Json[] }>(page, "GET", "/files?limit=20");
+  // Other tests upload files to this same instance, so the slides are not always among the newest 20.
+  const files = await api<{ items: Json[] }>(page, "GET", "/files?limit=200");
   const slides = files.items.find((f) => /Lecture 01 slides/.test(f.originalName ?? f.name));
   expect(slides).toBeTruthy();
   await page.goto(`/files/${slides?.id}`);

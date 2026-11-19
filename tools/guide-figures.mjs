@@ -55,7 +55,9 @@ async function signIn(page) {
   await page.getByLabel("Username").fill(username);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: /Hello, / })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "Library" })).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 /** Quiet the screen before a shot: no caret, no hover, no motion, fonts loaded. */

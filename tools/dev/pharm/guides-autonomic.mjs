@@ -388,7 +388,7 @@ export function cholinergicGuide({ c, concept, q }) {
     "Bethanechol must never be used when the bladder or bowel is mechanically obstructed.",
   );
   const s4 = c("chol", 4, "Emesis, lacrimation, salivation, sweating");
-  const s4b = c("chol", 4, "Bronchospasm and bronchorrhoea, bradycardia");
+  const s4b = c("chol", 4, "Bronchospasm and bronchorrhea, bradycardia");
   const s4ci = c(
     "chol",
     4,
@@ -539,7 +539,7 @@ export function cholinergicGuide({ c, concept, q }) {
         ["D", "Diarrhea"],
         ["U", "Urination"],
         ["M", "Miosis"],
-        ["B", "Bronchospasm and bronchorrhoea"],
+        ["B", "Bronchospasm and bronchorrhea"],
         ["B", "Bradycardia"],
         ["E", "Emesis"],
         ["L", "Lacrimation"],

@@ -174,8 +174,8 @@ CHOLINERGIC = dict(
         dict(
             title="Muscarinic excess",
             bullets=[
-                "Diarrhoea, urination, miosis",
-                "Bronchospasm and bronchorrhoea, bradycardia",
+                "Diarrhea, urination, miosis",
+                "Bronchospasm and bronchorrhea, bradycardia",
                 "Emesis, lacrimation, salivation, sweating",
                 "Avoid muscarinic agonists in asthma, peptic ulcer, bradycardia and urinary or GI obstruction",
             ],
@@ -410,7 +410,7 @@ BETA = dict(
                 "Explain how beta blockade lowers heart rate, contractility and blood pressure",
                 "Classify beta blockers by selectivity and extra properties",
                 "Name the beta blockers proven in HFrEF",
-                "Recognise adverse effects, contraindications and interactions",
+                "Recognize adverse effects, contraindications and interactions",
             ],
         ),
         dict(
@@ -504,7 +504,7 @@ BETA = dict(
             flags=[["dose", "6.25 mg", "Check the decimal."]],
         ),
         dict(
-            title="Counselling",
+            title="Counseling",
             bullets=[
                 "Do not stop suddenly: taper over 1 to 2 weeks",
                 "Take carvedilol with food to reduce dizziness",
@@ -617,7 +617,7 @@ HTN = dict(
                 ["Thiazide", "Chlorthalidone, hydrochlorothiazide", "Low potassium and sodium, high uric acid (gout), high glucose", "Electrolytes, uric acid"],
                 ["ACE inhibitor", "Lisinopril, enalapril", "Dry cough, high potassium, angioedema, rise in creatinine", "Serum creatinine, potassium"],
                 ["ARB", "Losartan, valsartan", "High potassium, rise in creatinine; no cough", "Serum creatinine, potassium"],
-                ["Dihydropyridine CCB", "Amlodipine, nifedipine ER", "Ankle oedema, headache, flushing", "Blood pressure, oedema"],
+                ["Dihydropyridine CCB", "Amlodipine, nifedipine ER", "Ankle edema, headache, flushing", "Blood pressure, edema"],
                 ["Non-dihydropyridine CCB", "Diltiazem, verapamil", "Bradycardia, constipation (verapamil)", "Heart rate; avoid in HFrEF"],
             ],
         ),
@@ -726,7 +726,7 @@ HF = dict(
                 ["Mineralocorticoid receptor antagonist (MRA)", "Spironolactone, eplerenone", "Lower mortality"],
                 ["SGLT2 inhibitor", "Dapagliflozin, empagliflozin", "Fewer HF hospitalisations and cardiovascular deaths"],
             ],
-            notes="Start all four as soon as possible, at low doses, rather than maximising one drug before adding the next.",
+            notes="Start all four as soon as possible, at low doses, rather than maximizing one drug before adding the next.",
         ),
         dict(
             title="Starting and target doses",

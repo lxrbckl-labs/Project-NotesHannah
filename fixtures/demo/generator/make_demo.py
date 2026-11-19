@@ -315,7 +315,7 @@ CALC_PAGES = [
         ("h2", "Milliequivalents"),
         ("formula", "mEq = mg x valence / molecular weight"),
         ("ex", "Example 8. Potassium chloride (KCl, MW 74.5, valence 1): 1 g = 1000 x 1 / 74.5 = 13.4 mEq."),
-        ("ex", "Example 9. Sodium chloride 0.9% contains 9 g per litre (MW 58.5): 9000 / 58.5 = 154 mEq of sodium per litre."),
+        ("ex", "Example 9. Sodium chloride 0.9% contains 9 g per liter (MW 58.5): 9000 / 58.5 = 154 mEq of sodium per liter."),
         ("h2", "Loading dose and half-life"),
         ("formula", "Loading dose = Vd x target concentration (divide by F for an oral dose)"),
         ("ex", "Example 10. Vd 0.5 L/kg, 60 kg patient, target 10 mg/L: 0.5 x 60 x 10 = 300 mg."),

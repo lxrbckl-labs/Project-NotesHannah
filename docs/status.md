@@ -42,7 +42,14 @@ As of 2026-11-16, after the design pass and the first deployment. Feature IDs re
 - Suites at 21:25 on 2026-11-17, MacBook under heavy load: gate passed; mock 404 passed; built 81
   of 82 in the full run, the one failure (practice tabs at 320 wide) passing alone; real-server
   journeys 27 of 27 after the last fixes, the whole real suite not rerun since.
-- Owed: guide figures and PDF (`pnpm guide:figures`, `pnpm guide:pdf`), `pnpm gate:full`.
+- 2026-11-19: guide figures retaken and the PDF regenerated (43 pages) from a fresh seeded instance.
+  The demo slides are rebuilt in American spelling (`fixtures/demo/generator/build.sh`), so the
+  slides, their transcripts and the seeded notes agree; the seeder quotes the slides word for word,
+  so the two must change together. `tools/guide-figures.mjs` needs the side-note and reference
+  seeders run as well as `local:seed:pharm`.
+- Suites on 2026-11-19, quiet machine: gate passed; built 82 of 82; real-server 82 passed and the one
+  failure (a test that looked only at the newest 20 files) fixed and passing; mock last run
+  2026-11-17, 404 passed.
 
 ## Pharmacy theme (2026-11-17)
 

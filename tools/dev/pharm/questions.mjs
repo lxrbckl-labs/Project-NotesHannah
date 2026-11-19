@@ -321,16 +321,16 @@ export function questions({ c }) {
       [
         ["Miosis", true],
         ["Bradycardia", true],
-        ["Bronchorrhoea", true],
+        ["Bronchorrhea", true],
         ["Salivation", true],
         ["Mydriasis"],
         ["Dry, hot skin"],
       ],
-      "Muscarinic excess: diarrhea, urination, miosis, bronchospasm and bronchorrhoea, bradycardia, emesis, lacrimation, salivation, sweating. Mydriasis and dry skin are anticholinergic signs.",
+      "Muscarinic excess: diarrhea, urination, miosis, bronchospasm and bronchorrhea, bradycardia, emesis, lacrimation, salivation, sweating. Mydriasis and dry skin are anticholinergic signs.",
       {
         sources: [
           chol(4, "Diarrhea, urination, miosis"),
-          chol(4, "Bronchospasm and bronchorrhoea, bradycardia"),
+          chol(4, "Bronchospasm and bronchorrhea, bradycardia"),
         ],
         tags: ["cholinergic", "toxicology"],
       },
