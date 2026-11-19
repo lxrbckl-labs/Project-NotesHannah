@@ -29,7 +29,7 @@ export type Tone = Hue | "accent";
 
 /** Plain names for pickers and screen readers. */
 export const HUE_LABEL: Record<Hue, string> = {
-  gray: "Grey",
+  gray: "Gray",
   brown: "Brown",
   red: "Red",
   orange: "Orange",

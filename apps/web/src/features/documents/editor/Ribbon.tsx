@@ -45,7 +45,7 @@ const COLOURABLE = new Set([
 
 /**
  * How many groups fold into "More", from the least used: one-tap inserts,
- * then indent, then the list toggles, then the block colour.
+ * then indent, then the list toggles, then the block color.
  */
 const MAX_FOLD = 4;
 
@@ -57,7 +57,7 @@ const FADE = 28;
  * document's bar while editing on a tablet or a computer. It reflects the
  * block and the marks where the caret is, and acts on that editor even when a
  * ribbon menu has the focus for a moment. With no text being edited it rests,
- * greyed out, so it still reads as "this page can be formatted".
+ * grayed out, so it still reads as "this page can be formatted".
  */
 export function Ribbon({
   blocks,
@@ -266,17 +266,19 @@ function MoreMenu({
 }) {
   return (
     <DropdownMenu.Root modal={false}>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label="More formatting"
-          data-testid="ribbon-more"
-          onMouseDown={keepCaret}
-          className="flex size-11 shrink-0 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text data-[state=open]:bg-surface-muted xl:size-9 [&_svg]:size-[18px]"
-        >
-          <Ellipsis />
-        </button>
-      </DropdownMenu.Trigger>
+      <Tooltip content="More formatting">
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            aria-label="More formatting"
+            data-testid="ribbon-more"
+            onMouseDown={keepCaret}
+            className="flex size-11 shrink-0 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text data-[state=open]:bg-surface-muted xl:size-9 [&_svg]:size-[18px]"
+          >
+            <Ellipsis />
+          </button>
+        </DropdownMenu.Trigger>
+      </Tooltip>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="end"
@@ -295,7 +297,7 @@ function MoreMenu({
                 <span className="flex size-5 items-center justify-center text-text-muted [&_svg]:size-4">
                   <Palette />
                 </span>
-                <span className="flex-1">Block colour</span>
+                <span className="flex-1">Block color</span>
                 <ChevronRight aria-hidden className="size-4 text-text-muted" />
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>

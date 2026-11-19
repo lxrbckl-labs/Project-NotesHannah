@@ -1,13 +1,22 @@
 import type { TabId } from "@notes/schema";
-import { BookOpen, GraduationCap, Inbox, type LucideIcon, Search, Settings } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  GraduationCap,
+  Inbox,
+  type LucideIcon,
+  Search,
+  Settings,
+} from "lucide-react";
 
 /**
- * The phone's bottom tabs, by id. Five at most: the things she opens most. Requests, Activity, Trash and the
+ * The phone's bottom tabs, by id. Six: the things she opens most (Calendar joined on 2026-11-17). Requests, Activity, Trash and the
  * Guide live in Settings. The order they show in is hers (Settings, "Tab bar"); the ids are in the schema.
  */
 export const TAB_DEFS: Record<TabId, { to: string; label: string; icon: LucideIcon }> = {
   library: { to: "/library", label: "Library", icon: BookOpen },
   practice: { to: "/practice", label: "Practice", icon: GraduationCap },
+  calendar: { to: "/calendar", label: "Calendar", icon: CalendarDays },
   search: { to: "/search", label: "Search", icon: Search },
   inbox: { to: "/inbox", label: "Inbox", icon: Inbox },
   settings: { to: "/settings", label: "Settings", icon: Settings },

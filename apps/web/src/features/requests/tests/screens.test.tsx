@@ -136,12 +136,13 @@ describe("RequestsView", () => {
     onOpenConcept: vi.fn(),
   });
 
-  it("lists requests newest first with plain-word status and the honest note", async () => {
+  it("lists requests newest first with plain-word status", async () => {
     localStorage.clear();
     render(<RequestsView {...props(make())} />);
     const cards = await screen.findAllByTestId("request-card");
     expect(cards.length).toBe(11);
-    expect(screen.getByText(/Agents pick these up the next time one runs/)).toBeInTheDocument();
+    // The "agents pick these up" note is said in the composer only (Alex, 2026-11-17), not on the list.
+    expect(screen.queryByText(/Agents pick these up the next time one runs/)).toBeNull();
     const first = cards[0] as HTMLElement;
     expect(within(first).getByTestId("status")).toHaveTextContent("Waiting for an agent");
     expect(screen.getAllByText("An agent is working on it").length).toBeGreaterThan(0);

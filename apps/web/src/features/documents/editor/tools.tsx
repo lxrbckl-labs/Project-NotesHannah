@@ -66,6 +66,8 @@ export function ToolButton({
     <IconButton
       variant="bare"
       label={label}
+      // This button's hint is the one below, which also shows the shortcut.
+      tooltip={false}
       pressed={active}
       disabled={disabled}
       aria-keyshortcuts={shortcut}
@@ -78,7 +80,11 @@ export function ToolButton({
     </IconButton>
   );
   if (!tooltips) return button;
-  return <Tooltip content={shortcut ? `${label}  ${shortcut}` : label}>{button}</Tooltip>;
+  return (
+    <Tooltip content={label} {...(shortcut ? { shortcut } : {})}>
+      {button}
+    </Tooltip>
+  );
 }
 
 export interface MarkState {
@@ -277,7 +283,7 @@ export function SwatchPopover({
   );
 }
 
-/** One colour in a picker: the look comes from the hue, a tick marks the current one. */
+/** One color in a picker: the look comes from the hue, a tick marks the current one. */
 function Swatch({
   token,
   chosen,
@@ -292,30 +298,31 @@ function Swatch({
   onPick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={chosen}
-      title={HUE_LABEL[token]}
-      onMouseDown={keepCaret}
-      onClick={onPick}
-      data-hue={token}
-      className={cn(
-        "relative flex size-8 items-center justify-center rounded-control border transition-transform duration-(--duration-instant) hover:scale-105 pointer-coarse:size-11",
-        look === "mark"
-          ? "border-tone-border bg-tone-mark text-text"
-          : "border-tone-border bg-surface font-semibold text-tone-text",
-        chosen && "ring-2 ring-accent ring-offset-1 ring-offset-surface",
-      )}
-    >
-      {look === "text" ? (
-        <span aria-hidden className="text-ui">
-          A
-        </span>
-      ) : (
-        chosen && <Check aria-hidden className="size-3.5" />
-      )}
-    </button>
+    <Tooltip content={label}>
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={chosen}
+        onMouseDown={keepCaret}
+        onClick={onPick}
+        data-hue={token}
+        className={cn(
+          "relative flex size-8 items-center justify-center rounded-control border transition-transform duration-(--duration-instant) hover:scale-105 pointer-coarse:size-11",
+          look === "mark"
+            ? "border-tone-border bg-tone-mark text-text"
+            : "border-tone-border bg-surface font-semibold text-tone-text",
+          chosen && "ring-2 ring-accent ring-offset-1 ring-offset-surface",
+        )}
+      >
+        {look === "text" ? (
+          <span aria-hidden className="text-ui">
+            A
+          </span>
+        ) : (
+          chosen && <Check aria-hidden className="size-3.5" />
+        )}
+      </button>
+    </Tooltip>
   );
 }
 
@@ -332,34 +339,36 @@ export function HighlightPicker({
   tooltips?: boolean;
 }) {
   const trigger = (
-    <button
-      type="button"
-      aria-label="Highlight colour"
-      disabled={!editor}
-      onMouseDown={keepCaret}
-      data-hue={current ?? "yellow"}
-      className={cn(
-        toolSquareClass,
-        "relative text-text-muted hover:bg-surface-muted hover:text-text",
-      )}
-    >
-      <Highlighter />
-      {/* The current highlighter colour, as a bar under the pen. */}
-      <span
-        aria-hidden
+    <Tooltip content="Highlight color">
+      <button
+        type="button"
+        aria-label="Highlight color"
+        disabled={!editor}
+        onMouseDown={keepCaret}
+        data-hue={current ?? "yellow"}
         className={cn(
-          "absolute right-2 bottom-1.5 left-2 h-1 rounded-pill xl:right-1.5 xl:bottom-1 xl:left-1.5",
-          current ? "bg-tone-solid" : "bg-hue-yellow-solid opacity-60",
+          toolSquareClass,
+          "relative text-text-muted hover:bg-surface-muted hover:text-text",
         )}
-      />
-    </button>
+      >
+        <Highlighter />
+        {/* The current highlighter colour, as a bar under the pen. */}
+        <span
+          aria-hidden
+          className={cn(
+            "absolute right-2 bottom-1.5 left-2 h-1 rounded-pill xl:right-1.5 xl:bottom-1 xl:left-1.5",
+            current ? "bg-tone-solid" : "bg-hue-yellow-solid opacity-60",
+          )}
+        />
+      </button>
+    </Tooltip>
   );
   const pick = (fn: (e: Editor) => void) => {
     if (editor && !editor.isDestroyed) fn(editor);
   };
   return (
     <SwatchPopover
-      label="Highlight colours"
+      label="Highlight colors"
       side={side}
       trigger={trigger}
       tooltip={tooltips ? `Highlight  ${MOD}${SHIFT}H` : null}
@@ -393,7 +402,7 @@ export function HighlightPicker({
 /**
  * The block's colour. The schema stores one colour per block (text colour for
  * text blocks, the accent of a callout or card), not per word, so the control
- * says "Block colour" and colours the whole block.
+ * says "Block color" and colors the whole block.
  */
 export function BlockColourPicker({
   current,
@@ -410,42 +419,44 @@ export function BlockColourPicker({
 }) {
   const [open, setOpen] = useState(false);
   const trigger = (
-    <button
-      type="button"
-      aria-label="Block colour"
-      disabled={disabled}
-      onMouseDown={keepCaret}
-      data-hue={current ?? undefined}
-      className={cn(
-        toolSquareClass,
-        "relative text-text-muted hover:bg-surface-muted hover:text-text",
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn("text-[17px] leading-none font-semibold", current && "text-tone-text")}
-      >
-        A
-      </span>
-      <span
-        aria-hidden
+    <Tooltip content="Block color">
+      <button
+        type="button"
+        aria-label="Block color"
+        disabled={disabled}
+        onMouseDown={keepCaret}
+        data-hue={current ?? undefined}
         className={cn(
-          "absolute right-2.5 bottom-1.5 left-2.5 h-1 rounded-pill xl:right-2 xl:bottom-1 xl:left-2",
-          current ? "bg-tone-solid" : "bg-text",
+          toolSquareClass,
+          "relative text-text-muted hover:bg-surface-muted hover:text-text",
         )}
-      />
-    </button>
+      >
+        <span
+          aria-hidden
+          className={cn("text-[17px] leading-none font-semibold", current && "text-tone-text")}
+        >
+          A
+        </span>
+        <span
+          aria-hidden
+          className={cn(
+            "absolute right-2.5 bottom-1.5 left-2.5 h-1 rounded-pill xl:right-2 xl:bottom-1 xl:left-2",
+            current ? "bg-tone-solid" : "bg-text",
+          )}
+        />
+      </button>
+    </Tooltip>
   );
   return (
     <SwatchPopover
-      label="Block colours"
+      label="Block colors"
       side={side}
       open={open}
       onOpenChange={setOpen}
       trigger={trigger}
-      tooltip={tooltips ? "Block colour (the whole block)" : null}
+      tooltip={tooltips ? "Block color (the whole block)" : null}
     >
-      <p className="m-0 mb-2 text-caption font-medium text-text-muted">Colour of the whole block</p>
+      <p className="m-0 mb-2 text-caption font-medium text-text-muted">Color of the whole block</p>
       <div className="grid grid-cols-5 gap-1.5">
         {COLOR_TOKENS.map((token) => (
           <Swatch
@@ -471,7 +482,7 @@ export function BlockColourPicker({
           setOpen(false);
         }}
       >
-        Default colour
+        Default color
       </Button>
     </SwatchPopover>
   );
@@ -500,21 +511,23 @@ export function LinkPicker({
   const [href, setHref] = useState("");
   const chain = () => (editor && !editor.isDestroyed ? chainOf(editor) : null);
   const trigger = (
-    <button
-      type="button"
-      aria-label="Link"
-      aria-pressed={Boolean(current)}
-      disabled={!editor}
-      onMouseDown={keepCaret}
-      className={cn(
-        toolSquareClass,
-        current
-          ? "bg-accent text-accent-contrast"
-          : "text-text-muted hover:bg-surface-muted hover:text-text",
-      )}
-    >
-      <Link2 />
-    </button>
+    <Tooltip content="Link">
+      <button
+        type="button"
+        aria-label="Link"
+        aria-pressed={Boolean(current)}
+        disabled={!editor}
+        onMouseDown={keepCaret}
+        className={cn(
+          toolSquareClass,
+          current
+            ? "bg-accent text-accent-contrast"
+            : "text-text-muted hover:bg-surface-muted hover:text-text",
+        )}
+      >
+        <Link2 />
+      </button>
+    </Tooltip>
   );
   return (
     <RadixPopover.Root

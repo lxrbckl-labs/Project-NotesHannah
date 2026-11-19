@@ -62,6 +62,6 @@ for (const [name, theme] of [
   });
 }
 
-test("the practice stylesheet holds no colours of its own", () => {
-  expect(mine).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(|--pr-(?!top|bottom|vh|vt)/);
+test("the practice stylesheet holds no colors of its own", () => {
+  expect(mine).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(|--pr-(?!top|bottom|vh|vt|ruler)/);
 });

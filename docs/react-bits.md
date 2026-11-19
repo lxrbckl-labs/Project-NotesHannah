@@ -114,3 +114,37 @@ In plain words:
 
 What this means here: Notes may use and change the components. Do not publish the `bits` folder as a package,
 a template or a component library for others.
+
+## WarmTooltip (added 2026-11-17)
+
+`apps/web/src/components/bits/WarmTooltip.tsx`, from `@react-bits/WarmTooltip-TS-TW`. It is the
+tooltip for every icon-only button, used through `components/ui/tooltip.tsx` (`Tooltip`,
+`TooltipGroup`), which sets the theme's colors. One `TooltipGroup` sits at the app root
+(`app/providers.tsx`), so the "warmth" is shared: after the first hint, the next button's hint opens
+at once.
+
+It imports `motion`, so `motion` is now part of the first load (before, only `CountUp` and
+`BlurText` used it).
+
+Changes from upstream, also listed in the file's header:
+
+- The wrapper around the control is `display: contents`, so it adds no box. Upstream wraps the
+  control in an inline-flex span, which would have moved every button that relies on its own
+  margins, `absolute` position or place in a flex row.
+- The bubble is placed against the control itself (the wrapper's first element).
+- It opens on the opposite side when the control is too close to the window's edge (`fitSide`).
+- The "fuse" bar is not drawn (it needed the wrapper's box).
+- Type fixes for this project's strict settings.
+
+When adding a component with the shadcn tool, it rewrites `package.json` (versions with `^`, keys
+reordered): put the pinned versions back and run `pnpm install --frozen-lockfile`. Never run the
+formatter on a file that does not parse: it rewrites `{...}` in JSX as plain text.
+- No long-press hint on touch. Upstream captures the pointer to time a long press, and with our
+  box-less wrapper that capture took the tap away from the button (a row's menu did not open on
+  phone and tablet in the real-server suite). On touch the button simply works.
+
+A tooltip must never sit between a Radix trigger and its button, including when the button is
+passed as a `trigger` prop: the menu is placed against the button, and the tooltip's wrapper has no
+box (the block menu opened off screen). Put the tooltip around the trigger instead; `BlockMenu` takes
+a `tip` for this.
+

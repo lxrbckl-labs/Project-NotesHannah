@@ -2,6 +2,48 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Calendar and shell changes (2026-11-17, local only until Alex says to commit)
+
+- Calendar: a new page at `/calendar`, in the sidebar and as a sixth phone tab (`TAB_IDS` in
+  `packages/schema/src/preferences.ts`). It shows exams on their dates and, for each day, what she
+  studied: practice answers (count, correct, minutes, lectures) and notes she wrote in herself. The
+  server route is `GET /api/calendar?from&to&utcOffsetMinutes` (`apps/server/src/domains/calendar`,
+  read-only, no new table). Web: `apps/web/src/features/calendar`. Not built: lecture dates,
+  reminders, planned study days.
+- Header: the search fills the header; every control is one size with 8px all round; each sidebar's
+  toggle sits in that sidebar's header while open and in the top bar while closed; both sidebars
+  slide (`app/SideSlide.tsx`).
+- Concept graph: same library (React Flow), new cards, curved coloured links, zoom buttons, drag.
+- Guide page: links glide to their section; the contents marker slides.
+- More pill art in page headers; the spinner is a capsule; a dedication line under Sign out.
+- Colours: LucidIndex's neutrals with KU blue (`#0051ba`) as the accent replace the mint and
+  teal theme; the pill art stays. See `docs/design.md`, Direction.
+- Every sidebar can be dragged wider or narrower from its inner edge (`app/SideResize.tsx` for the
+  app's sidebar and details panel; the document sidebars already could), remembered per browser;
+  double-click the edge for the usual width. Document sidebars slide and their panels fold with an
+  ease.
+- The heart beside Sign out opens Alex's handwritten note to Hannah with a letter-opening animation
+  (`features/letter`).
+- Pages slide: forward when something is opened, back on a back arrow (`.nav-back`) or the
+  browser's Back (`app/usePageSlide.ts`); only `#main` moves.
+- Background: Settings has a Background card; her own picture replaces the dotted grid behind the
+  pages, under a veil in the page colour. One per account, in the new table `user_backgrounds`
+  (migration `0910_user_backgrounds.sql`), served at `/api/me/background`. The app shrinks any
+  picture to 2560px on its longer side before sending; the server keeps at most 8 MB.
+- Recently opened shows six.
+- Later the same day: American spelling in everything she sees; Warm Tooltip on every icon-only
+  button; Read / Edit switch with a read-only Read mode (arrow cursor, no selection); panel heights
+  drag; drag and drop for uploads and for moving things in and out of folders; folders any depth;
+  side-note form with a dashed edge and five colors. See `docs/features.md` section R.
+- Fixed the same day, both from the sliding sidebars: a long library tree made the sidebar taller
+  than the window and the app could be pushed off its own top (`.side-slide` now has one row capped
+  at its place's height; built test "the app is never taller than the window"); a sidebar sliding in
+  widened the page by 24px (`overflow-x-clip` on the dock row).
+- Suites at 21:25 on 2026-11-17, MacBook under heavy load: gate passed; mock 404 passed; built 81
+  of 82 in the full run, the one failure (practice tabs at 320 wide) passing alone; real-server
+  journeys 27 of 27 after the last fixes, the whole real suite not rerun since.
+- Owed: guide figures and PDF (`pnpm guide:figures`, `pnpm guide:pdf`), `pnpm gate:full`.
+
 ## Pharmacy theme (2026-11-17)
 
 Hannah asked for a more pharmaceutical look. The base colours are now cool mint whites with a

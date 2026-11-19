@@ -66,7 +66,12 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
   return (
     <header data-hue={hue ?? undefined} className="mb-6">
       <div className="mb-3 flex items-center gap-1">
-        <IconButton aria-label="Back" variant="secondary" onClick={back} className="mr-1 md:hidden">
+        <IconButton
+          aria-label="Back"
+          variant="secondary"
+          onClick={back}
+          className="nav-back mr-1 md:hidden"
+        >
           <ArrowLeft size={20} />
         </IconButton>
         <div className="min-w-0 flex-1 overflow-x-auto">
@@ -97,7 +102,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <IconButton
-            aria-label={node.favourite ? "Remove from favourites" : "Add to favourites"}
+            aria-label={node.favourite ? "Remove from favorites" : "Add to favorites"}
             pressed={node.favourite}
             onClick={() => void actions.setFavourite(node, !node.favourite)}
           >
@@ -141,7 +146,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
           {canPractise ? (
             <ActionButton
               icon={<GraduationCap aria-hidden />}
-              label="Practise this"
+              label="Practice this"
               onClick={() => navigate(`/practice?node=${node.id}`)}
             />
           ) : null}

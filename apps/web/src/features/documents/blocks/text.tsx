@@ -26,7 +26,7 @@ import { richTextSize } from "../model/richtext";
 import { applyShortcut, dividerAfter, isDividerText, shortcutFor } from "../model/shortcuts";
 import { PlainInput, useBlockEdit } from "./common";
 
-/** Move the caret to the neighbouring editable block. */
+/** Move the caret to the neighboring editable block. */
 export function focusNeighbour(
   actions: DocActions,
   blockId: string,

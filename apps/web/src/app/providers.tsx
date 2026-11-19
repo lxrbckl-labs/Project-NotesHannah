@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
 import { ToastProvider } from "../components/ui/toast";
+import { TooltipGroup } from "../components/ui/tooltip";
 import { meKey } from "../features/auth/useAuth";
 import { isApiError, onUnauthenticated } from "../lib/api";
 
@@ -32,7 +33,8 @@ export function Providers({ children, client }: { children: ReactNode; client?: 
     <QueryClientProvider client={client ?? own}>
       <ToastProvider>
         <SessionWatcher />
-        {children}
+        {/* One shared warmth for every tooltip: moving from one icon button to the next opens it at once. */}
+        <TooltipGroup>{children}</TooltipGroup>
       </ToastProvider>
     </QueryClientProvider>
   );

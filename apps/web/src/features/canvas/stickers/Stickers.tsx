@@ -3,7 +3,7 @@ import { memo } from "react";
 
 /**
  * The built-in sticker set: simple original shapes drawn for this app.
- * Colours are the palette's solid shades and the app's text and surface, so dark mode gets its own ink.
+ * Colors are the palette's solid shades and the app's text and surface, so dark mode gets its own ink.
  */
 
 const INK = "var(--color-text)";

@@ -117,7 +117,7 @@ test("practice: start from the lecture, answer a calculation wrong by 1000 and s
   await signInReal(page);
   test.skip(!(await converterOnline(page)), "Docker is not running: no questions were seeded.");
   await openLecture(page);
-  await page.getByRole("button", { name: "Practise this" }).click();
+  await page.getByRole("button", { name: "Practice this" }).click();
   await expect(page.getByTestId("player")).toBeVisible({ timeout: 30_000 });
 
   let sawSlip = false;

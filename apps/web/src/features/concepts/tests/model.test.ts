@@ -70,7 +70,7 @@ describe("graph helpers", () => {
     expect(filterGraph(graph, null)).toEqual(graph);
   });
 
-  it("measures hops and places the centre at the origin on distinct rings", async () => {
+  it("measures hops and places the center at the origin on distinct rings", async () => {
     const store = createMockConceptsStore();
     const graph = await store.graph(id("bb"), { hops: 2 });
     const dist = distances(graph);
@@ -85,14 +85,14 @@ describe("graph helpers", () => {
     expect(Math.min(...ring2)).toBeGreaterThan(Math.max(...ring1));
   });
 
-  it("caps the neighbourhood at maxNodes and says so", async () => {
+  it("caps the neighborhood at maxNodes and says so", async () => {
     const store = createMockConceptsStore();
     const graph = await store.graph(id("bb"), { hops: 2, maxNodes: 5 });
     expect(graph.nodes).toHaveLength(5);
     expect(graph.truncated).toBe(true);
   });
 
-  it("groups direct neighbours by relation for the list view", async () => {
+  it("groups direct neighbors by relation for the list view", async () => {
     const store = createMockConceptsStore();
     const graph = await store.graph(id("bb"), { hops: 1 });
     const groups = neighbours(graph);

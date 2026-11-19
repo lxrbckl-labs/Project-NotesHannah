@@ -7,7 +7,7 @@ const NONE = "none";
 
 /**
  * Pick a colour from the palette (card, frame, course, highlighter). Each swatch is a radio with
- * the colour's name, so it works without seeing the colour. Arrow keys move between swatches.
+ * the color's name, so it works without seeing the color. Arrow keys move between swatches.
  */
 export function HuePicker({
   label,
@@ -15,7 +15,7 @@ export function HuePicker({
   onChange,
   hues = HUES,
   allowNone = true,
-  noneLabel = "No colour",
+  noneLabel = "No color",
   className,
 }: {
   /** The accessible name of the group, e.g. "Card colour". */

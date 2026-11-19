@@ -234,11 +234,11 @@ test.describe("library", () => {
     await expect(page.getByText("09 · Diuretics · Oct 28")).toBeVisible();
   });
 
-  test("favourites show on the library home", async ({ page }) => {
+  test("favorites show on the library home", async ({ page }) => {
     await openLectures(page);
-    await rowMenu(page, "Diuretics", "Add to favourites");
+    await rowMenu(page, "Diuretics", "Add to favorites");
     await page.getByRole("link", { name: "Library", exact: true }).first().click();
-    const favourites = page.getByRole("region", { name: "Favourites" });
+    const favourites = page.getByRole("region", { name: "Favorites" });
     await expect(favourites.getByRole("link", { name: /Diuretics/ })).toBeVisible();
   });
 

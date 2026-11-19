@@ -87,7 +87,7 @@ export const ATTRIBUTED_BLOCKS = [
   },
   {
     lecture: "adr",
-    text: "For emergency doses of the agents in this lecture, check DoseDex rather than memorising them from the slides.",
+    text: "For emergency doses of the agents in this lecture, check DoseDex rather than memorizing them from the slides.",
     url: `${PG}/dosedex/`,
     title: "DoseDex",
   },

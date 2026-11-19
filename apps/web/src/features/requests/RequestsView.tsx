@@ -1,5 +1,6 @@
-import { Inbox, Info, MessageCirclePlus } from "lucide-react";
+import { Inbox, MessageCirclePlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { HeaderArt } from "../../components/art/pills";
 import { Chip } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Notice } from "../../components/ui/notice";
@@ -11,7 +12,6 @@ import {
   baselineSeen,
   FILTER_LABEL,
   type Filter,
-  HONEST_NOTE,
   isUnread,
   markSeen,
   readSeen,
@@ -114,6 +114,7 @@ function Screen() {
       data-testid="requests"
     >
       <PageHeader
+        art={<HeaderArt kind="requests" />}
         title="Requests"
         description="Notes you leave for an agent: fix this, explain that, make questions."
         className="mb-4"
@@ -123,10 +124,6 @@ function Screen() {
           </Button>
         }
       />
-
-      <Notice tone="accent" icon={<Info size={18} />} className="max-w-2xl">
-        {HONEST_NOTE}
-      </Notice>
 
       {notice ? (
         <div
@@ -238,7 +235,7 @@ function Screen() {
         onClose={() => setCancelling(null)}
         onCancel={async (id) => {
           setCancelling(null);
-          await run(() => store.cancel(id), "Request cancelled.").catch(() => undefined);
+          await run(() => store.cancel(id), "Request canceled.").catch(() => undefined);
         }}
       />
     </div>

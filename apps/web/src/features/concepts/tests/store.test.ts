@@ -64,7 +64,7 @@ describe("the demo dataset", () => {
   });
 });
 
-describe("mock store behaviour", () => {
+describe("mock store behavior", () => {
   it("answers 'everything that causes bradycardia' through the class", async () => {
     const store = createMockConceptsStore();
     const { items } = await store.query({

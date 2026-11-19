@@ -14,7 +14,7 @@ export const STATUS_LABEL: Record<RequestStatus, string> = {
   in_progress: "An agent is working on it",
   done: "Done",
   declined: "Needs a change",
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
 };
 
 /** One gentle line under the status, for the detail of a card. */
@@ -32,7 +32,7 @@ export const FILTER_LABEL: Record<RequestStatus, string> = {
   in_progress: "In progress",
   done: "Done",
   declined: "Needs a change",
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
 };
 
 export const STATUS_ORDER: readonly RequestStatus[] = [
@@ -104,7 +104,7 @@ export const EXAMPLES_FOR_TARGET: Record<RequestTarget["type"], readonly string[
     "Build a study plan for my cardiology exam on the 14th.",
   ],
   node: [
-    "Summarise this lecture in a page I can read before class.",
+    "Summarize this lecture in a page I can read before class.",
     "Write 15 practice questions from this lecture, mostly on mechanisms.",
     "Make a comparison table of the drugs in this lecture.",
   ],

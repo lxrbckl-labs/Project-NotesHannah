@@ -305,11 +305,11 @@ test("home card: upcoming exams with days remaining and progress; past exams are
     "In 12 days",
   );
   expect(within(items[0] as HTMLElement).getByTestId("exam-progress")).toHaveTextContent(
-    /Practised \d+ of \d+ questions/,
+    /Practiced \d+ of \d+ questions/,
   );
   expect(screen.queryByText("Old one")).toBeNull();
   await user.click(
-    within(items[0] as HTMLElement).getByRole("button", { name: "Practise for this" }),
+    within(items[0] as HTMLElement).getByRole("button", { name: "Practice for this" }),
   );
   expect(onPractice).toHaveBeenCalled();
 });

@@ -41,7 +41,7 @@ export function countCitations(block: BlockInput): number {
 }
 
 /** Plain-language statement of the citation rule, used in errors and docs. */
-export const CITATION_RULE_TEXT = `Generated blocks must say where they came from. Add at least one citation to "citations", each naming the fileId, the pageId and the exact passage quoted from that page's transcript (plus a region on the page when you know it). If it comes from a trusted outside reference (a guideline, PharmGuides), put that in "references" ({"title", "url"}) and it is labelled with the reference, apart from her sources. If it is from neither, set "generalKnowledge": true and it will be labelled "not from your notes". Exempt: ${CITATION_EXEMPT_TYPES.join(", ")}, and anything she writes herself.`;
+export const CITATION_RULE_TEXT = `Generated blocks must say where they came from. Add at least one citation to "citations", each naming the fileId, the pageId and the exact passage quoted from that page's transcript (plus a region on the page when you know it). If it comes from a trusted outside reference (a guideline, PharmGuides), put that in "references" ({"title", "url"}) and it is labeled with the reference, apart from her sources. If it is from neither, set "generalKnowledge": true and it will be labeled "not from your notes". Exempt: ${CITATION_EXEMPT_TYPES.join(", ")}, and anything she writes herself.`;
 
 /** The citation rule for one block, or null when it is satisfied. */
 export function citationRuleIssue(block: BlockInput, origin: Origin): BlockIssue | null {

@@ -14,7 +14,7 @@ export function SourceFilePage() {
   const quote = params.get("quote") ?? undefined;
   return (
     <Page className="max-w-7xl">
-      <button type="button" onClick={back} className={buttonClass({ className: "mb-3" })}>
+      <button type="button" onClick={back} className={buttonClass({ className: "nav-back mb-3" })}>
         <ArrowLeft size={18} aria-hidden /> Back
       </button>
       <div className="mb-3 flex justify-end">

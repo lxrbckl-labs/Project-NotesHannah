@@ -28,7 +28,7 @@ function PracticeScreen({ route }: { route: "practice" | "exams" | "session" }) 
   const view: PracticeView =
     route === "exams" ? "exams" : fromUrl && VIEWS.includes(fromUrl) ? fromUrl : "start";
 
-  // "Practise this": a link names what to practise and the session starts at once.
+  // "Practice this": a link names what to practice and the session starts at once.
   const autoStart = useMemo<SessionScope | undefined>(() => {
     const node = params.get("node");
     const exam = params.get("exam");

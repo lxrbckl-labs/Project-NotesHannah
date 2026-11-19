@@ -44,7 +44,7 @@ describe("block styles", () => {
     );
   });
 
-  it("keeps the block's colour and sources when it changes style", () => {
+  it("keeps the block's color and sources when it changes style", () => {
     const quote = block({
       type: "quote",
       content: { text: "said" },

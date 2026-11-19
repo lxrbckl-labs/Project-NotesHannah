@@ -191,7 +191,7 @@ const RAW: Array<[ref: string, block: BlockInputRaw]> = [
       citations: [cite(15, "masks tachycardia of hypoglycaemia; sweating preserved", "Slide 15")],
     },
   ],
-  ["h-counsel", { type: "heading", content: { level: 2, text: "Counselling" } }],
+  ["h-counsel", { type: "heading", content: { level: 2, text: "Counseling" } }],
   [
     "counsel",
     {
@@ -325,7 +325,7 @@ export function buildSeed(): { document: MemoryDocument; ref: Record<string, str
         },
         {
           ref: "f-counsel",
-          title: "Counselling",
+          title: "Counseling",
           members: ["counsel", "withdrawal", "questions"],
           color: "green",
         },

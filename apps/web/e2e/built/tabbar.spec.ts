@@ -24,13 +24,20 @@ test("the order is saved on the server and follows her across reload and sign-in
   await page.getByTestId("tab-bar").getByRole("link", { name: "Settings" }).click();
   await expect(page.getByTestId("tab-bar-card")).toBeVisible();
   await expect(page.locator("html")).not.toHaveClass(/tab-sliding/);
-  const settingsFirst = ["Settings", "Library", "Practice", "Search", "Inbox"];
+  const settingsFirst = ["Settings", "Library", "Practice", "Calendar", "Search", "Inbox"];
 
   // Pick Settings and move it to the far left with the keyboard; the real bar waits for Save.
   const picked = page.getByTestId("tab-replica-item").filter({ hasText: "Settings" });
   await picked.focus();
   await page.keyboard.press("Home");
-  expect(await labels(page)).toEqual(["Library", "Practice", "Search", "Inbox", "Settings"]);
+  expect(await labels(page)).toEqual([
+    "Library",
+    "Practice",
+    "Calendar",
+    "Search",
+    "Inbox",
+    "Settings",
+  ]);
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect.poll(() => labels(page)).toEqual(settingsFirst);
 
@@ -55,6 +62,6 @@ test("the order is saved on the server and follows her across reload and sign-in
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect
     .poll(() => labels(page))
-    .toEqual(["Library", "Practice", "Search", "Inbox", "Settings"]);
+    .toEqual(["Library", "Practice", "Calendar", "Search", "Inbox", "Settings"]);
   seen.assertClean("the tab bar card");
 });

@@ -1562,7 +1562,7 @@ export function createPracticeService(
     const row = sessionRow(auth.userId, sessionId);
     if (row.status !== "active") {
       throw new AppError("conflict", `This session is ${row.status}; answers are closed.`, {
-        hint: "Start a new session to keep practising.",
+        hint: "Start a new session to keep practicing.",
       });
     }
     const items = itemsOf(row);
@@ -1684,7 +1684,7 @@ export function createPracticeService(
     const row = sessionRow(auth.userId, sessionId);
     if (row.status !== "active") {
       throw new AppError("conflict", `This session is ${row.status}; nothing can be skipped.`, {
-        hint: "Start a new session to keep practising.",
+        hint: "Start a new session to keep practicing.",
       });
     }
     const items = itemsOf(row);

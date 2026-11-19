@@ -430,7 +430,7 @@ if (!converted) {
       },
     ],
   });
-  console.log("  a canvas with two frames and labelled connectors");
+  console.log("  a canvas with two frames and labeled connectors");
 }
 
 console.log(`\nSeeded. Sign in at ${appOrigin} as ${credentials.username}.`);

@@ -212,7 +212,7 @@ function renderBlock(block: GuideBlock, figure: (id: FigureId) => ReactNode): Re
   }
 }
 
-/** An icon and a calm colour for each showcase card, in the order of SHOWCASE. */
+/** An icon and a calm color for each showcase card, in the order of SHOWCASE. */
 export const SHOWCASE_LOOK: { icon: typeof Lock; hue: Tone }[] = [
   { icon: BadgeCheck, hue: "green" },
   { icon: PenLine, hue: "blue" },

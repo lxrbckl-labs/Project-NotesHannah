@@ -107,7 +107,7 @@ export function PracticeApp({
         length,
       });
       if (s.total === 0) {
-        setProblem("There is nothing to practise there yet.");
+        setProblem("There is nothing to practice there yet.");
         setMode({ kind: "browse" });
         return;
       }
@@ -157,7 +157,7 @@ export function PracticeApp({
         <nav aria-label="Practice sections" className="mb-7">
           {/* The shared segmented look; the items are buttons so each keeps its test id. ScrollCue
               scrolls the row (fade at the cut edge, chosen tab kept in view) when it is too wide;
-              inline-grid makes the grey track as wide as its five tabs, so it never ends before
+              inline-grid makes the gray track as wide as its five tabs, so it never ends before
               "Exams". */}
           <ScrollCue scrollerClassName="-mx-4 px-4 md:mx-0 md:px-0">
             <ul className="inline-grid grid-cols-[repeat(5,auto)] gap-1 rounded-card border border-border bg-surface-muted p-1">

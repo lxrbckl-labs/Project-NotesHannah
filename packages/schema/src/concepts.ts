@@ -106,7 +106,7 @@ export const CONCEPT_TYPE_INFO: Record<
     example: "heart rate",
   },
   counselling_point: {
-    label: "Counselling point",
+    label: "Counseling point",
     meaning: "Advice to give a patient.",
     example: "do not stop abruptly",
   },

@@ -30,7 +30,7 @@ describe("create_document", () => {
     expect(t.library.get(t.alice, made.nodeId)).toMatchObject({ kind: "document" });
   });
 
-  it("stores the normalised block: rich-text strings become runs", () => {
+  it("stores the normalized block: rich-text strings become runs", () => {
     const t = setupDocs();
     const made = t.newDoc(t.she, [para("hi")]);
     const [block] = t.service.getFull(t.she, made.documentId).blocks;

@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { cn } from "../../lib/cn";
 import type { Tone } from "../../lib/hues";
 import { backButtonClass } from "./button";
+import { Tooltip } from "./tooltip";
 
 /**
  * The top of a screen: an optional back link, an eyebrow, the title, a line of description and
@@ -15,6 +16,7 @@ export function PageHeader({
   eyebrow,
   back,
   actions,
+  art,
   icon,
   hue,
   className,
@@ -26,6 +28,8 @@ export function PageHeader({
   /** Where the back arrow goes, and what it is called for screen readers. */
   back?: { to: string; label: string };
   actions?: ReactNode;
+  /** A decorative drawing beside the title, shown from tablet width up (components/art/pills). */
+  art?: ReactNode;
   /** An icon in a tinted square beside the title. */
   icon?: ReactNode;
   hue?: Tone | undefined;
@@ -34,9 +38,11 @@ export function PageHeader({
   return (
     <header className={cn("mb-6 flex flex-wrap items-start gap-x-4 gap-y-3", className)}>
       {back ? (
-        <Link to={back.to} aria-label={back.label} className={backButtonClass}>
-          <ArrowLeft size={20} aria-hidden />
-        </Link>
+        <Tooltip content={back.label}>
+          <Link to={back.to} aria-label={back.label} className={backButtonClass}>
+            <ArrowLeft size={20} aria-hidden />
+          </Link>
+        </Tooltip>
       ) : null}
       {icon ? (
         <div
@@ -56,6 +62,7 @@ export function PageHeader({
           <p className="mt-1 max-w-prose text-ui text-text-muted">{description}</p>
         ) : null}
       </div>
+      {art ? <div className="self-center max-md:hidden">{art}</div> : null}
       {actions ? (
         // On a phone the actions take a row of their own at full width, so a button can fill it (`max-md:w-full`).
         <div className="flex flex-wrap items-center gap-2 max-md:w-full">{actions}</div>

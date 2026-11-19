@@ -349,7 +349,7 @@ describe("claims", () => {
     expect(thrown(() => t.service.decline(t.otherBot, id, { reason: "x" })).code).toBe("conflict");
   });
 
-  it("renews when the holder claims again, and honours a requested length", () => {
+  it("renews when the holder claims again, and honors a requested length", () => {
     const t = setupRequests();
     const id = t.service.create(t.she, { target: LIBRARY, kind: "quiz_me", message: "" }).id;
     t.service.claim(t.bot, id, { ttlSeconds: 120 });

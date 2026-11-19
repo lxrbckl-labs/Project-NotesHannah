@@ -1,6 +1,7 @@
 import { practice } from "@notes/schema";
 import { Check, X } from "lucide-react";
 import { useState } from "react";
+import { Tooltip } from "../../../components/ui/tooltip";
 import { seriesHue } from "../../../lib/hues";
 import { FEEDBACK_HUE } from "../../../lib/roles";
 import { useFinePointer } from "../lib/hooks";
@@ -152,14 +153,16 @@ export function Matching({
                     )}
                   </button>
                   {right !== null && !disabled && (
-                    <button
-                      type="button"
-                      onClick={() => unpair(l.id)}
-                      aria-label={`Remove match for ${l.text}`}
-                      className="grid w-12 place-items-center border-l border-border text-text-muted hover:bg-surface-muted hover:text-text"
-                    >
-                      <X size={16} aria-hidden />
-                    </button>
+                    <Tooltip content={`Remove match for ${l.text}`}>
+                      <button
+                        type="button"
+                        onClick={() => unpair(l.id)}
+                        aria-label={`Remove match for ${l.text}`}
+                        className="grid w-12 place-items-center border-l border-border text-text-muted hover:bg-surface-muted hover:text-text"
+                      >
+                        <X size={16} aria-hidden />
+                      </button>
+                    </Tooltip>
                   )}
                 </li>
               );

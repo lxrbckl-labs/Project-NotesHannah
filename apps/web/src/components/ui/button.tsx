@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, Ref } from "react";
 import { cn } from "../../lib/cn";
+import { Tooltip } from "./tooltip";
 
 export type ButtonVariant =
   | "primary"
@@ -15,8 +16,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary:
     "border border-border-strong bg-surface text-text hover:bg-surface-muted active:bg-surface-muted",
   subtle: "bg-surface-muted text-text hover:bg-hue-gray-mark active:bg-hue-gray-mark",
-  // The three "ghost" variants are outlined on the surface colour like `secondary`: a button with no edge and no
-  // fill disappears on the dotted page. They differ from `secondary` only in the colour of their text.
+  // The three "ghost" variants are outlined on the surface color like `secondary`: a button with no edge and no
+  // fill disappears on the dotted page. They differ from `secondary` only in the color of their text.
   ghost:
     "border border-border-strong bg-surface text-text hover:bg-surface-muted active:bg-surface-muted",
   ghostDanger:
@@ -74,7 +75,8 @@ export function Button({
  * `<IconButton variant="secondary">`, which draws the same.
  */
 export const backButtonClass =
-  "flex size-11 shrink-0 items-center justify-center rounded-control border border-border-strong bg-surface text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted active:bg-surface-muted xl:size-9";
+  // `nav-back`: the page then slides in from the left, like going back (app/usePageSlide).
+  "nav-back flex size-11 shrink-0 items-center justify-center rounded-control border border-border-strong bg-surface text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted active:bg-surface-muted xl:size-9";
 
 type IconButtonVariant = "ghost" | "subtle" | "secondary" | "primary" | "ghostDanger" | "bare";
 
@@ -102,6 +104,12 @@ export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: "sm" | "md";
   /** A toggle: shown filled with the accent while pressed. */
   pressed?: boolean;
+  /**
+   * The hint that names the button on hover, focus or a long press. On by default, from its label,
+   * since an icon alone does not say what it does. Pass a side to place it, or `false` when
+   * something around the button already shows a hint.
+   */
+  tooltip?: boolean | "top" | "bottom" | "left" | "right";
 } & ({ "aria-label": string; label?: undefined } | { label: string; "aria-label"?: undefined });
 
 /** An icon-only button. It always has a name: pass label (or aria-label). */
@@ -112,9 +120,11 @@ export function IconButton({
   pressed,
   label,
   type = "button",
+  tooltip = true,
   ...props
 }: IconButtonProps) {
-  return (
+  const name = label ?? props["aria-label"];
+  const button = (
     <button
       type={type}
       aria-label={label ?? props["aria-label"]}
@@ -128,5 +138,11 @@ export function IconButton({
       )}
       {...props}
     />
+  );
+  if (tooltip === false || !name) return button;
+  return (
+    <Tooltip content={name} side={tooltip === true ? "top" : tooltip}>
+      {button}
+    </Tooltip>
   );
 }

@@ -20,7 +20,7 @@ function cited(t: Concepts, name: string, extra: Record<string, unknown> = {}) {
 }
 
 describe("creating and editing a concept", () => {
-  it("creates a drug with provenance, normalised aliases and an unchecked name", () => {
+  it("creates a drug with provenance, normalized aliases and an unchecked name", () => {
     const t = setupConcepts();
     const { concept, suggestions } = t.service.createConcept(
       t.bot,

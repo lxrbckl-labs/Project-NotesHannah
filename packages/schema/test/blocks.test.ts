@@ -222,7 +222,7 @@ describe("block registry", () => {
 });
 
 describe("rich text", () => {
-  it("normalises the plain string shorthand into runs", () => {
+  it("normalizes the plain string shorthand into runs", () => {
     const block = valid({
       type: "heading",
       content: { level: 2, text: "Class II antiarrhythmics" },
@@ -230,7 +230,7 @@ describe("rich text", () => {
     expect(block.content).toEqual({ level: 2, text: [{ text: "Class II antiarrhythmics" }] });
   });
 
-  it("normalises shorthand everywhere rich text is accepted", () => {
+  it("normalizes shorthand everywhere rich text is accepted", () => {
     const list = valid(FULL.bulleted_list);
     expect(list.type === "bulleted_list" && list.content.items[0]).toEqual({
       text: [{ text: "Bradycardia" }],
@@ -244,7 +244,7 @@ describe("rich text", () => {
     });
   });
 
-  it("merges neighbouring runs with the same marks and drops false marks", () => {
+  it("merges neighboring runs with the same marks and drops false marks", () => {
     expect(
       normalizeRichText([
         { text: "Pro", bold: true },
@@ -256,17 +256,17 @@ describe("rich text", () => {
     expect(normalizeRichText("")).toEqual([]);
   });
 
-  it("rejects raw colours with a message about tokens", () => {
+  it("rejects raw colors with a message about tokens", () => {
     const result = ColorToken.safeParse("#ff0000");
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error.issues[0]?.message).toContain("colour token");
+    if (!result.success) expect(result.error.issues[0]?.message).toContain("color token");
     const found = problems({
       type: "paragraph",
       content: { text: [{ text: "x", highlight: "#ffff00" }] },
       generalKnowledge: true,
     });
     expect(found[0]?.path).toBe("$.content.text[0].highlight");
-    expect(found[0]?.message).toContain("colour token");
+    expect(found[0]?.message).toContain("color token");
   });
 
   it("explains a bad inline item by its most likely shape", () => {
@@ -290,7 +290,7 @@ describe("rich text", () => {
     ).toContain("http");
   });
 
-  it("enforces the character limit on normalised text", () => {
+  it("enforces the character limit on normalized text", () => {
     const schema = richText(10);
     expect(schema.safeParse("0123456789").success).toBe(true);
     expect(schema.safeParse([{ text: "01234" }, { text: "567890", bold: true }]).success).toBe(

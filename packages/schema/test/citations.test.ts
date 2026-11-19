@@ -148,7 +148,7 @@ describe("the citation rule", () => {
     }
   });
 
-  it("is also available as a plain function on normalised blocks", () => {
+  it("is also available as a plain function on normalized blocks", () => {
     const result = validateBlockInput({ ...paragraph, generalKnowledge: true });
     if (!result.ok) throw new Error("unexpected");
     const block = { ...result.block, generalKnowledge: false };

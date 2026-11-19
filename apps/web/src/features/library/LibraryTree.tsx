@@ -25,6 +25,7 @@ import { useMatch, useNavigate } from "react-router";
 import { Badge } from "../../components/ui/badge";
 import { ContextActions, type MenuEntry } from "../../components/ui/menu";
 import { MiddleTruncate } from "../../components/ui/middle-truncate";
+import { Tooltip } from "../../components/ui/tooltip";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { SLIDE_TYPES, TEXT_TYPES } from "../../lib/fileTypes";
@@ -498,7 +499,7 @@ function TreeItem({
   /** The course colour carried down from above; terms and the top have none. */
   hue: Hue | null;
 }) {
-  // A course starts its own colour, a term has none, everything below carries its course's.
+  // A course starts its own color, a term has none, everything below carries its course's.
   const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
   const tree = useTree();
   const open_ = useTreeState();
@@ -630,25 +631,27 @@ function TreeItem({
       style={{ paddingLeft: `calc(var(--indent) * ${depth} + 4px)` }}
     >
       {expandable ? (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={`${open ? "Collapse" : "Expand"} ${node.name}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            open_.toggle(node.id);
-          }}
-          className="hit-area flex size-9 shrink-0 items-center justify-center rounded-inline text-text-muted hover:bg-border/50 xl:size-6"
-        >
-          <ChevronRight
-            size={15}
-            // The arrow turns with the branch, at the same pace and curve as the rows opening.
-            className={cn(
-              "transition-transform duration-(--duration-base) ease-(--ease-calm)",
-              open && "rotate-90",
-            )}
-          />
-        </button>
+        <Tooltip content={`${open ? "Collapse" : "Expand"} ${node.name}`}>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`${open ? "Collapse" : "Expand"} ${node.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              open_.toggle(node.id);
+            }}
+            className="hit-area flex size-9 shrink-0 items-center justify-center rounded-inline text-text-muted hover:bg-border/50 xl:size-6"
+          >
+            <ChevronRight
+              size={15}
+              // The arrow turns with the branch, at the same pace and curve as the rows opening.
+              className={cn(
+                "transition-transform duration-(--duration-base) ease-(--ease-calm)",
+                open && "rotate-90",
+              )}
+            />
+          </button>
+        </Tooltip>
       ) : (
         <span className="size-9 shrink-0 xl:size-6" aria-hidden />
       )}

@@ -2,6 +2,7 @@ import type { ConceptSummary, ConceptType } from "@notes/schema";
 import { CONCEPT_TYPE_INFO, CONCEPT_TYPES } from "@notes/schema";
 import { BookMarked, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { HeaderArt } from "../../components/art/pills";
 import { Chip } from "../../components/ui/badge";
 import { Card } from "../../components/ui/card";
 import { inputClass } from "../../components/ui/field";
@@ -65,6 +66,7 @@ export function ConceptsIndex({
         data-testid="concepts-index"
       >
         <PageHeader
+          art={<HeaderArt kind="concepts" />}
           title="Concepts"
           description="Drugs, classes and mechanisms from all your courses, in one place."
           className="mb-4"

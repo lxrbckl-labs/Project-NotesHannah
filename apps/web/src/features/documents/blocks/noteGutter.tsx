@@ -1,4 +1,5 @@
 import { MessageSquarePlus, MessageSquareText } from "lucide-react";
+import { Tooltip } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/cn";
 import { useActions, useSignal, useView } from "../context";
 
@@ -20,50 +21,54 @@ export function NoteGutter({ blockId }: { blockId: string }) {
       count.open < count.all ? `, ${count.all - count.open} done` : ""
     }`;
     return (
-      <button
-        type="button"
-        data-testid="note-marker"
-        aria-label={label}
-        onClick={(e) => {
-          e.stopPropagation();
-          sideNotes.show(count.firstId);
-        }}
-        className={cn(
-          where,
-          "flex h-6 min-w-6 after:absolute after:-inset-2.5 after:content-[''] items-center justify-center gap-0.5 rounded-pill border px-1 text-caption font-semibold tabular-nums shadow-card",
-          count.open > 0
-            ? "border-warning-border bg-warning-soft text-warning"
-            : "border-border bg-surface text-text-muted",
-        )}
-      >
-        <MessageSquareText aria-hidden className="size-3" />
-        {count.all}
-      </button>
+      <Tooltip content={label}>
+        <button
+          type="button"
+          data-testid="note-marker"
+          aria-label={label}
+          onClick={(e) => {
+            e.stopPropagation();
+            sideNotes.show(count.firstId);
+          }}
+          className={cn(
+            where,
+            "flex h-6 min-w-6 after:absolute after:-inset-2.5 after:content-[''] items-center justify-center gap-0.5 rounded-pill border px-1 text-caption font-semibold tabular-nums shadow-card",
+            count.open > 0
+              ? "border-warning-border bg-warning-soft text-warning"
+              : "border-border bg-surface text-text-muted",
+          )}
+        >
+          <MessageSquareText aria-hidden className="size-3" />
+          {count.all}
+        </button>
+      </Tooltip>
     );
   }
   return (
-    <button
-      type="button"
-      data-testid="note-add"
-      aria-label="Add a side note"
-      onClick={(e) => {
-        e.stopPropagation();
-        sideNotes.compose(blockId);
-      }}
-      className={cn(
-        where,
-        "flex size-6 after:absolute after:-inset-2.5 after:content-[''] items-center justify-center rounded-pill border border-border bg-surface text-text-muted shadow-card transition-opacity duration-(--duration-fast) hover:text-accent focus-visible:opacity-100",
-        // Computer: only with the pointer over the block. Touch: beside the block she is reading.
-        isTouch
-          ? atLine
-            ? "opacity-100"
-            : "pointer-events-none opacity-0"
-          : "opacity-0 group-hover/block:opacity-100",
-      )}
-      // One tab stop per block would bury the page; the keyboard has the shortcut and the block menu.
-      tabIndex={isTouch && atLine ? 0 : -1}
-    >
-      <MessageSquarePlus aria-hidden className="size-3.5" />
-    </button>
+    <Tooltip content="Add a side note">
+      <button
+        type="button"
+        data-testid="note-add"
+        aria-label="Add a side note"
+        onClick={(e) => {
+          e.stopPropagation();
+          sideNotes.compose(blockId);
+        }}
+        className={cn(
+          where,
+          "flex size-6 after:absolute after:-inset-2.5 after:content-[''] items-center justify-center rounded-pill border border-border bg-surface text-text-muted shadow-card transition-opacity duration-(--duration-fast) hover:text-accent focus-visible:opacity-100",
+          // Computer: only with the pointer over the block. Touch: beside the block she is reading.
+          isTouch
+            ? atLine
+              ? "opacity-100"
+              : "pointer-events-none opacity-0"
+            : "opacity-0 group-hover/block:opacity-100",
+        )}
+        // One tab stop per block would bury the page; the keyboard has the shortcut and the block menu.
+        tabIndex={isTouch && atLine ? 0 : -1}
+      >
+        <MessageSquarePlus aria-hidden className="size-3.5" />
+      </button>
+    </Tooltip>
   );
 }

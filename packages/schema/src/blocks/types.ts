@@ -263,7 +263,7 @@ export const LabelledImageContent = z.strictObject({
   alt: shortText(L.altChars),
   hotspots: z
     .array(Hotspot)
-    .min(1, { error: "A labelled image needs at least one hotspot; use an image block otherwise." })
+    .min(1, { error: "A labeled image needs at least one hotspot; use an image block otherwise." })
     .max(L.hotspots),
 });
 

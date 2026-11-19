@@ -36,7 +36,7 @@ function Picker() {
   const [hue, setHue] = useState<Hue | null>(null);
   return (
     <>
-      <HuePicker label="Card colour" value={hue} onChange={setHue} />
+      <HuePicker label="Card color" value={hue} onChange={setHue} />
       <output>{hue ?? "none"}</output>
     </>
   );
@@ -167,13 +167,13 @@ describe("Switch", () => {
 });
 
 describe("HuePicker", () => {
-  it("names every swatch and reports the choice, including no colour", async () => {
+  it("names every swatch and reports the choice, including no color", async () => {
     render(<Picker />);
-    expect(screen.getByRole("radiogroup", { name: "Card colour" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Card color" })).toBeInTheDocument();
     expect(screen.getAllByRole("radio")).toHaveLength(11);
     await userEvent.click(screen.getByRole("radio", { name: "Teal" }));
     expect(screen.getByRole("status")).toHaveTextContent("teal");
-    await userEvent.click(screen.getByRole("radio", { name: "No colour" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No color" }));
     expect(screen.getByRole("status")).toHaveTextContent("none");
   });
 });

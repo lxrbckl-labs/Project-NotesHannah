@@ -7,7 +7,7 @@ import { z } from "zod";
  */
 
 /** Every tab the phone's bottom bar can show, by id. Add an id here when the app gains a tab. */
-export const TAB_IDS = ["library", "practice", "search", "inbox", "settings"] as const;
+export const TAB_IDS = ["library", "practice", "calendar", "search", "inbox", "settings"] as const;
 export const TabId = z.enum(TAB_IDS);
 export type TabId = z.infer<typeof TabId>;
 
@@ -59,3 +59,17 @@ export type PreferencesPatch = z.infer<typeof PreferencesPatch>;
 
 export const PreferencesResponse = z.object({ preferences: Preferences });
 export type PreferencesResponse = z.infer<typeof PreferencesResponse>;
+
+/**
+ * Her own background picture (Settings, "Background"). Kept apart from the preferences document:
+ * it is bytes, not a setting. The app shrinks any picture she picks to at most
+ * BACKGROUND_MAX_EDGE pixels on its longer side before sending, so the original may be any size.
+ */
+export const BACKGROUND_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type BackgroundMime = (typeof BACKGROUND_MIMES)[number];
+/** The most the server keeps. A shrunk picture is far below this. */
+export const BACKGROUND_MAX_BYTES = 8 * 1024 * 1024;
+export const BACKGROUND_MAX_EDGE = 2560;
+/** `updatedAt` is when it was saved (milliseconds), or null when she has none. */
+export const BackgroundMeta = z.object({ updatedAt: z.number().nullable() });
+export type BackgroundMeta = z.infer<typeof BackgroundMeta>;

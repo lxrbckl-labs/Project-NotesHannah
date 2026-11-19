@@ -59,7 +59,7 @@ test("a request is left, an agent completes it through the API, she sees the rep
   await signInReal(page);
   test.skip(!(await converterOnline(page)), "Docker is not running: no seeded study guide.");
   await openLecture(page);
-  const message = `Please summarise this (${tag(info)} ${Date.now()})`;
+  const message = `Please summarize this (${tag(info)} ${Date.now()})`;
 
   await page.getByTestId("ask-button").first().click();
   const dialog = page.getByRole("dialog");
@@ -108,7 +108,7 @@ test("a request is left, an agent completes it through the API, she sees the rep
   await expect(page.getByTestId("doc-screen")).toBeVisible();
 });
 
-test("the seeded waiting request can be edited and cancelled, and the badge follows", async ({
+test("the seeded waiting request can be edited and canceled, and the badge follows", async ({
   page,
 }, info) => {
   await signInReal(page);

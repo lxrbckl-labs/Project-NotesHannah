@@ -326,10 +326,10 @@ export function questions({ c }) {
         ["Mydriasis"],
         ["Dry, hot skin"],
       ],
-      "Muscarinic excess: diarrhoea, urination, miosis, bronchospasm and bronchorrhoea, bradycardia, emesis, lacrimation, salivation, sweating. Mydriasis and dry skin are anticholinergic signs.",
+      "Muscarinic excess: diarrhea, urination, miosis, bronchospasm and bronchorrhoea, bradycardia, emesis, lacrimation, salivation, sweating. Mydriasis and dry skin are anticholinergic signs.",
       {
         sources: [
-          chol(4, "Diarrhoea, urination, miosis"),
+          chol(4, "Diarrhea, urination, miosis"),
           chol(4, "Bronchospasm and bronchorrhoea, bradycardia"),
         ],
         tags: ["cholinergic", "toxicology"],
@@ -1030,11 +1030,11 @@ export function questions({ c }) {
       [
         ["ACE inhibitor", "Dry cough"],
         ["Thiazide", "Gout from high uric acid"],
-        ["Dihydropyridine CCB", "Ankle oedema"],
+        ["Dihydropyridine CCB", "Ankle edema"],
         ["Verapamil", "Constipation"],
         ["ARB", "High potassium without cough"],
       ],
-      "Each first-line class has a signature adverse effect worth knowing for counselling.",
+      "Each first-line class has a signature adverse effect worth knowing for counseling.",
       {
         sources: [
           htn(
@@ -1043,7 +1043,7 @@ export function questions({ c }) {
           ),
           htn(
             9,
-            "Dihydropyridine CCB | Amlodipine, nifedipine ER | Ankle oedema, headache, flushing",
+            "Dihydropyridine CCB | Amlodipine, nifedipine ER | Ankle edema, headache, flushing",
           ),
         ],
         tags: ["hypertension", "adverse effects"],
@@ -1137,7 +1137,7 @@ export function questions({ c }) {
         ["Switch to labetalol or nifedipine", 2],
         ["Counsel on contraception while on an ACE inhibitor", 1],
       ],
-      "Planning ahead avoids exposure in the first weeks, before a pregnancy is recognised.",
+      "Planning ahead avoids exposure in the first weeks, before a pregnancy is recognized.",
       {
         sources: [
           htn(
@@ -1357,14 +1357,14 @@ export function questions({ c }) {
       [
         ["Each pillar adds its own benefit through a different pathway", 2],
         ["Low starting doses are better tolerated", 2],
-        ["Titrate afterwards, for example the beta blocker every 2 weeks", 1],
+        ["Titrate afterward, for example the beta blocker every 2 weeks", 1],
       ],
       "Getting all four on board quickly matters more than reaching one target dose early.",
       {
         sources: [
           hf(
             6,
-            "Start all four as soon as possible, at low doses, rather than maximising one drug before adding the next.",
+            "Start all four as soon as possible, at low doses, rather than maximizing one drug before adding the next.",
           ),
           hf(7, "Beta blocker doses are doubled no more often than every 2 weeks."),
         ],
@@ -1580,13 +1580,13 @@ export function questions({ c }) {
       "How many mEq of sodium are in 500 mL of 0.9% sodium chloride (MW 58.5)?",
       76.9,
       ["mEq"],
-      "0.9% = 9 g per litre = 4.5 g in 500 mL. 4500 / 58.5 = 76.9 mEq.",
+      "0.9% = 9 g per liter = 4.5 g in 500 mL. 4500 / 58.5 = 76.9 mEq.",
       {
         tolerance: { mode: "relative", percent: 2 },
         sources: [
           calcPage(
             3,
-            "Example 9. Sodium chloride 0.9% contains 9 g per litre (MW 58.5): 9000 / 58.5 = 154 mEq of sodium per litre.",
+            "Example 9. Sodium chloride 0.9% contains 9 g per liter (MW 58.5): 9000 / 58.5 = 154 mEq of sodium per liter.",
           ),
         ],
         tags: ["calculations", "electrolytes"],

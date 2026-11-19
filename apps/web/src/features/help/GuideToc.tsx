@@ -1,5 +1,5 @@
 import { ChevronDown, ListTree } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn";
 import { QUICK_REFERENCE_ID, QUICK_REFERENCE_TITLE, SHOWCASE_TITLE } from "./content";
 import { ANCHORS, OUTLINE, SHOWCASE_ID } from "./outline";
@@ -24,15 +24,13 @@ function Item({
         onClick={onPick}
         aria-current={active ? "location" : undefined}
         className={cn(
-          "relative flex min-h-11 items-baseline gap-2 rounded-control py-2.5 pr-2 pl-3 text-ui leading-snug xl:min-h-0 xl:py-1.5",
+          // The highlight behind the current item is one marker that slides (see List), not a fill here.
+          "relative flex min-h-11 items-baseline gap-2 rounded-control py-2.5 pr-2 pl-3 text-ui leading-snug transition-colors duration-(--duration-base) xl:min-h-0 xl:py-1.5",
           active
-            ? "bg-accent-soft font-medium text-accent"
+            ? "font-medium text-accent"
             : "text-text-muted hover:bg-surface-muted hover:text-text",
         )}
       >
-        {active ? (
-          <span aria-hidden className="absolute inset-y-1.5 left-0 w-0.5 rounded-pill bg-accent" />
-        ) : null}
         {number ? (
           <span className="w-5 shrink-0 text-right font-display text-label tabular-nums opacity-80">
             {number}
@@ -46,8 +44,56 @@ function Item({
 
 /** The contents grouped by part, with the current section marked. */
 function List({ active, onPick }: { active?: string | undefined; onPick?: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const marker = useRef<HTMLSpanElement>(null);
+
+  // One highlight for the whole list: it slides and resizes to sit behind the current item, and
+  // the list scrolls itself (never the page) to keep that item in view.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the current item changes
+  useLayoutEffect(() => {
+    const list = box.current;
+    const mark = marker.current;
+    if (!list || !mark) return;
+    const place = () => {
+      const item = list.querySelector<HTMLElement>('a[aria-current="location"]');
+      if (!item) {
+        mark.style.opacity = "0";
+        return;
+      }
+      const top = item.getBoundingClientRect().top - list.getBoundingClientRect().top;
+      mark.style.opacity = "1";
+      mark.style.transform = `translateY(${top}px)`;
+      mark.style.height = `${item.offsetHeight}px`;
+      const scroller = list.closest("nav");
+      if (scroller && scroller.scrollHeight > scroller.clientHeight) {
+        const frame = scroller.getBoundingClientRect();
+        const row = item.getBoundingClientRect();
+        const margin = 48;
+        const delta =
+          row.top < frame.top + margin
+            ? row.top - frame.top - margin
+            : row.bottom > frame.bottom - margin
+              ? row.bottom - frame.bottom + margin
+              : 0;
+        if (delta) scroller.scrollBy?.({ top: delta, behavior: "smooth" });
+      }
+    };
+    place();
+    const watch = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    watch?.observe(list);
+    return () => watch?.disconnect();
+  }, [active]);
+
   return (
-    <div className="grid gap-3">
+    <div ref={box} className="relative grid gap-3">
+      <span
+        ref={marker}
+        aria-hidden
+        data-testid="guide-toc-marker"
+        className="guide-toc-marker pointer-events-none absolute inset-x-0 top-0 rounded-control bg-accent-soft opacity-0"
+      >
+        <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-pill bg-accent" />
+      </span>
       <ul className="grid gap-0.5">
         <Item
           id={SHOWCASE_ID}
@@ -142,7 +188,12 @@ export function GuideTocNarrow({ active }: { active?: string | undefined }) {
         >
           <ListTree size={18} aria-hidden className="shrink-0 text-accent" />
           <span className="shrink-0 text-label font-medium text-text-muted">On this page</span>
-          <span className="min-w-0 flex-1 truncate text-ui font-medium" data-testid="guide-current">
+          {/* Keyed by section, so each new title slides in as the reader moves on. */}
+          <span
+            key={current?.id}
+            className="guide-current-in min-w-0 flex-1 truncate text-ui font-medium"
+            data-testid="guide-current"
+          >
             {current?.number ? `${current.number}. ` : ""}
             {current?.title}
           </span>

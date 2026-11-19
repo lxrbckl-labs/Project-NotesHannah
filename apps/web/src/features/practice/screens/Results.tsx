@@ -97,7 +97,7 @@ export function Results({
               data-testid="practise-weak"
               onClick={() => onPracticeScope(results.weakest?.scope as SessionScope)}
             >
-              Practise {results.weakest.label}
+              Practice {results.weakest.label}
             </Button>
           )}
           <Button variant="ghost" data-testid="done" onClick={onDone}>

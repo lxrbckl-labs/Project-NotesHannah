@@ -186,3 +186,58 @@ export function useInboxDrop(options: {
     },
   };
 }
+
+/**
+ * A breadcrumb as a drop target: the way to drag something OUT of a folder. Drop a folder, lecture
+ * or document on a place further up and it moves there; drop a source file on a place that can hold
+ * files and it is filed there.
+ */
+export function useCrumbDrop(options: {
+  /** The place the crumb stands for; null while it is still loading. */
+  node: NodeWithLinks | null;
+  destination: Destination | null;
+  onMove: (node: NodeWithLinks, input: MoveNodeInput) => void;
+  /** Set when the place can hold source files. */
+  onMoveFile?: ((file: SourceFile, nodeId: string) => void) | undefined;
+}) {
+  const { node, destination, onMove, onMoveFile } = options;
+  const [over, setOver] = useState(false);
+  const accepts = (): "node" | "file" | null => {
+    if (!node) return null;
+    if (draggedFile) return onMoveFile && draggedFile.nodeId !== node.id ? "file" : null;
+    const source = dragged;
+    if (!source || source.id === node.id || source.parentId === node.id) return null;
+    return moveBlockedReason(source, destination) === null ? "node" : null;
+  };
+  return {
+    over,
+    props: {
+      onDragOver: (event: DragEvent<HTMLElement>) => {
+        if (!accepts()) {
+          if (over) setOver(false);
+          return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        if (!over) setOver(true);
+      },
+      onDragLeave: () => setOver(false),
+      onDrop: (event: DragEvent<HTMLElement>) => {
+        const kind = accepts();
+        setOver(false);
+        if (!kind || !node) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (kind === "file" && draggedFile && onMoveFile) {
+          const moving = draggedFile;
+          draggedFile = null;
+          onMoveFile(moving, node.id);
+        } else if (kind === "node" && dragged) {
+          const source = dragged;
+          dragged = null;
+          onMove(source, { parentId: node.id });
+        }
+      },
+    },
+  };
+}

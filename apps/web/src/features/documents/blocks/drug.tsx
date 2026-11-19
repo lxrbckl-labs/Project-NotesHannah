@@ -21,7 +21,7 @@ const SECTIONS: Array<{ key: ListKey; label: string; one: string }> = [
   { key: "contraindications", label: "Contraindications & cautions", one: "contraindication" },
   { key: "interactions", label: "Interactions", one: "interaction" },
   { key: "monitoring", label: "Monitoring", one: "monitoring point" },
-  { key: "counselling", label: "Counselling", one: "counselling point" },
+  { key: "counselling", label: "Counseling", one: "counseling point" },
 ];
 
 const empty = (): CitedText => ({ text: [], citations: [], flags: [] });

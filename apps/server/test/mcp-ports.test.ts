@@ -173,7 +173,7 @@ describe("source files, pages and transcripts (fakes)", () => {
     expect(done.text).toContain("0 of 4 pages transcribed");
   });
 
-  test("get_page returns the image, the current transcript and neighbours; a link on request", async () => {
+  test("get_page returns the image, the current transcript and neighbors; a link on request", async () => {
     const p = allPorts();
     const s = await mcpSetup({ ports: p.ports });
     const a = await s.agent();

@@ -34,7 +34,7 @@ function placementClass(placement: SheetPlacement, wide: boolean): string {
 }
 
 /**
- * A modal surface that suits the screen: a bottom sheet on the phone, a side panel or a centred
+ * A modal surface that suits the screen: a bottom sheet on the phone, a side panel or a centered
  * dialog on larger screens. Escape, the close button and a tap on the backdrop close it.
  */
 export function Sheet({
@@ -113,7 +113,9 @@ export function Sheet({
             {children}
           </div>
           {footer ? (
-            <div className="pb-safe flex shrink-0 flex-wrap justify-end gap-2 border-t border-border px-5 py-3">
+            // The bottom padding is the larger of the usual gap and the device's safe area. `pb-safe` beside `py-3`
+            // replaced the gap with the safe area, which is nothing on a computer, so the buttons sat on the edge.
+            <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-border px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               {footer}
             </div>
           ) : (

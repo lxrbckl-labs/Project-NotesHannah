@@ -262,8 +262,9 @@ export const api = {
   deleteForever: (id: string) => request("DELETE", `/nodes/${id}`),
   trash: () => listAll("/trash"),
   recents: () =>
-    // Five, no more (Alex, 2026-11-16): opening a sixth thing pushes the oldest off the list.
-    request("GET", "/recents", { query: { limit: 5 }, schema: NodeList }).then((r) => r.items),
+    // Six, no more (Alex, 2026-11-17; five the day before): two full rows of three. Opening a seventh
+    // thing pushes the oldest off the list.
+    request("GET", "/recents", { query: { limit: 6 }, schema: NodeList }).then((r) => r.items),
   favourites: () => listAll("/favourites"),
   /** Source files filed under a lecture or folder. */
   filesOf: (nodeId: string) => listFiles({ nodeId }),
@@ -367,7 +368,7 @@ export const xhrUpload: UploadTransport = (file, nodeId, onProgress) => {
         }),
       );
     xhr.onabort = () =>
-      reject(new ApiClientError(0, { code: "cancelled", message: "Upload cancelled." }));
+      reject(new ApiClientError(0, { code: "cancelled", message: "Upload canceled." }));
     xhr.onload = () => {
       let json: unknown;
       try {

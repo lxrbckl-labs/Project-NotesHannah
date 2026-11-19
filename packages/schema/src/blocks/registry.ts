@@ -247,7 +247,7 @@ const DEFINITIONS = {
   callout: defineBlock({
     label: "Callout",
     description:
-      "A boxed note with a kind: info, tip, warning, important, definition or exam_tip. Each kind has a default colour token.",
+      "A boxed note with a kind: info, tip, warning, important, definition or exam_tip. Each kind has a default color token.",
     citationsRequired: true,
     content: CalloutContent,
     example: {
@@ -263,7 +263,7 @@ const DEFINITIONS = {
   drug_card: defineBlock({
     label: "Drug card",
     description:
-      "One drug: name, brand names, class, mechanism, indications, adverse effects, contraindications, interactions, monitoring, counselling and dosing notes. Every clinical field is a string or {text, citations, flags}; cite and flag doses individually.",
+      "One drug: name, brand names, class, mechanism, indications, adverse effects, contraindications, interactions, monitoring, counseling and dosing notes. Every clinical field is a string or {text, citations, flags}; cite and flag doses individually.",
     citationsRequired: true,
     content: DrugCardContent,
     example: {
@@ -346,7 +346,7 @@ const DEFINITIONS = {
     ],
   }),
   labelled_image: defineBlock({
-    label: "Labelled image",
+    label: "Labeled image",
     description:
       "An uploaded page or region with tappable hotspots. Hotspot x and y are fractions of the image (0 to 1, from the top-left).",
     citationsRequired: true,
@@ -374,7 +374,7 @@ const DEFINITIONS = {
   mind_map: defineBlock({
     label: "Mind map",
     description:
-      "A tree of short labelled nodes from one root, at most 4 levels below the root and 100 nodes. State structure only; layout is automatic.",
+      "A tree of short labeled nodes from one root, at most 4 levels below the root and 100 nodes. State structure only; layout is automatic.",
     citationsRequired: true,
     content: MindMapContent,
     example: {

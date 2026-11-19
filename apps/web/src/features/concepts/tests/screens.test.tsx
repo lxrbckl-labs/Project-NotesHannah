@@ -129,7 +129,7 @@ describe("ConceptView", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the neighbourhood as a list on a phone, filterable by relation", async () => {
+  it("shows the neighborhood as a list on a phone, filterable by relation", async () => {
     renderConcept("bb");
     const list = await screen.findByTestId("neighbour-list");
     expect(within(list).getByRole("link", { name: "Bradycardia" })).toBeInTheDocument();

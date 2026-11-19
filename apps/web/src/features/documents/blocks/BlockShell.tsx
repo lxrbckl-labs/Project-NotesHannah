@@ -34,6 +34,7 @@ import { memo, type ReactNode, useState } from "react";
 import { IconButton } from "../../../components/ui/button";
 import { menuContentClass, menuItemClass, menuSeparatorClass } from "../../../components/ui/menu";
 import { Popover } from "../../../components/ui/popover";
+import { Tooltip } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/cn";
 import { AddReferenceDialog } from "../../references/AddReferenceDialog";
 import { useActions, useSignal, useView } from "../context";
@@ -202,6 +203,7 @@ function Section({
 function BlockMenu({
   block,
   trigger,
+  tip,
   index,
   count,
   open,
@@ -209,6 +211,8 @@ function BlockMenu({
 }: {
   block: Block;
   trigger: ReactNode;
+  /** A hint for an icon-only trigger. */
+  tip?: string;
   index: number;
   count: number;
   open?: boolean;
@@ -253,7 +257,16 @@ function BlockMenu({
         {...(open !== undefined ? { open } : {})}
         {...(onOpenChange ? { onOpenChange } : {})}
       >
-        <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+        {/* The hint goes around the trigger, never between the trigger and its button: the menu is
+            placed against the button the trigger holds, and a tooltip in between has no box to place
+            it against (the menu opened off screen). */}
+        {tip ? (
+          <Tooltip content={tip}>
+            <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+          </Tooltip>
+        ) : (
+          <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+        )}
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             align="start"
@@ -311,40 +324,43 @@ function BlockMenu({
             {colorable && isTouch && (
               <>
                 <MenuSeparator />
-                <MenuLabel>Colour</MenuLabel>
+                <MenuLabel>Color</MenuLabel>
                 <fieldset className="m-0 grid grid-cols-6 gap-1.5 border-0 px-3 pt-0 pb-2">
-                  <legend className="sr-only">Colour</legend>
-                  <button
-                    type="button"
-                    aria-label="Default colour"
-                    className="flex size-11 items-center justify-center rounded-control border border-border-strong"
-                    onClick={() => {
-                      perform(setStyle(documentId, block.id, null), "Colour");
-                      onOpenChange?.(false);
-                    }}
-                  >
-                    {!block.style && <Check aria-hidden className="size-4" />}
-                  </button>
-                  {COLOR_TOKENS.map((token) => (
+                  <legend className="sr-only">Color</legend>
+                  <Tooltip content="Default color">
                     <button
-                      key={token}
                       type="button"
-                      aria-label={`${token} colour`}
-                      data-hue={token}
-                      className="flex size-11 items-center justify-center rounded-control border border-tone-border bg-tone-solid text-surface"
+                      aria-label="Default color"
+                      className="flex size-11 items-center justify-center rounded-control border border-border-strong"
                       onClick={() => {
-                        perform(setStyle(documentId, block.id, { color: token }), "Colour");
+                        perform(setStyle(documentId, block.id, null), "Color");
                         onOpenChange?.(false);
                       }}
                     >
-                      {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                      {!block.style && <Check aria-hidden className="size-4" />}
                     </button>
+                  </Tooltip>
+                  {COLOR_TOKENS.map((token) => (
+                    <Tooltip key={token} content={`${token} color`}>
+                      <button
+                        type="button"
+                        aria-label={`${token} color`}
+                        data-hue={token}
+                        className="flex size-11 items-center justify-center rounded-control border border-tone-border bg-tone-solid text-surface"
+                        onClick={() => {
+                          perform(setStyle(documentId, block.id, { color: token }), "Color");
+                          onOpenChange?.(false);
+                        }}
+                      >
+                        {block.style?.color === token && <Check aria-hidden className="size-4" />}
+                      </button>
+                    </Tooltip>
                   ))}
                 </fieldset>
               </>
             )}
             {colorable && !isTouch && (
-              <MenuSub label="Colour" icon={<Palette />}>
+              <MenuSub label="Color" icon={<Palette />}>
                 <MenuItem
                   icon={
                     !block.style ? (
@@ -353,7 +369,7 @@ function BlockMenu({
                       <span className="size-3.5 rounded-pill border border-border-strong" />
                     )
                   }
-                  onSelect={() => perform(setStyle(documentId, block.id, null), "Colour")}
+                  onSelect={() => perform(setStyle(documentId, block.id, null), "Color")}
                 >
                   Default
                 </MenuItem>
@@ -368,7 +384,7 @@ function BlockMenu({
                       )
                     }
                     onSelect={() =>
-                      perform(setStyle(documentId, block.id, { color: token }), "Colour")
+                      perform(setStyle(documentId, block.id, { color: token }), "Color")
                     }
                   >
                     <span className="capitalize">{token}</span>
@@ -646,6 +662,7 @@ export const BlockShell = memo(function BlockShell({
                 <GripVertical className="size-4" />
               </button>
             }
+            tip="Drag to move, or click for block actions"
           />
         </div>
       )}

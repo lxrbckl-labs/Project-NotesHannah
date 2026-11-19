@@ -10,6 +10,7 @@ import {
 import { DropdownMenu } from "radix-ui";
 import {
   createContext,
+  Fragment,
   type ReactNode,
   use,
   useCallback,
@@ -18,20 +19,26 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { SideSlide } from "../../../../app/SideSlide";
 import { IconButton } from "../../../../components/ui/button";
 import {
   menuContentClass,
   menuItemClass,
   menuSeparatorClass,
 } from "../../../../components/ui/menu";
+import { Tooltip } from "../../../../components/ui/tooltip";
 import { cn } from "../../../../lib/cn";
 import {
   closePanel,
+  DEFAULT_PANEL_SHARE,
+  MIN_PANEL_HEIGHT,
   movePanel,
   movePanelBy,
   type PanelId,
+  resetPanelSizes,
   SIDEBAR_WIDTH,
   type Side,
+  setPanelSizes,
   setWidth,
   toggleFolded,
 } from "./layout";
@@ -49,6 +56,9 @@ export interface PanelDef {
   actions?: ReactNode;
   render: (place: PanelPlace) => ReactNode;
 }
+
+/** A little longer than the fold in styles.css (.dock-panel). */
+const FOLD_MS = 240;
 
 const SIDE_NAME: Record<Side, string> = { left: "left", right: "right" };
 
@@ -185,10 +195,20 @@ export function Dock({
         dragging: drag?.id ?? null,
       }}
     >
-      <div ref={row} className="relative flex min-h-0 min-w-0 flex-1" data-testid="dock">
-        {left === "docked" && <Sidebar side="left" place="docked" />}
+      {/* overflow-x-clip: a sidebar sliding in starts a little outside the row, and must not widen the page. */}
+      <div
+        ref={row}
+        className="relative flex min-h-0 min-w-0 flex-1 overflow-x-clip"
+        data-testid="dock"
+      >
+        {/* Docked sidebars slide open and closed while the page makes room (app/SideSlide). */}
+        <SideSlide open={left === "docked"} side="left">
+          <Sidebar side="left" place="docked" />
+        </SideSlide>
         <div className="relative flex min-w-0 flex-1 flex-col">{children}</div>
-        {right === "docked" && <Sidebar side="right" place="docked" />}
+        <SideSlide open={right === "docked"} side="right">
+          <Sidebar side="right" place="docked" />
+        </SideSlide>
         {left === "overlay" && <Sidebar side="left" place="overlay" />}
         {right === "overlay" && <Sidebar side="right" place="overlay" />}
         {drag && <DropZones drag={drag} shown={shown} row={row} />}
@@ -279,13 +299,17 @@ function Sidebar({ side, place }: { side: Side; place: PanelPlace }) {
         side === "left" ? "border-r border-border" : "border-l border-border",
         place === "docked" && "relative",
         place === "overlay" &&
-          "anim-fade absolute inset-y-0 z-(--z-dock) max-w-[calc(100%-2.5rem)] shadow-pop",
-        place === "overlay" && (side === "left" ? "left-0" : "right-0"),
+          "absolute inset-y-0 z-(--z-dock) max-w-[calc(100%-2.5rem)] shadow-pop",
+        place === "overlay" &&
+          (side === "left" ? "dock-over-left left-0" : "dock-over-right right-0"),
       )}
       style={{ width }}
     >
       {state.panels.map((id, i) => (
-        <PanelFrame key={id} id={id} side={side} index={i} place={place} />
+        <Fragment key={id}>
+          {i > 0 && <PanelSplit side={side} index={i} />}
+          <PanelFrame id={id} side={side} index={i} place={place} />
+        </Fragment>
       ))}
       {place === "docked" && <SidebarResize side={side} width={width} />}
     </aside>
@@ -308,6 +332,19 @@ function PanelFrame({
   const folded = dock.state.folded.includes(id);
   const count = dock.state[side].panels.length;
   const [menu, setMenu] = useState(false);
+  // The body stays for the length of the fold, so the panel is seen closing; then it is removed.
+  const [body, setBody] = useState(!folded);
+  useEffect(() => {
+    if (!folded) {
+      setBody(true);
+      return;
+    }
+    const still =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const gone = setTimeout(() => setBody(false), still ? 0 : FOLD_MS);
+    return () => clearTimeout(gone);
+  }, [folded]);
   const other: Side = side === "left" ? "right" : "left";
   const titleId = `dock-panel-${id}`;
 
@@ -320,42 +357,75 @@ function PanelFrame({
       data-panel-id={id}
       aria-labelledby={titleId}
       // Side notes line up with the page, so in a shared sidebar they get the larger share.
-      style={folded ? undefined : { flexGrow: id === "notes" ? 3 : 2 }}
+      // Folded, its share of the height eases to nothing and only the header is left (styles.css, .dock-panel).
+      style={{ flexGrow: folded ? 0 : (dock.state.sizes?.[id] ?? DEFAULT_PANEL_SHARE[id]) }}
       className={cn(
-        "flex min-h-0 flex-col",
-        folded ? "shrink-0" : "min-h-24 basis-0",
+        "dock-panel flex basis-0 flex-col overflow-hidden",
+        // Folded, the panel is exactly its header: 44px, plus the line above it when it is not the first.
+        folded ? (index > 0 ? "min-h-[2.8125rem]" : "min-h-11") : "min-h-24",
         index > 0 && "border-t border-border",
         dragging === id && "opacity-50",
       )}
     >
-      <header className="flex min-h-11 shrink-0 items-center gap-0.5 border-b border-border px-1">
+      {/* Like the app's own sidebar: the fold arrow first, then the name with its + beside it, and the
+          grip that moves the panel at the far right. */}
+      <header
+        className={cn(
+          "flex min-h-11 shrink-0 items-center gap-0.5 px-1",
+          // Folded, the header has no line under it: the next panel's top line is the divider. Two lines a
+          // pixel apart read as a gap.
+          !folded && "border-b border-border",
+        )}
+      >
+        <button
+          type="button"
+          id={titleId}
+          aria-expanded={!folded}
+          onClick={() => dock.update((s) => toggleFolded(s, id))}
+          className="flex min-h-11 min-w-0 items-center gap-2 rounded-control px-1.5 text-left text-caption font-semibold uppercase tracking-[0.08em] text-text-muted hover:text-text xl:min-h-9"
+        >
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "size-4 shrink-0 transition-transform duration-(--duration-fast)",
+              folded && "-rotate-90",
+            )}
+          />
+          <span className="shrink-0 [&_svg]:size-4">{def.icon}</span>
+          <span className="truncate">{def.title}</span>
+          {def.badge}
+        </button>
+        {def.actions}
+        <span className="min-w-0 flex-1" />
         <DropdownMenu.Root modal={false} open={menu} onOpenChange={setMenu}>
-          <DropdownMenu.Trigger asChild>
-            <button
-              type="button"
-              aria-label={`Move the ${def.title} panel: drag, or open for choices`}
-              data-testid={`panel-grip-${id}`}
-              className="flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-text-muted hover:bg-surface-muted hover:text-text active:cursor-grabbing xl:h-9 xl:w-7"
-              onPointerDown={(e) => {
-                // A press may become a drag: keep the menu shut until it turns out to be a click.
-                if (beginDrag(id, e)) e.preventDefault();
-              }}
-              onClick={() => {
-                if (!justDragged()) setMenu(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setMenu(true);
-                }
-              }}
-            >
-              <GripVertical className="size-4" />
-            </button>
-          </DropdownMenu.Trigger>
+          <Tooltip content={`Move the ${def.title} panel: drag, or open for choices`}>
+            <DropdownMenu.Trigger asChild>
+              <button
+                type="button"
+                aria-label={`Move the ${def.title} panel: drag, or open for choices`}
+                data-testid={`panel-grip-${id}`}
+                className="flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-text-muted hover:bg-surface-muted hover:text-text active:cursor-grabbing xl:h-9 xl:w-7"
+                onPointerDown={(e) => {
+                  // A press may become a drag: keep the menu shut until it turns out to be a click.
+                  if (beginDrag(id, e)) e.preventDefault();
+                }}
+                onClick={() => {
+                  if (!justDragged()) setMenu(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setMenu(true);
+                  }
+                }}
+              >
+                <GripVertical className="size-4" />
+              </button>
+            </DropdownMenu.Trigger>
+          </Tooltip>
           <DropdownMenu.Portal>
             <DropdownMenu.Content
-              align="start"
+              align="end"
               sideOffset={6}
               collisionPadding={12}
               aria-label={`${def.title} panel`}
@@ -405,25 +475,6 @@ function PanelFrame({
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
-        <button
-          type="button"
-          id={titleId}
-          aria-expanded={!folded}
-          onClick={() => dock.update((s) => toggleFolded(s, id))}
-          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-control px-1.5 text-left text-caption font-semibold uppercase tracking-[0.08em] text-text-muted hover:text-text xl:min-h-9"
-        >
-          <span className="shrink-0 [&_svg]:size-4">{def.icon}</span>
-          <span className="truncate">{def.title}</span>
-          {def.badge}
-          <ChevronDown
-            aria-hidden
-            className={cn(
-              "ml-auto size-4 shrink-0 transition-transform duration-(--duration-fast)",
-              folded && "-rotate-90",
-            )}
-          />
-        </button>
-        {def.actions}
         {place === "overlay" && index === 0 && (
           <IconButton
             variant="bare"
@@ -436,12 +487,98 @@ function PanelFrame({
           </IconButton>
         )}
       </header>
-      {!folded && (
-        <div className="relative flex min-h-0 flex-1 flex-col" data-testid={`panel-body-${id}`}>
+      {body && (
+        <div
+          className="relative flex min-h-0 flex-1 flex-col"
+          data-testid={`panel-body-${id}`}
+          inert={folded}
+        >
           {def.render(place)}
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * The line between two panels stacked in a sidebar: drag it up or down to give one more height and
+ * the other less (arrow keys do the same; double-click goes back to the usual split). It sits above
+ * panel `index` and works on that panel and the nearest open panel above it; with either folded
+ * there is nothing to share, so it does nothing.
+ */
+function PanelSplit({ side, index }: { side: Side; index: number }) {
+  const { dock } = useDockCtx();
+  const panels = dock.state[side].panels;
+  const below = panels[index] as PanelId;
+  const open = (id: PanelId) => !dock.state.folded.includes(id);
+  const above = panels.slice(0, index).reverse().find(open);
+  if (!above || !open(below)) return null;
+
+  /** The open panels' heights now, as the shares to start from. */
+  const measure = (root: HTMLElement): Partial<Record<PanelId, number>> => {
+    const out: Partial<Record<PanelId, number>> = {};
+    for (const el of root.querySelectorAll<HTMLElement>("[data-panel-id]")) {
+      const id = el.dataset.panelId as PanelId;
+      if (open(id)) out[id] = el.getBoundingClientRect().height;
+    }
+    return out;
+  };
+  const move = (start: Partial<Record<PanelId, number>>, dy: number) => {
+    const a = start[above] ?? 0;
+    const b = start[below] ?? 0;
+    const total = a + b;
+    if (total < MIN_PANEL_HEIGHT * 2) return;
+    const nextA = Math.max(MIN_PANEL_HEIGHT, Math.min(total - MIN_PANEL_HEIGHT, a + dy));
+    dock.update((s) => setPanelSizes(s, { ...start, [above]: nextA, [below]: total - nextA }));
+  };
+
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: a focusable splitter is the ARIA pattern for this
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize the panels above and below"
+      aria-valuenow={Math.round(dock.state.sizes?.[above] ?? 0)}
+      tabIndex={0}
+      data-testid={`panel-split-${below}`}
+      className="group relative z-(--z-raised) h-0 shrink-0 cursor-row-resize touch-none outline-none"
+      onDoubleClick={() => dock.update((s) => resetPanelSizes(s, side))}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+        e.preventDefault();
+        const root = e.currentTarget.parentElement;
+        if (root) move(measure(root), e.key === "ArrowUp" ? -16 : 16);
+      }}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        const root = e.currentTarget.parentElement;
+        if (!root) return;
+        e.preventDefault();
+        const startY = e.clientY;
+        const start = measure(root);
+        const onMove = (ev: PointerEvent) => move(start, ev.clientY - startY);
+        const up = () => {
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", up);
+          document.body.style.userSelect = "";
+          document.body.style.cursor = "";
+          document.body.classList.remove("dock-resizing");
+        };
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "row-resize";
+        // The fold animation would make the panels trail behind the pointer.
+        document.body.classList.add("dock-resizing");
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", up);
+      }}
+    >
+      {/* A 12px strip to grab, centered on the line between the panels, with the line lighting up. */}
+      <span className="absolute inset-x-0 -top-1.5 flex h-3 items-center">
+        <span className="h-0.5 w-full bg-transparent transition-colors group-hover:bg-accent group-focus-visible:bg-accent" />
+      </span>
+    </div>
   );
 }
 

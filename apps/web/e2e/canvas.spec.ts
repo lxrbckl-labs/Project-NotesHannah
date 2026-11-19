@@ -142,9 +142,9 @@ test.describe("canvas", () => {
     await openDemo(page);
     await wholeMap(page, info);
     const intro = card(page, "compete with adrenaline");
-    const frame = page.locator('[data-testid="canvas-frame"]', { hasText: "Counselling" });
+    const frame = page.locator('[data-testid="canvas-frame"]', { hasText: "Counseling" });
     const counselling = (await demoCanvas(page)).canvas.frames.find(
-      (f) => f.title === "Counselling",
+      (f) => f.title === "Counseling",
     );
     const introId = await intro.getAttribute("data-id");
     expect(counselling?.members).not.toContain(introId);
@@ -161,8 +161,8 @@ test.describe("canvas", () => {
     expectOnScreen(page, a, "the card");
     expectOnScreen(page, drop, "the drop point");
     await dragTo(page, info, a, drop);
-    await expect(page.getByTestId("toast")).toContainText("Moved into “Counselling”");
-    const after = (await demoCanvas(page)).canvas.frames.find((f) => f.title === "Counselling");
+    await expect(page.getByTestId("toast")).toContainText("Moved into “Counseling”");
+    const after = (await demoCanvas(page)).canvas.frames.find((f) => f.title === "Counseling");
     expect(after?.members).toContain(introId);
   });
 

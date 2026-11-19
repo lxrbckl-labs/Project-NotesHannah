@@ -17,7 +17,7 @@ interface Drag {
   pointerId: number;
   startX: number;
   startIndex: number;
-  /** The order when the drag began, so a cancelled drag puts everything back. */
+  /** The order when the drag began, so a canceled drag puts everything back. */
   startOrder: readonly TabId[];
   /** Pixels moved, already kept inside the bar. */
   dx: number;

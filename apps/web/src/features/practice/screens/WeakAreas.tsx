@@ -183,7 +183,7 @@ function AreaCard({
           size="sm"
           onClick={() => onPractise(row.practiceScope as SessionScope)}
         >
-          Practise this
+          Practice this
         </Button>
       )}
     </Card>

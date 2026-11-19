@@ -363,3 +363,23 @@ img.ProseMirror-separator {
     box-shadow: 0 0 0 3px transparent;
   }
 }
+
+/* Read mode (the Read / Edit switch): the page is for reading, and looks it. Over the text the pointer
+   stays an arrow, never the text cursor, and nothing can be selected, so the mouse never suggests the
+   words can be changed. Things she can open keep the hand: sources, concepts, links, buttons,
+   checkboxes. A field she is meant to type in (an answer box inside a block) still takes text. */
+.doc-root[data-editing="false"] [data-testid="doc-scroller"] {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.doc-root[data-editing="false"]
+  [data-testid="doc-scroller"]
+  :is(a, button, [role="button"], [role="checkbox"], summary, label, .doc-cite, .doc-concept) {
+  cursor: pointer;
+}
+.doc-root[data-editing="false"] [data-testid="doc-scroller"] :is(input, textarea) {
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}

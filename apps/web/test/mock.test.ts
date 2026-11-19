@@ -1,4 +1,4 @@
-import { COURSE_SECTIONS } from "@notes/schema";
+import { COURSE_SECTIONS, MAX_FOLDER_DEPTH } from "@notes/schema";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type ApiClientError, api } from "../src/lib/api";
 import { createMockBackend } from "../src/mocks/backend";
@@ -164,10 +164,14 @@ describe("library rules", () => {
 
   it("limits folder depth and refuses moving into itself", async () => {
     const { lectures } = await pharm2();
+    // Folders nest as deep as she likes; the limit is a far-off backstop. Build right up to it.
     const one = await api.createNode({ parentId: lectures.id, kind: "folder", name: "One" });
-    const two = await api.createNode({ parentId: one.id, kind: "folder", name: "Two" });
+    let two = one;
+    for (let depth = 2; depth <= MAX_FOLDER_DEPTH; depth++) {
+      two = await api.createNode({ parentId: two.id, kind: "folder", name: `Level ${depth}` });
+    }
     const tooDeep = await fails(
-      api.createNode({ parentId: two.id, kind: "folder", name: "Three" }),
+      api.createNode({ parentId: two.id, kind: "folder", name: "One too many" }),
     );
     expect(tooDeep.code).toBe("invalid_input");
     expect((await fails(api.moveNode(one.id, { parentId: two.id }))).code).toBe("invalid_input");
@@ -232,7 +236,7 @@ describe("library rules", () => {
     expect((await fails(api.node(lecture.id))).code).toBe("not_found");
   });
 
-  it("duplicates after the original, with its contents, and keeps favourites and recents", async () => {
+  it("duplicates after the original, with its contents, and keeps favorites and recents", async () => {
     const { lectures } = await pharm2();
     const list = await api.children(lectures.id);
     const original = list[6];

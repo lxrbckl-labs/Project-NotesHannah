@@ -87,7 +87,7 @@ test.describe("document header actions", () => {
         header.getByRole("tab", { name: "Canvas" }),
         header.getByRole("link", { name: "Sources" }),
         header.getByTestId("ask-button"),
-        header.getByRole("button", { name: "Practise this" }),
+        header.getByRole("button", { name: "Practice this" }),
       ];
       const boxes = [];
       for (const action of actions) {
@@ -104,7 +104,7 @@ test.describe("document header actions", () => {
         expect(box.x + box.width).toBeLessThanOrEqual(width);
       }
       // the less important actions are icons: their names stay for a screen reader
-      await expect(header.getByRole("button", { name: "Practise this" })).toBeVisible();
+      await expect(header.getByRole("button", { name: "Practice this" })).toBeVisible();
       expect((boxes[4]?.width ?? 0) >= 44).toBe(true);
       expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
     });
@@ -126,7 +126,8 @@ test.describe("practice start bar", () => {
       // between the bar and the tab bar, and the bar must not sit behind it either.
       const gap = await page.evaluate(() => {
         const main = document.querySelector("main");
-        const bar = document.querySelector('[data-testid="start-session"]')?.parentElement;
+        // The sticky strip that holds the start bar ("How many" and Start in one bar).
+        const bar = document.querySelector('[data-testid="start-bar"]')?.parentElement;
         const tabs = document.querySelector('[data-testid="tab-bar"]');
         if (!main || !bar || !tabs) return null;
         if (main.scrollHeight - main.clientHeight < 200) return 0; // too short to scroll: nothing to check
@@ -183,5 +184,43 @@ test.describe("canvas on a phone", () => {
     });
     expect(gap).not.toBeNull();
     expect(Math.abs(gap ?? 99)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe("the app is never taller than the window", () => {
+  test("a long library tree scrolls inside the sidebar instead of pushing the app up", async ({
+    page,
+  }) => {
+    // A short, wide window: the computer layout with little height to spare.
+    await page.setViewportSize({ width: 1400, height: 560 });
+    await signInBuilt(page);
+    const sidebar = page.getByTestId("sidebar");
+    await expect(sidebar).toBeVisible();
+    // Open every branch of the tree, as she does after a while of moving around.
+    for (let round = 0; round < 6; round++) {
+      const closed = await sidebar.getByRole("button", { name: /^Expand / }).all();
+      if (closed.length === 0) break;
+      for (const button of closed) await button.click().catch(() => {});
+    }
+    // Then something low in the tree asks to be brought into view.
+    await sidebar.getByRole("link").last().focus();
+    const measured = await page.evaluate(() => {
+      const app = document.querySelector<HTMLElement>("div.h-dvh");
+      const side = document.querySelector<HTMLElement>('[data-testid="sidebar"]');
+      return {
+        holds: app?.scrollHeight ?? -1,
+        shows: app?.clientHeight ?? -1,
+        scrolled: app?.scrollTop ?? -1,
+        sidebar: Math.round(side?.getBoundingClientRect().height ?? -1),
+        window: window.innerHeight,
+        windowScrolled: window.scrollY,
+      };
+    });
+    expect(measured.holds, "the app holds more than it shows").toBeLessThanOrEqual(measured.shows);
+    expect(measured.scrolled, "the app was scrolled off its own top").toBe(0);
+    expect(measured.sidebar, "the sidebar is taller than the window").toBeLessThanOrEqual(
+      measured.window,
+    );
+    expect(measured.windowScrolled).toBe(0);
   });
 });

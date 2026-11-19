@@ -945,8 +945,8 @@ function CanvasInner({
                                 { op: "update_card", id: singleCard.id, patch: { color } },
                               ])
                             }
-                            label="Card colour"
-                            trigger={<IconButton icon="palette" label="Colour" />}
+                            label="Card color"
+                            trigger={<IconButton icon="palette" label="Color" />}
                           />
                         )}
                         {canvas?.frames.some((f) => f.members.includes(singleCard.id)) && (
@@ -975,7 +975,7 @@ function CanvasInner({
                         />
                         <IconButton
                           icon="alignCenter"
-                          label="Centre in a column"
+                          label="Center in a column"
                           onClick={() => align("center")}
                         />
                         <IconButton
@@ -1019,8 +1019,8 @@ function CanvasInner({
                     onPick={(color) =>
                       void commit([{ op: "update_frame", id: singleFrame.id, patch: { color } }])
                     }
-                    label="Frame colour"
-                    trigger={<IconButton icon="palette" label="Frame colour" />}
+                    label="Frame color"
+                    trigger={<IconButton icon="palette" label="Frame color" />}
                   />
                   <IconButton
                     icon="focus"

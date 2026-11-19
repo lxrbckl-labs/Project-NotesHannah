@@ -31,12 +31,12 @@ import {
 } from "./roles";
 
 describe("hues", () => {
-  it("are the schema's colour tokens, so stored colours need no mapping", () => {
+  it("are the schema's color tokens, so stored colors need no mapping", () => {
     expect(HUES).toEqual(COLOR_TOKENS);
     for (const hue of HUES) expect(HUE_LABEL[hue]).toBeTruthy();
   });
 
-  it("offers eight lively hues for things with no colour of their own", () => {
+  it("offers eight lively hues for things with no color of their own", () => {
     expect(CATEGORICAL_HUES).toHaveLength(8);
     expect(CATEGORICAL_HUES).not.toContain("gray");
     for (const hue of CATEGORICAL_HUES) expect(isHue(hue)).toBe(true);
@@ -53,7 +53,7 @@ describe("hues", () => {
     expect(seen.size).toBe(CATEGORICAL_HUES.length);
   });
 
-  it("prefers a chosen colour over the hashed one", () => {
+  it("prefers a chosen color over the hashed one", () => {
     expect(hueOf("anything", "brown")).toBe("brown");
     expect(hueOf("anything", null)).toBe(hueForId("anything"));
   });

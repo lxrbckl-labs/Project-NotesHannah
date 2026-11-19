@@ -46,7 +46,8 @@ export function Calculation({
     ? "border-tone-border bg-tone-soft text-tone-text"
     : "border-border-strong bg-surface";
   const field =
-    "min-h-13 w-full rounded-card border px-4 text-title outline-none transition-colors duration-(--duration-instant) focus:border-accent";
+    // The same height and corners as the buttons on this screen.
+    "min-h-11 w-full rounded-control border px-3.5 text-body outline-none transition-colors duration-(--duration-instant) focus:border-accent";
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       e.preventDefault();
@@ -119,14 +120,15 @@ export function Calculation({
         </div>
       </div>
       {!disabled && (
-        <fieldset className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
+        // `mx-0`, not `m-0`: the gap to the scratchpad below is this row's bottom margin.
+        <fieldset className="mx-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
           <legend className="sr-only">Unit choices</legend>
           {question.unitChoices.map((u) => (
             <Chip
               key={u}
               pressed={unit.trim().toLowerCase() === u.toLowerCase()}
               onClick={() => update({ unit: unit.trim() === u ? "" : u })}
-              className="min-w-11 justify-center"
+              className="min-h-11 min-w-11 justify-center rounded-control! px-3.5 text-ui"
             >
               {u}
             </Chip>
@@ -146,7 +148,10 @@ export function Calculation({
           <span>{fb.message}</span>
         </p>
       )}
-      <Disclosure label="Scratchpad (not marked)">
+      <Disclosure
+        label="Scratchpad (not marked)"
+        className="rounded-control border border-border-strong bg-surface px-2.5 data-[state=open]:pb-2.5"
+      >
         <textarea
           value={scratch}
           onChange={(e) => setScratch(e.target.value)}

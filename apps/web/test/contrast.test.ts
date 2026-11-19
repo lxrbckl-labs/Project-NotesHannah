@@ -35,7 +35,7 @@ const shared = declarations(block(":root", css.indexOf(':root[data-theme="dark"]
 const light = { ...lightBase, ...shared };
 const dark = { ...lightBase, ...shared, ...darkAttr };
 
-/** Follow var(--x) references until a hex colour. */
+/** Follow var(--x) references until a hex color. */
 function resolve(set: Record<string, string>, name: string, seen: string[] = []): string {
   const value = set[name];
   if (value === undefined) throw new Error(`--${name} is not defined`);
@@ -102,7 +102,7 @@ for (const hue of HUES) {
   PAIRS.push(["color-text", `hue-${hue}-mark`]);
 }
 
-describe("colour tokens", () => {
+describe("color tokens", () => {
   it("keeps the two dark blocks identical", () => {
     expect(darkAttr).toEqual(darkMedia);
   });
@@ -111,7 +111,7 @@ describe("colour tokens", () => {
     for (const name of Object.keys(darkAttr)) expect(lightBase).toHaveProperty(name);
   });
 
-  it("defines every colour in both themes", () => {
+  it("defines every color in both themes", () => {
     const colours = (set: Record<string, string>) =>
       Object.keys(set).filter((n) => n.startsWith("color-") || n.startsWith("hue-"));
     expect(colours(darkAttr).sort()).toEqual(colours(lightBase).sort());
@@ -126,7 +126,7 @@ describe("colour tokens", () => {
     }
   });
 
-  it("maps every hue to a data-hue rule and a Tailwind colour", () => {
+  it("maps every hue to a data-hue rule and a Tailwind color", () => {
     for (const hue of HUES) {
       expect(css).toContain(`[data-hue="${hue}"] {`);
       for (const shade of SHADES) {

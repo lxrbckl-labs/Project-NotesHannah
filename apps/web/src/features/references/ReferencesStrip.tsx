@@ -72,7 +72,7 @@ function StripList({
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
   if (query.data.length === 0) {
     return (
-      <p className="rounded-card border border-dashed border-border-strong px-4 py-3 text-ui text-text-muted">
+      <p className="rounded-card border border-dashed border-border-strong bg-surface/55 px-4 py-3 backdrop-blur-md text-ui text-text-muted">
         No references tied here yet.
       </p>
     );

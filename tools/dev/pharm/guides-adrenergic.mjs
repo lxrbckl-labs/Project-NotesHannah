@@ -715,7 +715,7 @@ export function betaGuide({ c, concept, page, q }) {
       [s10tart, s10succ, s10ate, s10bis, s10car, s10pro, s10neb],
       { flags: [{ kind: "decimal", quote: "6.25 mg", note: "Check the decimal." }] },
     ),
-    quote("Do not stop suddenly: taper over 1 to 2 weeks", "Lecture 10, counselling slide", [
+    quote("Do not stop suddenly: taper over 1 to 2 weeks", "Lecture 10, counseling slide", [
       s11taper,
     ]),
     ol(
@@ -737,7 +737,7 @@ export function betaGuide({ c, concept, page, q }) {
     checklist([
       { text: "Classify 12 beta blockers by selectivity", checked: true },
       "Explain masked hypoglycaemia to a classmate",
-      "Memorise the HFrEF three and their target doses",
+      "Memorize the HFrEF three and their target doses",
     ]),
   ];
 }

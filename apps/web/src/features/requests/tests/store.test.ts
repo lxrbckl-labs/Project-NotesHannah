@@ -87,7 +87,7 @@ describe("the HTTP store", () => {
 describe("the mock store", () => {
   const make = () => createMockRequestsStore({ now: () => NOW });
 
-  it("lists newest first, hiding cancelled by default, and counts all states", async () => {
+  it("lists newest first, hiding canceled by default, and counts all states", async () => {
     const store = make();
     const page = await store.list();
     expect(page.items.length).toBe(11);

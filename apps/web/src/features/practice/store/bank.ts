@@ -129,7 +129,7 @@ add(7, {
   prompt: "Which sign should be checked before giving a beta-blocker?",
   options: [
     opt("Resting heart rate and blood pressure", true),
-    opt("Skin colour"),
+    opt("Skin color"),
     opt("Serum calcium only"),
     opt("Body temperature only"),
   ],
@@ -223,7 +223,7 @@ add(7, {
 });
 add(8, {
   type: "select_all",
-  prompt: "Which are recognised adverse effects of ACE inhibitors?",
+  prompt: "Which are recognized adverse effects of ACE inhibitors?",
   options: [
     opt("Dry cough", true),
     opt("Hyperkalaemia", true),
@@ -441,7 +441,7 @@ add(8, {
   units: ["mL", "millilitre"],
   rounding: { mode: "decimals", places: 1 },
   explanation: "{weightKg} kg x 0.1 mg/kg = dose in mg; at 1 mg/mL the volume in mL is {answer}.",
-  sources: [src(8, 12, "Paediatric dosing: mg/kg, then divide by the concentration.")],
+  sources: [src(8, 12, "Pediatric dosing: mg/kg, then divide by the concentration.")],
   tags: ["dosing"],
   conceptIds: C(2, 5),
   difficulty: 2,
@@ -586,7 +586,7 @@ add(8, {
         opt("Bradykinin build-up", true),
         opt("A chest infection only"),
         opt("Low potassium"),
-        opt("Allergy to the tablet colour"),
+        opt("Allergy to the tablet color"),
       ],
       explanation: "The cough is a class effect of ACE inhibitors.",
     },
@@ -638,7 +638,7 @@ add(8, {
     {
       type: "multiple_choice",
       prompt: "Which lab would you check first after a dose increase of valdopril?",
-      options: [opt("Potassium and creatinine", true), opt("Vitamin B12"), opt("Haemoglobin A1c")],
+      options: [opt("Potassium and creatinine", true), opt("Vitamin B12"), opt("Hemoglobin A1c")],
       explanation: "Potassium and kidney function can move within days.",
     },
   ],

@@ -192,7 +192,7 @@ describe("editing gestures emit exact writer operations", () => {
     expectValid(insertBlock(GUIDE_ID, null, newBlockInput("labelled_image", { image })));
   });
 
-  it("delete, duplicate and colour", () => {
+  it("delete, duplicate and color", () => {
     expect(deleteBlocks(GUIDE_ID, [paragraph.id])).toEqual([
       {
         call: {
@@ -222,7 +222,7 @@ describe("editing gestures emit exact writer operations", () => {
     expectUndoable(setStyle(GUIDE_ID, paragraph.id, { background: "teal" }));
   });
 
-  it("move up and down use before and after the neighbour", () => {
+  it("move up and down use before and after the neighbor", () => {
     const at = doc.blockIds.indexOf(paragraph.id);
     expect(moveBy(GUIDE_ID, doc.blockIds, paragraph.id, -1)?.[0]?.call).toEqual({
       operation: "move_blocks",

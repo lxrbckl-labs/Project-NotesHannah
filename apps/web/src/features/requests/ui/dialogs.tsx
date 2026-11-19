@@ -176,7 +176,7 @@ export function CancelDialog({
       title="Cancel this request?"
       description={
         request
-          ? `“${headline(request)}” will be withdrawn. It stays in your list under Cancelled.${
+          ? `“${headline(request)}” will be withdrawn. It stays in your list under Canceled.${
               request.status === "in_progress"
                 ? " An agent is working on it now, so it may already have made changes."
                 : ""

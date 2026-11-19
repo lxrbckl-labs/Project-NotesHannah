@@ -16,8 +16,10 @@ import { Page } from "../../components/Page";
 import { Card, CardTitle } from "../../components/ui/card";
 import { PageHeader } from "../../components/ui/page-header";
 import { useMe } from "../auth/useAuth";
+import { LoveLetter } from "../letter/LoveLetter";
 import { ChangePassword, SignOutControls } from "./Account";
 import { ApiKeys } from "./ApiKeys";
+import { BackgroundCard } from "./BackgroundCard";
 import { TabBarCard } from "./TabBarCard";
 
 function SettingsCard({
@@ -68,6 +70,8 @@ export function SettingsPage() {
             </LinkRow>
           </div>
         </SettingsCard>
+
+        <BackgroundCard />
 
         <TabBarCard />
 
@@ -129,6 +133,10 @@ export function SettingsPage() {
             </dl>
           </SettingsCard>
         </div>
+      </div>
+      {/* On a phone there is no sidebar, so the note for Hannah sits here, at the bottom right. */}
+      <div className="mt-6 flex justify-end md:hidden">
+        <LoveLetter />
       </div>
     </Page>
   );

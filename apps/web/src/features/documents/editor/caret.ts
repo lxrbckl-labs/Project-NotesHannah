@@ -152,6 +152,6 @@ export function colourBlock(
     : Object.keys(rest).length > 0
       ? rest
       : null;
-  actions.perform(setStyle(actions.documentId, block.id, next), "Colour");
+  actions.perform(setStyle(actions.documentId, block.id, next), "Color");
   if (editor && !editor.isDestroyed) editor.commands.focus();
 }

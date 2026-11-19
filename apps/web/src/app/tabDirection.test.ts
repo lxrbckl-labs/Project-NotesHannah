@@ -50,17 +50,19 @@ test("moveTab puts one tab at a place and keeps the others in order", () => {
     "settings",
     "library",
     "practice",
+    "calendar",
     "search",
     "inbox",
   ]);
   expect(moveTab(order, "library", 2)).toEqual([
     "practice",
-    "search",
+    "calendar",
     "library",
+    "search",
     "inbox",
     "settings",
   ]);
-  expect(moveTab(order, "inbox", 99)).toEqual(moveTab(order, "inbox", 4));
+  expect(moveTab(order, "inbox", 99)).toEqual(moveTab(order, "inbox", 5));
   expect(moveTab(order, "inbox", -3)[0]).toBe("inbox");
   expect(moveTab(order, "library", 0)).toEqual(order);
 });

@@ -431,7 +431,7 @@ describe("free response", () => {
   it("an out-of-range key point is malformed", () => {
     expect(g([7])).toMatchObject({ correct: false, malformed: true, maxPoints: 5 });
   });
-  it("honours a custom pass fraction", () => {
+  it("honors a custom pass fraction", () => {
     const strict = store({
       type: "free_response",
       prompt: "Explain.",

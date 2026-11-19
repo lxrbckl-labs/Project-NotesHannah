@@ -69,7 +69,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="dot-grid pt-safe pb-safe relative grid min-h-dvh place-items-center px-4 py-10">
+    <div className="dot-grid relative grid min-h-dvh place-items-center px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <div className="absolute right-4 top-4 pt-safe">
         <ThemeSwitch />
       </div>

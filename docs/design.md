@@ -23,11 +23,12 @@ own table.
 
 - The person using the app is a pharmacy student, mostly on an iPad and a phone. Readability beats
   decoration.
-- The look is a pharmacy's (Hannah asked, 2026-11-17): clean, cool whites with a faint mint tint
-  in place of the old warm paper, the faint dotted grid, rounded cards, calm motion. The layout
-  reference is still AFFiNE's edgeless canvas.
-- The brand accent is pharmacy green (a teal green, `#08756a` in light, `#5ccfb6` in dark). It marks
-  the main action, the current selection and focus.
+- The neutrals follow Project-LucidIndex (Alex, 2026-11-17, replacing the mint whites tried earlier
+  the same day): off-white `#f7f5f1` behind near-black `#181a1b` text in light, `#1e1e1e` behind
+  `#f7f5f1` in dark, with warm grey borders. The faint dotted grid, rounded cards and calm motion
+  stay. The layout reference is still AFFiNE's edgeless canvas.
+- The accent is the University of Kansas's primary blue, `#0051ba` (lightened to `#76a7f2` in dark
+  so it stays readable). It marks the main action, the current selection and focus.
 - Pill art (`components/art/pills.tsx`: `Capsule`, `Tablet`, `Caplet`, `PillCluster`, `PillMark`) is
   our own drawing, coloured from the palette, decoration only (`aria-hidden`, never tappable). It
   sits where there is room: the sign-in page, the app's mark, the library title, roomy empty
@@ -783,3 +784,29 @@ Not part of the four migrations, but worth doing when someone is nearby:
 - `uploads/UploadTray.tsx` `z-[55]` becomes `z-(--z-float)`.
 - `search/QuickFind.tsx` overlay and panel use `--z-overlay` and `--z-modal`.
 - Course and folder icons use `hueForId(node.id)`.
+
+## Rules added 2026-11-17
+
+- **Safe-area padding.** `pb-safe`, `pt-safe` and `px-safe` SET the padding on their side to the
+  device's safe area, which is nothing on a computer. Never put one beside another padding class
+  for the same side: the gap is lost. Where a gap is wanted too, write the larger of the two, for
+  example `pb-[max(0.75rem,env(safe-area-inset-bottom))]`.
+- **One size per bar.** Controls that share a bar share a height and corners: the app header (36px
+  on a computer, 44px on touch), the practice question screen (44px everywhere), the document
+  toolbar (32px on a computer, 44px on touch, inside one bordered bar with thin lines between
+  groups).
+- **No see-through bars over the page.** A bar that sits on the page background is solid. A blur
+  behind a see-through bar smears her background picture into a band.
+- **Frosted dashed boxes.** A dashed box that sits straight on the page (an empty state) has
+  `bg-surface/55 backdrop-blur-md`, so its words stay readable over the dots or her picture.
+- **Movement.** Sidebars use `app/SideSlide.tsx`; pages use `app/usePageSlide.ts` (a class on
+  `#main`, never a wrapper); a back arrow carries the `nav-back` class.
+- **Icon-only buttons have a tooltip.** A button or link that shows only an icon names itself on
+  hover, keyboard focus or a long press, with React Bits' Warm Tooltip
+  (`components/ui/tooltip.tsx` over `components/bits/WarmTooltip.tsx`). `IconButton` and the action
+  bar's buttons do this themselves from their label; a hand-built icon-only control is wrapped in
+  `<Tooltip content="...">`. Where a Radix trigger owns the button (`asChild`), the tooltip goes
+  around the trigger, never between the trigger and its button. Do not also set a native `title`:
+  the browser would draw a second hint. Pass `tooltip={false}` to an `IconButton` only when
+  something around it already shows a hint.
+

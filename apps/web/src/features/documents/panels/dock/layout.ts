@@ -28,6 +28,39 @@ export interface DockState {
   right: SidebarState;
   /** Panels folded to just their header inside a stack. */
   folded: PanelId[];
+  /**
+   * Each panel's share of its sidebar's height, once she has dragged the line between two panels.
+   * A plain weight (the height in pixels at the time), so the shares hold when the window changes
+   * size. A panel with no entry takes its usual share.
+   */
+  sizes?: Partial<Record<PanelId, number>>;
+}
+
+/** The share a panel takes until she resizes it: side notes line up with the page, so they get more. */
+export const DEFAULT_PANEL_SHARE: Record<PanelId, number> = { outline: 2, resources: 2, notes: 3 };
+/** The least height a panel can be dragged to. */
+export const MIN_PANEL_HEIGHT = 96;
+
+/** Give some panels new shares (their heights in pixels), keeping the others as they are. */
+export function setPanelSizes(
+  state: DockState,
+  sizes: Partial<Record<PanelId, number>>,
+): DockState {
+  const next: Partial<Record<PanelId, number>> = { ...state.sizes };
+  for (const id of PANEL_IDS) {
+    const value = sizes[id];
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+      next[id] = Math.round(value);
+    }
+  }
+  return { ...state, sizes: next };
+}
+
+/** Forget the dragged shares of the panels in one sidebar: back to the usual split. */
+export function resetPanelSizes(state: DockState, side: Side): DockState {
+  const next: Partial<Record<PanelId, number>> = { ...state.sizes };
+  for (const id of state[side].panels) delete next[id];
+  return { ...state, sizes: next };
 }
 
 /** Sidebar widths she can drag between. */
@@ -214,7 +247,14 @@ export function parseDock(raw: unknown, layout: LayoutClass): DockState {
   const folded = Array.isArray(r.folded)
     ? (r.folded.filter((p) => (PANEL_IDS as readonly unknown[]).includes(p)) as PanelId[])
     : [];
-  return { left, right, folded };
+  const sizes: Partial<Record<PanelId, number>> = {};
+  if (r.sizes && typeof r.sizes === "object") {
+    for (const id of PANEL_IDS) {
+      const value = (r.sizes as Record<string, unknown>)[id];
+      if (typeof value === "number" && Number.isFinite(value) && value > 0) sizes[id] = value;
+    }
+  }
+  return { left, right, folded, sizes };
 }
 
 export const storageKey = (layout: LayoutClass) => `notes.sidebars.v1.${layout}`;

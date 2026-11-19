@@ -96,7 +96,7 @@ describe("writing side notes", () => {
     ]);
   });
 
-  it("refuses empty or long text, a bad colour, unknown blocks and fields", () => {
+  it("refuses empty or long text, a bad color, unknown blocks and fields", () => {
     const { t, g, add } = setup();
     expect(code(() => add({ text: "   " }))).toBe("invalid_input");
     expect(code(() => add({ text: "x".repeat(MARGIN_NOTE_LIMITS.textChars + 1) }))).toBe(
@@ -120,7 +120,7 @@ describe("writing side notes", () => {
     ).toBe("not_found");
   });
 
-  it("changes text and colour, resolves and reopens", () => {
+  it("changes text and color, resolves and reopens", () => {
     const { t, g, m, add } = setup();
     const n = add({ colour: "pink" });
     expect(code(() => m.update(t.she, g.documentId, n.id, {}))).toBe("invalid_input");

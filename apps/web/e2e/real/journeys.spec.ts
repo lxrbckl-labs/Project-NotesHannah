@@ -29,7 +29,7 @@ test("sign in: a wrong password is refused clearly, the right one gets in, signi
   expect(me.status()).toBe(401);
 });
 
-test("the library: create a term, a course (five sections) and a lecture, rename and favourite", async ({
+test("the library: create a term, a course (five sections) and a lecture, rename and favorite", async ({
   page,
 }, info) => {
   await signInReal(page);
@@ -76,11 +76,11 @@ test("the library: create a term, a course (five sections) and a lecture, rename
 
   // a rule the server enforces is reported with its message
   await page.getByRole("button", { name: `Actions for Beta blockers II ${t}` }).click();
-  await page.getByRole("menuitem", { name: "Add to favourites" }).click();
+  await page.getByRole("menuitem", { name: "Add to favorites" }).click();
   await page.getByRole("link", { name: "Library", exact: true }).first().click();
   await expect(
     page
-      .getByRole("region", { name: "Favourites" })
+      .getByRole("region", { name: "Favorites" })
       .getByRole("link", { name: new RegExp(`Beta blockers II ${t}`) }),
   ).toBeVisible();
 });

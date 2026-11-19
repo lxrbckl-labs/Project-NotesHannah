@@ -24,7 +24,7 @@ export function preferencesRoutes(deps: ServerDeps): Hono<AppEnv> {
 
   app.patch("/me/preferences", smallBody, async (c) => {
     const patch = await parseJson(c, PreferencesPatch, {
-      tabOrder: ["settings", "library", "practice", "search", "inbox"],
+      tabOrder: ["settings", "library", "practice", "calendar", "search", "inbox"],
     });
     return c.json({ preferences: updatePreferences(db, getAuth(c).userId, patch, deps.now()) });
   });

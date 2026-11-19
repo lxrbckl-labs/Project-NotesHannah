@@ -103,7 +103,7 @@ function press(name: string | RegExp) {
 }
 
 describe("the ribbon", () => {
-  it("rests, greyed out, until a text field has the caret", async () => {
+  it("rests, grayed out, until a text field has the caret", async () => {
     await open([paragraph("hello")]);
     expect(ribbon()).toHaveAttribute("data-live", "false");
     expect(styleButton()).toBeDisabled();
@@ -141,7 +141,7 @@ describe("the ribbon", () => {
     await startTyping();
     act(() => void liveEditor().commands.setTextSelection({ from: 1, to: 5 }));
     const { allowed } = press("Bold");
-    // Mouse down was cancelled, so the focus never left the text.
+    // Mouse down was canceled, so the focus never left the text.
     expect(allowed).toBe(false);
     const editor = liveEditor();
     expect(editor.isFocused).toBe(true);

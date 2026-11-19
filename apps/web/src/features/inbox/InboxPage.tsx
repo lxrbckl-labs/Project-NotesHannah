@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Inbox } from "lucide-react";
+import { HeaderArt } from "../../components/art/pills";
 import { Page } from "../../components/Page";
 import { Notice } from "../../components/ui/notice";
 import { PageHeader } from "../../components/ui/page-header";
@@ -10,6 +11,7 @@ import { IN_PROGRESS } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
 import { fileKeys } from "../library/queries";
 import { FileRow } from "../sources/FileRow";
+import { PageFileDrop } from "../uploads/PageFileDrop";
 import { UploadButton } from "../uploads/UploadButton";
 import { useFileDrop } from "../uploads/useFileDrop";
 
@@ -47,12 +49,14 @@ export function InboxPage() {
 
   return (
     <Page>
+      <PageFileDrop target={{ nodeId: null, label: "the inbox" }} />
       <div
         {...drop.props}
         data-drop={drop.over ? "into" : undefined}
         className={cn("rounded-panel", drop.over && "outline-2 outline-accent outline-offset-4")}
       >
         <PageHeader
+          art={<HeaderArt kind="inbox" />}
           title="Inbox"
           description="New uploads wait here until they are filed under a lecture or folder."
           icon={<Inbox />}

@@ -44,9 +44,11 @@ export function EmptyState({
   const Heading = headingLevel === 3 ? "h3" : "h2";
   return (
     <div
-      // No dotted grid of its own: the box is see-through, and a second grid over the page's shows as doubled dots.
+      // Frosted: a little of the surface colour with whatever is behind it blurred (the dots, or her own
+      // background picture), so the words stay readable. No dotted grid of its own: a second grid over the
+      // page's shows as doubled dots.
       className={cn(
-        "relative flex flex-col items-center overflow-hidden rounded-panel border border-dashed border-border-strong text-center",
+        "relative flex flex-col items-center overflow-hidden rounded-panel border border-dashed border-border-strong bg-surface/55 text-center backdrop-blur-md",
         compact ? "px-4 py-8" : "px-6 py-12",
       )}
     >
@@ -83,10 +85,8 @@ export function Spinner({ label = "Loading", inline }: { label?: string; inline?
         inline ? "inline-flex" : "justify-center py-12",
       )}
     >
-      <span
-        aria-hidden
-        className="anim-spin size-4 rounded-pill border-2 border-border-strong border-t-accent"
-      />
+      {/* A small capsule turning end over end. */}
+      <Capsule hue="teal" className="anim-spin h-3 w-7" />
       <span className="text-ui">{label}</span>
     </div>
   );

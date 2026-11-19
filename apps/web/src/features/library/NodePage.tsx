@@ -12,6 +12,7 @@ import { IN_PROGRESS } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
 import { ReferencesStrip, SHOWS_REFERENCES } from "../references/ReferencesStrip";
 import { FileRow } from "../sources/FileRow";
+import { PageFileDrop } from "../uploads/PageFileDrop";
 import { useFileDrop } from "../uploads/useFileDrop";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -88,6 +89,7 @@ function NodeView({ node }: { node: NodeWithLinks }) {
   }
   return (
     <Page>
+      {canHoldFiles(node) ? <PageFileDrop target={{ nodeId: node.id, label: node.name }} /> : null}
       <NodeHeader node={node} />
       {SHOWS_REFERENCES.has(node.kind) ? (
         <ReferencesStrip place={{ nodeId: node.id, name: nodeTitle(node), path: node.path }} />

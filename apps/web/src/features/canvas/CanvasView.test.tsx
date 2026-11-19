@@ -187,7 +187,7 @@ describe("CanvasView gestures", { timeout: 30_000 }, () => {
     await ready();
     await user.click(screen.getByRole("button", { name: "Frames" }));
     const panel = screen.getByTestId("frame-panel");
-    await user.click(within(panel).getByRole("button", { name: "Rename Counselling" }));
+    await user.click(within(panel).getByRole("button", { name: "Rename Counseling" }));
     const input = within(panel).getByRole("textbox", { name: "Frame title" });
     await user.clear(input);
     await user.type(input, "Talking to patients{Enter}");

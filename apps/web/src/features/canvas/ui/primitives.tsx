@@ -6,7 +6,7 @@ import { Icon, type IconName } from "./icons";
 
 /**
  * Where the canvas's popovers and dialogs mount: inside the canvas root, so the touch guards and
- * the canvas's stacking stay with them. Colours come from the shared tokens either way.
+ * the canvas's stacking stay with them. Colors come from the shared tokens either way.
  */
 export const PortalContext = createContext<HTMLElement | null>(null);
 
@@ -59,6 +59,7 @@ export function ToolButton({
     <Tooltip content={label}>
       <IconButton
         label={label}
+        tooltip={false}
         pressed={pressed}
         // Bare: canvas tools sit inside the canvas's own bars, which are the edge.
         variant="bare"

@@ -279,3 +279,61 @@ Added 2026-11-16. Details: [side-notes.md](side-notes.md).
   Search finds them. The guide has a section on them, and the pharmacy demo set has eleven
   (`pnpm local:seed:pharm:sidenotes`). The formatting ribbon wraps to a second line when even its
   folded form does not fit (an upright iPad beside the app's sidebar).
+
+## Q. Calendar
+
+Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's tab bar.
+
+- A month grid, Sunday first, with Today, previous and next. Each exam shows on its date (a dot on
+  a phone, its title from tablet width up).
+- A day she studied is tinted in three steps and marked with a pen. Studying is a graded practice
+  answer or a block she added or changed in a document herself; an agent's writing is not counted.
+- Picking a day lists its exams and what she did: questions answered, share correct, minutes
+  (each answer capped at five minutes), the lectures the questions belong to, and the notes she
+  wrote in, each a link.
+- Three figures above: next exam, study streak (days in a row, today not yet studied does not break
+  it), days studied in the month shown. "Coming up" lists exams in the next 60 days.
+- Server: `GET /api/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD&utcOffsetMinutes=N`, at most 62 days,
+  any sign-in, read-only. Days are her local days, sorted with the offset the app sends.
+- Not built: lecture dates on the calendar, reminders, planning study for a future day.
+
+## R. Added on 2026-11-17 (local until Alex says to commit)
+
+- **Colours:** Project-LucidIndex's neutrals with the University of Kansas blue (`#0051ba`) as the
+  accent. Pill art stays.
+- **Shell:** the search fills the header; one control size; each sidebar's toggle lives in that
+  sidebar's header while open and in the top bar while closed; sidebars slide; every sidebar's inner
+  edge drags to resize (remembered per browser, double-click to reset). Pages slide forward when
+  something is opened and back on a back arrow or the browser's Back.
+- **Background:** her own picture behind the pages (Settings, Background), one per account,
+  `user_backgrounds` table, `/api/me/background`. Shrunk in the browser to 2560px before sending.
+- **Practice:** every control on the question screen is one size; the bar, the question and the foot
+  share one column. Focus aids (text size, extra spacing, reading ruler, just the question, read
+  aloud), remembered per device. "How many" and Start are one solid bar.
+- **Library:** whole-page drag and drop for uploads on the library home, the Inbox and every page
+  that takes files; files drop onto folder rows; breadcrumbs are drop targets, to drag things out
+  of a folder; folders nest as deep as she likes (`MAX_FOLDER_DEPTH` is a backstop of 50); a section
+  can be marked as a favourite; Recently opened shows six.
+- **Documents:** the right side of the bar is one grouped toolbar with one control size; sidebars
+  slide and their panels fold with an ease.
+- **Concepts:** the neighbourhood graph draws concept cards with type icons and curved, coloured
+  links, with zoom buttons and draggable cards.
+- **Guide page:** links glide to their section; the contents marker slides.
+- **Letter:** the heart beside Sign out (and at the foot of Settings on a phone) opens Alex's
+  handwritten note to Hannah with a letter-opening animation.
+- **Fixes:** dialog, sheet and confirm footers keep their bottom padding (the safe-area class had
+  replaced it); the sign-in page keeps its top and bottom spacing; the Requests page no longer
+  repeats the "agents pick these up" note.
+- **Spelling:** American throughout what she sees (practice, color, favorites, summarize). Code
+  names keep their spelling: the `favourite` and `colour` fields, the `cancelled` status, the
+  `summarise` request kind, the `counselling_point` concept type and the agent tool descriptions
+  are unchanged. The script is not kept in the repo; new wording is simply written in American.
+- **Read and Edit:** the document bar has a Read / Edit switch (`mode-read`, `mode-toggle`),
+  remembered per device under `notes-doc-mode`.
+- **Panel heights:** a line between panels stacked in a document sidebar drags to share the height
+  (`sizes` in the dock state); the aligned side notes are placed from the page, so they do not move.
+- **Lecture header and panel headers:** the lecture page's actions are one grouped bar; a panel's
+  header reads fold arrow, name, plus, and the grip at the far right.
+- **Tooltips:** every icon-only button names itself with the Warm Tooltip (hover, focus, long
+  press). See `docs/design.md` and `docs/react-bits.md`.
+

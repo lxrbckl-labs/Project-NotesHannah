@@ -19,9 +19,9 @@ export interface BadgeProps {
   tone?: StatusTone;
   variant?: BadgeVariant;
   size?: "sm" | "md";
-  /** A small icon before the text. Colour is never the only signal: keep the words. */
+  /** A small icon before the text. Color is never the only signal: keep the words. */
   icon?: ReactNode;
-  /** A coloured dot before the text, in the solid shade. */
+  /** A colored dot before the text, in the solid shade. */
   dot?: boolean;
   className?: string;
   children: ReactNode;

@@ -1,6 +1,7 @@
 import type { NodeWithLinks, SourceFile } from "@notes/schema";
 import { Check, ChevronRight, Folder, Inbox } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
+import { Tooltip } from "../../components/ui/tooltip";
 import { cn } from "../../lib/cn";
 import { NodeIcon } from "./NodeIcon";
 import { useChildren } from "./queries";
@@ -222,15 +223,20 @@ function PickerRow({
       style={{ paddingLeft: depth * 18 }}
     >
       {expandable ? (
-        <button
-          type="button"
-          aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}
-          aria-expanded={expanded}
-          onClick={onToggle}
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
-        >
-          <ChevronRight size={16} className={cn("transition-transform", expanded && "rotate-90")} />
-        </button>
+        <Tooltip content={`${expanded ? "Collapse" : "Expand"} ${label}`}>
+          <button
+            type="button"
+            aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}
+            aria-expanded={expanded}
+            onClick={onToggle}
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+          >
+            <ChevronRight
+              size={16}
+              className={cn("transition-transform", expanded && "rotate-90")}
+            />
+          </button>
+        </Tooltip>
       ) : (
         <span className="size-9 shrink-0" />
       )}

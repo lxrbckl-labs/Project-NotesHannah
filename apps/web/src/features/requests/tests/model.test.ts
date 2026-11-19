@@ -25,7 +25,7 @@ describe("status wording", () => {
       in_progress: "An agent is working on it",
       done: "Done",
       declined: "Needs a change",
-      cancelled: "Cancelled",
+      cancelled: "Canceled",
     });
     for (const text of Object.values(STATUS_HELP)) expect(text.length).toBeGreaterThan(10);
   });

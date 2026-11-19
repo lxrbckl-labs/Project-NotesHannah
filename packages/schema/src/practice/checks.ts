@@ -78,7 +78,7 @@ export function citationIssues(q: EnvelopeLike): Issue[] {
         path: ["sources"],
         message:
           "A question needs at least one source: sources: [{ fileId, pageId, quote }] pointing at the page it came from. " +
-          "If it genuinely does not come from her notes, set generalKnowledge: true instead (it will be labelled 'not from your notes').",
+          "If it genuinely does not come from her notes, set generalKnowledge: true instead (it will be labeled 'not from your notes').",
       },
     ];
   }

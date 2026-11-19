@@ -48,7 +48,7 @@ describe("names", () => {
     expect(normalizeName("!!!")).toBe("");
   });
 
-  it("keys a concept by type and normalised name", () => {
+  it("keys a concept by type and normalized name", () => {
     expect(conceptKey("drug", "Metoprolol")).toBe(conceptKey("drug", " metoprolol "));
     expect(conceptKey("drug", "Metoprolol")).not.toBe(conceptKey("drug_class", "Metoprolol"));
   });
@@ -125,7 +125,7 @@ describe("concept shapes", () => {
     expect(ConceptInput.safeParse({ type: "vitamin", name: "x" }).success).toBe(false);
   });
 
-  it("normalises a plain-string summary to rich text", () => {
+  it("normalizes a plain-string summary to rich text", () => {
     const parsed = ConceptInput.parse({
       type: "drug",
       name: "atenolol",

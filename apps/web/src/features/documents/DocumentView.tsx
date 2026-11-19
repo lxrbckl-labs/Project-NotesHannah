@@ -11,6 +11,7 @@ import {
 import type { Editor } from "@tiptap/core";
 import {
   ArrowDown,
+  BookOpen,
   Check,
   CircleCheckBig,
   CloudAlert,
@@ -153,7 +154,20 @@ function DocumentScreen({
   const isTouch = useIsTouch();
   const reduced = useReducedMotion();
   const toast = useToast();
-  const [editing, setEditing] = useState(() => (initialMode ? initialMode === "edit" : !isTouch));
+  // The mode she last chose on this device; until she has, writing on a computer and reading on touch.
+  const [editing, setEditingState] = useState(() =>
+    initialMode
+      ? initialMode === "edit"
+      : (rememberedMode() ?? (isTouch ? "read" : "edit")) === "edit",
+  );
+  const setEditing = useCallback((next: boolean) => {
+    setEditingState(next);
+    try {
+      localStorage.setItem(MODE_KEY, next ? "edit" : "read");
+    } catch {
+      // Not remembered, but the mode still changes.
+    }
+  }, []);
   const refs = useStableRefs(doc?.blocks);
   const [status, setStatus] = useState<Map<string, CitationStatus>>(() => new Map());
   const [names, setNames] = useState<
@@ -388,7 +402,9 @@ function DocumentScreen({
   const showPanelRef = useRef<(id: PanelId) => void>(() => {});
   showPanelRef.current = (id) => {
     if (layout === "phone") setSheet({ open: true, tab: id });
-    else if (!dock.visible(id)) dock.reveal(id);
+    // On screen is not enough: a panel folded down to its header is unfolded too, or a new note would
+    // open where she cannot see it.
+    else if (!dock.visible(id) || dock.state.folded.includes(id)) dock.reveal(id);
   };
 
   const actions: DocActions = useMemo(
@@ -1145,6 +1161,28 @@ function SaveStatus({
   );
 }
 
+/** The Read and Edit choices in the document bar: one height with the rest of the bar. */
+const MODE_ITEM =
+  "inline-flex min-h-11 items-center gap-1.5 rounded-control px-2.5 text-label font-semibold transition-colors duration-(--duration-instant) xl:min-h-7";
+const MODE_ON = "bg-accent text-accent-contrast shadow-card";
+const MODE_OFF = "text-text-muted hover:text-text";
+
+/** Where the mode she last chose is kept, on this device. */
+const MODE_KEY = "notes-doc-mode";
+function rememberedMode(): "read" | "edit" | null {
+  try {
+    const saved = localStorage.getItem(MODE_KEY);
+    return saved === "read" || saved === "edit" ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The thin line between groups in the document bar. */
+function BarLine() {
+  return <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />;
+}
+
 function TopBar({
   editing,
   setEditing,
@@ -1178,8 +1216,8 @@ function TopBar({
   showUndo: boolean;
 }) {
   return (
-    <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-1 border-b border-border bg-surface/85 px-2 pt-[env(safe-area-inset-top)] backdrop-blur md:px-3">
-      <div className="flex min-h-14 flex-1 items-center gap-1">
+    <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-2 border-b border-border bg-surface/85 px-2 pb-1.5 pt-[max(0.375rem,env(safe-area-inset-top))] backdrop-blur md:px-3">
+      <div className="flex min-w-0 flex-1 items-center gap-1">
         <SaveStatus state={state} controller={controller} compact={compact} />
         {showUndo && (
           <>
@@ -1203,59 +1241,97 @@ function TopBar({
           </>
         )}
       </div>
-      {unverified > 0 && (
-        <button
-          type="button"
-          onClick={onNext}
-          data-testid="unverified-count"
-          aria-label={`${unverified} unverified: jump to the next`}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border border-warning-border bg-warning-soft px-3 text-label font-semibold text-warning tabular-nums pointer-coarse:min-h-11"
-        >
-          <TriangleAlert aria-hidden className="size-3.5" />
-          <span data-testid="unverified-number">{unverified}</span>
-          <span className={cn(compact && "sr-only")}>to review</span>
-          <ArrowDown aria-hidden className="size-3.5" />
-        </button>
-      )}
-      <IconButton
-        label={dock ? "Outline" : "Outline, resources and side notes"}
-        pressed={outlineOpen}
-        onClick={onOutline}
-        data-testid="outline-button"
+      {/* One bar for everything on the right: every control the same height (44px on touch, 32px on a
+          computer) and the same corners, grouped by what it does with a thin line between the groups:
+          review, the side panels, history, and Edit. */}
+      <div
+        role="toolbar"
+        aria-label="Document"
+        data-testid="doc-toolbar"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-card border border-border-strong bg-surface p-1 shadow-card"
       >
-        <ListTree className="size-[18px]" />
-      </IconButton>
-      {dock && (
-        <>
-          <IconButton
-            label="Side notes"
-            pressed={notesOpen}
-            onClick={onNotes}
-            data-testid="notes-button"
-          >
-            <MessageSquareText className="size-[18px]" />
-          </IconButton>
-          <PanelsMenu dock={dock} />
-        </>
-      )}
-      <IconButton label="Version history" onClick={onHistory} data-testid="history-button">
-        <History className="size-[18px]" />
-      </IconButton>
-      <Button
-        variant={editing ? "primary" : "secondary"}
-        size="sm"
-        onClick={() => setEditing(!editing)}
-        data-testid="mode-toggle"
-        aria-pressed={editing}
-        className="ml-1"
-      >
-        {editing ? (
-          <Check aria-hidden className="size-4" />
-        ) : (
-          <Pencil aria-hidden className="size-3.5" />
+        {unverified > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={onNext}
+              data-testid="unverified-count"
+              aria-label={`${unverified} unverified: jump to the next`}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-warning-soft px-2.5 text-label font-semibold text-warning tabular-nums transition-colors duration-(--duration-instant) hover:brightness-95 xl:min-h-8"
+            >
+              <TriangleAlert aria-hidden className="size-3.5" />
+              <span data-testid="unverified-number">{unverified}</span>
+              <span className={cn(compact && "sr-only")}>to review</span>
+              <ArrowDown aria-hidden className="size-3.5" />
+            </button>
+            <BarLine />
+          </>
         )}
-        {editing ? "Done" : "Edit"}
-      </Button>
+        <IconButton
+          variant="bare"
+          size="sm"
+          label={dock ? "Outline" : "Outline, resources and side notes"}
+          pressed={outlineOpen}
+          onClick={onOutline}
+          data-testid="outline-button"
+        >
+          <ListTree className="size-[18px]" />
+        </IconButton>
+        {dock && (
+          <>
+            <IconButton
+              variant="bare"
+              size="sm"
+              label="Side notes"
+              pressed={notesOpen}
+              onClick={onNotes}
+              data-testid="notes-button"
+            >
+              <MessageSquareText className="size-[18px]" />
+            </IconButton>
+            <PanelsMenu dock={dock} />
+          </>
+        )}
+        <BarLine />
+        <IconButton
+          variant="bare"
+          size="sm"
+          label="Version history"
+          onClick={onHistory}
+          data-testid="history-button"
+        >
+          <History className="size-[18px]" />
+        </IconButton>
+        <BarLine />
+        {/* Two modes, always both on show. Read is for studying: no caret, no handles, no formatting
+            bar, and a tap on a source or a concept just opens it. Edit is for writing. Her choice is
+            remembered on this device. Pressing Edit again while editing also goes back to reading. */}
+        <fieldset
+          aria-label="Mode"
+          className="m-0 inline-flex gap-0.5 rounded-control border-0 bg-surface-muted p-0.5"
+        >
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            data-testid="mode-read"
+            aria-pressed={!editing}
+            className={cn(MODE_ITEM, !editing ? MODE_ON : MODE_OFF)}
+          >
+            <BookOpen aria-hidden className="size-3.5" />
+            <span className={cn(compact && "sr-only")}>Read</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(!editing)}
+            data-testid="mode-toggle"
+            aria-pressed={editing}
+            className={cn(MODE_ITEM, editing ? MODE_ON : MODE_OFF)}
+          >
+            <Pencil aria-hidden className="size-3.5" />
+            <span className={cn(compact && "sr-only")}>Edit</span>
+          </button>
+        </fieldset>
+      </div>
     </div>
   );
 }

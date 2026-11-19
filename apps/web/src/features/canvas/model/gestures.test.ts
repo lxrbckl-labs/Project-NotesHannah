@@ -48,7 +48,7 @@ function rects(canvas: Canvas): Record<string, Rect> {
 }
 
 describe("gestures emit the right ops", () => {
-  it("drag and drop: pins the card, and moves it into the frame under its centre", () => {
+  it("drag and drop: pins the card, and moves it into the frame under its center", () => {
     const { canvas, ref } = seed();
     const frames = framesInOrder(canvas);
     const r = rects(canvas);

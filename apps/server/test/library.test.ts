@@ -1,4 +1,4 @@
-import { CreateNodeInput, MoveNodeInput, newId } from "@notes/schema";
+import { CreateNodeInput, MAX_FOLDER_DEPTH, MoveNodeInput, newId } from "@notes/schema";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { createTestDatabase } from "../src/db/client.js";
@@ -228,24 +228,36 @@ describe("placement rules", () => {
   it("limits folder depth below a section, on create and for whole moved subtrees", async () => {
     const t = setup();
     const { sections } = await t.spine(t.alice);
-    const f1 = await t.make(t.alice, sections.sources.id, "folder", "f1");
-    const f2 = await t.make(t.alice, f1.id, "folder", "f2");
+    // Folders nest as deep as she likes; the limit is a far-off backstop. Build right up to it.
+    const chain = [await t.make(t.alice, sections.sources.id, "folder", "f1")];
+    for (let depth = 2; depth <= MAX_FOLDER_DEPTH; depth++) {
+      const parent = chain[chain.length - 1];
+      if (!parent) throw new Error("chain");
+      chain.push(await t.make(t.alice, parent.id, "folder", `f${depth}`));
+    }
+    const f1 = chain[0];
+    const deepest = chain[chain.length - 1];
+    if (!f1 || !deepest) throw new Error("chain");
     const tooDeep = await t.call(t.alice, "POST", "/api/nodes", {
-      parentId: f2.id,
+      parentId: deepest.id,
       kind: "folder",
-      name: "f3",
+      name: "one too many",
     });
     expectRuleError(tooDeep);
     expect(tooDeep.body.error.example.parentId).toBe(sections.sources.id);
     // a lecture is not a folder, so it may sit at the deepest level
-    await t.make(t.alice, f2.id, "lecture", "deep lecture");
+    await t.make(t.alice, deepest.id, "lecture", "deep lecture");
 
     const other = await t.make(t.alice, sections.practice.id, "folder", "other");
     const move = await t.call(t.alice, "POST", `/api/nodes/${f1.id}/move`, { parentId: other.id });
-    expectRuleError(move); // f1 holds f2, so it would be three deep
-    const ok = await t.call(t.alice, "POST", `/api/nodes/${f2.id}/move`, { parentId: other.id });
+    expectRuleError(move); // the whole chain under another folder would be one past the limit
+    const ok = await t.call(t.alice, "POST", `/api/nodes/${deepest.id}/move`, {
+      parentId: other.id,
+    });
     expect(ok.status).toBe(200);
-    expect(ok.body.node.path).toBe("Fall 2026 / Pharmacology II / Practice / other / f2");
+    expect(ok.body.node.path).toBe(
+      `Fall 2026 / Pharmacology II / Practice / other / f${MAX_FOLDER_DEPTH}`,
+    );
   });
 
   it("refuses moving an item into itself or its descendants", async () => {
@@ -268,7 +280,8 @@ describe("sections are fixed", () => {
     const id = sections.lectures.id;
     const attempts: Array<[string, string, unknown?]> = [
       ["PATCH", `/api/nodes/${id}`, { name: "Renamed" }],
-      ["PATCH", `/api/nodes/${id}`, { favourite: true }],
+      // A favourite sent together with a rename is still a change to the section.
+      ["PATCH", `/api/nodes/${id}`, { name: "Renamed", favourite: true }],
       ["POST", `/api/nodes/${id}/move`, { parentId: course.id, afterId: null }],
       ["POST", `/api/nodes/${id}/duplicate`],
       ["POST", `/api/nodes/${id}/trash`],
@@ -285,10 +298,22 @@ describe("sections are fixed", () => {
     expect(await t.names(t.alice, course.id)).toHaveLength(5);
     expect(await t.names(t.alice, term.id)).toEqual(["Pharmacology II"]);
   });
+
+  it("can be marked as a favorite and unmarked: the star changes nothing about the section", async () => {
+    const t = setup();
+    const { sections } = await t.spine(t.alice);
+    const id = sections.study_guides.id;
+    const on = await t.call(t.alice, "PATCH", `/api/nodes/${id}`, { favourite: true });
+    expect(on.status).toBe(200);
+    expect(on.body.node.favourite).toBe(true);
+    expect(on.body.node.name).toBe("Study guides");
+    const off = await t.call(t.alice, "PATCH", `/api/nodes/${id}`, { favourite: false });
+    expect(off.body.node.favourite).toBe(false);
+  });
 });
 
 describe("update", () => {
-  it("renames, edits meta and favourites; rejects bad input with the field named", async () => {
+  it("renames, edits meta and favorites; rejects bad input with the field named", async () => {
     const t = setup();
     const { course, sections } = await t.spine(t.alice);
     const lecture = await t.make(t.alice, sections.lectures.id, "lecture", "L1");
@@ -690,8 +715,8 @@ describe("search", () => {
   });
 });
 
-describe("favourites and recents", () => {
-  it("lists favourites, hides trashed ones", async () => {
+describe("favorites and recents", () => {
+  it("lists favorites, hides trashed ones", async () => {
     const t = setup();
     const { sections } = await t.spine(t.alice);
     const a = await t.make(t.alice, sections.sources.id, "document", "a");

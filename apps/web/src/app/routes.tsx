@@ -60,6 +60,8 @@ const screens = {
     import("../features/references/ReferencesPage").then((m) => ({
       Component: m.ReferencesPage,
     })),
+  calendar: () =>
+    import("../features/calendar/CalendarPage").then((m) => ({ Component: m.CalendarPage })),
   help: () => import("../features/help/GuidePage").then((m) => ({ Component: m.GuidePage })),
   designBits: () =>
     import("../features/design-bits/DesignBitsPage").then((m) => ({
@@ -114,6 +116,7 @@ export const routes: RouteObject[] = [
           { path: "files/:fileId", lazy: screens.file, HydrateFallback: Loading },
           { path: "search", lazy: screens.search, HydrateFallback: Loading },
           { path: "inbox", lazy: screens.inbox, HydrateFallback: Loading },
+          { path: "calendar", lazy: screens.calendar, HydrateFallback: Loading },
           { path: "trash", lazy: screens.trash, HydrateFallback: Loading },
           { path: "settings", lazy: screens.settings, HydrateFallback: Loading },
           { path: "help", lazy: screens.help, HydrateFallback: Loading },

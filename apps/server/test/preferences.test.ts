@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { errorCode, makeTestApp } from "./helpers.js";
 
 const PW = "correct horse battery";
-const ODD = ["settings", "library", "practice", "search", "inbox"];
+const ODD = ["settings", "library", "practice", "calendar", "search", "inbox"];
 
 async function setup() {
   const t = makeTestApp();
@@ -27,12 +27,13 @@ describe("the order rule (resolveTabOrder)", () => {
   });
 
   test("a tab added to the app after she saved shows at the end, in default order", () => {
-    // An order saved when only three tabs existed.
+    // An order saved when only three of today's tabs existed.
     expect(resolveTabOrder(["settings", "library", "search"])).toEqual([
       "settings",
       "library",
       "search",
       "practice",
+      "calendar",
       "inbox",
     ]);
   });
@@ -42,6 +43,7 @@ describe("the order rule (resolveTabOrder)", () => {
       "inbox",
       "library",
       "practice",
+      "calendar",
       "search",
       "settings",
     ]);
@@ -65,8 +67,8 @@ describe("GET and PATCH /api/me/preferences", () => {
   test("refuses repeats, unknown ids, missing ids, extra ids and other fields", async () => {
     const { get, patch, hannah } = await setup();
     const bad: unknown[] = [
-      { tabOrder: ["library", "library", "practice", "search", "inbox"] },
-      { tabOrder: ["library", "practice", "search", "inbox", "trash"] },
+      { tabOrder: ["library", "library", "practice", "calendar", "search", "inbox"] },
+      { tabOrder: ["library", "practice", "calendar", "search", "inbox", "trash"] },
       { tabOrder: ["library", "practice", "search", "inbox"] },
       { tabOrder: [...ODD, "library"] },
       { tabOrder: "settings" },
@@ -125,6 +127,7 @@ describe("GET and PATCH /api/me/preferences", () => {
       "library",
       "search",
       "practice",
+      "calendar",
       "inbox",
     ]);
     const row = t.db.prepare("SELECT doc FROM user_preferences").get() as { doc: string };

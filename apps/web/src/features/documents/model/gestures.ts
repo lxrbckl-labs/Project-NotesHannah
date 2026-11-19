@@ -107,7 +107,7 @@ export function defaultContent(
     case "labelled_image":
       return {
         image: options.image,
-        alt: options.alt ?? "Labelled page image",
+        alt: options.alt ?? "Labeled page image",
         hotspots: [{ x: 0.5, y: 0.5, label: "Label" }],
       };
     case "question":

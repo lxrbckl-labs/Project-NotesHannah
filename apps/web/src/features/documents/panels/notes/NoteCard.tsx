@@ -4,12 +4,22 @@ import { RadioGroup } from "radix-ui";
 import { type KeyboardEvent, type Ref, useEffect, useRef, useState } from "react";
 import { Button, IconButton } from "../../../../components/ui/button";
 import { cn } from "../../../../lib/cn";
-import { CATEGORICAL_HUES, HUE_LABEL } from "../../../../lib/hues";
+import { HUE_LABEL } from "../../../../lib/hues";
 import { formatWhen } from "../../ui/hooks";
 
 const NONE = "none";
 
-/** Her note's colour: none, or one of the palette's lively hues. Small swatches with a full hit area. */
+/**
+ * The five colors a note can take (Alex, 2026-11-17: five, not the whole palette). A note that already
+ * has another color keeps it, and that color is offered while she edits that note.
+ */
+export const NOTE_HUES: readonly ColorToken[] = ["yellow", "green", "blue", "pink", "purple"];
+
+/** One swatch: a square with the app's corners, like the other controls; the chosen one is outlined and ticked. */
+const SWATCH =
+  "hit-area flex size-8 items-center justify-center rounded-control border transition-colors duration-(--duration-instant) data-[state=checked]:border-2";
+
+/** Her note's color: none, or one of five. */
 export function NoteColours({
   value,
   onChange,
@@ -19,26 +29,29 @@ export function NoteColours({
 }) {
   return (
     <RadioGroup.Root
-      aria-label="Note colour"
+      aria-label="Note color"
       value={value ?? NONE}
       onValueChange={(v) => onChange(v === NONE ? null : (v as ColorToken))}
       orientation="horizontal"
-      className="flex flex-wrap gap-1"
+      className="flex flex-wrap gap-1.5"
     >
       <RadioGroup.Item
         value={NONE}
-        aria-label="No colour"
-        className="hit-area flex size-7 items-center justify-center rounded-pill border-2 border-border-strong bg-surface data-[state=checked]:ring-2 data-[state=checked]:ring-text data-[state=checked]:ring-offset-1 data-[state=checked]:ring-offset-surface"
+        aria-label="No color"
+        className={cn(SWATCH, "border-border-strong bg-surface data-[state=checked]:border-text")}
       >
         <span aria-hidden className="h-0.5 w-3.5 rotate-45 rounded-pill bg-border-strong" />
       </RadioGroup.Item>
-      {CATEGORICAL_HUES.map((hue) => (
+      {(value && !NOTE_HUES.includes(value) ? [...NOTE_HUES, value] : NOTE_HUES).map((hue) => (
         <RadioGroup.Item
           key={hue}
           value={hue}
           data-hue={hue}
           aria-label={HUE_LABEL[hue]}
-          className="hit-area flex size-7 items-center justify-center rounded-pill border-2 border-tone-solid bg-tone-soft data-[state=checked]:ring-2 data-[state=checked]:ring-text data-[state=checked]:ring-offset-1 data-[state=checked]:ring-offset-surface"
+          className={cn(
+            SWATCH,
+            "border-tone-border bg-tone-soft data-[state=checked]:border-tone-solid",
+          )}
         >
           <RadioGroup.Indicator>
             <Check aria-hidden size={12} strokeWidth={3} className="text-tone-text" />
@@ -113,22 +126,25 @@ export function NoteEditor({
         placeholder="A note to yourself…"
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
-        className="min-h-20 w-full resize-none rounded-control border border-border-strong bg-surface px-2.5 py-2 text-ui leading-snug text-text outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent-soft"
+        className="min-h-20 w-full resize-none rounded-control border border-border-strong bg-surface px-2.5 py-2 text-ui leading-snug text-text outline-none transition-colors duration-(--duration-instant) focus-visible:border-accent"
       />
-      <NoteColours value={colour} onChange={setColour} />
-      <div className="flex flex-wrap justify-end gap-1.5">
-        <Button size="sm" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={save}
-          disabled={!text.trim()}
-          data-testid="note-save"
-        >
-          {saveLabel}
-        </Button>
+      {/* Colors on the left, the two buttons on the right, one row when there is room. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <NoteColours value={colour} onChange={setColour} />
+        <div className="ml-auto flex gap-1.5">
+          <Button size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={save}
+            disabled={!text.trim()}
+            data-testid="note-save"
+          >
+            {saveLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -136,7 +152,7 @@ export function NoteEditor({
 
 /**
  * One side note. Her words, when it was written, and (when she is looking at it) its actions:
- * done, change, colour and delete. A detached one says which words it was on and can be put back
+ * done, change, color and delete. A detached one says which words it was on and can be put back
  * on the block she is reading.
  */
 export function NoteCard({

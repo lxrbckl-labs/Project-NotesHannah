@@ -53,7 +53,7 @@ export function NodeIcon({
 
 /**
  * An item's icon in a tinted square. `hue` is the course colour (see courseHue); without one
- * the square is neutral grey, as for terms. Colour never carries the meaning alone: the kind is
+ * the square is neutral gray, as for terms. Color never carries the meaning alone: the kind is
  * also the icon and the words beside it.
  */
 export function NodeTile({

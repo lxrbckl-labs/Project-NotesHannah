@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Bot } from "lucide-react";
 import { Link } from "react-router";
+import { HeaderArt } from "../../components/art/pills";
 import { Page } from "../../components/Page";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -70,6 +71,7 @@ export function ActivityPage() {
   return (
     <Page>
       <PageHeader
+        art={<HeaderArt kind="activity" />}
         title="Activity"
         description="What agents like Claude Code did in your library."
         icon={<Bot />}

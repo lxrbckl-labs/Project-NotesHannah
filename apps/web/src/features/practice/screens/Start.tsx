@@ -1,5 +1,6 @@
 import { CalendarCheck, NotebookPen } from "lucide-react";
 import { useMemo, useState } from "react";
+import { HeaderArt } from "../../../components/art/pills";
 import { Chip } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card } from "../../../components/ui/card";
@@ -36,6 +37,9 @@ function defaultScope(
     null
   );
 }
+
+/** A choice in the start bar: the same height and corners as the Start button beside it. */
+const BAR_ITEM = "min-h-11 justify-center rounded-control! px-3.5 text-ui xl:min-h-9";
 
 export function Start({
   store,
@@ -132,6 +136,7 @@ export function Start({
   return (
     <div className="space-y-8" data-testid="start">
       <PageHeader
+        art={<HeaderArt kind="practice" />}
         title="Practice"
         description="Choose what to work on. One tap starts a session."
       />
@@ -192,7 +197,7 @@ export function Start({
       </div>
 
       <fieldset className="space-y-3">
-        <legend className="mb-1 text-body font-semibold">What to practise</legend>
+        <legend className="mb-1 text-body font-semibold">What to practice</legend>
         <div className="grid gap-2.5 md:grid-cols-2">
           {data.scopes.map((s) => {
             const on = scope?.id === s.id;
@@ -254,48 +259,55 @@ export function Start({
         </fieldset>
       )}
 
-      {total > 0 && (
-        <fieldset className="space-y-3">
-          <legend className="mb-1 text-body font-semibold">How many</legend>
-          <div className="flex flex-wrap gap-x-2.5 gap-y-3.5">
-            {lengthOptions.map((n) => (
-              <Chip
-                key={n}
-                pressed={length === n}
-                onClick={() => setLength(n)}
-                className="min-w-14 justify-center tabular-nums"
-              >
-                {n}
-              </Chip>
-            ))}
-            <Chip
-              pressed={length === "all" || !lengthOptions.includes(length)}
-              onClick={() => setLength("all")}
-            >
-              All {total}
-            </Chip>
-          </div>
-        </fieldset>
-      )}
-
       {problem && <Notice tone="danger">{problem}</Notice>}
 
-      {/* Rests on the tab bar (the main area clears exactly its height); from tablet up an ordinary button row. */}
-      <div className="sticky bottom-0 -mx-4 border-t border-border bg-bg/95 px-4 pb-3 pt-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
-        <Button
-          variant="primary"
-          size="lg"
-          className="w-full md:w-auto md:min-w-64"
-          data-testid="start-session"
-          disabled={starting || effective === 0}
-          onClick={start}
+      {/* One bar: how many questions, and the button that starts them. Solid, never see-through, so it
+          reads cleanly over any background. On a phone it rests on the tab bar (the main area clears
+          exactly its height); from tablet up it sits in the page as a card. */}
+      <div className="sticky bottom-0 z-(--z-sticky) max-md:-mx-4 max-md:border-t max-md:border-border max-md:bg-surface max-md:px-4 max-md:py-2.5 md:static">
+        <div
+          data-testid="start-bar"
+          className="flex flex-wrap items-center gap-2 md:rounded-card md:border md:border-border-strong md:bg-surface md:p-2 md:shadow-card"
         >
-          {effective === 0
-            ? "Nothing to practise here yet"
-            : starting
-              ? "Starting..."
-              : `Start ${effective} ${effective === 1 ? "question" : "questions"}`}
-        </Button>
+          {total > 0 && (
+            <fieldset className="m-0 flex min-w-0 flex-wrap items-center gap-1.5 border-0 p-0">
+              <legend className="sr-only">How many</legend>
+              <span aria-hidden className="px-1.5 text-label font-medium text-text-muted">
+                How many
+              </span>
+              {lengthOptions.map((n) => (
+                <Chip
+                  key={n}
+                  pressed={length === n}
+                  onClick={() => setLength(n)}
+                  className={`${BAR_ITEM} min-w-11 tabular-nums`}
+                >
+                  {n}
+                </Chip>
+              ))}
+              <Chip
+                pressed={length === "all" || !lengthOptions.includes(length)}
+                onClick={() => setLength("all")}
+                className={BAR_ITEM}
+              >
+                All {total}
+              </Chip>
+            </fieldset>
+          )}
+          <Button
+            variant="primary"
+            className="ml-auto min-w-48 flex-1 sm:flex-none"
+            data-testid="start-session"
+            disabled={starting || effective === 0}
+            onClick={start}
+          >
+            {effective === 0
+              ? "Nothing to practice here yet"
+              : starting
+                ? "Starting..."
+                : `Start ${effective} ${effective === 1 ? "question" : "questions"}`}
+          </Button>
+        </div>
       </div>
     </div>
   );

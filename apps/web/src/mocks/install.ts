@@ -83,7 +83,7 @@ export function installMockApi(): void {
       cancel: () => {
         cancelled = true;
         clearTimeout(timer);
-        rejectNow(new ApiClientError(0, { code: "cancelled", message: "Upload cancelled." }));
+        rejectNow(new ApiClientError(0, { code: "cancelled", message: "Upload canceled." }));
       },
     };
   };

@@ -15,23 +15,23 @@
       which point at the palette so there is one source of truth. */
 :root {
   color-scheme: light;
-  --color-bg: #f2f8f6;
+  --color-bg: #f7f5f1;
   --color-surface: #ffffff;
-  --color-surface-muted: #e6f0ed;
-  --color-border: #d3e2dd;
-  --color-border-strong: #b3c9c2;
-  --color-text: #13231f;
-  --color-text-muted: #4d5f5a;
-  --color-accent: #08756a;
+  --color-surface-muted: #eeece7;
+  --color-border: #e0ddd6;
+  --color-border-strong: #c8c4ba;
+  --color-text: #181a1b;
+  --color-text-muted: #5b6367;
+  --color-accent: #0051ba;
   --color-accent-contrast: #ffffff;
-  --color-accent-soft: #daf0ea;
-  --color-accent-border: #a6d5c9;
-  --color-dot: #c4d8d1;
+  --color-accent-soft: #e3ecf9;
+  --color-accent-border: #b3caec;
+  --color-dot: #d6d2c8;
   --color-chrome: rgb(255 255 255 / 0.92);
-  --color-overlay: rgb(19 35 31 / 0.42);
-  --shadow-card: 0 1px 2px rgb(19 35 31 / 0.04), 0 4px 14px rgb(19 35 31 / 0.05);
-  --shadow-raised: 0 2px 4px rgb(19 35 31 / 0.06), 0 12px 28px rgb(19 35 31 / 0.12);
-  --shadow-pop: 0 10px 40px rgb(19 35 31 / 0.18);
+  --color-overlay: rgb(24 26 27 / 0.42);
+  --shadow-card: 0 1px 2px rgb(24 26 27 / 0.04), 0 4px 14px rgb(24 26 27 / 0.05);
+  --shadow-raised: 0 2px 4px rgb(24 26 27 / 0.06), 0 12px 28px rgb(24 26 27 / 0.12);
+  --shadow-pop: 0 10px 40px rgb(24 26 27 / 0.18);
 
   /* The palette. */
   --hue-green-solid: #3c9e5f;
@@ -89,19 +89,19 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-bg: #0c1413;
-    --color-surface: #131d1b;
-    --color-surface-muted: #1c2a27;
-    --color-border: #293a36;
-    --color-border-strong: #3e534d;
-    --color-text: #e5efec;
-    --color-text-muted: #9cb0aa;
-    --color-accent: #5ccfb6;
-    --color-accent-contrast: #06201b;
-    --color-accent-soft: #143a33;
-    --color-accent-border: #22594e;
-    --color-dot: #2a3b37;
-    --color-chrome: rgb(19 29 27 / 0.94);
+    --color-bg: #1e1e1e;
+    --color-surface: #262829;
+    --color-surface-muted: #303334;
+    --color-border: #35393b;
+    --color-border-strong: #4c5154;
+    --color-text: #f7f5f1;
+    --color-text-muted: #aaa69c;
+    --color-accent: #76a7f2;
+    --color-accent-contrast: #0a1a33;
+    --color-accent-soft: #1c2d49;
+    --color-accent-border: #2c4b7c;
+    --color-dot: #383b3d;
+    --color-chrome: rgb(38 40 41 / 0.94);
     --color-overlay: rgb(0 0 0 / 0.6);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
     --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);
@@ -162,19 +162,19 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #0c1413;
-  --color-surface: #131d1b;
-  --color-surface-muted: #1c2a27;
-  --color-border: #293a36;
-  --color-border-strong: #3e534d;
-  --color-text: #e5efec;
-  --color-text-muted: #9cb0aa;
-  --color-accent: #5ccfb6;
-  --color-accent-contrast: #06201b;
-  --color-accent-soft: #143a33;
-  --color-accent-border: #22594e;
-  --color-dot: #2a3b37;
-  --color-chrome: rgb(19 29 27 / 0.94);
+  --color-bg: #1e1e1e;
+  --color-surface: #262829;
+  --color-surface-muted: #303334;
+  --color-border: #35393b;
+  --color-border-strong: #4c5154;
+  --color-text: #f7f5f1;
+  --color-text-muted: #aaa69c;
+  --color-accent: #76a7f2;
+  --color-accent-contrast: #0a1a33;
+  --color-accent-soft: #1c2d49;
+  --color-accent-border: #2c4b7c;
+  --color-dot: #383b3d;
+  --color-chrome: rgb(38 40 41 / 0.94);
   --color-overlay: rgb(0 0 0 / 0.6);
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
   --shadow-raised: 0 2px 6px rgb(0 0 0 / 0.45), 0 14px 32px rgb(0 0 0 / 0.45);
@@ -585,6 +585,111 @@ h3 {
   opacity: 1;
 }
 
+/* A sidebar opening and closing (app/SideSlide.tsx): its width runs from nothing to its own width,
+ * with a fade, while the page beside it makes room. The left one stays pinned to its right edge, so it
+ * slides out to the left; the right one slides out to the right. Reduced motion makes it instant. */
+.side-slide {
+  display: grid;
+  flex-shrink: 0;
+  /* One row, exactly as tall as the place it sits in and never taller. Without this the row grows with
+     what is inside it: a long library tree made the sidebar taller than the window, and the whole app
+     could then be scrolled up off its own top (seen 2026-11-17). The inside scrolls instead. */
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-columns 220ms var(--ease-calm),
+    opacity 180ms ease-out;
+}
+.side-slide[data-open="true"] {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+.side-slide > div {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Whatever the slide holds (the width box, then the sidebar itself) may shrink to the height on offer. */
+.side-slide > div > *,
+.side-slide > div > * > aside {
+  min-height: 0;
+}
+.side-slide[data-side="left"] > div {
+  justify-content: flex-end;
+}
+.side-slide[data-settled="true"] > div {
+  overflow: visible;
+}
+/* A sidebar that floats over the page (documents, when it does not fit beside it) slides in from its side. */
+.dock-over-left {
+  animation: dock-over-left 220ms var(--ease-calm);
+}
+.dock-over-right {
+  animation: dock-over-right 220ms var(--ease-calm);
+}
+@keyframes dock-over-left {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem);
+  }
+}
+@keyframes dock-over-right {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+/* A panel in a document sidebar folding to its header and back: its share of the height eases. */
+.dock-panel {
+  transition:
+    flex-grow 220ms var(--ease-calm),
+    min-height 220ms var(--ease-calm);
+}
+/* While the line between two panels is being dragged, they follow the pointer at once. */
+.dock-resizing .dock-panel {
+  transition: none;
+}
+
+/* Her own picture behind the pages (Settings, Background), in place of the dotted grid. It fills the
+   main area and stays put while the page scrolls. A veil in the page colour sits over it, so a title
+   written straight on the page stays readable over any picture, in light and in dark. */
+.own-background {
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--color-bg) 58%, transparent),
+      color-mix(in srgb, var(--color-bg) 58%, transparent)
+    ),
+    var(--own-background);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* The lecture page's action bar (mounts/DocScreen.tsx): everything directly in the bar is one height,
+   with no edge or fill of its own, so the bar reads as one piece. The main action keeps its fill. */
+.doc-head-bar > :is(a, button) {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  border-color: transparent;
+  box-shadow: none;
+}
+.doc-head-bar > :is(a, button):not(.doc-head-main) {
+  background-color: transparent;
+}
+.doc-head-bar > :is(a, button):not(.doc-head-main):hover {
+  background-color: var(--color-surface-muted);
+}
+@media (min-width: 80rem) {
+  .doc-head-bar > :is(a, button) {
+    height: 2rem;
+    min-height: 2rem;
+    min-width: 2rem;
+  }
+}
+
 /* The faint dotted grid motif. */
 .dot-grid {
   background-image: radial-gradient(var(--color-dot) 1.1px, transparent 1.2px);
@@ -650,6 +755,10 @@ h3 {
   }
 }
 
+/* These three SET the padding on their side to the device's safe area (nothing on a computer). Never put
+   one beside another padding class for the same side (py-3, pb-4, px-3): whichever rule comes later in the
+   stylesheet wins, and the gap is lost. Where a gap is wanted as well, write the larger of the two:
+   pb-[max(0.75rem,env(safe-area-inset-bottom))]. */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -766,6 +875,29 @@ h3 {
 }
 
 /*
+ * Page changes (app/usePageSlide.ts). Opening something slides the new page in from the right; going
+ * back slides the page she returns to in from the left. Only #main moves. Reduced motion removes it.
+ */
+#main[data-slide="forward"] {
+  animation: page-in-right 240ms var(--ease-calm);
+}
+#main[data-slide="back"] {
+  animation: page-in-left 240ms var(--ease-calm);
+}
+@keyframes page-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(2.25rem);
+  }
+}
+@keyframes page-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-2.25rem);
+  }
+}
+
+/*
  * Tab changes (phone). Tapping a tab runs a view transition: the old page leaves towards one side and the
  * new one arrives from the other, by where the tapped tab sits (html[data-tab-dir], set by the tab bar).
  * The tab bar has its own name so it stays still. Browsers without view transitions just change page.
@@ -823,6 +955,27 @@ html[data-tab-dir="back"]::view-transition-new(page) {
   from {
     transform: translateX(-100%);
     opacity: 0.4;
+  }
+}
+
+/* The guide: links to a section glide there, the contents marker slides to the current item, and
+   the phone bar's title slides in when the section changes. Reduced motion turns all three off. */
+#main:has(.guide-app) {
+  scroll-behavior: smooth;
+}
+.guide-toc-marker {
+  transition:
+    transform var(--duration-slow) var(--ease-calm),
+    height var(--duration-slow) var(--ease-calm),
+    opacity var(--duration-fast) linear;
+}
+.guide-current-in {
+  animation: guide-current-in var(--duration-base) var(--ease-calm);
+}
+@keyframes guide-current-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
   }
 }
 

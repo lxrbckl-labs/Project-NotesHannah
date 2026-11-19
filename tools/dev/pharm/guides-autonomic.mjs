@@ -536,7 +536,7 @@ export function cholinergicGuide({ c, concept, q }) {
       "DUMBBELSS",
       "Muscarinic excess",
       [
-        ["D", "Diarrhoea"],
+        ["D", "Diarrhea"],
         ["U", "Urination"],
         ["M", "Miosis"],
         ["B", "Bronchospasm and bronchorrhoea"],

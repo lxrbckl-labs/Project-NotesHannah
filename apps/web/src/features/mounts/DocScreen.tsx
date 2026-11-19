@@ -14,6 +14,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { Button, backButtonClass } from "../../components/ui/button";
 import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
+import { Tooltip } from "../../components/ui/tooltip";
 import { appHttp, isApiError } from "../../lib/api";
 import { DocumentView } from "../documents";
 import { useNode } from "../library/queries";
@@ -123,27 +124,35 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
     <div className="flex h-full min-h-0 flex-col" data-testid="doc-screen" data-mode={mode}>
       {mode === "page" ? (
         <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface px-3 py-2 md:px-5">
-          <Link
-            to={n.parentId ? `/library/${n.parentId}` : "/library"}
-            aria-label="Back to the library"
-            className={backButtonClass}
-          >
-            <ArrowLeft size={20} />
-          </Link>
+          <Tooltip content="Back to the library">
+            <Link
+              to={n.parentId ? `/library/${n.parentId}` : "/library"}
+              aria-label="Back to the library"
+              className={backButtonClass}
+            >
+              <ArrowLeft size={20} />
+            </Link>
+          </Tooltip>
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-lg font-semibold md:text-xl">{title}</h1>
             <p className="truncate text-xs text-text-muted">{n.path}</p>
           </div>
-          {/* This row must stay on one line on a phone (down to 375 wide) and on a tablet with the
-              sidebar open: tighter gaps and switch padding on a phone, and "Sources" and "Practise
-              this" are 44px icon buttons (names kept) until the computer layout, so "Practise
-              this" never wraps onto a row of its own. flex-wrap stays as the fallback for
-              anything narrower. */}
-          <div className="order-last flex basis-full flex-wrap items-center gap-1 sm:gap-2 md:order-none md:basis-auto">
+          {/* One bar for the lecture's actions, so they read as a set: the view switch, then where its
+              material is (sources, references, ask), then Practice. Every control is the same height
+              (44px on touch, 32px on a computer; `.doc-head-bar` in styles.css) with no edge of its own
+              inside the bar. It stays on one line on a phone (down to 375 wide) and on a tablet with
+              the sidebar open: only the current view keeps its word, and Sources and Practice are
+              icons (names kept) until the computer layout. */}
+          <div
+            role="toolbar"
+            aria-label="This page"
+            data-testid="doc-head-bar"
+            className="doc-head-bar order-last flex basis-full items-center gap-0.5 rounded-card border border-border-strong bg-surface p-1 shadow-card md:order-none md:basis-auto"
+          >
             <div
               role="tablist"
               aria-label="View"
-              className="inline-flex gap-1 rounded-card border border-border bg-surface-muted p-1"
+              className="inline-flex gap-0.5 rounded-control bg-surface-muted p-0.5 max-sm:p-0"
             >
               {[
                 { label: "Page", to: base, on: true, icon: BookOpen },
@@ -155,7 +164,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
                   aria-selected={t.on}
                   to={t.to}
                   aria-label={t.label}
-                  className={`${segmentItemClass(t.on)} max-sm:px-3`}
+                  className={`${segmentItemClass(t.on)} max-sm:px-2.5 xl:min-h-7!`}
                 >
                   <t.icon size={15} aria-hidden />
                   {/* On a phone only the current view keeps its word: five actions share this row. */}
@@ -163,10 +172,11 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
                 </Link>
               ))}
             </div>
+            <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border max-sm:hidden" />
             <Link
               to={`/library/${n.id}`}
               aria-label="Sources"
-              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface px-2 text-sm text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:min-h-9 xl:px-3"
+              className="flex min-w-11 items-center justify-center gap-1.5 rounded-control px-2 text-ui font-medium text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:px-3"
             >
               <Paperclip size={15} aria-hidden />
               <span className="hidden xl:inline">Sources</span>
@@ -178,13 +188,15 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
               iconOnly
               text="Ask an agent"
             />
+            <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border max-sm:hidden" />
             <Button
+              variant="primary"
               onClick={() => navigate(`/practice?node=${n.id}`)}
-              aria-label="Practise this"
-              className="max-xl:w-11 max-xl:px-0"
+              aria-label="Practice this"
+              className="doc-head-main ml-auto max-xl:w-11 max-xl:px-0"
             >
               <GraduationCap size={16} aria-hidden />
-              <span className="hidden xl:inline">Practise this</span>
+              <span className="hidden xl:inline">Practice this</span>
             </Button>
           </div>
         </header>

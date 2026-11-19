@@ -60,7 +60,7 @@ export function uploadFailure(error: unknown): { message: string; hint?: string 
       case "network":
         return { message: "The connection dropped.", hint: "Check it and press Retry." };
       case "cancelled":
-        return { message: "Cancelled." };
+        return { message: "Canceled." };
       case "forbidden":
         return {
           message: "The server refused the upload.",

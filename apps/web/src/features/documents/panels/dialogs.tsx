@@ -119,7 +119,7 @@ export function RequestDialog({
   );
 }
 
-/** Choose a page of her uploads for a new image or labelled image. */
+/** Choose a page of her uploads for a new image or labeled image. */
 export function PagePicker({
   open,
   onClose,

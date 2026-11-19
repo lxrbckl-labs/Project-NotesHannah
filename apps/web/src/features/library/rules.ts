@@ -49,7 +49,7 @@ export function moveBlockedReason(node: NodeWithLinks, dest: Destination | null)
   }
   if (!canContain(dest?.kind ?? null, node.kind)) return NOT_ALLOWED;
   if (node.kind === "folder" && (dest?.folderDepth ?? 0) + 1 > MAX_FOLDER_DEPTH) {
-    return "Folders can only nest two deep.";
+    return "Folders cannot nest any deeper here.";
   }
   return null;
 }

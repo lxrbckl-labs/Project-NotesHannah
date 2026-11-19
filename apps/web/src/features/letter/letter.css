@@ -1,0 +1,129 @@
+/* The note for Hannah (LoveLetter.tsx). The order of events, about two and a half seconds in all:
+   the envelope arrives, the flap lifts, the note slides out, the envelope steps aside and the note
+   itself comes forward. Reduced motion skips straight to the note. */
+.ll-overlay {
+  background: var(--color-overlay);
+  backdrop-filter: blur(3px);
+  animation: ll-fade 300ms ease-out both;
+}
+
+.ll-scene {
+  width: min(78vw, 22rem);
+  perspective: 900px;
+  animation: ll-leave 500ms var(--ease-exit) 1900ms both;
+}
+.ll-envelope {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  animation: ll-arrive 500ms var(--ease-calm) both;
+}
+.ll-back,
+.ll-front,
+.ll-flap {
+  position: absolute;
+  inset: 0;
+}
+.ll-back {
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-pop);
+}
+/* The note inside: it starts tucked in, then rises out of the top. */
+.ll-note {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 10%;
+  bottom: 6%;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: var(--shadow-card);
+  animation: ll-rise 800ms var(--ease-calm) 1000ms both;
+}
+.ll-note img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+/* The pocket: the two sides and the bottom, drawn over the note. */
+.ll-front {
+  z-index: 2;
+  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%);
+}
+/* The flap: hinged along the top edge, sealed with a heart, lifting up and back. */
+.ll-flap {
+  z-index: 3;
+  transform-origin: top center;
+  animation: ll-flap 600ms var(--ease-standard) 450ms both;
+}
+.ll-flap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent-soft);
+  border-radius: 10px 10px 0 0;
+  clip-path: polygon(0 0, 100% 0, 50% 56%);
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.18));
+}
+.ll-seal {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+}
+
+/* The note itself, full size, once the envelope has stepped aside. */
+.ll-letter {
+  animation: ll-reveal 600ms var(--ease-calm) 2000ms both;
+}
+
+@keyframes ll-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ll-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.9);
+  }
+}
+@keyframes ll-flap {
+  to {
+    transform: rotateX(180deg);
+    z-index: 0;
+  }
+}
+@keyframes ll-rise {
+  to {
+    transform: translateY(-62%);
+  }
+}
+@keyframes ll-leave {
+  to {
+    opacity: 0;
+    transform: translateY(2rem) scale(0.92);
+  }
+}
+@keyframes ll-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-scene {
+    display: none;
+  }
+  .ll-letter {
+    animation-delay: 0ms;
+  }
+}

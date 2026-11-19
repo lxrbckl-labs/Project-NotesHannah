@@ -428,7 +428,7 @@ await call("PUT", `/documents/${guides.htn.id}/canvas/placements`, {
   ],
 });
 console.log(
-  "  beta blockers and hypertension canvases: frames, labelled connectors, two pinned cards each",
+  "  beta blockers and hypertension canvases: frames, labeled connectors, two pinned cards each",
 );
 
 // ---- exams ---------------------------------------------------------------------------------------------------
@@ -557,7 +557,7 @@ await agent("POST", `/requests/${tooBig.id}/decline`, {
 console.log("  two waiting, one in progress, three answered with links, one declined");
 
 // ---- practice history: her sessions -------------------------------------------------------------------------
-say("Practising (her answers, some wrong, some skipped)");
+say("Practicing (her answers, some wrong, some skipped)");
 const detailCache = new Map();
 async function stored(questionId) {
   if (!detailCache.has(questionId)) {

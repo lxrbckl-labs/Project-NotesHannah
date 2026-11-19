@@ -253,7 +253,7 @@ export const FallbackBlock = memo(function FallbackBlock({ block }: { block: Blo
           )}
           {c.counselling.length > 0 && (
             <>
-              <div className="nc-drug-section">Counselling</div>
+              <div className="nc-drug-section">Counseling</div>
               <Chips items={c.counselling} tint="green" />
             </>
           )}

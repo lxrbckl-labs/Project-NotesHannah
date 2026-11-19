@@ -33,7 +33,7 @@ function controlled() {
       promise,
       cancel: () => {
         call.cancelled = true;
-        reject(new ApiClientError(0, { code: "cancelled", message: "Upload cancelled." }));
+        reject(new ApiClientError(0, { code: "cancelled", message: "Upload canceled." }));
       },
     };
   };

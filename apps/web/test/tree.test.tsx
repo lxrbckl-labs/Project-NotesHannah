@@ -1,3 +1,4 @@
+import { MAX_FOLDER_DEPTH } from "@notes/schema";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { moveBlockedReason, toDestination } from "../src/features/library/rules";
@@ -203,7 +204,7 @@ describe("creating in the library", () => {
     expect(
       within(menu).queryByRole("menuitem", { name: /Rename|Duplicate|Move|trash/i }),
     ).toBeNull();
-    expect(within(menu).getByRole("menuitem", { name: /favourites/ })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: /favorites/ })).toBeInTheDocument();
   });
 });
 
@@ -254,7 +255,7 @@ describe("move rules in the picker", () => {
     expect(moveBlockedReason(course, toDestination(lectures, 0))).not.toBeNull();
     // sections never move
     expect(moveBlockedReason(lectures, toDestination(course, 0))).toBe("Sections cannot be moved.");
-    // folders: two deep at most
+    // folders nest as deep as she likes; only the far-off backstop refuses
     const folder = { ...lecture, kind: "folder" as const };
     expect(moveBlockedReason(folder, { ...toDestination(lectures, 0) })).toBeNull();
     expect(
@@ -262,7 +263,15 @@ describe("move rules in the picker", () => {
     ).toBeNull();
     expect(
       moveBlockedReason(folder, { id: "nod_x", kind: "folder", folderDepth: 2, ancestors: [] }),
-    ).toBe("Folders can only nest two deep.");
+    ).toBeNull();
+    expect(
+      moveBlockedReason(folder, {
+        id: "nod_x",
+        kind: "folder",
+        folderDepth: MAX_FOLDER_DEPTH,
+        ancestors: [],
+      }),
+    ).toBe("Folders cannot nest any deeper here.");
   });
 
   it("moves a lecture to another course through the sheet", async () => {

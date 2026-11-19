@@ -58,10 +58,10 @@ function ProgressLine({ exam }: { exam: ExamSummary }) {
         size="sm"
         value={p.attempted}
         max={Math.max(1, p.questionCount)}
-        label={`${p.attempted} of ${p.questionCount} questions practised`}
+        label={`${p.attempted} of ${p.questionCount} questions practiced`}
       />
       <p className="text-ui text-text-muted" data-testid="exam-progress">
-        Practised {p.attempted} of {p.questionCount} questions
+        Practiced {p.attempted} of {p.questionCount} questions
         {p.inNotebook > 0 && ` · ${p.inNotebook} in your notebook`}
         {p.dueCards > 0 && ` · ${p.dueCards} ${p.dueCards === 1 ? "card" : "cards"} due`}
       </p>
@@ -114,7 +114,7 @@ export function UpcomingExamsCard({
               </div>
               <ProgressLine exam={e} />
               <Button variant="secondary" size="sm" onClick={() => onPractice(e.id)}>
-                Practise for this
+                Practice for this
               </Button>
             </li>
           ))}
@@ -233,7 +233,7 @@ export function ExamPlanner({
                           data-testid="practise-exam"
                           onClick={() => onPractice(e.id)}
                         >
-                          Practise for this exam
+                          Practice for this exam
                         </Button>
                         <Button
                           variant="secondary"

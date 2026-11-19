@@ -73,7 +73,7 @@ export function PanelsMenu({ dock }: { dock: DockApi }) {
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
-        <IconButton label="Panels" data-testid="panels-button">
+        <IconButton variant="bare" size="sm" label="Panels" data-testid="panels-button">
           <PanelsTopLeft className="size-[18px]" />
         </IconButton>
       </DropdownMenu.Trigger>

@@ -1,3 +1,4 @@
+import { MAX_FOLDER_DEPTH } from "@notes/schema";
 import { describe, expect, test } from "vitest";
 import { fakeChanges, fakeDocuments, fakeFiles } from "../src/mcp/fakes.js";
 import { START_HERE_MAX_CHARS } from "../src/mcp/tools/start-here.js";
@@ -340,10 +341,17 @@ describe("rule violations teach: code, message, hint and a valid example", () =>
     }
     const sources = sections.find((s) => s.name === "Sources") as Item;
     let parent = sources.id;
-    for (const name of ["A", "B"]) {
+    // Folders nest as deep as she likes; the limit is a far-off backstop. Build right up to it.
+    for (let depth = 1; depth <= MAX_FOLDER_DEPTH; depth++) {
       parent = (
-        (await a.ok("edit_library", { action: "create", parentId: parent, kind: "folder", name }))
-          .structured.node as Item
+        (
+          await a.ok("edit_library", {
+            action: "create",
+            parentId: parent,
+            kind: "folder",
+            name: `F${depth}`,
+          })
+        ).structured.node as Item
       ).id;
     }
     const deep = await a.fail("edit_library", {
@@ -352,7 +360,7 @@ describe("rule violations teach: code, message, hint and a valid example", () =>
       kind: "folder",
       name: "C",
     });
-    expect(deep.error.message).toMatch(/nest at most 2 deep/);
+    expect(deep.error.message).toMatch(new RegExp(`nest at most ${MAX_FOLDER_DEPTH} deep`));
   });
 
   test("schema problems name the field and show that action's example", async () => {

@@ -68,7 +68,9 @@ export function Modal({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
           {footer ? (
-            <div className="pb-safe flex flex-wrap justify-end gap-2 border-t border-border px-5 py-3">
+            // The bottom padding is the larger of the usual gap and the device's safe area. `pb-safe` beside `py-3`
+            // replaced the gap with the safe area, which is nothing on a computer, so the buttons sat on the edge.
+            <div className="flex flex-wrap justify-end gap-2 border-t border-border px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               {footer}
             </div>
           ) : (
@@ -118,7 +120,7 @@ export function ConfirmDialog({
               <div className="mt-2 text-ui text-text-muted">{description}</div>
             </AlertDialog.Description>
           </div>
-          <div className="pb-safe mt-5 flex flex-wrap justify-end gap-2 px-5 pb-4">
+          <div className="mt-5 flex flex-wrap justify-end gap-2 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <AlertDialog.Cancel asChild>
               <Button>{cancelLabel}</Button>
             </AlertDialog.Cancel>

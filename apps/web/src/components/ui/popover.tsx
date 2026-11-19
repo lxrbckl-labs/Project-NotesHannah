@@ -9,7 +9,7 @@ export const floatingPanelClass =
   "anim-pop z-(--z-popover) rounded-card border border-border bg-surface text-text shadow-pop outline-none";
 
 /**
- * A small panel anchored to its trigger: a colour picker, a citation preview, a short form.
+ * A small panel anchored to its trigger: a color picker, a citation preview, a short form.
  * Escape and a tap outside close it; focus returns to the trigger.
  */
 export function Popover({

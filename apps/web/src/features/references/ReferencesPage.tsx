@@ -13,6 +13,7 @@ import {
   SearchX,
 } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
+import { HeaderArt } from "../../components/art/pills";
 import { Page } from "../../components/Page";
 import { Chip } from "../../components/ui/badge";
 import { Button, buttonClass } from "../../components/ui/button";
@@ -32,6 +33,7 @@ export function ReferencesPage() {
   return (
     <Page>
       <PageHeader
+        art={<HeaderArt kind="references" />}
         title="References"
         icon={<BookMarked />}
         description="Outside guidelines and tools you rely on, and the pages you saved from them."

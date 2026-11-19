@@ -2,30 +2,37 @@ import {
   BookMarked,
   BookOpen,
   Bot,
+  CalendarDays,
   GraduationCap,
   Inbox,
   LifeBuoy,
   Lightbulb,
   LogOut,
   MessageSquarePlus,
-  PanelLeft,
-  PanelRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightOpen,
+  Plus,
   Search,
   Settings,
   Trash2,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useMatch } from "react-router";
 import { PillMark } from "../components/art/pills";
 import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
+import { Tooltip } from "../components/ui/tooltip";
 import { useMe, useSignOut } from "../features/auth/useAuth";
+import { LoveLetter } from "../features/letter/LoveLetter";
 import { LibraryDialogs, useLibraryDialogs } from "../features/library/dialogs";
 import { LibraryTree } from "../features/library/LibraryTree";
 import { PickNodesProvider } from "../features/library/pickNodes";
 import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
 import { AskProvider } from "../features/mounts/ask";
+import { backgroundUrl, useBackground } from "../features/preferences/useBackground";
 import { useTabOrder } from "../features/preferences/usePreferences";
 import { QuickFind } from "../features/search/QuickFind";
 import { UploadProvider } from "../features/uploads/UploadProvider";
@@ -34,8 +41,11 @@ import { cn } from "../lib/cn";
 import { readFlag, writeFlag } from "../lib/storage";
 import { useLayout } from "../lib/useMedia";
 import { NavBadge, useBadges } from "./badges";
+import { SideResize, useSideWidth } from "./SideResize";
+import { SideSlide } from "./SideSlide";
 import { tabDirection } from "./tabDirection";
 import { TAB_DEFS } from "./tabs";
+import { usePageSlide } from "./usePageSlide";
 
 const SIDEBAR_KEY = "notes-sidebar";
 const PANEL_KEY = "notes-panel";
@@ -65,11 +75,19 @@ export function AppShell() {
   );
 }
 
+/** The widths the two sidebars start at (and return to on a double-click of their edge). */
+const SIDEBAR_WIDTH = 264;
+const PANEL_WIDTH = 288;
+
 function Shell() {
   const layout = useLayout();
   const [sidebarOpen, setSidebarOpen] = useState(() => readFlag(SIDEBAR_KEY, true));
   const [panelOpen, setPanelOpen] = useState(() => readFlag(PANEL_KEY, true));
   const [findOpen, setFindOpen] = useState(false);
+  usePageSlide();
+  const backgroundAt = useBackground().data?.updatedAt ?? null;
+  const [sidebarWidth, setSidebarWidth] = useSideWidth("notes-sidebar-width", SIDEBAR_WIDTH);
+  const [panelWidth, setPanelWidth] = useSideWidth("notes-panel-width", PANEL_WIDTH);
   const match = useMatch("/library/:nodeId");
 
   useEffect(() => writeFlag(SIDEBAR_KEY, sidebarOpen), [sidebarOpen]);
@@ -117,39 +135,51 @@ function Shell() {
       >
         Skip to content
       </a>
-      {showSidebar ? <Sidebar onCollapse={() => setSidebarOpen(false)} /> : null}
+      <SideSlide open={showSidebar} side="left">
+        {/* Her width, dragged from the inner edge and remembered in this browser (app/SideResize). */}
+        <div className="relative flex" style={{ width: sidebarWidth }}>
+          <Sidebar onCollapse={() => setSidebarOpen(false)} />
+          <SideResize
+            side="left"
+            width={sidebarWidth}
+            initial={SIDEBAR_WIDTH}
+            onWidth={setSidebarWidth}
+            label="Resize the sidebar"
+          />
+        </div>
+      </SideSlide>
 
       <div className="flex min-w-0 flex-1 flex-col print:block">
         {layout !== "phone" ? (
-          <div className="px-safe flex items-center gap-2 print:hidden border-b border-border bg-surface/80 px-3 py-2 backdrop-blur">
-            {!showSidebar ? (
-              <IconButton aria-label="Show sidebar" onClick={() => setSidebarOpen(true)}>
-                <PanelLeft size={20} />
-              </IconButton>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setFindOpen(true)}
-              className="flex min-h-11 max-w-md flex-1 items-center gap-2.5 rounded-control border border-border bg-bg px-3.5 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:border-border-strong xl:min-h-9"
-            >
-              <Search size={16} aria-hidden />
-              <span className="flex-1 text-left">Quick find</span>
-              {layout === "computer" ? (
-                <kbd className="rounded-inline border border-border bg-surface px-1.5 text-caption">
-                  {MOD_KEY}K
-                </kbd>
+          // One row, one size, one gap: every control is 36px on a computer (44px on touch), with the
+          // same 8px around and between them. The search fills whatever the toggles leave. A toggle
+          // sits here only while its side is closed; while open it lives in that side's own header.
+          <div className="px-safe border-b border-border bg-surface/80 backdrop-blur print:hidden">
+            <div className="flex items-center gap-2 p-2">
+              {!showSidebar ? (
+                <IconButton aria-label="Show sidebar" onClick={() => setSidebarOpen(true)}>
+                  <PanelLeftOpen size={20} />
+                </IconButton>
               ) : null}
-            </button>
-            <div className="flex-1" />
-            {layout === "computer" && inLibrary ? (
-              <IconButton
-                aria-label={panelOpen ? "Hide details panel" : "Show details panel"}
-                aria-pressed={panelOpen}
-                onClick={() => setPanelOpen((open) => !open)}
+              <button
+                type="button"
+                onClick={() => setFindOpen(true)}
+                className="relative flex h-11 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-control border border-border-strong bg-surface px-3.5 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:h-9"
               >
-                <PanelRight size={20} />
-              </IconButton>
-            ) : null}
+                <Search size={16} aria-hidden />
+                <span>Quick find</span>
+                {layout === "computer" ? (
+                  <kbd className="absolute right-2.5 rounded-inline border border-border bg-surface px-1.5 text-caption">
+                    {MOD_KEY}K
+                  </kbd>
+                ) : null}
+              </button>
+              {layout === "computer" && inLibrary && !panelOpen ? (
+                <IconButton aria-label="Show details panel" onClick={() => setPanelOpen(true)}>
+                  <PanelRightOpen size={20} />
+                </IconButton>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -160,9 +190,16 @@ function Shell() {
             // `relative`: anything positioned inside a page (a hidden table for screen readers, a popover) is then
             // measured and clipped by this scrolling area. Without it such an element escaped and made the whole
             // window scroll past the app.
-            "dot-grid relative min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
+            "relative min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
+            // Her own picture when she has set one (Settings, Background), the dotted grid otherwise.
+            backgroundAt === null ? "dot-grid" : "own-background",
             layout === "phone" && "px-safe clear-tabbar",
           )}
+          style={
+            backgroundAt === null
+              ? undefined
+              : ({ "--own-background": `url("${backgroundUrl(backgroundAt)}")` } as CSSProperties)
+          }
         >
           <Outlet />
         </main>
@@ -170,7 +207,18 @@ function Shell() {
         {layout === "phone" ? <TabBar /> : null}
       </div>
 
-      {showPanel ? <RightPanel nodeId={match?.params.nodeId} /> : null}
+      <SideSlide open={showPanel} side="right">
+        <div className="relative flex" style={{ width: panelWidth }}>
+          <RightPanel nodeId={match?.params.nodeId} onCollapse={() => setPanelOpen(false)} />
+          <SideResize
+            side="right"
+            width={panelWidth}
+            initial={PANEL_WIDTH}
+            onWidth={setPanelWidth}
+            label="Resize the details panel"
+          />
+        </div>
+      </SideSlide>
       <QuickFind open={findOpen} onOpenChange={setFindOpen} />
     </div>
   );
@@ -191,25 +239,33 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
     <aside
       data-testid="sidebar"
       aria-label="Sidebar"
-      className="pt-safe pb-safe flex w-72 shrink-0 flex-col border-r border-border bg-surface xl:w-64 print:hidden"
+      // overflow-y-auto: in a very short window even the fixed parts (the links above and below the tree) do
+      // not fit; then the whole sidebar scrolls, rather than growing past the window.
+      className="pt-safe pb-safe flex w-full min-w-0 flex-col overflow-y-auto border-r border-border bg-surface print:hidden"
     >
-      <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="flex size-9 items-center justify-center rounded-control bg-accent text-accent-contrast">
+      {/* The same height, padding and line as the header beside it, so the two read as one bar. */}
+      <div className="flex items-center gap-2 border-b border-border p-2">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent text-accent-contrast xl:size-9">
           <PillMark size={20} />
         </span>
-        <span className="flex-1 font-display text-lg font-semibold">Notes</span>
+        <span className="min-w-0 flex-1 truncate pl-0.5 font-display text-lg font-semibold">
+          Notes
+        </span>
         <IconButton aria-label="Hide sidebar" onClick={onCollapse}>
-          <PanelLeft size={20} />
+          <PanelLeftClose size={20} />
         </IconButton>
       </div>
 
-      <nav aria-label="Main" className="grid gap-0.5 px-2">
+      <nav aria-label="Main" className="grid gap-0.5 p-2">
         <NavLink to="/library" end className={linkClass}>
           <BookOpen size={18} aria-hidden /> Library
         </NavLink>
         <NavLink to="/practice" className={linkClass}>
           <GraduationCap size={18} aria-hidden /> Practice
           <NavBadge count={badges.practice} label="cards due" />
+        </NavLink>
+        <NavLink to="/calendar" className={linkClass}>
+          <CalendarDays size={18} aria-hidden /> Calendar
         </NavLink>
         <NavLink to="/inbox" className={linkClass}>
           <Inbox size={18} aria-hidden /> Inbox
@@ -238,15 +294,19 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <h2 className="font-sans text-caption font-semibold uppercase tracking-wide text-text-muted">
           Terms and courses
         </h2>
-        <button
-          type="button"
-          onClick={() => dialogs.openCreate(null, "term")}
-          className="hit-area rounded-inline px-2 py-1 text-caption font-medium text-accent hover:bg-accent-soft"
-        >
-          New term
-        </button>
+        <Tooltip content="New term">
+          <button
+            type="button"
+            onClick={() => dialogs.openCreate(null, "term")}
+            aria-label="New term"
+            className="hit-area flex size-6 items-center justify-center rounded-inline text-accent hover:bg-accent-soft"
+          >
+            <Plus size={16} aria-hidden />
+          </button>
+        </Tooltip>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto pb-3">
+      {/* At least a few rows tall, so the tree is never squeezed to nothing. */}
+      <div className="min-h-32 flex-1 overflow-y-auto pb-3">
         <LibraryTree />
       </div>
 
@@ -257,16 +317,20 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <NavLink to="/settings" className={linkClass}>
           <Settings size={18} aria-hidden /> Settings
         </NavLink>
-        <button
-          type="button"
-          onClick={() => void signOut()}
-          className="flex min-h-11 items-center gap-3 rounded-control px-3 text-left text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:min-h-9"
-        >
-          <LogOut size={18} aria-hidden />
-          <span className="min-w-0 flex-1 truncate">
-            Sign out{me.data ? ` ${me.data.displayName}` : ""}
-          </span>
-        </button>
+        {/* Sign out, and at the far right Alex's note to Hannah (features/letter). */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-control px-3 text-left text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text xl:min-h-9"
+          >
+            <LogOut size={18} aria-hidden />
+            <span className="min-w-0 flex-1 truncate">
+              Sign out{me.data ? ` ${me.data.displayName}` : ""}
+            </span>
+          </button>
+          <LoveLetter />
+        </div>
       </div>
     </aside>
   );

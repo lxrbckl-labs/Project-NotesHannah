@@ -203,7 +203,7 @@ export function judgeCalculation(
   if (!given) {
     return fail(
       "unknown_unit",
-      `"${unitText}" is not a unit I recognise. Use units such as ${core.units.slice(0, 3).join(", ")}.`,
+      `"${unitText}" is not a unit I recognize. Use units such as ${core.units.slice(0, 3).join(", ")}.`,
     );
   }
   if (!sameDimension(given, expectedUnit)) {

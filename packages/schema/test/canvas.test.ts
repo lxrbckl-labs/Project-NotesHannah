@@ -235,7 +235,7 @@ describe("deriveCanvas", () => {
 });
 
 describe("mergeDocumentBlocks", () => {
-  it("adds new blocks as unpinned cards beside their neighbours and keeps pins", () => {
+  it("adds new blocks as unpinned cards beside their neighbors and keeps pins", () => {
     const { canvas, blocks } = baseCanvas();
     const mech = framesInOrder(canvas)[1];
     const first = mech?.members[0] as string;
@@ -314,11 +314,11 @@ describe("mergeDocumentBlocks", () => {
     const same = mergeDocumentBlocks(canvas, blocks, { now });
     expect(same.changed).toBe(false);
     expect(same.canvas).toBe(canvas);
-    const more = [...blocks, h(2, "Counselling"), p("Do not stop suddenly.")];
+    const more = [...blocks, h(2, "Counseling"), p("Do not stop suddenly.")];
     const result = mergeDocumentBlocks(canvas, more, { now });
     expect(result.addedFrames).toHaveLength(1);
     const frame = result.canvas.frames.find((f) => f.id === result.addedFrames[0]);
-    expect(frame?.title).toBe("Counselling");
+    expect(frame?.title).toBe("Counseling");
     expect(frame?.parent).toBe(framesInOrder(canvas)[0]?.id);
     expect(frame?.members).toEqual(result.addedCards);
   });

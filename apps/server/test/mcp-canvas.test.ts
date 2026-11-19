@@ -72,7 +72,7 @@ async function lectureWithNote(a: Agent) {
 }
 
 describe("study_map over MCP", () => {
-  test("get, set_structure with frames and labelled connectors, change, and the activity entry", async () => {
+  test("get, set_structure with frames and labeled connectors, change, and the activity entry", async () => {
     const s = await realSetup();
     const a = await s.agent("hannah", "write", { "x-agent-label": "Claude Code" });
     const w = await lectureWithNote(a);

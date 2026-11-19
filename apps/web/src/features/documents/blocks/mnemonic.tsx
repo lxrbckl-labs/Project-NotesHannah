@@ -10,7 +10,7 @@ export function MnemonicBlock({ block }: { block: BlockOf<"mnemonic"> }) {
   const { device, topic, parts, note } = block.content;
   const tools = editing && active;
   const base = block.style?.color;
-  // Each letter gets its own lively hue, unless the block has a colour of its own.
+  // Each letter gets its own lively hue, unless the block has a color of its own.
   const toneFor = (i: number) => base ?? seriesHue(i);
   const setPart = (i: number, value: { key?: string; meaning?: RichText }) =>
     patch({ parts: parts.map((p, j) => (j === i ? { ...p, ...value } : p)) }, "Edit mnemonic");

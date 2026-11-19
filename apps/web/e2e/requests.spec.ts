@@ -40,7 +40,7 @@ test.describe("her requests", () => {
     await expect(page.getByTestId("request-card")).toHaveCount(12);
     const first = page.getByTestId("request-card").first();
     await expect(first).toHaveAttribute("data-status", "waiting");
-    await expect(first).toContainText("Summarise");
+    await expect(first).toContainText("Summarize");
   });
 
   test("leaves a request with free text, using an example", async ({ page }) => {

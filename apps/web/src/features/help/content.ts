@@ -4,7 +4,7 @@
  * Inline marks inside any string: **bold** and `keys` (shown as a keyboard key).
  * After editing, run `pnpm guide:pdf` so the downloadable PDF matches. The figures are screenshots
  * of the app (`pnpm guide:figures`, see tools/guide-figures.mjs); their sizes are in figures.json.
- * Spelling follows the app: British (practise, organised, favourites), "Practice" for the screen name.
+ * Spelling is American throughout (Alex, 2026-11-17): practice, organized, favorites, color.
  */
 import FIGURE_SIZES from "./figures.json";
 
@@ -95,7 +95,7 @@ export const SHOWCASE: Showcase[] = [
   },
   {
     title: "Sixteen kinds of note block",
-    what: "Drug cards, comparison tables, mnemonics, mind maps, labelled images with tappable points, callouts, checklists, tables and practice questions sit alongside plain paragraphs.",
+    what: "Drug cards, comparison tables, mnemonics, mind maps, labeled images with tappable points, callouts, checklists, tables and practice questions sit alongside plain paragraphs.",
     why: "A lecture does not have to be a wall of text. The right shape for the material is one tap away.",
   },
   {
@@ -126,7 +126,7 @@ export const SHOWCASE: Showcase[] = [
   {
     title: "Your work is protected",
     what: "A block you wrote or edited, a block you marked as reviewed, and a canvas card you pinned are not overwritten by an assistant. The one exception is when you ask it, in a request, to change that exact thing.",
-    why: "You can let an assistant loose on a course and know your own notes will still be there afterwards.",
+    why: "You can let an assistant loose on a course and know your own notes will still be there afterward.",
   },
   {
     title: "Nothing is lost by accident",
@@ -190,7 +190,7 @@ export const COMPUTER_KEYS: GuideTable = {
 export const SECTIONS: GuideSection[] = [
   {
     id: "what-this-is",
-    title: "What this is, and how your library is organised",
+    title: "What this is, and how your library is organized",
     lead: "Notes keeps your slides, your handwriting and your own writing in one place, and helps you study from them.",
     blocks: [
       {
@@ -199,7 +199,7 @@ export const SECTIONS: GuideSection[] = [
       },
       {
         kind: "p",
-        text: "The app itself does no thinking and holds no AI key. It stores, organises and displays. The assistants work from outside, when you run one for yourself, and everything they write is marked so you can check it.",
+        text: "The app itself does no thinking and holds no AI key. It stores, organizes and displays. The assistants work from outside, when you run one for yourself, and everything they write is marked so you can check it.",
       },
       { kind: "h3", text: "The shape of your library" },
       {
@@ -211,7 +211,7 @@ export const SECTIONS: GuideSection[] = [
         head: ["Level", "What it is", "Example"],
         rows: [
           ["Term", "A semester or block of study.", "Fall 2026"],
-          ["Course", "One class. Each course gets its own colour.", "Pharmacology II"],
+          ["Course", "One class. Each course gets its own color.", "Pharmacology II"],
           [
             "Section",
             "Five fixed shelves in every course: Sources, Lectures, Study guides, Practice, Exams. They cannot be renamed or moved.",
@@ -219,7 +219,7 @@ export const SECTIONS: GuideSection[] = [
           ],
           [
             "Folder",
-            "Optional grouping inside a section. Folders can nest two deep.",
+            "Optional grouping inside a section. Folders can sit inside folders, as deep as you like.",
             "Cardiovascular",
           ],
           [
@@ -252,7 +252,7 @@ export const SECTIONS: GuideSection[] = [
     blocks: [
       {
         kind: "p",
-        text: "This app was built around one idea. A finals week is too much for one person to summarise, quiz and review alone, so the work is divided. You decide what matters and when. Assistants do the reading and writing. You check it and practise.",
+        text: "This app was built around one idea. A finals week is too much for one person to summarize, quiz and review alone, so the work is divided. You decide what matters and when. Assistants do the reading and writing. You check it and practice.",
       },
       { kind: "h3", text: "What an assistant is here" },
       {
@@ -273,7 +273,7 @@ export const SECTIONS: GuideSection[] = [
         items: [
           "**Divide.** Add each final as an exam, with its date and the lectures or folders it covers. The home screen now shows three countdowns and how many practice questions you have worked through for each.",
           "**Delegate.** Leave requests where the need is. On the Pharmacology II course: “write a cumulative study guide for the final”. On a lecture: “make 20 questions on this”. On a single block: “explain this more simply” or “this is wrong”. Different assistants can work on different courses at the same time, and your reviewed blocks and pinned canvas cards stay as they are.",
-          "**Conquer.** Practise one exam at a time. Work through the missed questions notebook, run the flashcards, drill brand and generic names, and use the canvas step-through the night before.",
+          "**Conquer.** Practice one exam at a time. Work through the missed questions notebook, run the flashcards, drill brand and generic names, and use the canvas step-through the night before.",
         ],
       },
       {
@@ -300,7 +300,7 @@ export const SECTIONS: GuideSection[] = [
           [
             "Test yourself on one exam",
             "A practice session limited to that exam",
-            "Practice, or “Practise this”",
+            "Practice, or “Practice this”",
           ],
           [
             "Catch up on what you got wrong",
@@ -384,6 +384,16 @@ export const SECTIONS: GuideSection[] = [
         tone: "tip",
         text: "Files with a password, files over 500 pages, and other file types (spreadsheets and SVG drawings, for example) are refused with a message that says what to do. Export those as a PDF and upload that.",
       },
+      { kind: "h3", text: "Dragging" },
+      {
+        kind: "list",
+        items: [
+          "**Drop files to upload:** on a computer, drag files from your desktop onto the library home or the Inbox and they go to the inbox. Drag them onto a lecture, a folder or a Sources page and they are filed there. The whole window shows where they will go.",
+          "**Move things by dragging:** drag a folder, lecture or document onto a folder to put it inside. Drag a source file onto a folder or lecture to file it there. This works in the page and in the sidebar’s list of terms and courses.",
+          "**Drag something out of a folder:** drop it on a place in the line of names at the top of the page (Library, the term, the course, the section), and it moves up to that place.",
+          "**Folders inside folders:** as deep as you like.",
+        ],
+      },
     ],
   },
   {
@@ -464,7 +474,7 @@ export const SECTIONS: GuideSection[] = [
           ["Callout", "A warning or a tip that should stand out."],
           [
             "Drug card",
-            "One drug on one card: class, mechanism, uses, adverse effects, interactions and counselling points.",
+            "One drug on one card: class, mechanism, uses, adverse effects, interactions and counseling points.",
           ],
           [
             "Comparison table",
@@ -472,7 +482,7 @@ export const SECTIONS: GuideSection[] = [
           ],
           ["Mnemonic", "A memory aid, with what each letter stands for."],
           [
-            "Labelled image",
+            "Labeled image",
             "A picture with points you can tap to read a label, such as β1 and β2 receptors.",
           ],
           ["Mind map", "A topic broken into branches, such as the types of beta blocker."],
@@ -504,8 +514,8 @@ export const SECTIONS: GuideSection[] = [
             "Format the selected words, or what you type next.",
           ],
           [
-            "Highlight, block colour, link",
-            "Highlight words in a colour, colour a whole block, or turn words into a link.",
+            "Highlight, block color, link",
+            "Highlight words in a color, color a whole block, or turn words into a link.",
           ],
           ["Lists, indent and outdent", "Start a list, and move a list line in or out a level."],
           [
@@ -529,7 +539,7 @@ export const SECTIONS: GuideSection[] = [
         kind: "note",
         tone: "limit",
         title: "Not there yet",
-        text: "You cannot change the font, the text size or the alignment, and a colour applies to a whole block, not to single words. Highlighting works on single words.",
+        text: "You cannot change the font, the text size or the alignment, and a color applies to a whole block, not to single words. Highlighting works on single words.",
       },
     ],
   },
@@ -555,7 +565,7 @@ export const SECTIONS: GuideSection[] = [
       { kind: "figure", id: "side-notes" },
       {
         kind: "p",
-        text: "If you select some words in the block and then press `⌘⌥M`, those words are kept with the note, so you know exactly what it was about. Notes are plain text, and line breaks are kept. Pick a colour if you like, then Add note. `⌘` or `Ctrl` with `Enter` saves, and `Escape` cancels.",
+        text: "If you select some words in the block and then press `⌘⌥M`, those words are kept with the note, so you know exactly what it was about. Notes are plain text, and line breaks are kept. Pick a color if you like, then Add note. `⌘` or `Ctrl` with `Enter` saves, and `Escape` cancels.",
       },
       { kind: "h3", text: "Working with your notes" },
       {
@@ -652,7 +662,7 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "list",
         items: [
-          "**The small graph** shows a drug or class with what it connects to: its class, targets, uses and adverse effects. Tap a neighbour to move across to it. You can filter by the kinds of connection.",
+          "**The small graph** shows a drug or class with what it connects to: its class, targets, uses and adverse effects. Tap a neighbor to move across to it. You can filter by the kinds of connection.",
           "**Ask a question** finds everything with a given feature, such as every drug with a particular adverse effect.",
           "**Compare** puts two or more drugs side by side.",
           "**Drill** is the brand and generic drill: it shows a name and you match it to its partner. Drugs you get wrong come back around.",
@@ -672,7 +682,7 @@ export const SECTIONS: GuideSection[] = [
     blocks: [
       {
         kind: "p",
-        text: "Practice is the second tab on a phone and an item in the sidebar on a larger screen. Choose what to work on (a course, a lecture, a folder, a concept or an exam), which kinds of question, and how many. Then start. You can also press Practise this on any lecture, folder or course.",
+        text: "Practice is the second tab on a phone and an item in the sidebar on a larger screen. Choose what to work on (a course, a lecture, a folder, a concept or an exam), which kinds of question, and how many. Then start. You can also press Practice this on any lecture, folder or course.",
       },
       { kind: "figure", id: "practice-question" },
       { kind: "h3", text: "Question types" },
@@ -717,6 +727,22 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "Weak areas groups your results by topic and shows where you are going well and what needs another look.",
       },
+      { kind: "h3", text: "Focus aids" },
+      {
+        kind: "p",
+        text: "While answering, the sliders button beside Pause opens the focus aids. Each one is off until you turn it on, and your choices stay on for every session on that device. They change how a question looks, never what is asked or how it is marked.",
+      },
+      {
+        kind: "list",
+        items: [
+          "**Text size:** normal, large or larger, for the question and its answers.",
+          "**Extra spacing:** more room between letters, words and lines.",
+          "**Reading ruler:** a clear band follows your pointer or finger and dims the lines above and below.",
+          "**Just the question:** hides the question count and the progress bar.",
+          "**Read the question aloud:** your device reads the question in its own voice. Press again to stop.",
+          "There is no timer on screen. Pause stops the clock and hides the question until you resume.",
+        ],
+      },
     ],
   },
   {
@@ -728,8 +754,8 @@ export const SECTIONS: GuideSection[] = [
         kind: "list",
         items: [
           "Open Practice, then Exams, and choose Add an exam. Give it a title, the course, the date, and choose the lectures or folders it covers. An example is “Exam 3”, in Pharmacology II, covering lectures 5 to 9.",
-          "Your next exams appear on the library home with the days remaining and your progress: how many of its practice questions you have practised, how many are in your notebook, and how many cards are due.",
-          "To work on one exam, press Practise for this exam. The session draws only from what it covers. The notebook and flashcards can be limited the same way.",
+          "Your next exams appear on the library home with the days remaining and your progress: how many of its practice questions you have practiced, how many are in your notebook, and how many cards are due.",
+          "To work on one exam, press Practice for this exam. The session draws only from what it covers. The notebook and flashcards can be limited the same way.",
           "Change coverage on an exam at any time. Deleting an exam does not delete your notes, questions or answers.",
         ],
       },
@@ -741,13 +767,34 @@ export const SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "calendar",
+    title: "Calendar",
+    lead: "Your exams on their dates, and the days you studied.",
+    blocks: [
+      {
+        kind: "list",
+        items: [
+          "Open Calendar from the sidebar, or from the tabs at the bottom on a phone. The month shows every exam on its date. Add or change an exam under Practice, then Exams, and it appears here.",
+          "A day you studied is tinted, darker the more you did, and marked with a small pen. Studying means answering practice questions or writing in your own notes. What an assistant writes for you is not counted.",
+          "Pick a day to see what you did: how many questions you answered, how many were right, about how long it took, which lectures they came from, and which notes you wrote in. Each one is a link.",
+          "The top of the page shows your next exam, how many days in a row you have studied, and how many days you studied in the month on screen. Coming up lists the exams in the next two months; pick one to jump to its date.",
+        ],
+      },
+      {
+        kind: "note",
+        tone: "limit",
+        text: "The calendar shows exams and study days only. Lecture dates, reminders and study plans for future days are not on it yet.",
+      },
+    ],
+  },
+  {
     id: "references",
     title: "References",
     lead: "Outside guidelines and tools you trust, tied to what you are studying.",
     blocks: [
       {
         kind: "p",
-        text: "Your notes are built from your slides and your own notes. Trusted references such as PharmGuides are used to check and extend them, and anything that comes from a reference is labelled. It shows as its own small chip, like “PharmGuides · DoseDex”, apart from the numbered chips that open your slides, so you can always tell what came from class and what came from outside.",
+        text: "Your notes are built from your slides and your own notes. Trusted references such as PharmGuides are used to check and extend them, and anything that comes from a reference is labeled. It shows as its own small chip, like “PharmGuides · DoseDex”, apart from the numbered chips that open your slides, so you can always tell what came from class and what came from outside.",
       },
       { kind: "h3", text: "The References page" },
       {
@@ -812,7 +859,7 @@ export const SECTIONS: GuideSection[] = [
             "Needs a change",
             "The assistant could not do it as asked. Read why, then reopen it with more detail.",
           ],
-          ["Cancelled", "You withdrew it."],
+          ["Canceled", "You withdrew it."],
         ],
       },
       { kind: "figure", id: "requests" },
@@ -830,7 +877,7 @@ export const SECTIONS: GuideSection[] = [
   },
   {
     id: "finding-and-keeping",
-    title: "Search, favourites and the trash",
+    title: "Search, favorites and the trash",
     lead: "Finding things again, keeping them close, and getting them back.",
     blocks: [
       {
@@ -838,7 +885,7 @@ export const SECTIONS: GuideSection[] = [
         items: [
           "**Quick find** opens from the search bar at the top of a larger screen, or with `Ctrl+K` or `⌘K`. On a computer, `/` does the same. It jumps to courses, lectures, folders and documents by name.",
           "**Search** (a tab on a phone) searches inside everything: your typed notes, study guides, practice questions, and the transcripts of your slides and handwriting. Each result shows where it was found.",
-          "**Favourites**: tap the star on any item to keep it close.",
+          "**Favorites**: tap the star on any item to keep it close.",
           "**Trash**: moving something to the trash does not delete it. Open Trash (in the sidebar, or in Settings on a phone) and restore it, and it goes back where it came from. Only deleting from inside the trash is permanent.",
         ],
       },
@@ -866,6 +913,17 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "The Settings page also holds the keys that let an assistant into your library. You can create one, name it, make it read only or read and write, and revoke it at any time.",
       },
+      { kind: "h3", text: "Making it yours" },
+      {
+        kind: "list",
+        items: [
+          "**Your own background:** Settings, then Background. Choose any picture, of any size, and it replaces the dots behind every page on every device you sign in on. Remove puts the dots back.",
+          "**Sidebars:** drag the inner edge of any sidebar to make it wider or narrower; double-click the edge to go back to the usual width. Each sidebar’s button closes it, and the same button in the top bar opens it again.",
+          "**Calendar tab:** the phone’s tab bar has six tabs, Calendar among them. Reorder them under Tab bar.",
+          "**Read or Edit:** every lecture and document page has a Read and Edit switch in its bar. Read is for studying: nothing can be changed by accident, and the formatting bar is out of the way. Edit is for writing. The app remembers which one you last chose on that device.",
+          "**Panel heights:** where two panels share a sidebar on a lecture page, drag the line between them to give one more room. Side notes stay level with the text they are about. Double-click the line to go back to the usual split.",
+        ],
+      },
     ],
   },
   {
@@ -889,7 +947,7 @@ export const SECTIONS: GuideSection[] = [
           "The app cannot yet be installed to the home screen, and it needs a connection to work. There is no offline mode.",
           "The app has not yet been tried on a real iPad or iPhone. If something feels off there, tell Alex.",
           "You cannot download all of your data from the app yet.",
-          "A course’s colour is chosen by the app. You cannot pick it yet.",
+          "A course’s color is chosen by the app. You cannot pick it yet.",
         ],
       },
     ],
@@ -917,7 +975,7 @@ export const PARTS: GuidePart[] = [
     label: "Part three",
     title: "Study tools",
     lead: "The canvas, concepts, practice, exams and references: five ways to learn from what is in your library.",
-    sections: ["canvas", "concepts", "practice", "exams", "references"],
+    sections: ["canvas", "concepts", "practice", "exams", "calendar", "references"],
   },
   {
     id: "part-help-and-housekeeping",
@@ -966,7 +1024,7 @@ export const FIGURES: Record<FigureId, GuideFigure> = {
   }),
   canvas: figure("canvas", {
     shape: "compact",
-    alt: "The Beta blockers lecture as a canvas, stepping through its first frame, How they work, with cards joined by a labelled arrow.",
+    alt: "The Beta blockers lecture as a canvas, stepping through its first frame, How they work, with cards joined by a labeled arrow.",
     caption:
       "The Beta blockers lecture drawn as a canvas, stepping through its frames one at a time.",
   }),
@@ -978,7 +1036,7 @@ export const FIGURES: Record<FigureId, GuideFigure> = {
   }),
   "practice-question": figure("practice-question", {
     shape: "short",
-    alt: "A multiple choice practice question about propranolol and hypoglycaemia, with four answers labelled A to D.",
+    alt: "A multiple choice practice question about propranolol and hypoglycaemia, with four answers labeled A to D.",
     caption:
       "A multiple choice question in a practice session. The answer key does not reach your device until you have answered.",
   }),

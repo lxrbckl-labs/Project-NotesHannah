@@ -40,8 +40,11 @@ export function canContain(parent: NodeKind | null, child: NodeKind): boolean {
   return CONTAINS[parent ?? "root"].includes(child);
 }
 
-/** Folders may nest, but only this deep below a section, to keep the tree usable on a phone. */
-export const MAX_FOLDER_DEPTH = 2;
+/**
+ * Folders nest as deep as she likes (Alex, 2026-11-17; the limit was 2 before). The number is only
+ * a backstop against a runaway loop or a mistaken agent, far past anything a person would build.
+ */
+export const MAX_FOLDER_DEPTH = 50;
 
 /** Sections are fixed: they cannot be renamed, moved, duplicated or trashed on their own. */
 export function isFixed(kind: NodeKind): boolean {

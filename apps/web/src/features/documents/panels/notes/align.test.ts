@@ -15,7 +15,7 @@ describe("stacking side notes", () => {
     expect(tops.get("c")).toBe(400);
   });
 
-  it("keeps the focused card exactly level and moves its neighbours out of the way", () => {
+  it("keeps the focused card exactly level and moves its neighbors out of the way", () => {
     const tops = stack(items, "b");
     expect(tops.get("b")).toBe(120);
     expect(tops.get("a")).toBe(120 - 80 - GAP);

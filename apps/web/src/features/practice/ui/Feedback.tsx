@@ -16,10 +16,10 @@ export const VERDICT_HUE = {
   part: FEEDBACK_HUE.partial,
 } as const;
 
-/** What the result means as a data attribute, so a test or a style can tell without colour. */
+/** What the result means as a data attribute, so a test or a style can tell without color. */
 export const VERDICT_NAME = { ok: "correct", bad: "incorrect", part: "partial" } as const;
 
-/** The icon that goes with a verdict: colour is never the only signal. */
+/** The icon that goes with a verdict: color is never the only signal. */
 export function VerdictIcon({ tone, size = 18 }: { tone: VerdictTone | "skipped"; size?: number }) {
   if (tone === "ok") return <Check size={size} aria-hidden />;
   if (tone === "bad") return <X size={size} aria-hidden />;

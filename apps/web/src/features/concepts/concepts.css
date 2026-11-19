@@ -1,22 +1,80 @@
 @import "@xyflow/react/dist/base.css";
 
-/* The graph: calm, no attribution clutter, edges legible in both themes. */
+/* The graph: concept cards on the dotted board, joined by soft curves in the neighbour's colour.
+   Cards pop in one after another, lift on hover (the rest step back), and can be dragged aside.
+   The global reduced-motion rule removes the movement. */
 .cx-flow .react-flow__attribution {
   display: none;
 }
-.cx-flow .react-flow__edge-path {
-  stroke: var(--color-border-strong);
-  stroke-width: 1.5;
-}
-.cx-flow .react-flow__edge-textbg {
-  fill: var(--color-surface);
-}
-.cx-flow .react-flow__edge-text {
-  fill: var(--color-text-muted);
-  font-size: var(--text-caption);
-}
 .cx-flow .react-flow__node {
   cursor: pointer;
+}
+.cx-node {
+  animation: cx-pop var(--duration-slow) var(--ease-calm) both;
+  animation-delay: var(--cx-delay, 0ms);
+  transition:
+    transform var(--duration-fast) var(--ease-calm),
+    box-shadow var(--duration-fast) var(--ease-calm),
+    opacity var(--duration-base) linear;
+}
+.cx-node:hover,
+.cx-node:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raised);
+}
+.cx-flow:has(.cx-node:hover) .cx-node:not(:hover) {
+  opacity: 0.6;
+}
+/* The concept she is on: a soft halo in its own colour. */
+.cx-node-center {
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--tone-solid) 22%, transparent),
+    var(--shadow-raised);
+}
+.cx-node-center:hover,
+.cx-node-center:focus-visible {
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--tone-solid) 28%, transparent),
+    var(--shadow-raised);
+}
+@keyframes cx-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+}
+.cx-link {
+  animation: cx-fade var(--duration-slow) ease-out 180ms both;
+}
+.cx-link-line {
+  fill: none;
+  stroke: var(--tone-border);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.cx-link-flow {
+  fill: none;
+  stroke: var(--tone-solid);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 10;
+  animation: cx-flow 1.6s linear infinite;
+}
+.cx-link-end {
+  fill: var(--tone-solid);
+}
+.cx-link-label {
+  animation: cx-fade var(--duration-slow) ease-out 260ms both;
+}
+@keyframes cx-flow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+@keyframes cx-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 /* The drill: a wrong pair shakes once; the global reduced-motion rule removes it. */

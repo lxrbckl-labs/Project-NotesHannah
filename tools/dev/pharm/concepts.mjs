@@ -65,7 +65,7 @@ export function conceptSet({ c }) {
   const hDhp = c(
     "htn",
     9,
-    "Dihydropyridine CCB | Amlodipine, nifedipine ER | Ankle oedema, headache, flushing",
+    "Dihydropyridine CCB | Amlodipine, nifedipine ER | Ankle edema, headache, flushing",
   );
   const hNon = c(
     "htn",
@@ -339,7 +339,7 @@ export function conceptSet({ c }) {
     "amlodipine",
     ["Norvasc"],
     top("amlodipine | Norvasc | Dihydropyridine CCB"),
-    "Dihydropyridine CCB; ankle oedema is the classic adverse effect.",
+    "Dihydropyridine CCB; ankle edema is the classic adverse effect.",
   );
   drug(
     "nifedipine",
@@ -690,7 +690,7 @@ export function conceptSet({ c }) {
   add("adverse_effect", "hyperkalaemia", hArb, undefined, { aliases: ["high potassium"] });
   add("adverse_effect", "hypokalaemia", hThz, undefined, { aliases: ["low potassium"] });
   add("adverse_effect", "hyperuricaemia", hThz, "High uric acid; can trigger gout.");
-  add("adverse_effect", "peripheral oedema", hDhp, undefined, { aliases: ["ankle oedema"] });
+  add("adverse_effect", "peripheral edema", hDhp, undefined, { aliases: ["ankle edema"] });
   add("adverse_effect", "constipation", hNon);
   add("adverse_effect", "gynaecomastia", fGyn);
   add("adverse_effect", "rebound hypertension", aClo);
@@ -1106,7 +1106,7 @@ export function conceptSet({ c }) {
     [C("angiotensin receptor blockers"), "hyperkalaemia", hArb],
     [C("thiazide diuretics"), "hypokalaemia", hThz],
     [C("thiazide diuretics"), "hyperuricaemia", hThz],
-    [C("dihydropyridine calcium channel blockers"), "peripheral oedema", hDhp],
+    [C("dihydropyridine calcium channel blockers"), "peripheral edema", hDhp],
     [D("verapamil"), "constipation", hNon],
     [C("non-dihydropyridine calcium channel blockers"), "bradycardia", hNon],
     [C("mineralocorticoid receptor antagonists"), "hyperkalaemia", null],

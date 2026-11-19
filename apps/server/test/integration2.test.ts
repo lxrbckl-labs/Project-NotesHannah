@@ -613,7 +613,7 @@ describe("plain-words traces for questions, concepts, requests and exams", () =>
     expect(bulk[0]?.objectIds).toHaveLength(3);
     // Her request is in the feed, not in the log.
     expect(t.changes().some((c) => c.action === "request.created")).toBe(true);
-    expect(words.join("\n")).not.toContain("Left a summarise request");
+    expect(words.join("\n")).not.toContain("Left a summarize request");
     expect(t.changes().length - feedBefore).toBe(4);
   });
 

@@ -8,6 +8,7 @@ import { createTestDatabase, type Db } from "./db/client.js";
 import { PasswordHasher } from "./domains/accounts/passwords.js";
 import { accountRoutes, keyRoutes } from "./domains/accounts/routes.js";
 import { activityRoutes } from "./domains/activity/index.js";
+import { calendarRoutes } from "./domains/calendar/index.js";
 import { canvasRoutes } from "./domains/canvas/index.js";
 import { conceptsRoutes } from "./domains/concepts/index.js";
 import { documentsRoutes } from "./domains/documents/index.js";
@@ -17,7 +18,7 @@ import { healthRoutes } from "./domains/health/routes.js";
 import { libraryRoutes } from "./domains/library/index.js";
 import { marginNotesRoutes } from "./domains/margin-notes/index.js";
 import { practiceRoutes } from "./domains/practice/index.js";
-import { preferencesRoutes } from "./domains/preferences/index.js";
+import { backgroundRoutes, preferencesRoutes } from "./domains/preferences/index.js";
 import { referencesRoutes } from "./domains/references/index.js";
 import { requestsRoutes } from "./domains/requests/index.js";
 import { searchRoutes } from "./domains/search/index.js";
@@ -79,6 +80,8 @@ export function createApp(config: Config, options: AppOptions = {}): Hono<AppEnv
   app.route("/api", accountRoutes(deps));
   app.route("/api", keyRoutes(deps));
   app.route("/api", preferencesRoutes(deps));
+  app.route("/api", backgroundRoutes(deps));
+  app.route("/api", calendarRoutes(deps));
   // Library routes carry their full /api paths; the search is the unified one, mounted below.
   app.route("/", libraryRoutes(db, { service: services.library, nameSearch: false }));
   app.route("/", searchRoutes(services.search));

@@ -18,7 +18,7 @@ import type {
 } from "../types";
 import { PracticeApiError, TYPE_LABELS } from "../types";
 import { announcement, FeedbackPanel } from "../ui/Feedback";
-import { QUIET } from "../ui/quiet";
+import { FocusAidsButton, useFocusAids, useReadAloud } from "../ui/FocusAids";
 
 export interface PlayerProps {
   store: PracticeStore;
@@ -33,6 +33,24 @@ export interface PlayerProps {
 }
 
 type Phase = "loading" | "answering" | "feedback" | "finishing";
+
+/**
+ * One size for everything she presses on this screen (Alex, 2026-11-17): 44px on every layout, the
+ * same outlined look, so the bar and the foot of the screen read as one set of controls.
+ */
+const SIZE = "xl:min-h-11";
+const ICON_SIZE = "xl:size-11";
+/** The side padding of the one column the bar, the question and the foot of the screen all share. */
+const COLUMN = "px-4 md:px-6";
+
+/** The words of a question, for reading aloud. */
+function wordingOf(question: unknown): string {
+  const q = (question ?? {}) as { prompt?: unknown; vignette?: unknown; front?: unknown };
+  for (const part of [q.prompt, q.vignette, q.front]) {
+    if (typeof part === "string" && part.trim()) return part;
+  }
+  return "";
+}
 
 export function Player({
   store,
@@ -64,6 +82,8 @@ export function Player({
   const [message, setMessage] = useState("");
 
   const current = session?.current ?? null;
+  const [aids, setAids] = useFocusAids();
+  const readAloud = useReadAloud(wordingOf(current));
   const elapsed = useActiveTimer(
     current ? `${sessionId}:${current.index}` : "none",
     paused || phase !== "answering",
@@ -190,6 +210,8 @@ export function Player({
       }
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
+      // Inside an open panel (the focus aids), keys belong to the panel: Escape closes it, nothing more.
+      if (t?.closest?.('[role="dialog"]')) return;
       if (e.key === "Escape") {
         if (tag !== "TEXTAREA" && tag !== "INPUT") setPaused(true);
         return;
@@ -246,26 +268,36 @@ export function Player({
 
   return (
     <Shell rootRef={rootRef}>
-      <header className="shrink-0 border-b border-border bg-bg px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-6">
-        <div className="mx-auto flex w-full max-w-5xl items-center gap-2">
+      <header
+        data-calm={aids.calm || undefined}
+        className="pr-bar shrink-0 border-b border-border bg-bg pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+      >
+        <div
+          className={`mx-auto flex w-full items-center gap-2 ${COLUMN} ${wide ? "max-w-5xl" : "max-w-2xl"}`}
+        >
           <IconButton
             label="Leave this session"
             data-testid="leave"
             onClick={() => setLeaveOpen(true)}
-            className="-ml-1"
+            className={ICON_SIZE}
           >
             <X size={20} />
           </IconButton>
           <div className="min-w-0 flex-1 text-center">
-            <p className="truncate text-ui font-semibold" data-testid="position">
+            <p className="pr-count truncate text-ui font-semibold" data-testid="position">
               Question {position} of {session.total}
             </p>
             <p className="truncate text-caption text-text-muted">{session.scopeLabel}</p>
           </div>
+          <FocusAidsButton
+            aids={aids}
+            onChange={setAids}
+            readAloud={readAloud}
+            className={ICON_SIZE}
+          />
           <Button
-            variant="ghost"
-            size="sm"
-            className={QUIET}
+            variant="secondary"
+            className={SIZE}
             data-testid="pause"
             onClick={() => setPaused(true)}
           >
@@ -273,16 +305,17 @@ export function Player({
           </Button>
           {session.answered > 0 && moreAfter && (
             <Button
-              variant="ghost"
-              size="sm"
-              className={`hidden sm:inline-flex ${QUIET}`}
+              variant="secondary"
+              className={`hidden sm:inline-flex ${SIZE}`}
               onClick={() => setFinishOpen(true)}
             >
               Finish
             </Button>
           )}
         </div>
-        <div className="mx-auto mt-2 w-full max-w-5xl">
+        <div
+          className={`pr-count mx-auto mt-2 w-full ${COLUMN} ${wide ? "max-w-5xl" : "max-w-2xl"}`}
+        >
           <ProgressBar
             size="sm"
             value={session.answered}
@@ -298,7 +331,20 @@ export function Player({
         data-fills-pane
         className="pr-scroll relative min-h-0 flex-1 overflow-y-auto outline-none"
         data-testid="player-main"
+        data-text={aids.text}
+        data-spacing={aids.spacing || undefined}
+        onPointerMove={
+          aids.ruler
+            ? (e) => {
+                const box = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty("--pr-ruler", `${e.clientY - box.top}px`);
+              }
+            : undefined
+        }
       >
+        {aids.ruler && !paused ? (
+          <div aria-hidden className="pr-ruler" data-testid="ruler" />
+        ) : null}
         <div
           className={`mx-auto w-full px-4 pb-10 pt-6 md:px-6 md:pt-10 ${wide ? "max-w-5xl" : "max-w-2xl"}`}
           aria-hidden={paused}
@@ -370,18 +416,22 @@ export function Player({
         )}
       </div>
 
-      <footer className="shrink-0 border-t border-border bg-bg px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:px-6">
-        <div className="mx-auto flex w-full max-w-2xl items-center gap-2">
+      {/* The same column as the question above it (same width, same side padding), so Skip lines up with
+          the question's left edge and Check answer with its right. */}
+      <footer className="shrink-0 border-t border-border bg-bg pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+        <div
+          className={`mx-auto flex w-full items-center gap-2 ${COLUMN} ${wide ? "max-w-5xl" : "max-w-2xl"}`}
+        >
           {phase === "answering" ? (
             <>
               {session.onlySkippedLeft ? (
-                <Button variant="ghost" className={QUIET} onClick={() => setFinishOpen(true)}>
+                <Button variant="secondary" className={SIZE} onClick={() => setFinishOpen(true)}>
                   Finish
                 </Button>
               ) : (
                 <Button
-                  variant="ghost"
-                  className={QUIET}
+                  variant="secondary"
+                  className={SIZE}
                   data-testid="skip"
                   disabled={busy}
                   onClick={() => void skip()}
@@ -392,8 +442,7 @@ export function Player({
               {!selfSubmitting && (
                 <Button
                   variant="primary"
-                  size="lg"
-                  className="ml-auto min-w-40 flex-1 sm:flex-none"
+                  className={`ml-auto min-w-40 flex-1 sm:flex-none ${SIZE}`}
                   data-testid="submit"
                   disabled={!ready || busy}
                   onClick={() => void submit()}
@@ -405,8 +454,7 @@ export function Player({
           ) : (
             <Button
               variant="primary"
-              size="lg"
-              className="ml-auto w-full sm:w-auto sm:min-w-48"
+              className={`ml-auto w-full sm:w-auto sm:min-w-48 ${SIZE}`}
               data-testid="next"
               disabled={busy || phase === "finishing"}
               onClick={() => void next()}

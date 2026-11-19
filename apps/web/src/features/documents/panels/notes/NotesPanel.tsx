@@ -111,7 +111,8 @@ export const NotesPanel = memo(function NotesPanel({
 
   const composer = state.composer ? (
     <div
-      className="rounded-card border border-accent-border bg-surface p-2.5 shadow-pop"
+      // A dashed edge, like the app's other "something goes here" boxes: this note is not saved yet.
+      className="rounded-card border border-dashed border-border-strong bg-surface p-3 shadow-pop"
       data-testid="note-composer"
     >
       <NoteEditor
@@ -172,7 +173,7 @@ export const NotesPanel = memo(function NotesPanel({
       open={confirm !== null}
       onOpenChange={(open) => !open && setConfirm(null)}
       title="Delete this side note?"
-      description="Its block is gone, so it cannot be brought back afterwards."
+      description="Its block is gone, so it cannot be brought back afterward."
       confirmLabel="Delete"
       danger
       onConfirm={() => {

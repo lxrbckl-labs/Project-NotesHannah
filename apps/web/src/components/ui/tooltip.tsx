@@ -1,38 +1,54 @@
-import { Tooltip as RadixTooltip } from "radix-ui";
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
+import WarmTooltip, { WarmTooltipGroup } from "../bits/WarmTooltip";
 
 /**
- * A short hint on hover or keyboard focus, for icon buttons on the computer layout. Touch
- * screens do not show tooltips, so never put anything here that is needed to use the app: the
- * control must already have an accessible name.
+ * A short hint on hover, keyboard focus or a long press: the name of a button that is only an icon.
+ * It is React Bits' Warm Tooltip (components/bits/WarmTooltip.tsx): the first hint waits a moment,
+ * and while she keeps moving along a row of buttons the next ones open at once.
+ *
+ * Never put anything here that is needed to use the app: the control must already have an
+ * accessible name. `IconButton` and the action bar's buttons add this themselves from their label,
+ * so reach for it directly only for an icon-only control built by hand.
  */
 export function Tooltip({
   content,
   side = "top",
   children,
-  delay = 400,
+  delay,
+  shortcut,
 }: {
   content: ReactNode;
   side?: "top" | "bottom" | "left" | "right";
   /** One focusable element. */
   children: ReactNode;
   delay?: number;
+  /** A keyboard shortcut shown beside the words, e.g. "⌘K". */
+  shortcut?: ReactNode;
 }) {
   return (
-    <RadixTooltip.Provider delayDuration={delay} skipDelayDuration={200}>
-      <RadixTooltip.Root>
-        <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
-        <RadixTooltip.Portal>
-          <RadixTooltip.Content
-            side={side}
-            sideOffset={6}
-            collisionPadding={8}
-            className="anim-fade z-(--z-tooltip) max-w-64 rounded-control bg-text px-2.5 py-1.5 text-label font-medium text-bg shadow-pop"
-          >
-            {content}
-          </RadixTooltip.Content>
-        </RadixTooltip.Portal>
-      </RadixTooltip.Root>
-    </RadixTooltip.Provider>
+    <WarmTooltip
+      content={content}
+      side={side}
+      size="sm"
+      // Inverted against the page, like a label: the text color as the surface, the page color as the ink.
+      surfaceColor="var(--color-text)"
+      inkColor="var(--color-bg)"
+      {...(delay === undefined ? {} : { delay })}
+      {...(shortcut === undefined ? {} : { shortcut })}
+    >
+      {children as ReactElement<Record<string, unknown>>}
+    </WarmTooltip>
+  );
+}
+
+/**
+ * One shared "warmth" for a part of the screen: put it once around the app, so moving from one icon
+ * button to another, anywhere, opens the next hint without the wait.
+ */
+export function TooltipGroup({ children }: { children: ReactNode }) {
+  return (
+    <WarmTooltipGroup delay={450} warmWindow={400}>
+      {children}
+    </WarmTooltipGroup>
   );
 }

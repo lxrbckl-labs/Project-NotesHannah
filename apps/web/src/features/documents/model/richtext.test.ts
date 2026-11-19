@@ -39,7 +39,7 @@ describe("rich text ↔ Tiptap", () => {
     ["bold code", [{ text: "PO BID", code: true, bold: true }]],
     ["highlight", [{ text: "β1", highlight: "yellow" }]],
     [
-      "every highlight colour",
+      "every highlight color",
       (
         [
           "gray",
@@ -118,7 +118,7 @@ describe("rich text ↔ Tiptap", () => {
     ]);
   });
 
-  it("merges neighbouring runs that end up with the same marks", () => {
+  it("merges neighboring runs that end up with the same marks", () => {
     const json: TiptapNode[] = [
       { type: "text", text: "a", marks: [{ type: "italic" }] },
       { type: "text", text: "b", marks: [{ type: "italic" }] },

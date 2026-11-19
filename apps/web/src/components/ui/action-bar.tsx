@@ -2,6 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Link, type LinkProps } from "react-router";
 import { cn } from "../../lib/cn";
 import { ScrollCue } from "./segmented";
+import { Tooltip } from "./tooltip";
 
 /**
  * A row of actions for a page, drawn as one bar: an icon for every action, one line at every width.
@@ -98,17 +99,18 @@ export function ActionButton({
   ...rest
 }: ActionButtonProps) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      className={itemClass({ primary, tone }, className)}
-      {...rest}
-    >
-      {icon}
-      <Word primary={primary}>{label}</Word>
-      {children}
-    </button>
+    <Tooltip content={label}>
+      <button
+        type="button"
+        aria-label={label}
+        className={itemClass({ primary, tone }, className)}
+        {...rest}
+      >
+        {icon}
+        <Word primary={primary}>{label}</Word>
+        {children}
+      </button>
+    </Tooltip>
   );
 }
 
@@ -130,15 +132,12 @@ export function ActionLink({
   ...rest
 }: ActionLinkProps) {
   return (
-    <Link
-      aria-label={label}
-      title={label}
-      className={itemClass({ primary, tone }, className)}
-      {...rest}
-    >
-      {icon}
-      <Word primary={primary}>{label}</Word>
-      {children}
-    </Link>
+    <Tooltip content={label}>
+      <Link aria-label={label} className={itemClass({ primary, tone }, className)} {...rest}>
+        {icon}
+        <Word primary={primary}>{label}</Word>
+        {children}
+      </Link>
+    </Tooltip>
   );
 }

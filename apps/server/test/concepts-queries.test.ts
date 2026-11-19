@@ -258,7 +258,7 @@ describe("the concept page (F2)", () => {
   });
 });
 
-describe("neighbourhood (F3)", () => {
+describe("neighborhood (F3)", () => {
   it("returns the concepts and edges within one hop", () => {
     const g = t.service.neighbourhood(t.she, d.id.metoprolol as string, { hops: 1 });
     expect(g.center).toBe(d.id.metoprolol);
@@ -817,7 +817,7 @@ describe("brand and generic pairs (G12)", () => {
     expect(pairs.find((p) => p.generic === "verapamil")?.citations[0]?.quote).toBe(d.pages.B.quote);
   });
 
-  it("restricts to a class and its subclasses, and honours the limit", () => {
+  it("restricts to a class and its subclasses, and honors the limit", () => {
     const pairs = t.service.brandGenericPairs(t.she, { classId: d.id["beta blockers"] as string });
     expect(pairs.map((p) => p.generic)).toEqual([
       "atenolol",

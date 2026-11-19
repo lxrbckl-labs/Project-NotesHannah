@@ -25,7 +25,7 @@ export interface EditorKeys {
   onEnter?: (before: RichText, after: RichText) => boolean;
   /** Backspace with the cursor at the very start. */
   onBackspaceStart?: (current: RichText) => boolean;
-  /** Arrow up at the start or down at the end: move to the neighbouring block. */
+  /** Arrow up at the start or down at the end: move to the neighboring block. */
   onArrowOut?: (direction: "up" | "down") => boolean;
   /** Lists: Enter on an empty last line leaves the list. */
   onExitList?: (lines: EditorLine[]) => void;

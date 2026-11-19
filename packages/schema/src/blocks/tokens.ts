@@ -20,7 +20,7 @@ export const COLOR_TOKENS = [
 
 export const ColorToken = z
   .enum(COLOR_TOKENS, {
-    error: `Use a colour token (${COLOR_TOKENS.join(", ")}), not a raw colour like "#ff0000", so light and dark themes both work.`,
+    error: `Use a color token (${COLOR_TOKENS.join(", ")}), not a raw color like "#ff0000", so light and dark themes both work.`,
   })
   .meta({ id: "ColorToken" });
 export type ColorToken = z.infer<typeof ColorToken>;

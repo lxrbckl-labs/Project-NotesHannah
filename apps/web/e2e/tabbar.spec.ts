@@ -1,8 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 import { signIn } from "./helpers";
 
-const DEFAULT = ["Library", "Practice", "Search", "Inbox", "Settings"];
-const SETTINGS_FIRST = ["Settings", "Library", "Practice", "Search", "Inbox"];
+const DEFAULT = ["Library", "Practice", "Calendar", "Search", "Inbox", "Settings"];
+const SETTINGS_FIRST = ["Settings", "Library", "Practice", "Calendar", "Search", "Inbox"];
 
 /** The real bar along the bottom, left to right. */
 const realBar = async (page: Page) =>
@@ -99,7 +99,7 @@ test("dragging an icon changes only the draft; Save puts the real bar in that or
       .filter(([key]) => key.startsWith("notes-tab-order:"))
       .map(([, value]) => JSON.parse(value) as string[]),
   );
-  expect(mirrored).toEqual([["settings", "library", "practice", "search", "inbox"]]);
+  expect(mirrored).toEqual([["settings", "library", "practice", "calendar", "search", "inbox"]]);
 
   // It persists: the bar comes back in her order after a reload.
   await page.reload();
@@ -138,16 +138,30 @@ test("buttons and arrow keys move the picked icon; Reset sets a draft that still
   await expect(page.getByRole("button", { name: "Move Library left" })).toBeDisabled();
   await page.getByRole("button", { name: "Move Library right" }).click();
   await page.getByRole("button", { name: "Move Library right" }).click();
-  expect(await replica(page)).toEqual(["Practice", "Search", "Library", "Inbox", "Settings"]);
+  expect(await replica(page)).toEqual([
+    "Practice",
+    "Calendar",
+    "Library",
+    "Search",
+    "Inbox",
+    "Settings",
+  ]);
   expect(await realBar(page)).toEqual(DEFAULT);
 
   // Arrow keys on the focused icon, announced for screen readers.
   await item(page, "Settings").focus();
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
-  expect(await replica(page)).toEqual(["Practice", "Search", "Settings", "Library", "Inbox"]);
+  expect(await replica(page)).toEqual([
+    "Practice",
+    "Calendar",
+    "Library",
+    "Settings",
+    "Search",
+    "Inbox",
+  ]);
   await expect(
-    page.locator("[aria-live]").filter({ hasText: "Settings moved to position 3" }),
+    page.locator("[aria-live]").filter({ hasText: "Settings moved to position 4" }),
   ).toBeAttached();
   await page.keyboard.press("Home");
   expect((await replica(page))[0]).toBe("Settings");
@@ -156,12 +170,19 @@ test("buttons and arrow keys move the picked icon; Reset sets a draft that still
   await save(page).click();
   await expect
     .poll(() => realBar(page))
-    .toEqual(["Settings", "Practice", "Search", "Library", "Inbox"]);
+    .toEqual(["Settings", "Practice", "Calendar", "Library", "Search", "Inbox"]);
 
   // Reset changes the draft only.
   await page.getByRole("button", { name: "Reset to default" }).click();
   expect(await replica(page)).toEqual(DEFAULT);
-  expect(await realBar(page)).toEqual(["Settings", "Practice", "Search", "Library", "Inbox"]);
+  expect(await realBar(page)).toEqual([
+    "Settings",
+    "Practice",
+    "Calendar",
+    "Library",
+    "Search",
+    "Inbox",
+  ]);
   await expect(save(page)).toBeEnabled();
   await save(page).click();
   await expect.poll(() => realBar(page)).toEqual(DEFAULT);
@@ -172,7 +193,7 @@ test("leaving Settings drops an unsaved draft", async ({ page }) => {
   await dragTo(page, "Inbox", 0);
   await expect
     .poll(() => replica(page))
-    .toEqual(["Inbox", "Library", "Practice", "Search", "Settings"]);
+    .toEqual(["Inbox", "Library", "Practice", "Calendar", "Search", "Settings"]);
   await page.getByTestId("tab-bar").getByRole("link", { name: "Library" }).click();
   await expect(page).toHaveURL(/\/library$/);
   await openSettings(page);
@@ -220,6 +241,6 @@ test("a finger can drag an icon too", async ({ page }) => {
   await touch("touchEnd", endX);
   await expect
     .poll(() => replica(page))
-    .toEqual(["Inbox", "Library", "Practice", "Search", "Settings"]);
+    .toEqual(["Inbox", "Library", "Practice", "Calendar", "Search", "Settings"]);
   expect(await realBar(page)).toEqual(DEFAULT);
 });

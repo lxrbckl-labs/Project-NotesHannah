@@ -81,7 +81,7 @@ export function useNodeMenu(
   });
   entries.push({
     type: "item",
-    label: node.favourite ? "Remove from favourites" : "Add to favourites",
+    label: node.favourite ? "Remove from favorites" : "Add to favorites",
     icon: node.favourite ? <StarOff size={16} /> : <Star size={16} />,
     disabled: pending,
     onSelect: () => void actions.setFavourite(node, !node.favourite),

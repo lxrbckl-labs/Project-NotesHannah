@@ -106,7 +106,7 @@ describe("accounts", () => {
     expect(Username.safeParse("a").success).toBe(false);
   });
 
-  it("recognises the API key format", () => {
+  it("recognizes the API key format", () => {
     expect(API_KEY_PATTERN.test(`nh_write_${"a".repeat(43)}`)).toBe(true);
     expect(API_KEY_PATTERN.test(`nh_admin_${"a".repeat(43)}`)).toBe(false);
   });

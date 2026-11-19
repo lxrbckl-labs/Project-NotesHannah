@@ -43,6 +43,7 @@ const screens: Screen[] = [
   },
   { pattern: "search", at: () => "/search", ready: h1("Search") },
   { pattern: "inbox", at: () => "/inbox", ready: h1("Inbox") },
+  { pattern: "calendar", at: () => "/calendar", ready: h1("Calendar") },
   { pattern: "trash", at: () => "/trash", ready: h1("Trash") },
   { pattern: "settings", at: () => "/settings", ready: h1("Settings") },
   // The guide is being redesigned: only its stable parts are asserted here.

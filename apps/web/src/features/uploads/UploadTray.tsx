@@ -87,7 +87,7 @@ export function UploadTray() {
                         </Link>
                       </>
                     ) : null}
-                    {item.status === "cancelled" ? " · cancelled" : null}
+                    {item.status === "cancelled" ? " · canceled" : null}
                     {item.status === "queued" ? " · waiting" : null}
                   </p>
                   {item.status === "uploading" ? (

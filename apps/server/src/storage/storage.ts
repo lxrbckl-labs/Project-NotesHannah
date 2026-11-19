@@ -155,7 +155,7 @@ export function initStorage(dataDir: string, options: InitStorageOptions = {}): 
     throw new AppError(
       "conflict",
       `Storage directory ${dir} is not empty and has no marker (found: ${entries.slice(0, 5).join(", ")}).`,
-      { hint: "Check the path. Pass --force to initialise it anyway." },
+      { hint: "Check the path. Pass --force to initialize it anyway." },
     );
   }
   for (const top of TOP_LEVEL_DIRS) mkdirSync(join(dir, top), { recursive: true, mode: 0o700 });

@@ -579,7 +579,11 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
     const actor = by ?? userActor(userId);
     return db.transaction(() => {
       const r = needLive(userId, id, "changed");
-      if (isFixed(r.kind)) throw sectionRefused("renamed or changed");
+      // A section is fixed, but marking it as a favourite changes nothing about it: only the star.
+      const onlyFavourite = Object.keys(input).every((key) => key === "favourite");
+      if (isFixed(r.kind) && !(onlyFavourite && input.favourite !== undefined)) {
+        throw sectionRefused("renamed or changed");
+      }
       if (Object.keys(input).length === 0) {
         throw new AppError("invalid_input", "Nothing to change.", {
           hint: "Send at least one of name, course, lecture or favourite.",
@@ -618,8 +622,8 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
       if (input.favourite !== undefined && (input.favourite ? 1 : 0) !== r.favourite) {
         parts.push(
           input.favourite
-            ? `Marked ${label(after)} as a favourite`
-            : `Removed ${label(after)} from favourites`,
+            ? `Marked ${label(after)} as a favorite`
+            : `Removed ${label(after)} from favorites`,
         );
       }
       if (parts.length === 0) parts.push(`Changed the details of ${label(after)}`);

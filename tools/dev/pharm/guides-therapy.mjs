@@ -110,7 +110,7 @@ export function hypertensionGuide({ c, concept, page, q }) {
   const s9dhp = c(
     "htn",
     9,
-    "Dihydropyridine CCB | Amlodipine, nifedipine ER | Ankle oedema, headache, flushing | Blood pressure, oedema",
+    "Dihydropyridine CCB | Amlodipine, nifedipine ER | Ankle edema, headache, flushing | Blood pressure, edema",
   );
   const s9non = c(
     "htn",
@@ -278,7 +278,7 @@ export function hypertensionGuide({ c, concept, page, q }) {
           "Creatinine, potassium",
         ],
         ["ARB", "High K, creatinine rise; no cough", "Creatinine, potassium"],
-        ["Dihydropyridine CCB", "Ankle oedema, headache, flushing", "BP, oedema"],
+        ["Dihydropyridine CCB", "Ankle edema, headache, flushing", "BP, edema"],
         ["Diltiazem, verapamil", "Bradycardia, constipation", "Heart rate; avoid in HFrEF"],
       ],
       [s9thz, s9acei, s9arb, s9dhp, s9non],
@@ -460,7 +460,7 @@ export function heartFailureGuide({ c, concept, q }) {
   const s6n = c(
     "hf",
     6,
-    "Start all four as soon as possible, at low doses, rather than maximising one drug before adding the next.",
+    "Start all four as soon as possible, at low doses, rather than maximizing one drug before adding the next.",
   );
   const s7sv = c("hf", 7, "Sacubitril/valsartan | 49/51 mg twice daily | 97/103 mg twice daily");
   const s7lis = c("hf", 7, "Lisinopril | 2.5 to 5 mg once daily | 20 to 40 mg once daily");
@@ -752,7 +752,7 @@ export function heartFailureGuide({ c, concept, q }) {
       [s6arni, s10loop, s10iva, s11nsaid],
     ),
     quote(
-      "Start all four as soon as possible, at low doses, rather than maximising one drug before adding the next.",
+      "Start all four as soon as possible, at low doses, rather than maximizing one drug before adding the next.",
       "Lecture 9, speaker notes",
       [s6n],
     ),

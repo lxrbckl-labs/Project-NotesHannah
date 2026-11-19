@@ -132,7 +132,7 @@ export function CreateKeyDialog({ open, onClose }: { open: boolean; onClose: () 
       description={
         created
           ? "Copy it now and keep it somewhere safe."
-          : "Choose a name you will recognise and what the key may do."
+          : "Choose a name you will recognize and what the key may do."
       }
     >
       {created ? (

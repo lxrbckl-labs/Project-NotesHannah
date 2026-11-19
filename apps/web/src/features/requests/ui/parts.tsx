@@ -28,7 +28,7 @@ const STATUS_ICON: Record<RequestStatus, ReactNode> = {
   cancelled: <Ban size={14} aria-hidden />,
 };
 
-/** The status in plain words, never colour alone: an icon and the words. */
+/** The status in plain words, never color alone: an icon and the words. */
 export function StatusPill({ status, className }: { status: RequestStatus; className?: string }) {
   return (
     <span data-testid="status" data-status={status} className="inline-flex shrink-0">

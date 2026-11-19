@@ -3,6 +3,7 @@ import { Check, ChevronRight } from "lucide-react";
 import { createContext, type ReactNode, use, useCallback, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Modal } from "../../components/ui/dialog";
+import { Tooltip } from "../../components/ui/tooltip";
 import { cn } from "../../lib/cn";
 import type { PickedNode, PickNodes } from "../exams/types";
 import { NodeIcon } from "./NodeIcon";
@@ -182,15 +183,17 @@ function Row({
         style={{ paddingLeft: depth * 18 }}
       >
         {expandable ? (
-          <button
-            type="button"
-            aria-label={`${open ? "Collapse" : "Expand"} ${node.name}`}
-            aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
-          >
-            <ChevronRight size={16} className={cn("transition-transform", open && "rotate-90")} />
-          </button>
+          <Tooltip content={`${open ? "Collapse" : "Expand"} ${node.name}`}>
+            <button
+              type="button"
+              aria-label={`${open ? "Collapse" : "Expand"} ${node.name}`}
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+            >
+              <ChevronRight size={16} className={cn("transition-transform", open && "rotate-90")} />
+            </button>
+          </Tooltip>
         ) : (
           <span className="size-9 shrink-0" />
         )}

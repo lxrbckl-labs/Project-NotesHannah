@@ -57,7 +57,7 @@ test.describe("concept page", () => {
     expect(kinds).toEqual(expect.arrayContaining(["document", "question"]));
   });
 
-  test("the neighbourhood: list on phone, graph one tap away, hops and relation filter", async ({
+  test("the neighborhood: list on phone, graph one tap away, hops and relation filter", async ({
     page,
   }, info) => {
     await openDemo(page, { concept: "bb" });

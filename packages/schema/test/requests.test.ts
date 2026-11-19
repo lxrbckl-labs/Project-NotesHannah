@@ -257,7 +257,7 @@ describe("the transition table", () => {
     expect(canTransition("done", "decline", "agent").ok).toBe(false);
   });
 
-  it("makes cancelled final", () => {
+  it("makes canceled final", () => {
     expect(actionsFrom("cancelled")).toEqual([]);
   });
 
@@ -267,7 +267,7 @@ describe("the transition table", () => {
     if (!agentCreateLike.ok) {
       expect(agentCreateLike.reason).toBe("actor");
       expect(agentCreateLike.message).toMatch(/Only she/);
-      expect(agentCreateLike.hint).toMatch(/Creating, editing, cancelling and reopening are hers/);
+      expect(agentCreateLike.hint).toMatch(/Creating, editing, canceling and reopening are hers/);
     }
     const userComplete = canTransition("in_progress", "complete", "user");
     expect(userComplete.ok).toBe(false);

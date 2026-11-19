@@ -92,7 +92,7 @@ export const REQUEST_KIND_INFO: Record<RequestKind, { label: string; meaning: st
   expand: { label: "Explain more", meaning: "She wants more depth on this." },
   more_like_this: { label: "More like this", meaning: "Make more material of the same kind." },
   make_questions: { label: "Make questions", meaning: "Write practice questions from this." },
-  summarise: { label: "Summarise", meaning: "Condense this." },
+  summarise: { label: "Summarize", meaning: "Condense this." },
   quiz_me: { label: "Quiz me", meaning: "Set up practice on this." },
   other: { label: "Something else", meaning: "Read her message." },
 };
@@ -240,7 +240,7 @@ export function canTransition(
       message: `Only ${allowed} can ${ACTION_VERB[action]} a request; this was tried by ${WHO[actor]}.`,
       hint:
         actor === "agent"
-          ? "Agents claim, release, complete and decline requests. Creating, editing, cancelling and reopening are hers."
+          ? "Agents claim, release, complete and decline requests. Creating, editing, canceling and reopening are hers."
           : actor === "user"
             ? "She cannot do the agent's part: claiming, releasing, completing and declining are done by an agent through its API key."
             : "This is not something to do by hand.",

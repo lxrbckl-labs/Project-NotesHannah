@@ -71,12 +71,12 @@ describe("ConfirmDialog", () => {
 describe("Popover", () => {
   it("opens from its trigger, is named, and closes with Escape", async () => {
     render(
-      <Popover label="Card colour" title="Colour" trigger={<Button>Colour</Button>}>
+      <Popover label="Card color" title="Color" trigger={<Button>Color</Button>}>
         <p>Pick one</p>
       </Popover>,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Colour" }));
-    expect(screen.getByRole("dialog", { name: "Card colour" })).toHaveTextContent("Pick one");
+    await userEvent.click(screen.getByRole("button", { name: "Color" }));
+    expect(screen.getByRole("dialog", { name: "Card color" })).toHaveTextContent("Pick one");
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
@@ -92,14 +92,14 @@ describe("ActionMenu", () => {
           { type: "item", label: "Rename", onSelect: () => {} },
           {
             type: "sub",
-            label: "Colour",
+            label: "Color",
             entries: [{ type: "item", label: "Teal", onSelect }],
           },
         ]}
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: "More" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "Colour" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Color" }));
     await userEvent.click(await screen.findByRole("menuitem", { name: "Teal" }));
     expect(onSelect).toHaveBeenCalledOnce();
   });

@@ -1,0 +1,25 @@
+/* The calendar. A day's tint says how much she studied (data-level 1 to 3), always alongside the
+   pen mark in the cell and the words in the detail, never colour alone. */
+.cal-level {
+  background-color: var(--color-surface);
+}
+.cal-level[data-level="1"] {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+}
+.cal-level[data-level="2"] {
+  background-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-surface));
+}
+.cal-level[data-level="3"] {
+  background-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-surface));
+}
+/* A new month, and a newly picked day's details, ease in. Reduced motion removes both. */
+.cal-month,
+.cal-detail {
+  animation: cal-in var(--duration-base) var(--ease-calm);
+}
+@keyframes cal-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+}

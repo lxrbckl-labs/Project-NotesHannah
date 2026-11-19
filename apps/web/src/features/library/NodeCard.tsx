@@ -68,7 +68,7 @@ export function NodeCard({
               {node.favourite ? (
                 <Star
                   size={14}
-                  aria-label="Favourite"
+                  aria-label="Favorite"
                   className="shrink-0 fill-accent text-accent"
                 />
               ) : null}

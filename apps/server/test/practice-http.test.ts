@@ -159,7 +159,7 @@ describe("another user's objects are not_found, and their lists are empty", () =
     });
   }
 
-  it("lists, the notebook, weak areas, due, upcoming and the cited-by lists are empty for her neighbour", async () => {
+  it("lists, the notebook, weak areas, due, upcoming and the cited-by lists are empty for her neighbor", async () => {
     for (const path of ["/api/practice/questions", "/api/practice/sessions", "/api/exams"]) {
       expect((await env.call(env.bobUser, "GET", path)).body.items).toEqual([]);
     }
@@ -172,7 +172,7 @@ describe("another user's objects are not_found, and their lists are empty", () =
     ).toEqual([]);
   });
 
-  it("a neighbour cannot file under her node, cover her nodes or exam against her course", async () => {
+  it("a neighbor cannot file under her node, cover her nodes or exam against her course", async () => {
     const bobNode = env.spine(env.bob, 1);
     const create = await env.call(env.bobUser, "POST", "/api/practice/questions", {
       nodeIds: [ids.node],

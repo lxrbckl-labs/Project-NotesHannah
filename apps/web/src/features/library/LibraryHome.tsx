@@ -23,6 +23,7 @@ import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { UpcomingExamsCard } from "../exams";
 import { useStores } from "../mounts/services";
+import { PageFileDrop } from "../uploads/PageFileDrop";
 import { useUploadPicker } from "../uploads/UploadProvider";
 import { useCourseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
@@ -133,6 +134,8 @@ export function LibraryHome() {
 
   return (
     <Page>
+      {/* Files dropped on the library home go to the inbox, like its Upload files button. */}
+      <PageFileDrop target={{ nodeId: null, label: "the inbox" }} />
       {/* No greeting card (Alex, 2026-11-16): the page opens on what she had open last. */}
       <div className="mb-5 flex items-end justify-between gap-4">
         <h1 className="font-display text-heading font-semibold leading-tight md:text-display">
@@ -214,7 +217,7 @@ export function LibraryHome() {
 
       <section aria-labelledby="favourites-title" className="mb-8">
         <SectionTitle>
-          <span id="favourites-title">Favourites</span>
+          <span id="favourites-title">Favorites</span>
         </SectionTitle>
         <ItemStrip
           query={favourites}
@@ -262,7 +265,7 @@ function ItemStrip({
   const items = query.data ?? [];
   if (items.length === 0) {
     return (
-      <p className="flex items-center gap-3 rounded-card border border-dashed border-border-strong px-4 py-4 text-ui text-text-muted">
+      <p className="flex items-center gap-3 rounded-card border border-dashed border-border-strong bg-surface/55 px-4 py-4 backdrop-blur-md text-ui text-text-muted">
         {icon}
         {empty}
       </p>

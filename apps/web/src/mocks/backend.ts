@@ -829,6 +829,13 @@ export function createMockBackend(options: MockOptions = {}) {
       return noContent();
     }
     if (method === "GET" && path === "/me") return ok({ user });
+    // No background picture in the mock: the dotted grid.
+    if (method === "GET" && path === "/me/background/meta") return ok({ updatedAt: null });
+    // The calendar in the mock: no exams and no study days, so the page shows its empty month.
+    if (method === "GET" && path.startsWith("/calendar")) {
+      const today = new Date().toISOString().slice(0, 10);
+      return ok({ from: today, to: today, today, exams: [], days: [], streak: 0 });
+    }
     if (path === "/me/preferences" && method === "GET") {
       return ok({ preferences: { tabOrder: resolveTabOrder(tabOrder) } });
     }

@@ -155,7 +155,7 @@ export function DesignPage() {
         icon={<Palette />}
         eyebrow="Settings"
         title="Design reference"
-        description="Every colour, scale and shared component, in the current theme. docs/design.md explains when to use each."
+        description="Every color, scale and shared component, in the current theme. docs/design.md explains when to use each."
         actions={<ThemeSwitch />}
       />
 
@@ -183,7 +183,7 @@ export function DesignPage() {
         <Section
           id="palette"
           title="Palette"
-          description="Ten hues, named like the colour tokens stored on cards, frames and highlights. Each has five shades. The eight lively hues also colour things with no colour of their own."
+          description="Ten hues, named like the color tokens stored on cards, frames and highlights. Each has five shades. The eight lively hues also color things with no color of their own."
         >
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {HUES.map((h) => (
@@ -246,7 +246,7 @@ export function DesignPage() {
 
         <Section
           id="semantic"
-          title="Semantic colours"
+          title="Semantic colors"
           description="Success, warning, info and danger, each from a hue. Use them for messages and states, never for decoration."
         >
           <div className="grid gap-3 md:grid-cols-2">
@@ -274,7 +274,7 @@ export function DesignPage() {
         <Section
           id="roles"
           title="Roles"
-          description="What each colour means in each feature (src/lib/roles.ts). Always shown with words or an icon too."
+          description="What each color means in each feature (src/lib/roles.ts). Always shown with words or an icon too."
         >
           <Card className="grid gap-5">
             <RoleRow title="Concept types" map={CONCEPT_TYPE_HUE} />
@@ -292,7 +292,7 @@ export function DesignPage() {
 
         <Section
           id="base"
-          title="Base colours"
+          title="Base colors"
           description="The warm paper neutrals and the green accent."
         >
           <Card className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -441,7 +441,7 @@ export function DesignPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Tooltip content="Add a card">
-                <IconButton label="Add">
+                <IconButton label="Add" tooltip={false}>
                   <Plus size={18} />
                 </IconButton>
               </Tooltip>
@@ -468,7 +468,7 @@ export function DesignPage() {
                   { type: "item", label: "Rename", icon: <Pencil size={16} />, onSelect: () => {} },
                   {
                     type: "sub",
-                    label: "Colour",
+                    label: "Color",
                     icon: <Palette size={16} />,
                     entries: CATEGORICAL_HUES.map((h) => ({
                       type: "item" as const,
@@ -550,14 +550,14 @@ export function DesignPage() {
             </Card>
 
             <Card className="grid gap-4">
-              <h3 className="font-semibold">Switch, colour and disclosure</h3>
+              <h3 className="font-semibold">Switch, color and disclosure</h3>
               <Switch
                 label="Show hints"
                 description="A nudge before the answer."
                 checked={on}
                 onCheckedChange={setOn}
               />
-              <HuePicker label="Card colour" value={hue} onChange={setHue} />
+              <HuePicker label="Card color" value={hue} onChange={setHue} />
               <Disclosure label="Show working">
                 <p className="pb-2 text-ui">Dose = 5 mg/kg x 70 kg = 350 mg.</p>
               </Disclosure>
@@ -593,14 +593,14 @@ export function DesignPage() {
             <h3 className="font-semibold">Overlays</h3>
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => setSheet("side")}>Side sheet</Button>
-              <Button onClick={() => setSheet("center")}>Centred sheet</Button>
+              <Button onClick={() => setSheet("center")}>Centered sheet</Button>
               <Button onClick={() => setSheet("bottom")}>Bottom sheet</Button>
               <Button onClick={() => setModal(true)}>Modal</Button>
               <Button variant="ghostDanger" onClick={() => setConfirm(true)}>
                 Confirm
               </Button>
-              <Popover label="Colour" title="Colour" showClose trigger={<Button>Popover</Button>}>
-                <HuePicker label="Colour" value={hue} onChange={setHue} />
+              <Popover label="Color" title="Color" showClose trigger={<Button>Popover</Button>}>
+                <HuePicker label="Color" value={hue} onChange={setHue} />
               </Popover>
               <Button onClick={() => toast.show("Saved")}>Toast</Button>
               <Button onClick={() => toast.success("All 12 cards reviewed")}>Success toast</Button>

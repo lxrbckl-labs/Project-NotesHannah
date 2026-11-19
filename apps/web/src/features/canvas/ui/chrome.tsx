@@ -18,6 +18,7 @@ import { inputClass } from "../../../components/ui/field";
 import { HuePicker } from "../../../components/ui/hue-picker";
 import { Popover } from "../../../components/ui/popover";
 import { SegmentedControl, segmentItemClass } from "../../../components/ui/segmented";
+import { Tooltip } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/cn";
 import { CONNECTOR_HUE } from "../../../lib/roles";
 import { StickerArt, stickerLabel } from "../stickers/Stickers";
@@ -70,25 +71,26 @@ export function StickerPicker({
     >
       <div className="nc-sticker-grid">
         {STICKERS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            className="flex size-14 items-center justify-center rounded-control transition-colors duration-(--duration-instant) hover:bg-surface-muted"
-            aria-label={`Add ${stickerLabel(s)} sticker`}
-            onClick={() => {
-              onPick(s);
-              setOpen(false);
-            }}
-          >
-            <StickerArt sticker={s} size={36} />
-          </button>
+          <Tooltip key={s} content={`Add ${stickerLabel(s)} sticker`}>
+            <button
+              type="button"
+              className="flex size-14 items-center justify-center rounded-control transition-colors duration-(--duration-instant) hover:bg-surface-muted"
+              aria-label={`Add ${stickerLabel(s)} sticker`}
+              onClick={() => {
+                onPick(s);
+                setOpen(false);
+              }}
+            >
+              <StickerArt sticker={s} size={36} />
+            </button>
+          </Tooltip>
         ))}
       </div>
     </Popover>
   );
 }
 
-/** The colour of a card or frame: the shared HuePicker in a popover. */
+/** The color of a card or frame: the shared HuePicker in a popover. */
 export function ColorPicker({
   label,
   value,
@@ -103,7 +105,7 @@ export function ColorPicker({
 }) {
   const container = useCanvasPortal();
   return (
-    <Popover label="Colour" trigger={trigger} side="top" container={container} focusOnOpen={false}>
+    <Popover label="Color" trigger={trigger} side="top" container={container} focusOnOpen={false}>
       <HuePicker label={label} value={value ?? null} onChange={onPick} className="max-w-60" />
     </Popover>
   );

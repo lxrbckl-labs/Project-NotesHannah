@@ -72,9 +72,8 @@ export function DesignBitsPage() {
       <header className="mb-6 rounded-3xl border border-border bg-surface px-5 py-5 md:px-8 md:py-7">
         <h1 className="text-3xl font-semibold">React Bits</h1>
         <p className="mt-1.5 max-w-prose text-sm text-text-muted">
-          The small set of animated parts we copied in. Each one follows the colours of the theme
-          and stands still when the device asks for less motion. Switch the theme to check both
-          looks.
+          The small set of animated parts we copied in. Each one follows the colors of the theme and
+          stands still when the device asks for less motion. Switch the theme to check both looks.
         </p>
       </header>
 
@@ -82,7 +81,7 @@ export function DesignBitsPage() {
         <Demo
           name="DotGrid"
           use="Behind the home headers and empty states, in place of the static dotted grid."
-          note="Dots use the dot colour and light up in the accent colour. Redrawn when the theme changes."
+          note="Dots use the dot color and light up in the accent color. Redrawn when the theme changes."
         >
           <div className="relative h-56 overflow-hidden rounded-2xl border border-border bg-bg">
             <DotGrid dotSize={4} gap={20} />
@@ -95,7 +94,7 @@ export function DesignBitsPage() {
         <Demo
           name="SpotlightCard"
           use="Course and lecture cards in the library."
-          note="Surface, border and shadow are the card tokens; the glow is the accent colour."
+          note="Surface, border and shadow are the card tokens; the glow is the accent color."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <SpotlightCard className="p-5">
@@ -112,7 +111,7 @@ export function DesignBitsPage() {
         <Demo
           name="CountUp"
           use="Stat tiles: cards due today, notebook size, practice score."
-          note="Plain text colour from the class you give it. Shows the final number at once under reduced motion."
+          note="Plain text color from the class you give it. Shows the final number at once under reduced motion."
         >
           <div className="flex flex-wrap items-center gap-6">
             <Suspense fallback={<span className="text-4xl font-semibold opacity-0">128</span>}>
@@ -150,7 +149,7 @@ export function DesignBitsPage() {
         <Demo
           name="BlurText"
           use="The greeting on the library home (already in use there)."
-          note="Colour comes from the text class. The sentence stays one readable heading for screen readers."
+          note="Color comes from the text class. The sentence stays one readable heading for screen readers."
         >
           <div className="flex flex-wrap items-center gap-4">
             <Suspense fallback={<p className="text-3xl font-semibold opacity-0">Hello, Hannah</p>}>
@@ -171,7 +170,7 @@ export function DesignBitsPage() {
         <Demo
           name="ClickSpark"
           use="A small burst when a practice answer is correct."
-          note="Sparks are the accent colour. No sparks at all under reduced motion."
+          note="Sparks are the accent color. No sparks at all under reduced motion."
         >
           <ClickSpark ref={spark} sparkCount={10} sparkRadius={34} className="h-auto w-auto">
             <button
@@ -196,7 +195,7 @@ export function DesignBitsPage() {
         <Demo
           name="Stepper"
           use="Setup flows: adding a course, importing a lecture, starting an exam."
-          note="Surfaces, text and the filled step use the tokens; the filled step is the accent colour."
+          note="Surfaces, text and the filled step use the tokens; the filled step is the accent color."
         >
           <Stepper width="100%" completedContent={<p className="p-4 text-sm">All done.</p>}>
             <Step title="Pick a course">
@@ -214,7 +213,7 @@ export function DesignBitsPage() {
         <Demo
           name="ShinyText"
           use="A quiet highlight on a status line, for example Syncing notes."
-          note="Starts muted text colour and shines in the accent colour. Plain text under reduced motion."
+          note="Starts muted text color and shines in the accent color. Plain text under reduced motion."
         >
           <ShinyText text="Syncing your notes" className="text-lg font-medium" speed={3} />
         </Demo>
@@ -222,7 +221,7 @@ export function DesignBitsPage() {
         <Demo
           name="StarBorder"
           use="The one main action on a screen, for example Start practice."
-          note="Surface and text use the tokens; the travelling light is the accent colour."
+          note="Surface and text use the tokens; the traveling light is the accent color."
         >
           <StarBorder as="button" type="button" duration={5}>
             Start practice
@@ -232,7 +231,7 @@ export function DesignBitsPage() {
         <Demo
           name="Magnet"
           use="Small floating buttons on a computer screen. Never moves on touch."
-          note="It has no colours of its own."
+          note="It has no colors of its own."
         >
           <Magnet padding={60} magnetStrength={4}>
             <button type="button" className={BTN}>

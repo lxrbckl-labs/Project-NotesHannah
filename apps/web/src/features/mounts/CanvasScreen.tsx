@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router";
 import { backButtonClass } from "../../components/ui/button";
 import { segmentItemClass } from "../../components/ui/segmented";
 import { ErrorState, Skeleton } from "../../components/ui/states";
+import { Tooltip } from "../../components/ui/tooltip";
 import { appHttp } from "../../lib/api";
 import type { CanvasStore } from "../canvas";
 import { CanvasView, HttpCanvasStore, MemoryCanvasStore } from "../canvas";
@@ -88,13 +89,15 @@ export default function CanvasScreen({
     <div className="flex h-full min-h-0 flex-col" data-testid="canvas-screen">
       {/* The way back to the page, always there whatever the canvas's own bar is showing. */}
       <header className="flex items-center gap-2 border-b border-border bg-surface px-3 py-1.5 md:px-5">
-        <Link
-          to={parentId ? `/library/${parentId}` : "/library"}
-          aria-label={`Back to the library from ${title}`}
-          className={backButtonClass}
-        >
-          <ArrowLeft size={20} />
-        </Link>
+        <Tooltip content={`Back to the library from ${title}`}>
+          <Link
+            to={parentId ? `/library/${parentId}` : "/library"}
+            aria-label={`Back to the library from ${title}`}
+            className={backButtonClass}
+          >
+            <ArrowLeft size={20} />
+          </Link>
+        </Tooltip>
         <h1 className="min-w-0 flex-1 truncate font-display text-body font-semibold">{title}</h1>
         {/* The same Page/Canvas pair as the page view, with Canvas current. */}
         <nav

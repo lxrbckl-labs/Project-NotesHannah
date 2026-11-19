@@ -64,7 +64,7 @@ function ConceptPageScreen({ id }: { id: string }) {
       <button
         type="button"
         onClick={openIndex}
-        className="mb-3 inline-flex min-h-11 items-center gap-1.5 rounded-control pr-3 text-ui font-medium text-text-muted hover:text-text"
+        className="nav-back mb-3 inline-flex min-h-11 items-center gap-1.5 rounded-control pr-3 text-ui font-medium text-text-muted hover:text-text"
       >
         <ArrowLeft size={16} aria-hidden /> All concepts
       </button>
