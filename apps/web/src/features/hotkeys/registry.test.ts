@@ -116,25 +116,25 @@ describe("the hotkey registry", () => {
 
 describe("showing keys", () => {
   test("Mac symbols and the Windows spelling", () => {
-    expect(formatKeys("mod+k", true)).toBe("⌘K");
-    expect(formatKeys("mod+k", false)).toBe("Ctrl+K");
-    expect(formatKeys("shift+t", true)).toBe("⇧T");
-    expect(formatKeys("shift+t", false)).toBe("Shift+T");
-    expect(formatKeys("mod+alt+m", true)).toBe("⌥⌘M");
-    expect(formatKeys("alt+o", false)).toBe("Alt+O");
-    expect(formatKeys("mod+\\", true)).toBe("⌘\\");
+    expect(formatKeys("mod+k", true)).toBe("⌘ + K");
+    expect(formatKeys("mod+k", false)).toBe("Ctrl + K");
+    expect(formatKeys("shift+t", true)).toBe("⇧ + T");
+    expect(formatKeys("shift+t", false)).toBe("Shift + T");
+    expect(formatKeys("mod+alt+m", true)).toBe("⌥ + ⌘ + M");
+    expect(formatKeys("alt+o", false)).toBe("Alt + O");
+    expect(formatKeys("mod+\\", true)).toBe("⌘ + \\");
   });
 
   test("pairs show both keys, and named keys read as symbols", () => {
-    expect(formatKeys("g l", true)).toBe("G L");
-    expect(formatKeys("g /", false)).toBe("G /");
+    expect(formatKeys("g l", true)).toBe("G then L");
+    expect(formatKeys("g /", false)).toBe("G then /");
     expect(formatKeys("arrowleft", true)).toBe("←");
     expect(formatKeys("?", true)).toBe("?");
   });
 
   test("every way to press a hotkey, or its own wording", () => {
     const find = (id: string) => HOTKEYS.find((h) => h.id === id);
-    expect(hotkeyAllText(find("app.quickFind") as never, true)).toBe("⌘K or /");
+    expect(hotkeyAllText(find("app.quickFind") as never, true)).toBe("⌘ + K or /");
     expect(hotkeyAllText(find("practice.pick") as never, true)).toBe("1 to 9, or A to F");
   });
 

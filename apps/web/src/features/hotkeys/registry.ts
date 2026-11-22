@@ -582,7 +582,7 @@ const NAMES: Record<string, string> = {
   tab: "Tab",
 };
 
-/** One chord as she sees it: "⌘K", "⇧T", "⌥O" on a Mac; "Ctrl+K", "Shift+T", "Alt+O" elsewhere. */
+/** One chord as she sees it: "⌘ + K", "⇧ + T" on a Mac; "Ctrl + K", "Shift + T" elsewhere. The plus says "hold, then press". */
 export function formatChord(chord: Chord, mac = IS_MAC): string {
   const key = NAMES[chord.key] ?? chord.key.toUpperCase();
   const mods: string[] = [];
@@ -591,19 +591,19 @@ export function formatChord(chord: Chord, mac = IS_MAC): string {
     if (chord.alt) mods.push("⌥");
     if (chord.shift) mods.push("⇧");
     if (chord.mod) mods.push("⌘");
-    return mods.join("") + key;
+    return [...mods, key].join(" + ");
   }
   if (chord.mod) mods.push("Ctrl");
   if (chord.alt) mods.push("Alt");
   if (chord.shift) mods.push("Shift");
-  return [...mods, key].join("+");
+  return [...mods, key].join(" + ");
 }
 
-/** A key as she sees it: "⌘K", or "G L" for a sequence. */
+/** A key as she sees it: "⌘ + K", or "G then L" for a sequence (one key after the other, not held together). */
 export function formatKeys(text: string, mac = IS_MAC): string {
   return parseKeys(text)
     .map((c) => formatChord(c, mac))
-    .join(" ");
+    .join(" then ");
 }
 
 /** The badge text for a hotkey: its first key. */
@@ -613,7 +613,7 @@ export function hotkeyText(id: string, mac = IS_MAC): string | undefined {
   return first ? formatKeys(first, mac) : undefined;
 }
 
-/** Every way to press a hotkey, for the overlay and the guide: "⌘K or /". */
+/** Every way to press a hotkey, for the overlay and the guide: "⌘ + K or /". */
 export function hotkeyAllText(def: HotkeyDef, mac = IS_MAC): string {
   return def.display ?? def.keys.map((k) => formatKeys(k, mac)).join(" or ");
 }

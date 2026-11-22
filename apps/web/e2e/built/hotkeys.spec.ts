@@ -44,7 +44,7 @@ test("pairs go places, '?' lists every shortcut, and typing never triggers a key
   // The sidebar's links carry their keys, without changing their names.
   const library = page.getByTestId("sidebar").getByRole("link", { name: "Library", exact: true });
   await expect(library).toHaveAttribute("aria-keyshortcuts", "G L");
-  await expect(library.locator("[data-hotkey='go.library']")).toHaveText("G L");
+  await expect(library.locator("[data-hotkey='go.library']")).toHaveText("G then L");
   seen.assertClean("hotkeys");
 });
 
