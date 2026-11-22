@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, SkipForward } from "lucide-react";
 import {
   type CSSProperties,
   createContext,
@@ -262,7 +262,8 @@ export function TourProvider({ children, onEnd }: { children: ReactNode; onEnd?:
               </div>
               {/* Always in the same place, whatever the stop: the bottom right. */}
               <button type="button" className="tour-skip" onClick={end} data-testid="tour-skip">
-                Skip tour
+                Skip
+                <SkipForward size={15} aria-hidden />
               </button>
             </div>,
             document.body,
