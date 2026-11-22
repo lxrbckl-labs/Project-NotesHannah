@@ -2,6 +2,22 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Live site reset for Hannah (2026-11-22 17:17 CST)
+
+- Live at `ba8a263`: every change of 2026-11-22, including the Command go-to keys (`⌘L`, `⌘C`; they replace the
+  G pairs), plain shortcut badges, the Tab bar card text, the tour's Skip button, and the Library home without its
+  Concepts and References buttons (Settings has a Concepts row for phones).
+- Clean sweep on the mini, Alex's word: the live database and file storage were set aside, not deleted, and the app
+  started on an empty database with one account, `hannahporras` (generated password, shown once on the mini).
+  Before: users alex, demo, pharmacy; 15 documents, 9 requests, 3 API keys. Kept copy:
+  `/Volumes/NVME1/notes-pre-clean-20261122/` (database and storage), a labelled `pre-clean` backup snapshot, and
+  the old database inside the volume at `/db/pre-clean-20261122/`. Old agent API keys no longer work.
+- Open: `admin init-storage` does not recreate the top-level storage directories when the `.notes-storage` marker
+  is already there (`apps/server/src/storage/storage.ts`), so the converter could not start after the sweep until
+  the directories were made by hand. A repair path is wanted.
+- Open: `e2e/files.spec.ts:231` (right-click, Back to inbox) fails on the mini on the computer and tablet
+  projects and passes on the MacBook; cause unknown.
+
 ## Keyboard shortcuts (2026-11-22, pushed as 7aa1897, live since 2026-11-22 15:04 CST at 6cc7ad2)
 
 - One registry (`apps/web/src/features/hotkeys/registry.ts`) drives the keys, the badges, the "?" overlay and
