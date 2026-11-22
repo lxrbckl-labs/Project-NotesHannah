@@ -58,7 +58,7 @@ test("the order is saved on the server and follows her across reload and sign-in
   // Put the usual order back so the other built tests see the default bar.
   await page.getByTestId("tab-bar").getByRole("link", { name: "Settings" }).click();
   await expect(page.locator("html")).not.toHaveClass(/tab-sliding/);
-  await page.getByRole("button", { name: "Reset to default" }).click();
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect
     .poll(() => labels(page))

@@ -2,7 +2,7 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
-## Keyboard shortcuts (2026-11-22, pushed, not yet deployed)
+## Keyboard shortcuts (2026-11-22, pushed as 7aa1897, live since 2026-11-22 15:04 CST at 6cc7ad2)
 
 - One registry (`apps/web/src/features/hotkeys/registry.ts`) drives the keys, the badges, the "?" overlay and
   the guide's "Keyboard shortcuts" section. Computer layout only; destructive actions have no key.
@@ -12,7 +12,7 @@ As of 2026-11-16, after the design pass and the first deployment. Feature IDs re
 - Not verified: `e2e/built/hotkeys.spec.ts` and the e2e suites were not run; the guide PDF is not regenerated
   (`pnpm guide:pdf`); practice keys, tablet layout and a Windows keyboard were not tried.
 
-## Instructions, tour, agent parity, icon map (2026-11-22, pushed as f9f3e9c, not yet deployed)
+## Instructions, tour, agent parity, icon map (2026-11-22, pushed as f9f3e9c, live since 2026-11-22 15:04 CST at 6cc7ad2)
 
 - Saved instructions for agent requests (Settings and the request dialog; migration `0720_request_instructions`).
 - Guided tour: ten stops, starts on first sign-in, restartable from the guide.

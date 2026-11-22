@@ -2,7 +2,6 @@ import { DEFAULT_TAB_ORDER, type TabId } from "@notes/schema";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type KeyboardEvent, type PointerEvent, useId, useRef, useState } from "react";
 import { moveTab, sameOrder, slotAt, TAB_DEFS } from "../../app/tabs";
-import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardTitle } from "../../components/ui/card";
 import { useToast } from "../../components/ui/toast";
@@ -255,13 +254,8 @@ export function TabBarCard() {
           Cancel
         </Button>
         <Button disabled={isDefault} onClick={() => setDraft(DEFAULT_TAB_ORDER)}>
-          Reset to default
+          Reset
         </Button>
-        {dirty ? (
-          <Badge tone="warning" dot>
-            Unsaved changes
-          </Badge>
-        ) : null}
       </div>
     </Card>
   );

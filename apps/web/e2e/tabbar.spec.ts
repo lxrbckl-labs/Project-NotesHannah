@@ -78,9 +78,8 @@ test("dragging an icon changes only the draft; Save puts the real bar in that or
 
   await dragTo(page, "Settings", 0);
   await expect.poll(() => replica(page)).toEqual(SETTINGS_FIRST);
-  // Nothing has been saved: the real bar keeps its order, and the page says so.
+  // Nothing has been saved: the real bar keeps its order.
   expect(await realBar(page)).toEqual(DEFAULT);
-  await expect(page.getByText("Unsaved changes")).toBeVisible();
   await expect(save(page)).toBeEnabled();
 
   // Cancel restores the saved order in the replica.
@@ -177,7 +176,7 @@ test("buttons and arrow keys move the picked icon; Reset sets a draft that still
     .toEqual(["Settings", "Practice", "Calendar", "Library", "Search", "Inbox"]);
 
   // Reset changes the draft only.
-  await page.getByRole("button", { name: "Reset to default" }).click();
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
   expect(await replica(page)).toEqual(DEFAULT);
   expect(await realBar(page)).toEqual([
     "Settings",
@@ -190,7 +189,7 @@ test("buttons and arrow keys move the picked icon; Reset sets a draft that still
   await expect(save(page)).toBeEnabled();
   await save(page).click();
   await expect.poll(() => realBar(page)).toEqual(DEFAULT);
-  await expect(page.getByRole("button", { name: "Reset to default" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeDisabled();
 });
 
 test("leaving Settings drops an unsaved draft", async ({ page }) => {
