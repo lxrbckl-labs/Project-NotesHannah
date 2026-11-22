@@ -10,6 +10,7 @@ import {
   parseChord,
   parseKeys,
   placesOverlap,
+  UNREACHABLE_MOD_LETTERS,
 } from "./registry";
 
 const chordText = (c: Chord) =>
@@ -28,11 +29,25 @@ describe("the hotkey registry", () => {
 
   test("no key the browser or the system owns (the screens' own existing keys aside)", () => {
     for (const h of HOTKEYS) {
-      if (h.selfHandled) continue;
+      // The "Go to" keys take Command on purpose (Alex, 2026-11-22); they have their own rule below.
+      if (h.selfHandled || h.outsideText) continue;
       for (const text of h.keys) {
         for (const chord of parseKeys(text)) {
           expect(forbiddenReason(chord), `${h.id}: ${text}`).toBeNull();
         }
+      }
+    }
+  });
+
+  test("the Go to keys are Command and one key, and none is a key that never reaches a page", () => {
+    const go = HOTKEYS.filter((h) => h.outsideText);
+    expect(go.length).toBeGreaterThan(10);
+    for (const h of go) {
+      for (const text of h.keys) {
+        const chords = parseKeys(text);
+        expect(chords.length, `${h.id}: ${text}`).toBe(1);
+        expect(chords[0]?.mod, `${h.id}: ${text}`).toBe(true);
+        expect(UNREACHABLE_MOD_LETTERS.has(chords[0]?.key ?? ""), `${h.id}: ${text}`).toBe(false);
       }
     }
   });
@@ -116,25 +131,25 @@ describe("the hotkey registry", () => {
 
 describe("showing keys", () => {
   test("Mac symbols and the Windows spelling", () => {
-    expect(formatKeys("mod+k", true)).toBe("⌘ + K");
-    expect(formatKeys("mod+k", false)).toBe("Ctrl + K");
-    expect(formatKeys("shift+t", true)).toBe("⇧ + T");
-    expect(formatKeys("shift+t", false)).toBe("Shift + T");
-    expect(formatKeys("mod+alt+m", true)).toBe("⌥ + ⌘ + M");
-    expect(formatKeys("alt+o", false)).toBe("Alt + O");
-    expect(formatKeys("mod+\\", true)).toBe("⌘ + \\");
+    expect(formatKeys("mod+k", true)).toBe("⌘K");
+    expect(formatKeys("mod+k", false)).toBe("Ctrl+K");
+    expect(formatKeys("shift+t", true)).toBe("⇧T");
+    expect(formatKeys("shift+t", false)).toBe("Shift+T");
+    expect(formatKeys("mod+alt+m", true)).toBe("⌥⌘M");
+    expect(formatKeys("alt+o", false)).toBe("Alt+O");
+    expect(formatKeys("mod+\\", true)).toBe("⌘\\");
   });
 
   test("pairs show both keys, and named keys read as symbols", () => {
-    expect(formatKeys("g l", true)).toBe("G then L");
-    expect(formatKeys("g /", false)).toBe("G then /");
+    expect(formatKeys("g l", true)).toBe("G L");
+    expect(formatKeys("g /", false)).toBe("G /");
     expect(formatKeys("arrowleft", true)).toBe("←");
     expect(formatKeys("?", true)).toBe("?");
   });
 
   test("every way to press a hotkey, or its own wording", () => {
     const find = (id: string) => HOTKEYS.find((h) => h.id === id);
-    expect(hotkeyAllText(find("app.quickFind") as never, true)).toBe("⌘ + K or /");
+    expect(hotkeyAllText(find("app.quickFind") as never, true)).toBe("⌘K or /");
     expect(hotkeyAllText(find("practice.pick") as never, true)).toBe("1 to 9, or A to F");
   });
 

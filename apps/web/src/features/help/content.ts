@@ -900,7 +900,7 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "list",
         items: [
-          "**Quick find** opens from the search bar at the top of a larger screen, or with `Ctrl+K` or `⌘K`. With a keyboard, `/` does the same, and `G` then `/` opens Search. It jumps to courses, lectures, folders and documents by name.",
+          "**Quick find** opens from the search bar at the top of a larger screen, or with `Ctrl+K` or `⌘K`. With a keyboard, `/` does the same, and `⌘/` (`Ctrl+/`) opens Search. It jumps to courses, lectures, folders and documents by name.",
           "**Search** (a tab on a phone) searches inside everything: your typed notes, study guides, practice questions, and the transcripts of your slides and handwriting. Each result shows where it was found.",
           "**Favorites**: tap the star on any item to keep it close.",
           "**Trash**: moving something to the trash does not delete it. Open Trash (in the sidebar, or in Settings on a phone) and restore it, and it goes back where it came from. Only deleting from inside the trash is permanent.",
@@ -955,10 +955,10 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "list",
         items: [
-          "**Pairs:** keys written as two letters, such as `G L`, are pressed one after the other. Press `G`, let go, then `L` within a second, and the Library opens.",
+          "**Going places:** hold `⌘` (`Ctrl` on Windows) and press a letter: `⌘L` opens the Library, `⌘C` the Calendar. On the app's screens these take the place of the browser's own use of those keys, such as print and reload. Copying words you have selected still works.",
           "**Badges:** on a computer, a small badge at the edge of a button shows its key, and a button that is only an icon shows its key when you point at it. To hide the badges, open Settings, then Keyboard shortcuts, and turn off Show keyboard shortcut badges. The keys keep working.",
           "**Only where it makes sense:** a key works only on the screen that has its button. `P` practices the item you have open on a library page, and on a source file it goes back a page.",
-          "**Never while you type:** single keys and pairs do nothing while you are typing in a box or writing on a page, and while a dialog or a menu is open. Keys with `⌘` or `Ctrl` work everywhere.",
+          "**Never while you type:** single keys and the going-places keys do nothing while you are typing in a box or writing on a page, and while a dialog or a menu is open, so copy, bold and the rest work as usual there. Quick find (`⌘K`) and the sidebar key work everywhere.",
           "**Writing keys:** bold, headings, lists and the rest are on the Keyboard button in a page’s toolbar, and on the quick reference at the end of this guide.",
           "**Phones:** a phone has no keyboard shortcuts.",
         ],

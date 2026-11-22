@@ -110,41 +110,92 @@ describe("dialogs and menus", () => {
   });
 });
 
-describe("pairs", () => {
-  test("G then L runs the pair, and the second key goes nowhere else", () => {
+describe("the Go to keys (Command and a letter)", () => {
+  test("Command and L goes to the Library, and the browser does not get the key", () => {
     const library = vi.fn();
     dispatcher.register({ id: "go.library", run: library });
+    const pressed = press("l", { metaKey: true });
+    expect(pressed.result).toBe("go.library");
+    expect(pressed.event.defaultPrevented).toBe(true);
+    expect(library).toHaveBeenCalledOnce();
+    // Ctrl is the same key on Windows; L alone is nothing.
+    expect(press("l", { ctrlKey: true }).result).toBe("go.library");
+    expect(press("l").result).toBeNull();
+  });
+
+  test("they stay out of text fields and dialogs, so the editor keeps copy, bold and save", () => {
+    dispatcher.register({ id: "go.calendar", run: () => {} });
+    dispatcher.register({ id: "go.back", run: () => {} });
+    const input = field("<input>");
+    expect(press("c", { metaKey: true }, input).result).toBeNull();
+    expect(press("b", { metaKey: true }, input).result).toBeNull();
+    overlay = document.createElement("div");
+    expect(press("c", { metaKey: true }).result).toBeNull();
+  });
+
+  test("Command and C with words selected is a copy", () => {
+    dispatcher.register({ id: "go.calendar", run: () => {} });
+    document.body.innerHTML = "<p>Beta blockers</p>";
+    const range = document.createRange();
+    range.selectNodeContents(document.body.firstElementChild as Element);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    const pressed = press("c", { metaKey: true });
+    expect(pressed.result).toBeNull();
+    expect(pressed.event.defaultPrevented).toBe(false);
+    window.getSelection()?.removeAllRanges();
+    expect(press("c", { metaKey: true }).result).toBe("go.calendar");
+  });
+});
+
+describe("pairs (no hotkey uses one now; the listener still supports them)", () => {
+  const pairs = new Map([
+    [
+      "pair.one",
+      { id: "pair.one", keys: ["g l"], label: "A pair", group: "App", where: "everywhere" },
+    ],
+    ["solo.r", { id: "solo.r", keys: ["r"], label: "A key", group: "App", where: "everywhere" }],
+  ] as const) as unknown as typeof HOTKEY_BY_ID;
+  beforeEach(() => {
+    dispatcher = new Dispatcher(
+      pairs,
+      () => clock,
+      () => overlay,
+    );
+  });
+
+  test("G then L runs the pair, and the second key goes nowhere else", () => {
+    const run = vi.fn();
+    dispatcher.register({ id: "pair.one", run });
     const first = press("g");
     expect(first.result).toBe("pending");
     expect(first.event.defaultPrevented).toBe(true);
     clock += 300;
     const second = press("l");
-    expect(second.result).toBe("go.library");
+    expect(second.result).toBe("pair.one");
     expect(second.event.defaultPrevented).toBe(true);
-    expect(library).toHaveBeenCalledOnce();
+    expect(run).toHaveBeenCalledOnce();
   });
 
   test("too slow, and the pair is forgotten", () => {
-    const library = vi.fn();
-    dispatcher.register({ id: "go.library", run: library });
+    const run = vi.fn();
+    dispatcher.register({ id: "pair.one", run });
     press("g");
     clock += SEQUENCE_MS + 1;
     expect(press("l").result).toBeNull();
-    expect(library).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
   });
 
   test("a key that is not the second of any pair is handled on its own", () => {
-    const ask = vi.fn();
-    dispatcher.register({ id: "go.library", run: () => {} });
-    dispatcher.register({ id: "app.ask", run: ask });
+    dispatcher.register({ id: "pair.one", run: () => {} });
+    dispatcher.register({ id: "solo.r", run: () => {} });
     press("g");
-    expect(press("r").result).toBe("app.ask");
-    // And the pair does not linger: L alone now does nothing.
+    expect(press("r").result).toBe("solo.r");
     expect(press("l").result).toBeNull();
   });
 
   test("G does nothing while she types", () => {
-    dispatcher.register({ id: "go.library", run: () => {} });
+    dispatcher.register({ id: "pair.one", run: () => {} });
     const input = field("<input>");
     expect(press("g", {}, input).result).toBeNull();
   });

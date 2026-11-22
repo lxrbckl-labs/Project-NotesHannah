@@ -21,7 +21,7 @@ export function Kbd({ hotkey, className }: { hotkey: string; className?: string 
       data-hotkey={hotkey}
       className={cn(
         KBD_CLASS,
-        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-sans font-normal text-text-muted",
+        "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap font-sans font-normal text-text-muted",
         className,
       )}
     >

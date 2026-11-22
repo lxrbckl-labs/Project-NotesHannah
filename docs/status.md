@@ -7,7 +7,7 @@ As of 2026-11-16, after the design pass and the first deployment. Feature IDs re
 - One registry (`apps/web/src/features/hotkeys/registry.ts`) drives the keys, the badges, the "?" overlay and
   the guide's "Keyboard shortcuts" section. Computer layout only; destructive actions have no key.
 - Setting `shortcutBadges` (default on) hides the badges; the keys keep working.
-- Checked by hand at 1440x900: sidebar, go-to sequences, source zoom, fit and full screen, the overlay, the
+- Checked by hand at 1440x900: sidebar, go-to keys, source zoom, fit and full screen, the overlay, the
   badge switch. Lint and typecheck pass; the hotkey unit tests and the touched screens' tests pass one file at a time.
 - Not verified: `e2e/built/hotkeys.spec.ts` and the e2e suites were not run; the guide PDF is not regenerated
   (`pnpm guide:pdf`); practice keys, tablet layout and a Windows keyboard were not tried.

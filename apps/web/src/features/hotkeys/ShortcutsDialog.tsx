@@ -24,7 +24,7 @@ export function ShortcutsDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Keyboard shortcuts"
-      description="Single keys and pairs work when you are not typing. Keys in full work on this screen."
+      description="Single keys and the Go to keys work when you are not typing. Keys in full work on this screen."
       placement="center"
       wide
       testId="shortcuts-dialog"

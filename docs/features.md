@@ -365,16 +365,16 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
 - **One registry.** `apps/web/src/features/hotkeys/registry.ts` lists every app-level key as data
   (id, keys, label, group, where it works). The "?" overlay, the guide's Keyboard shortcuts
   section, the PDF, the badges and the listener all read it, so they cannot drift. Keys are chords
-  (`mod+k`, `shift+t`, `alt+o`, `?`) or two-key pairs (`g l`).
+  (`mod+k`, `shift+t`, `alt+o`, `?`) or two-key pairs (`g l`; the listener supports them, no hotkey uses one since 2026-11-22).
 - **One listener.** `HotkeyProvider` (in `AppShell`) adds one window keydown listener. A screen
   gives a key its action with `useHotkey(id, handler, { enabled })` while it is mounted, so a key
   works only where its button is; when two screens register the same id (the app's "Ask an agent"
-  and a library page's), the later one wins until it leaves. Single keys and pairs never fire while
+  and a library page's), the later one wins until it leaves. Single keys, pairs and the Go to keys (`outsideText`) never fire while
   she types (inputs, textareas, selects, editable blocks) or while a dialog or menu is open;
   Command/Ctrl combinations do. Pairs wait 1.2 seconds for the second key. Off on the phone layout.
   A handled key stops later window listeners, so the canvas and the practice player do not act on
   it too.
-- **What has keys.** Go to (G then a letter: Library, Practice, Calendar, Search, Inbox, Settings,
+- **What has keys.** Go to (Command or Ctrl and a letter, Alex's choice on 2026-11-22 over the browser's own use of those keys; Trash is D and Guide is G because T and H never reach a page; Command and C with words selected stays a copy: Library, Practice, Calendar, Search, Inbox, Settings,
   Requests, Concepts, References, Activity, Guide, Trash, back); App (quick find, sidebar, details
   panel, ask an agent, upload, "?", the tour, new term); Library pages (new course, folder, lecture,
   document, favorite, rename, move, open the page, practice this) and the library home (expand and

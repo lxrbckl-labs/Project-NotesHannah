@@ -54,6 +54,13 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return false;
 }
 
+/** True when she has words selected on the page. */
+export function hasSelection(): boolean {
+  if (typeof window === "undefined") return false;
+  const selection = window.getSelection();
+  return Boolean(selection && !selection.isCollapsed && selection.toString().trim());
+}
+
 /** The dialog or menu that is open on the page, if any. */
 export function openOverlay(doc: Document = document): Element | null {
   return doc.querySelector(
@@ -137,8 +144,10 @@ export class Dispatcher {
   private allowed(def: HotkeyDef, chord: Chord, event: KeyboardEvent): boolean {
     if (event.repeat && !def.repeat) return false;
     // Combinations with Command or Ctrl are meant to work from anywhere, a text field included.
-    if (chord.mod) return true;
+    if (chord.mod && !def.outsideText) return true;
     if (isTypingTarget(event.target)) return false;
+    // Command and C with words selected is a copy, not a trip to the Calendar.
+    if (chord.mod && chord.key === "c" && hasSelection()) return false;
     // Enter and Space on a button or a link belong to that control.
     const el = event.target as HTMLElement | null;
     if (

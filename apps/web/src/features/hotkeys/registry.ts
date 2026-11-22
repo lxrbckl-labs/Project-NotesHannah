@@ -101,18 +101,26 @@ export interface HotkeyDef {
   inDialog?: true;
   /** Keeps firing while the key is held down (zoom, paging). */
   repeat?: true;
+  /**
+   * A Command (Ctrl) key that still stays out of the way of typing and dialogs, so the editor keeps
+   * copy, bold, italic and save, and copying a selection on a page still works (the "Go to" keys).
+   */
+  outsideText?: true;
 }
 
 const go = (id: string, key: string, label: string): HotkeyDef => ({
   id: `go.${id}`,
-  keys: [`g ${key}`],
+  keys: [`mod+${key}`],
   label,
   group: "Go to",
   where: "everywhere",
+  outsideText: true,
 });
 
 export const HOTKEYS: readonly HotkeyDef[] = [
-  // ---- Go to: "g" then a letter, anywhere ------------------------------------------------------
+  // ---- Go to: Command (Ctrl) and a letter, anywhere outside a text field. Alex chose Command over the
+  // browser's own use of these keys (2026-11-22). T, H, N, W and Q never reach a page, so Trash is D, Guide is G.
+  // ---- ------------------------------------------------------
   go("library", "l", "Library"),
   go("practice", "p", "Practice"),
   go("calendar", "c", "Calendar"),
@@ -123,8 +131,8 @@ export const HOTKEYS: readonly HotkeyDef[] = [
   go("concepts", "o", "Concepts"),
   go("references", "e", "References"),
   go("activity", "a", "Agent activity"),
-  go("guide", "h", "Guide"),
-  go("trash", "t", "Trash"),
+  go("guide", "g", "Guide"),
+  go("trash", "d", "Trash"),
   go("back", "b", "Go back"),
 
   // ---- App ---------------------------------------------------------------------------------
@@ -591,19 +599,19 @@ export function formatChord(chord: Chord, mac = IS_MAC): string {
     if (chord.alt) mods.push("⌥");
     if (chord.shift) mods.push("⇧");
     if (chord.mod) mods.push("⌘");
-    return [...mods, key].join(" + ");
+    return mods.join("") + key;
   }
   if (chord.mod) mods.push("Ctrl");
   if (chord.alt) mods.push("Alt");
   if (chord.shift) mods.push("Shift");
-  return [...mods, key].join(" + ");
+  return [...mods, key].join("+");
 }
 
-/** A key as she sees it: "⌘ + K", or "G then L" for a sequence (one key after the other, not held together). */
+/** A key as she sees it: "⌘ + K", or "G + L" for a sequence (one key after the other; Alex chose the plus for both, 2026-11-22). */
 export function formatKeys(text: string, mac = IS_MAC): string {
   return parseKeys(text)
     .map((c) => formatChord(c, mac))
-    .join(" then ");
+    .join(" ");
 }
 
 /** The badge text for a hotkey: its first key. */
@@ -654,6 +662,9 @@ export function ariaKeys(id: string, mac = IS_MAC): string | undefined {
 const OWNED_MOD_LETTERS = new Set(["t", "w", "n", "r", "l", "q", "p", "f", "s", "h", "m"]);
 /** Editing keys every text field already has. */
 const EDITING_MOD_LETTERS = new Set(["a", "c", "v", "x", "z", "y"]);
+
+/** Command (Ctrl) keys that never reach a page: new tab, close, new window, quit; hide on a Mac. */
+export const UNREACHABLE_MOD_LETTERS: ReadonlySet<string> = new Set(["t", "w", "n", "q", "h"]);
 
 /** Why a chord may not be bound, or null when it may. */
 export function forbiddenReason(chord: Chord): string | null {
