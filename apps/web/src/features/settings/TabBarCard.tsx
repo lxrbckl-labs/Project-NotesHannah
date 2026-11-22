@@ -153,7 +153,11 @@ export function TabBarCard() {
       <CardTitle
         id="card-tab-bar"
         title="Tab bar"
-        description="Drag the icons into the order you want, then save. This is the bar along the bottom of your phone; on a tablet or a computer the sidebar stays as it is."
+        description={`Drag the icons into the order you want, then save. This is the bar along the bottom of your phone; on a tablet or a computer the sidebar stays as it is. ${
+          selected
+            ? `${TAB_DEFS[selected].label} is picked. The arrow keys move it too.`
+            : "Pick an icon to move it with the buttons or the arrow keys."
+        }`}
       />
 
       <div
@@ -239,11 +243,6 @@ export function TabBarCard() {
         >
           Move right <ChevronRight size={16} aria-hidden />
         </Button>
-        <span className="text-caption text-text-muted">
-          {selected
-            ? `${TAB_DEFS[selected].label} is picked. The arrow keys move it too.`
-            : "Pick an icon to move it with these buttons or the arrow keys."}
-        </span>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
