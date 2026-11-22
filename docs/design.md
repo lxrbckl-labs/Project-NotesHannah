@@ -859,7 +859,7 @@ Not part of the four migrations, but worth doing when someone is nearby:
   screen already read itself before the registry (the document editor, the canvas, the practice
   player, the library tree, the viewer's Escape) stay where they are; a new key on those screens goes
   through the registry, and anything those screens list is marked `selfHandled` there.
-- **Choosing keys.** Plain letters for a screen's actions, Command (Ctrl) and a letter for going places (shown bunched, `⌘L`, beside the keyboard mark),
+- **Choosing keys.** Plain letters for a screen's actions, Command (Ctrl) and a letter for going places (shown bunched, `⌘L`),
   Shift and a letter where the plain letter is taken. Outside the Go to keys (Alex's exception,
   2026-11-22; they stay out of text fields and dialogs), never a combination the browser or the system
   owns (Command or Ctrl with T, W, N, R, L, Q, P, F, S, H, M or a digit or an arrow; function keys;
