@@ -2,6 +2,18 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Instructions, tour, agent parity, icon map (2026-11-22, pushed as f9f3e9c, not yet deployed)
+
+- Saved instructions for agent requests (Settings and the request dialog; migration `0720_request_instructions`).
+- Guided tour: ten stops, starts on first sign-in, restartable from the guide.
+- Source pages: own full-window mode; the file page header is a title row, a facts line and a toolbar.
+- Library home: Recently Opened and Favorites fold by an arrow.
+- One icon per concept and one tile color rule (see design.md, "Icons and tiles").
+- Agent layer: calendar, saved instructions (read), file rename, document and transcript revisions (see mcp.md, "Parity with the app").
+- Checks on 2026-11-22: lint, typecheck, schema 800, converter 117, server 913 pass. Web unit tests 690 of 694 in a full
+  run on an overloaded MacBook; the canvas board tests timed out on a different test each run and no canvas code changed.
+  The end-to-end suites were not run on this state: run them before deploying.
+
 ## Calendar and shell changes (2026-11-17, local only until Alex says to commit)
 
 - Calendar: a new page at `/calendar`, in the sidebar and as a sixth phone tab (`TAB_IDS` in
