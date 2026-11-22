@@ -117,6 +117,16 @@ export function CalendarPage() {
         />
       </div>
 
+      {/* What is coming sits above the month, right under the three figures (Alex, 2026-11-21). */}
+      <Upcoming
+        today={today}
+        exams={ahead.data?.exams ?? []}
+        onPick={(date) => {
+          setMonth(date.slice(0, 7));
+          setPicked(date);
+        }}
+      />
+
       {shown.isError ? (
         <ErrorState error={shown.error} onRetry={() => shown.refetch()} />
       ) : (
@@ -200,15 +210,6 @@ export function CalendarPage() {
           />
         </div>
       )}
-
-      <Upcoming
-        today={today}
-        exams={ahead.data?.exams ?? []}
-        onPick={(date) => {
-          setMonth(date.slice(0, 7));
-          setPicked(date);
-        }}
-      />
     </Page>
   );
 }
@@ -439,7 +440,7 @@ function Upcoming({
 }) {
   if (exams.length === 0) return null;
   return (
-    <section aria-labelledby="cal-upcoming" className="mt-8">
+    <section aria-labelledby="cal-upcoming" className="mb-6">
       <h2 id="cal-upcoming" className="mb-3 font-display text-title font-semibold">
         Coming up
       </h2>

@@ -155,6 +155,32 @@ export function LibraryHome() {
         />
       </section>
 
+      {/* Favorites, then Concepts and References, sit right under Recently opened (Alex, 2026-11-21). */}
+      <section aria-labelledby="favourites-title" className="mb-5">
+        <SectionTitle>
+          <span id="favourites-title">Favorites</span>
+        </SectionTitle>
+        <ItemStrip
+          query={favourites}
+          empty="Star a course or lecture and it will wait for you here."
+          icon={<Star size={18} />}
+        />
+      </section>
+
+      <div className="mb-10 flex flex-wrap gap-2">
+        <Link to="/concepts" data-testid="home-concepts-link" className={buttonClass()}>
+          <Lightbulb size={16} aria-hidden /> Concepts
+          {badges.review > 0 ? (
+            <Badge tone="warning" size="sm">
+              {badges.review} to review
+            </Badge>
+          ) : null}
+        </Link>
+        <Link to="/references" data-testid="home-references-link" className={buttonClass()}>
+          <BookMarked size={16} aria-hidden /> References
+        </Link>
+      </div>
+
       <section aria-labelledby="tree-title" className="mb-10">
         <SectionTitle
           action={
@@ -214,33 +240,6 @@ export function LibraryHome() {
       </section>
 
       {import.meta.env.VITE_MOCK_API === "1" ? null : <ExamsStrip />}
-
-      <section aria-labelledby="favourites-title" className="mb-8">
-        <SectionTitle>
-          <span id="favourites-title">Favorites</span>
-        </SectionTitle>
-        <ItemStrip
-          query={favourites}
-          empty="Star a course or lecture and it will wait for you here."
-          icon={<Star size={18} />}
-        />
-      </section>
-
-      <Link
-        to="/concepts"
-        data-testid="home-concepts-link"
-        className={buttonClass({ className: "mr-2" })}
-      >
-        <Lightbulb size={16} aria-hidden /> Concepts
-        {badges.review > 0 ? (
-          <Badge tone="warning" size="sm">
-            {badges.review} to review
-          </Badge>
-        ) : null}
-      </Link>
-      <Link to="/references" data-testid="home-references-link" className={buttonClass()}>
-        <BookMarked size={16} aria-hidden /> References
-      </Link>
     </Page>
   );
 }
