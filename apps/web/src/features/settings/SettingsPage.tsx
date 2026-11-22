@@ -3,6 +3,7 @@ import {
   Bot,
   ChevronRight,
   LifeBuoy,
+  Lightbulb,
   MessageCirclePlus,
   Palette,
   Settings,
@@ -103,6 +104,9 @@ export function SettingsPage() {
           <div className="grid gap-2">
             <LinkRow to="/help" icon={<LifeBuoy size={18} />}>
               Guide
+            </LinkRow>
+            <LinkRow to="/concepts" icon={<Lightbulb size={18} />}>
+              Concepts
             </LinkRow>
             <LinkRow to="/references" icon={<BookMarked size={18} />}>
               References

@@ -808,7 +808,7 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "list",
         items: [
-          "Open References from the sidebar. On a phone, use the References button on the library home, or the row in Settings.",
+          "Open References from the sidebar. On a phone, use the References row in Settings.",
           "PharmGuides sits at the top. Search it from here, or jump straight to its guideline index, AntibioticDex, DoseDex, TNKalc or Pharmacy Notes. It opens in a new tab.",
           "Below it is your own list. Choose **Save a reference**, paste an address, give it a title and a note, and say what kind it is: a guideline, a calculator, a chart or an article.",
           "Tie a reference to the courses, folders or lectures it belongs with. It then shows on those pages, under References, with Add a reference here beside it.",

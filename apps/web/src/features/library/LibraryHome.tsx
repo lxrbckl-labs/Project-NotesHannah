@@ -1,26 +1,22 @@
 import type { NodeWithLinks } from "@notes/schema";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  BookMarked,
   CalendarPlus,
   CalendarRange,
   ChevronDown,
   ChevronsDownUp,
   ChevronsUpDown,
   History,
-  Lightbulb,
   Star,
   Trash2,
   Upload,
 } from "lucide-react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { useBadges } from "../../app/badges";
 import { PillCluster } from "../../components/art/pills";
 import { Page, SectionTitle } from "../../components/Page";
 import { ActionBar, ActionButton, ActionDivider, ActionLink } from "../../components/ui/action-bar";
-import { Badge } from "../../components/ui/badge";
-import { Button, buttonClass } from "../../components/ui/button";
+import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { UpcomingExamsCard } from "../exams";
@@ -117,7 +113,6 @@ export function LibraryHome() {
   const pick = useUploadPicker();
   const tree = useTreeState();
   const [busy, setBusy] = useState(false);
-  const badges = useBadges();
 
   const { seed } = tree;
   useEffect(() => {
@@ -162,12 +157,12 @@ export function LibraryHome() {
         />
       </FoldSection>
 
-      {/* Favorites, then Concepts and References, sit right under Recently Opened (Alex, 2026-11-21). */}
+      {/* Favorites sits right under Recently Opened (Alex, 2026-11-21). Concepts and References live in the sidebar, and in Settings on a phone (2026-11-22). */}
       <FoldSection
         id="favourites"
         title="Favorites"
         hotkey="library.foldFavorites"
-        className="mb-1"
+        className="mb-10"
       >
         <ItemStrip
           query={favourites}
@@ -175,22 +170,6 @@ export function LibraryHome() {
           icon={<Star size={18} />}
         />
       </FoldSection>
-
-      <div className="mb-10 flex flex-wrap gap-2">
-        <Link to="/concepts" data-testid="home-concepts-link" className={buttonClass()}>
-          <Lightbulb size={16} aria-hidden /> Concepts
-          {badges.review > 0 ? (
-            <Badge tone="warning" size="sm">
-              {badges.review} to review
-            </Badge>
-          ) : null}
-          <Kbd hotkey="go.concepts" />
-        </Link>
-        <Link to="/references" data-testid="home-references-link" className={buttonClass()}>
-          <BookMarked size={16} aria-hidden /> References
-          <Kbd hotkey="go.references" />
-        </Link>
-      </div>
 
       <section aria-labelledby="tree-title" className="mb-10">
         <SectionTitle
