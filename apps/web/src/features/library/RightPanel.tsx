@@ -31,7 +31,7 @@ export function RightPanel({
       {/* The same height, padding and line as the header beside it. */}
       <div className="flex items-center gap-2 border-b border-border p-2">
         {onCollapse ? (
-          <IconButton aria-label="Hide details panel" onClick={onCollapse}>
+          <IconButton aria-label="Hide details panel" hotkey="app.details" onClick={onCollapse}>
             <PanelRightClose size={20} />
           </IconButton>
         ) : null}

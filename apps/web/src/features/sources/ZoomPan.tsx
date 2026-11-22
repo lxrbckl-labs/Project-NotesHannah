@@ -1,6 +1,7 @@
 import { Expand, Minimize, Minus, Plus, Scan } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../../components/ui/button";
+import { useHotkey } from "../hotkeys";
 
 const MIN = 1;
 const MAX = 6;
@@ -30,6 +31,11 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [full]);
+  // Its keys (features/hotkeys/registry.ts, "Source file"). Escape, above, stays its own.
+  useHotkey("source.zoomIn", () => zoomTo(view.scale * 1.4));
+  useHotkey("source.zoomOut", () => zoomTo(view.scale / 1.4));
+  useHotkey("source.fit", () => setView({ scale: 1, x: 0, y: 0 }));
+  useHotkey("source.fullScreen", () => setFull((v) => !v));
   // Entering or leaving changes the picture's size: start again from the whole page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the mode changes
   useEffect(() => setView({ scale: 1, x: 0, y: 0 }), [full]);
@@ -156,6 +162,7 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
       >
         <IconButton
           aria-label="Zoom out"
+          hotkey="source.zoomOut"
           onClick={() => zoomTo(view.scale / 1.4)}
           disabled={view.scale <= MIN}
         >
@@ -169,16 +176,22 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
         </span>
         <IconButton
           aria-label="Zoom in"
+          hotkey="source.zoomIn"
           onClick={() => zoomTo(view.scale * 1.4)}
           disabled={view.scale >= MAX}
         >
           <Plus size={18} />
         </IconButton>
-        <IconButton aria-label="Fit page" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
+        <IconButton
+          aria-label="Fit page"
+          hotkey="source.fit"
+          onClick={() => setView({ scale: 1, x: 0, y: 0 })}
+        >
           <Scan size={18} />
         </IconButton>
         <IconButton
           aria-label={full ? "Leave full screen" : "Full screen"}
+          hotkey="source.fullScreen"
           data-testid="zoom-full"
           pressed={full}
           onClick={() => setFull((v) => !v)}

@@ -6,6 +6,7 @@ import { ConfirmDialog } from "../../../components/ui/dialog";
 import { Notice } from "../../../components/ui/notice";
 import { ProgressBar } from "../../../components/ui/progress";
 import { LiveRegion, Spinner } from "../../../components/ui/states";
+import { useHotkey } from "../../hotkeys";
 import { AnswerFor, type Draft, isReady, SELF_SUBMITTING, toAnswer } from "../answers";
 import { useActiveTimer, useVisibleHeight } from "../lib/hooks";
 import type {
@@ -240,6 +241,11 @@ export function Player({
     return () => window.removeEventListener("keydown", onKey);
   }, [current, next, paused, phase, submit]);
 
+  // Skip by key (features/hotkeys/registry.ts, "Practice"), while the Skip button is there.
+  useHotkey("practice.skip", () => void skip(), {
+    enabled: phase === "answering" && !paused && !!session && !session.onlySkippedLeft,
+  });
+
   if (!session && error) {
     return (
       <Shell rootRef={rootRef}>
@@ -433,6 +439,7 @@ export function Player({
                   variant="secondary"
                   className={SIZE}
                   data-testid="skip"
+                  hotkey="practice.skip"
                   disabled={busy}
                   onClick={() => void skip()}
                 >

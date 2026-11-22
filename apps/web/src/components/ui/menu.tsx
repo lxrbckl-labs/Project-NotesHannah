@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { ContextMenu, DropdownMenu } from "radix-ui";
 import type { ReactNode } from "react";
+import { useHotkeyHint, useHotkeysShown } from "../../features/hotkeys/HotkeyProvider";
 import { cn } from "../../lib/cn";
 
 export type MenuEntry =
@@ -11,7 +12,10 @@ export type MenuEntry =
       onSelect: () => void;
       danger?: boolean;
       disabled?: boolean;
+      /** A key written out ("F2"). Prefer `hotkey`. Shown only while her shortcut badges are on. */
       shortcut?: string;
+      /** A hotkey id from the registry: its key is shown while it works here and badges are on. */
+      hotkey?: string;
     }
   | { type: "separator" }
   /** A non-interactive heading, e.g. the full name of the item the menu is for. */
@@ -100,10 +104,22 @@ function Entries({ entries, parts }: { entries: MenuEntry[]; parts: Parts }) {
           {entry.icon}
         </span>
         <span className="flex-1">{entry.label}</span>
-        {entry.shortcut ? <kbd className="text-xs text-text-muted">{entry.shortcut}</kbd> : null}
+        <ItemShortcut hotkey={entry.hotkey} shortcut={entry.shortcut} />
       </Item>
     ),
   );
+}
+
+/** The key at the end of a menu row: a hotkey's, or a written-out one; nothing while badges are off. */
+function ItemShortcut({ hotkey, shortcut }: { hotkey?: string | undefined; shortcut?: string }) {
+  const hint = useHotkeyHint(hotkey);
+  const shown = useHotkeysShown();
+  const text = hint ?? (shown ? shortcut : undefined);
+  return text ? (
+    <span aria-hidden="true" className="text-xs text-text-muted">
+      {text}
+    </span>
+  ) : null;
 }
 
 /** A "..." style menu opened from a button. */

@@ -309,7 +309,7 @@ function FileLeaf({ file, depth, hue }: { file: SourceFile; depth: number; hue: 
       type: "item",
       label: "Rename",
       icon: <Pencil size={16} />,
-      shortcut: "F2",
+      hotkey: "tree.rename",
       onSelect: () => setRenaming(true),
     },
     { type: "separator" },
@@ -318,7 +318,7 @@ function FileLeaf({ file, depth, hue }: { file: SourceFile; depth: number; hue: 
       label: "Move to trash",
       icon: <Trash2 size={16} />,
       danger: true,
-      shortcut: "Del",
+      hotkey: "tree.trash",
       onSelect: () => void actions.trash(file),
     },
   ];

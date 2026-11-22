@@ -309,7 +309,7 @@ Checked against every route in `apps/server/src/domains/*/routes.ts` on 2026-11-
 | Leave, edit, cancel, reopen a request | `POST /api/requests`, `PATCH`, `/cancel`, `/reopen` | none | excluded: requests are hers to agents (the domain refuses agents) |
 | Saved instructions: read | `GET /api/me/preferences` `instructions` | `requests` instructions | **added 2026-11-22** |
 | Saved instructions: add, edit, delete | `PATCH /api/me/preferences` `instructions` | none | excluded for now: they are her rules for agents, so an agent rewriting them would be writing its own rules; the route takes her session only; left for Alex |
-| Tab order, guided tour seen | `PATCH /api/me/preferences` `tabOrder`, `tourSeen` | none | excluded: presentational |
+| Tab order, guided tour seen, shortcut badges | `PATCH /api/me/preferences` `tabOrder`, `tourSeen`, `shortcutBadges` | none | excluded: presentational |
 | Background picture | `GET`, `PUT`, `DELETE /api/me/background` | none | excluded: presentational, and a binary upload |
 | Folded sections, sidebar widths, panel heights and folds, Read or Edit, practice focus aids | (browser storage, no route) | none | excluded: per device |
 | Sign in and out, password, API keys, who am I | `/api/auth/...`, `/api/me`, `/api/me/password`, `/api/keys` | none | excluded: credentials and account security; `start_here` gives her name and the key's scope |

@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import { MOD_KEY } from "../../app/AppShell";
 import { ThemeSwitch } from "../../app/ThemeSwitch";
 import { Page } from "../../components/Page";
 import { Card, CardTitle } from "../../components/ui/card";
@@ -21,6 +20,7 @@ import { ChangePassword, SignOutControls } from "./Account";
 import { ApiKeys } from "./ApiKeys";
 import { BackgroundCard } from "./BackgroundCard";
 import { InstructionsCard } from "./InstructionsCard";
+import { KeyboardCard } from "./KeyboardCard";
 import { TabBarCard } from "./TabBarCard";
 
 function SettingsCard({
@@ -119,28 +119,9 @@ export function SettingsPage() {
           </div>
         </SettingsCard>
 
-        <div className="hidden xl:block">
-          <SettingsCard title="Keyboard shortcuts">
-            <dl className="grid max-w-md grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-ui">
-              {[
-                [`${MOD_KEY}K`, "Quick find"],
-                ["/", "Quick find"],
-                [`${MOD_KEY}\\`, "Show or hide the sidebar"],
-                ["F2", "Rename the focused item"],
-                ["Delete", "Move the focused item to the trash"],
-                ["Arrow keys", "Move through the sidebar tree"],
-              ].map(([keys, what]) => (
-                <div key={`${keys}-${what}`} className="contents">
-                  <dt>{what}</dt>
-                  <dd>
-                    <kbd className="rounded-inline border border-border bg-bg px-1.5 py-0.5 text-caption">
-                      {keys}
-                    </kbd>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </SettingsCard>
+        {/* Keys need a keyboard: shown from the tablet layout up, where the shortcuts work. */}
+        <div className="hidden md:block">
+          <KeyboardCard />
         </div>
       </div>
       {/* On a phone there is no sidebar, so the note for Hannah sits here, at the bottom right. */}

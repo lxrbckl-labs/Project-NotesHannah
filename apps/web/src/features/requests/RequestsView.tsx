@@ -8,6 +8,7 @@ import { PageHeader } from "../../components/ui/page-header";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { describeError } from "../../lib/api";
 import { REQUEST_STATUS_HUE } from "../../lib/roles";
+import { Kbd, useHotkey, useHotkeyAria } from "../hotkeys";
 import {
   baselineSeen,
   FILTER_LABEL,
@@ -25,6 +26,42 @@ import { CancelDialog, EditRequestDialog, ReopenDialog } from "./ui/dialogs";
 import { useRequests } from "./ui/hooks";
 
 const FILTERS: Filter[] = ["all", ...STATUS_ORDER];
+
+/** One status filter, with its number key (features/hotkeys/registry.ts, "Requests"). */
+function FilterChip({
+  filter,
+  count,
+  pressed,
+  onPick,
+}: {
+  filter: Filter;
+  count: number | null;
+  pressed: boolean;
+  onPick: () => void;
+}) {
+  const hotkey = `requests.filter.${filter}`;
+  useHotkey(hotkey, onPick);
+  const keys = useHotkeyAria(hotkey);
+  return (
+    <Chip
+      hue={filter === "all" ? undefined : REQUEST_STATUS_HUE[filter]}
+      pressed={pressed}
+      data-testid={`filter-${filter}`}
+      aria-keyshortcuts={keys}
+      onClick={onPick}
+      className="shrink-0 xl:w-full xl:justify-between"
+    >
+      <span>{filter === "all" ? "All" : FILTER_LABEL[filter]}</span>
+      {count !== null ? (
+        <>
+          {" "}
+          <span className="ml-1 tabular-nums opacity-80">{count}</span>
+        </>
+      ) : null}
+      <Kbd hotkey={hotkey} className="ml-1.5" />
+    </Chip>
+  );
+}
 
 /** Her requests, newest first, with filters by status and the actions she may take. */
 export function RequestsView({
@@ -60,6 +97,7 @@ function Screen() {
   const [editing, setEditing] = useState<StudyRequestWithContext | null>(null);
   const [cancelling, setCancelling] = useState<StudyRequestWithContext | null>(null);
   const [reopening, setReopening] = useState<StudyRequestWithContext | null>(null);
+  useHotkey("requests.new", () => setComposing(true));
 
   // What she has looked at is kept after the list is on screen, so "new" shows once per answer.
   const [unreadNow, setUnreadNow] = useState<Set<string>>(new Set());
@@ -119,7 +157,12 @@ function Screen() {
         description="Notes you leave for an agent: fix this, explain that, make questions."
         className="mb-4"
         actions={
-          <Button variant="primary" data-testid="new-request" onClick={() => setComposing(true)}>
+          <Button
+            variant="primary"
+            data-testid="new-request"
+            hotkey="requests.new"
+            onClick={() => setComposing(true)}
+          >
             <MessageCirclePlus size={17} aria-hidden /> New request
           </Button>
         }
@@ -145,22 +188,13 @@ function Screen() {
           {FILTERS.map((f) => {
             const n = countFor(f);
             return (
-              <Chip
+              <FilterChip
                 key={f}
-                hue={f === "all" ? undefined : REQUEST_STATUS_HUE[f]}
+                filter={f}
+                count={n}
                 pressed={filter === f}
-                data-testid={`filter-${f}`}
-                onClick={() => setFilter(f)}
-                className="shrink-0 xl:w-full xl:justify-between"
-              >
-                <span>{f === "all" ? "All" : FILTER_LABEL[f]}</span>
-                {n !== null ? (
-                  <>
-                    {" "}
-                    <span className="ml-1 tabular-nums opacity-80">{n}</span>
-                  </>
-                ) : null}
-              </Chip>
+                onPick={() => setFilter(f)}
+              />
             );
           })}
         </nav>

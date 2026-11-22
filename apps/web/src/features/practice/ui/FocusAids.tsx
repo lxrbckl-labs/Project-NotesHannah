@@ -4,6 +4,7 @@ import { Button, IconButton } from "../../../components/ui/button";
 import { Popover } from "../../../components/ui/popover";
 import { SegmentedControl } from "../../../components/ui/segmented";
 import { Switch } from "../../../components/ui/switch";
+import { useHotkey } from "../../hotkeys";
 
 /**
  * Focus aids for answering questions: things she can switch on to make a question easier to read and
@@ -107,14 +108,20 @@ export function FocusAidsButton({
   className?: string;
 }) {
   const on = aids.text !== "normal" || aids.spacing || aids.calm || aids.ruler;
+  // Opened by its key too (features/hotkeys/registry.ts, "Practice"); Escape closes it as before.
+  const [open, setOpen] = useState(false);
+  useHotkey("practice.focusAids", () => setOpen(true));
   return (
     <Popover
       label="Focus aids"
       title="Focus aids"
       align="end"
+      open={open}
+      onOpenChange={setOpen}
       trigger={
         <IconButton
           label="Focus aids"
+          hotkey="practice.focusAids"
           data-testid="focus-aids"
           pressed={on}
           {...(className ? { className } : {})}

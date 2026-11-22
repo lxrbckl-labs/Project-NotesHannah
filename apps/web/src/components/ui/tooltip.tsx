@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import { useHotkeyHint } from "../../features/hotkeys/HotkeyProvider";
 import WarmTooltip, { WarmTooltipGroup } from "../bits/WarmTooltip";
 
 /**
@@ -15,7 +16,8 @@ export function Tooltip({
   side = "top",
   children,
   delay,
-  shortcut,
+  shortcut: given,
+  hotkey,
 }: {
   content: ReactNode;
   side?: "top" | "bottom" | "left" | "right";
@@ -24,7 +26,14 @@ export function Tooltip({
   delay?: number;
   /** A keyboard shortcut shown beside the words, e.g. "⌘K". */
   shortcut?: ReactNode;
+  /**
+   * A hotkey id from the registry (features/hotkeys/registry.ts): its key is shown beside the words
+   * while badges are on, on the computer layout, and only where the key works.
+   */
+  hotkey?: string | undefined;
 }) {
+  const hint = useHotkeyHint(hotkey);
+  const shortcut = given ?? hint;
   return (
     <WarmTooltip
       content={content}
@@ -50,5 +59,30 @@ export function TooltipGroup({ children }: { children: ReactNode }) {
     <WarmTooltipGroup delay={450} warmWindow={400}>
       {children}
     </WarmTooltipGroup>
+  );
+}
+
+/**
+ * A hint that exists only to show a hotkey: for a control that already shows its words (Read, Edit),
+ * where an inline badge would crowd a tight bar. With no key to show (badges off, not on a computer, or
+ * the key does nothing here) it is just the control.
+ */
+export function HotkeyTooltip({
+  hotkey,
+  content,
+  side,
+  children,
+}: {
+  hotkey: string;
+  content: ReactNode;
+  side?: "top" | "bottom" | "left" | "right";
+  children: ReactNode;
+}) {
+  const hint = useHotkeyHint(hotkey);
+  if (!hint) return children;
+  return (
+    <Tooltip content={content} side={side} shortcut={hint}>
+      {children}
+    </Tooltip>
   );
 }

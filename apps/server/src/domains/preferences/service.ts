@@ -11,6 +11,7 @@ interface StoredPreferences {
   tabOrder?: unknown;
   instructions?: unknown;
   tourSeen?: unknown;
+  shortcutBadges?: unknown;
 }
 
 function readStored(db: Db, userId: string): StoredPreferences {
@@ -33,6 +34,8 @@ export function getPreferences(db: Db, userId: string): Preferences {
     tabOrder: resolveTabOrder(Array.isArray(stored.tabOrder) ? stored.tabOrder : null),
     instructions: resolveInstructions(stored.instructions),
     tourSeen: stored.tourSeen === true,
+    // On unless she turned them off: only `false` is ever stored.
+    shortcutBadges: stored.shortcutBadges !== false,
   };
 }
 
@@ -53,6 +56,11 @@ export function updatePreferences(
   if (patch.tourSeen !== undefined) {
     if (patch.tourSeen) doc.tourSeen = true;
     else delete doc.tourSeen;
+  }
+  if (patch.shortcutBadges !== undefined) {
+    // The default (on) is never stored, so only "off" is kept.
+    if (patch.shortcutBadges) delete doc.shortcutBadges;
+    else doc.shortcutBadges = false;
   }
   if (patch.instructions !== undefined) {
     // An empty list is "none saved": forget the field rather than keep an empty array.

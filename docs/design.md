@@ -851,3 +851,26 @@ Not part of the four migrations, but worth doing when someone is nearby:
   item pages, the tree, search results, the right panel and the trash. Only the item pickers draw
   plain uncoloured icons.
 
+## Keyboard shortcuts (2026-11-22)
+
+- **No app-level key outside the registry.** Every key that runs an app action is an entry in
+  `apps/web/src/features/hotkeys/registry.ts` and is wired with `useHotkey(id, handler)` by the
+  screen that owns the action. Never add a window keydown listener for an app action. The keys a
+  screen already read itself before the registry (the document editor, the canvas, the practice
+  player, the library tree, the viewer's Escape) stay where they are; a new key on those screens goes
+  through the registry, and anything those screens list is marked `selfHandled` there.
+- **Choosing keys.** Plain letters for a screen's actions, `G` then a letter for going places,
+  Shift and a letter where the plain letter is taken. Never a combination the browser or the system
+  owns (Command or Ctrl with T, W, N, R, L, Q, P, F, S, H, M or a digit or an arrow; function keys;
+  Alt with left or right). A key that works everywhere must leave the canvas's letters (V, H, N, C,
+  F) and the practice player's (A to F, digits) alone. `registry.test.ts` checks all of this.
+- **The badge.** `Kbd` from `features/hotkeys` is the quick-find bar's key: `rounded-inline border
+  border-border bg-surface px-1.5 text-caption`, quiet text, at the trailing edge of a labeled
+  button, link or heading. It is `aria-hidden`; the control carries `aria-keyshortcuts` (the
+  `hotkey` prop on `Button`, `IconButton`, `ActionButton` and `ActionLink` does both). It never
+  changes a control's height and never makes a bar wrap at 1280px: in a tight bar (action bars,
+  the document toolbar, the viewer's zoom bar) the key goes in the tooltip (`hotkey` on `Tooltip`,
+  or `HotkeyTooltip` for a control with words), and in menus it goes in the row's `hotkey`.
+- **When it shows.** Only on the computer layout, only while she has badges on (Settings,
+  "Keyboard shortcuts"), and only where the key works on the current screen.
+

@@ -1,4 +1,6 @@
 import type { ButtonHTMLAttributes, Ref } from "react";
+import { useHotkeyAria } from "../../features/hotkeys/HotkeyProvider";
+import { Kbd } from "../../features/hotkeys/Kbd";
 import { cn } from "../../lib/cn";
 import { Tooltip } from "./tooltip";
 
@@ -40,6 +42,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   ref?: Ref<HTMLButtonElement>;
+  /**
+   * A hotkey id (features/hotkeys/registry.ts): its key shows as a quiet badge at the trailing edge
+   * (hidden from screen readers, so the name stays the same) and goes in `aria-keyshortcuts`.
+   */
+  hotkey?: string | undefined;
 }
 
 const BASE =
@@ -64,9 +71,23 @@ export function Button({
   size = "md",
   className,
   type = "button",
+  hotkey,
+  children,
+  "aria-keyshortcuts": ariaGiven,
   ...props
 }: ButtonProps) {
-  return <button type={type} className={buttonClass({ variant, size, className })} {...props} />;
+  const aria = useHotkeyAria(hotkey);
+  return (
+    <button
+      type={type}
+      className={buttonClass({ variant, size, className })}
+      aria-keyshortcuts={ariaGiven ?? aria}
+      {...props}
+    >
+      {children}
+      {hotkey ? <Kbd hotkey={hotkey} /> : null}
+    </button>
+  );
 }
 
 /**
@@ -110,6 +131,8 @@ export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
    * something around the button already shows a hint.
    */
   tooltip?: boolean | "top" | "bottom" | "left" | "right";
+  /** A hotkey id: its key is shown in the tooltip and goes in `aria-keyshortcuts`. */
+  hotkey?: string | undefined;
 } & ({ "aria-label": string; label?: undefined } | { label: string; "aria-label"?: undefined });
 
 /** An icon-only button. It always has a name: pass label (or aria-label). */
@@ -121,14 +144,17 @@ export function IconButton({
   label,
   type = "button",
   tooltip = true,
+  hotkey,
   ...props
 }: IconButtonProps) {
   const name = label ?? props["aria-label"];
+  const aria = useHotkeyAria(hotkey);
   const button = (
     <button
       type={type}
       aria-label={label ?? props["aria-label"]}
       aria-pressed={pressed}
+      aria-keyshortcuts={aria}
       className={cn(
         "inline-flex size-11 shrink-0 items-center justify-center rounded-control transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-50",
         size === "sm" ? "xl:size-8" : "xl:size-9",
@@ -141,7 +167,7 @@ export function IconButton({
   );
   if (tooltip === false || !name) return button;
   return (
-    <Tooltip content={name} side={tooltip === true ? "top" : tooltip}>
+    <Tooltip content={name} side={tooltip === true ? "top" : tooltip} hotkey={hotkey}>
       {button}
     </Tooltip>
   );

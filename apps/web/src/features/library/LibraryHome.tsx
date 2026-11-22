@@ -24,6 +24,7 @@ import { Button, buttonClass } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { UpcomingExamsCard } from "../exams";
+import { Kbd, useHotkey, useHotkeyAria } from "../hotkeys";
 import { useStores } from "../mounts/services";
 import { PageFileDrop } from "../uploads/PageFileDrop";
 import { useUploadPicker } from "../uploads/UploadProvider";
@@ -133,6 +134,8 @@ export function LibraryHome() {
       setBusy(false);
     }
   }
+  useHotkey("library.expandAll", () => void expandAll(), { enabled: !busy });
+  useHotkey("library.collapseAll", () => tree.collapseAll());
 
   return (
     <Page>
@@ -146,7 +149,12 @@ export function LibraryHome() {
         <PillCluster className="-mb-1" />
       </div>
 
-      <FoldSection id="recents" title="Recently Opened" className="mb-4">
+      <FoldSection
+        id="recents"
+        title="Recently Opened"
+        hotkey="library.foldRecents"
+        className="mb-4"
+      >
         <ItemStrip
           query={recents}
           empty="Things you open show up here."
@@ -155,7 +163,12 @@ export function LibraryHome() {
       </FoldSection>
 
       {/* Favorites, then Concepts and References, sit right under Recently Opened (Alex, 2026-11-21). */}
-      <FoldSection id="favourites" title="Favorites" className="mb-1">
+      <FoldSection
+        id="favourites"
+        title="Favorites"
+        hotkey="library.foldFavorites"
+        className="mb-1"
+      >
         <ItemStrip
           query={favourites}
           empty="Star a course or lecture and it will wait for you here."
@@ -171,9 +184,11 @@ export function LibraryHome() {
               {badges.review} to review
             </Badge>
           ) : null}
+          <Kbd hotkey="go.concepts" />
         </Link>
         <Link to="/references" data-testid="home-references-link" className={buttonClass()}>
           <BookMarked size={16} aria-hidden /> References
+          <Kbd hotkey="go.references" />
         </Link>
       </div>
 
@@ -184,27 +199,36 @@ export function LibraryHome() {
               <ActionButton
                 icon={<ChevronsUpDown aria-hidden />}
                 label="Expand all"
+                hotkey="library.expandAll"
                 onClick={expandAll}
                 disabled={busy}
               />
               <ActionButton
                 icon={<ChevronsDownUp aria-hidden />}
                 label="Collapse all"
+                hotkey="library.collapseAll"
                 onClick={() => tree.collapseAll()}
               />
               <ActionDivider />
               <ActionButton
                 icon={<Upload aria-hidden />}
                 label="Upload files"
+                hotkey="app.upload"
                 onClick={() => pick({ nodeId: null, label: "the inbox" })}
               />
               <ActionButton
                 icon={<CalendarPlus aria-hidden />}
                 label="New term"
+                hotkey="library.newTerm"
                 onClick={() => dialogs.openCreate(null, "term")}
               />
               <ActionDivider />
-              <ActionLink to="/trash" icon={<Trash2 aria-hidden />} label="Trash" />
+              <ActionLink
+                to="/trash"
+                icon={<Trash2 aria-hidden />}
+                label="Trash"
+                hotkey="go.trash"
+              />
             </ActionBar>
           }
         >
@@ -222,7 +246,11 @@ export function LibraryHome() {
               icon={<CalendarRange size={26} />}
               title="Start with a term"
               action={
-                <Button variant="primary" onClick={() => dialogs.openCreate(null, "term")}>
+                <Button
+                  variant="primary"
+                  hotkey="library.newTerm"
+                  onClick={() => dialogs.openCreate(null, "term")}
+                >
                   New term
                 </Button>
               }
@@ -257,11 +285,14 @@ function readFolded(): Record<string, boolean> {
 function FoldSection({
   id,
   title,
+  hotkey,
   className,
   children,
 }: {
   id: string;
   title: string;
+  /** Its fold key (features/hotkeys/registry.ts), shown at the end of the heading. */
+  hotkey: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -275,6 +306,8 @@ function FoldSection({
       // Private window: the section still folds, it just is not remembered.
     }
   }
+  useHotkey(hotkey, toggle);
+  const keys = useHotkeyAria(hotkey);
   return (
     <section aria-labelledby={`${id}-title`} className={className} data-testid={`fold-${id}`}>
       <h2 className="mb-2 text-base font-semibold text-text">
@@ -283,6 +316,7 @@ function FoldSection({
           id={`${id}-title`}
           aria-expanded={open}
           aria-controls={`${id}-body`}
+          aria-keyshortcuts={keys}
           onClick={toggle}
           className="-ml-1 flex items-center gap-1.5 rounded-control py-1 pl-1 pr-2 hover:bg-surface-muted"
         >
@@ -292,6 +326,7 @@ function FoldSection({
             className={`shrink-0 text-text-muted transition-transform duration-200 motion-reduce:transition-none ${open ? "" : "-rotate-90"}`}
           />
           {title}
+          <Kbd hotkey={hotkey} className="ml-1.5" />
         </button>
       </h2>
       <div

@@ -202,3 +202,24 @@ describe("the tour flag", () => {
     expect((await get(hannah)).tourSeen).toBe(false);
   });
 });
+
+describe("the shortcut badges switch", () => {
+  test("on for a new account, off once turned off, hers alone, and back on", async () => {
+    const { get, patch, hannah, bea } = await setup();
+    expect((await get(hannah)).shortcutBadges).toBe(true);
+    expect((await patch(hannah, { shortcutBadges: false })).status).toBe(200);
+    expect((await get(hannah)).shortcutBadges).toBe(false);
+    expect((await get(bea)).shortcutBadges).toBe(true);
+    // Turning it off leaves her other preferences alone.
+    expect((await get(hannah)).tourSeen).toBe(false);
+    await patch(hannah, { shortcutBadges: true });
+    expect((await get(hannah)).shortcutBadges).toBe(true);
+  });
+
+  test("refuses a value that is not true or false", async () => {
+    const { patch, hannah } = await setup();
+    const res = await patch(hannah, { shortcutBadges: "off" });
+    expect(res.status).toBe(400);
+    expect(errorCode(res.body)).toBe("invalid_input");
+  });
+});

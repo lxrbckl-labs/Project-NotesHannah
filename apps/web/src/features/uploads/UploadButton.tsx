@@ -14,6 +14,7 @@ export function UploadButton({
   variant = "secondary",
   className,
   label = "Upload files",
+  hotkey,
 }: {
   nodeId: string | null;
   /** Where the files are going, in words, for the progress list. */
@@ -23,6 +24,8 @@ export function UploadButton({
   className?: string;
   /** The accessible name, for when the text is hidden on small screens. */
   label?: string;
+  /** The hotkey that uploads to the same place (its badge shows inside). */
+  hotkey?: string;
 }) {
   const pick = useUploadPicker();
   return (
@@ -30,6 +33,7 @@ export function UploadButton({
       variant={variant}
       className={className}
       aria-label={label}
+      hotkey={hotkey}
       onClick={() => pick({ nodeId, label: target })}
     >
       <Upload size={16} aria-hidden />

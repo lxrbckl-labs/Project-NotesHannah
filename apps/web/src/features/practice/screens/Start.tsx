@@ -1,5 +1,5 @@
 import { CalendarCheck, NotebookPen } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { HeaderArt } from "../../../components/art/pills";
 import { Chip } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -8,6 +8,7 @@ import { Notice } from "../../../components/ui/notice";
 import { PageHeader } from "../../../components/ui/page-header";
 import { StatTile } from "../../../components/ui/stat";
 import { Spinner } from "../../../components/ui/states";
+import { useHotkey } from "../../hotkeys";
 import { useAsync } from "../lib/hooks";
 import type {
   PracticeOverview,
@@ -88,6 +89,11 @@ export function Start({
   const total = scope ? [...chosen].reduce((n, t) => n + scope.counts[t], 0) : 0;
   const lengthOptions = LENGTHS.filter((n) => n < total);
   const effective = length === "all" || length >= total ? total : length;
+  // "Start" by key (features/hotkeys/registry.ts); `start` is made below, once the overview is in.
+  const startNow = useRef<() => void>(() => {});
+  useHotkey("practice.start", () => startNow.current(), {
+    enabled: !!data && !starting && effective > 0,
+  });
 
   if (loading && !data) return <Spinner label="Getting things ready" />;
   if (error && !data)
@@ -132,6 +138,7 @@ export function Start({
       setStarting(false);
     }
   };
+  startNow.current = () => void start();
 
   return (
     <div className="space-y-8" data-testid="start">
@@ -298,6 +305,7 @@ export function Start({
             variant="primary"
             className="ml-auto min-w-48 flex-1 sm:flex-none"
             data-testid="start-session"
+            hotkey="practice.start"
             disabled={starting || effective === 0}
             onClick={start}
           >

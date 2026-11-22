@@ -360,3 +360,43 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
   never starts by itself under browser automation (`navigator.webdriver`), so the test suites are
   not covered by it.
 
+## T. Keyboard shortcuts (2026-11-22, local until Alex says to commit)
+
+- **One registry.** `apps/web/src/features/hotkeys/registry.ts` lists every app-level key as data
+  (id, keys, label, group, where it works). The "?" overlay, the guide's Keyboard shortcuts
+  section, the PDF, the badges and the listener all read it, so they cannot drift. Keys are chords
+  (`mod+k`, `shift+t`, `alt+o`, `?`) or two-key pairs (`g l`).
+- **One listener.** `HotkeyProvider` (in `AppShell`) adds one window keydown listener. A screen
+  gives a key its action with `useHotkey(id, handler, { enabled })` while it is mounted, so a key
+  works only where its button is; when two screens register the same id (the app's "Ask an agent"
+  and a library page's), the later one wins until it leaves. Single keys and pairs never fire while
+  she types (inputs, textareas, selects, editable blocks) or while a dialog or menu is open;
+  Command/Ctrl combinations do. Pairs wait 1.2 seconds for the second key. Off on the phone layout.
+  A handled key stops later window listeners, so the canvas and the practice player do not act on
+  it too.
+- **What has keys.** Go to (G then a letter: Library, Practice, Calendar, Search, Inbox, Settings,
+  Requests, Concepts, References, Activity, Guide, Trash, back); App (quick find, sidebar, details
+  panel, ask an agent, upload, "?", the tour, new term); Library pages (new course, folder, lecture,
+  document, favorite, rename, move, open the page, practice this) and the library home (expand and
+  collapse all, fold Recently Opened and Favorites); Document (Read or Edit, resources, side notes,
+  version history); Source file (pages, zoom, fit, full screen, download); Practice (start, skip,
+  focus aids); Calendar (months, today); Requests (new, the six filters); References (save one).
+- **Keys the screens read themselves.** The editor's keys (`Alt+O`, `⌘⌥M`, `Alt+↓`,
+  `⌘⇧Enter`), the practice player's (answers by number or letter, Enter, Escape, Space, 1 to 4 on a
+  flashcard), the tree's (arrows, F2, Delete) and the viewer's Escape are listed in the registry as
+  `selfHandled`, so the overlay and guide show them; their code is unchanged. The editor's text keys
+  stay on its own Keyboard card.
+- **No key** for anything destructive or hard to undo: move to trash from a page, delete forever,
+  empty the trash, sign out, discard or leave a practice session, cancel a request, delete a side
+  note or a reference.
+- **Badges.** `<Kbd hotkey="id" />` draws the quick-find bar's key badge at the trailing edge of a
+  labeled button, a sidebar link or a section heading; it is `aria-hidden`, and the control gets
+  `aria-keyshortcuts`. Icon-only buttons and action-bar buttons show the key in their tooltip; menu
+  rows show it at the end. Nothing shows off the computer layout, for a key that does nothing on
+  the screen, or when she turns badges off.
+- **The setting.** Settings, "Keyboard shortcuts": "Show keyboard shortcut badges" (preference
+  `shortcutBadges`, default on; only "off" is stored) and "Show all shortcuts". The keys work either
+  way.
+- **The guide.** A "Keyboard shortcuts" section (part four) is written from the registry, one table
+  per group; the quick reference's computer keys come from it too.
+

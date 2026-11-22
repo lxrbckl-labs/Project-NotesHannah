@@ -22,6 +22,7 @@ import { inputClass } from "../../components/ui/field";
 import { PageHeader } from "../../components/ui/page-header";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { cn } from "../../lib/cn";
+import { useHotkey } from "../hotkeys";
 import { ExternalLink } from "./ExternalLink";
 import { useReferences } from "./queries";
 import { type FormSubject, ReferenceForm } from "./ReferenceForm";
@@ -30,6 +31,7 @@ import { BUILT_IN_RESOURCES, type BuiltInResource } from "./registry";
 
 export function ReferencesPage() {
   const [form, setForm] = useState<FormSubject | null>(null);
+  useHotkey("references.new", () => setForm({ mode: "new" }));
   return (
     <Page>
       <PageHeader
@@ -38,7 +40,11 @@ export function ReferencesPage() {
         icon={<BookMarked />}
         description="Outside guidelines and tools you rely on, and the pages you saved from them."
         actions={
-          <Button variant="primary" onClick={() => setForm({ mode: "new" })}>
+          <Button
+            variant="primary"
+            hotkey="references.new"
+            onClick={() => setForm({ mode: "new" })}
+          >
             <Plus size={16} aria-hidden />
             Save a reference
           </Button>

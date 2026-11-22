@@ -13,6 +13,7 @@ import { FILE_TYPE_LABELS, formatBytes } from "../../lib/fileTypes";
 import { formatDate } from "../../lib/format";
 import { failureWords, IN_PROGRESS, STATUS_INFO } from "../../lib/messages";
 import { useLayout } from "../../lib/useMedia";
+import { useHotkey, useHotkeyAria } from "../hotkeys";
 import { useFileActions } from "../library/fileActions";
 import { FileStatusBadge, FileTypeIcon } from "../library/LibraryTree";
 import { fileKeys, useNode } from "../library/queries";
@@ -71,6 +72,18 @@ export function SourceViewer({
     if (pageId) setCurrentId(pageId);
   }, [pageId]);
 
+  const list = pages.data ?? [];
+  const page = list.find((p) => p.id === currentId) ?? list[0];
+  const index = page ? list.indexOf(page) : -1;
+  const go = (next: Page | undefined) => {
+    if (!next) return;
+    setCurrentId(next.id);
+    onPageChange?.(next.id);
+  };
+  // Paging keys (features/hotkeys/registry.ts, "Source file"), while there is more than one page.
+  useHotkey("source.prevPage", () => go(list[index - 1]), { enabled: list.length > 1 });
+  useHotkey("source.nextPage", () => go(list[index + 1]), { enabled: list.length > 1 });
+
   if (file.isPending) {
     return (
       <div role="status" aria-label="Loading file" className="grid gap-4">
@@ -81,15 +94,6 @@ export function SourceViewer({
   }
   if (file.isError) return <ErrorState error={file.error} onRetry={() => file.refetch()} />;
   const f = file.data;
-
-  const list = pages.data ?? [];
-  const page = list.find((p) => p.id === currentId) ?? list[0];
-  const index = page ? list.indexOf(page) : -1;
-  const go = (next: Page | undefined) => {
-    if (!next) return;
-    setCurrentId(next.id);
-    onPageChange?.(next.id);
-  };
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4" data-testid="source-viewer">
@@ -120,6 +124,7 @@ export function SourceViewer({
               <div className="flex items-center justify-between gap-2">
                 <Button
                   aria-label="Previous page"
+                  hotkey="source.prevPage"
                   disabled={index <= 0}
                   onClick={() => go(list[index - 1])}
                 >
@@ -135,6 +140,7 @@ export function SourceViewer({
                 </p>
                 <Button
                   aria-label="Next page"
+                  hotkey="source.nextPage"
                   disabled={index >= list.length - 1}
                   onClick={() => go(list[index + 1])}
                 >
@@ -182,6 +188,9 @@ function ViewerHeader({
   lead?: ReactNode;
   actions?: ReactNode;
 }) {
+  const download = useRef<HTMLAnchorElement>(null);
+  useHotkey("source.download", () => download.current?.click());
+  const downloadKeys = useHotkeyAria("source.download");
   return (
     <header className="grid grid-cols-[minmax(0,1fr)] gap-3" data-testid="file-header">
       <div className="flex items-start gap-3">
@@ -238,11 +247,13 @@ function ViewerHeader({
       >
         {actions}
         {actions ? <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" /> : null}
-        <Tooltip content="Download original">
+        <Tooltip content="Download original" hotkey="source.download">
           <a
+            ref={download}
             href={originalUrl(file.id, true)}
             download
             aria-label="Download original"
+            aria-keyshortcuts={downloadKeys}
             className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 xl:h-8 xl:min-h-8 xl:min-w-8 text-ui font-medium text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted sm:px-3"
           >
             <Download size={15} aria-hidden />

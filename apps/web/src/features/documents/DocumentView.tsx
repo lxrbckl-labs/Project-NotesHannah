@@ -38,7 +38,9 @@ import {
 import { Button, IconButton } from "../../components/ui/button";
 import { Sheet } from "../../components/ui/sheet";
 import { useToast } from "../../components/ui/toast";
+import { HotkeyTooltip } from "../../components/ui/tooltip";
 import { cn } from "../../lib/cn";
+import { useHotkey, useHotkeyAria } from "../hotkeys";
 import { BlockShell } from "./blocks/BlockShell";
 import {
   ActionsContext,
@@ -674,6 +676,13 @@ function DocumentScreen({
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // The page's keys in the app's hotkey list (features/hotkeys/registry.ts, "Document"). The keys above
+  // and the editor's own are left as they were; these never fire while she is typing in a block.
+  useHotkey("doc.mode", () => setEditing(!editing));
+  useHotkey("doc.history", () => setHistoryOpen(true));
+  useHotkey("doc.notes", () => togglePanel("notes"), { enabled: layout !== "phone" });
+  useHotkey("doc.resources", () => togglePanel("resources"), { enabled: layout !== "phone" });
+
   // Choosing from the "/" or "+" menu.
   const chooseType = (type: BlockType) => {
     const st = insert;
@@ -1215,6 +1224,7 @@ function TopBar({
   compact: boolean;
   showUndo: boolean;
 }) {
+  const modeKeys = useHotkeyAria("doc.mode");
   return (
     <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-2 border-b border-border bg-surface/85 px-2 pb-1.5 pt-[max(0.375rem,env(safe-area-inset-top))] backdrop-blur md:px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1">
@@ -1271,6 +1281,7 @@ function TopBar({
           variant="bare"
           size="sm"
           label={dock ? "Outline" : "Outline, resources and side notes"}
+          hotkey="doc.outline"
           pressed={outlineOpen}
           onClick={onOutline}
           data-testid="outline-button"
@@ -1283,6 +1294,7 @@ function TopBar({
               variant="bare"
               size="sm"
               label="Side notes"
+              hotkey="doc.notes"
               pressed={notesOpen}
               onClick={onNotes}
               data-testid="notes-button"
@@ -1297,6 +1309,7 @@ function TopBar({
           variant="bare"
           size="sm"
           label="Version history"
+          hotkey="doc.history"
           onClick={onHistory}
           data-testid="history-button"
         >
@@ -1320,16 +1333,20 @@ function TopBar({
             <BookOpen aria-hidden className="size-3.5" />
             <span className={cn(compact && "sr-only")}>Read</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setEditing(!editing)}
-            data-testid="mode-toggle"
-            aria-pressed={editing}
-            className={cn(MODE_ITEM, editing ? MODE_ON : MODE_OFF)}
-          >
-            <Pencil aria-hidden className="size-3.5" />
-            <span className={cn(compact && "sr-only")}>Edit</span>
-          </button>
+          {/* The bar is tight: the key for the two modes shows in a hint, not as a badge. */}
+          <HotkeyTooltip hotkey="doc.mode" content="Switch between Read and Edit">
+            <button
+              type="button"
+              onClick={() => setEditing(!editing)}
+              data-testid="mode-toggle"
+              aria-pressed={editing}
+              aria-keyshortcuts={modeKeys}
+              className={cn(MODE_ITEM, editing ? MODE_ON : MODE_OFF)}
+            >
+              <Pencil aria-hidden className="size-3.5" />
+              <span className={cn(compact && "sr-only")}>Edit</span>
+            </button>
+          </HotkeyTooltip>
         </fieldset>
       </div>
     </div>

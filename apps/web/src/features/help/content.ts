@@ -6,6 +6,7 @@
  * of the app (`pnpm guide:figures`, see tools/guide-figures.mjs); their sizes are in figures.json.
  * Spelling is American throughout (Alex, 2026-11-17): practice, organized, favorites, color.
  */
+import { guideRow, hotkeyGuideBlocks } from "../hotkeys/guide";
 import FIGURE_SIZES from "./figures.json";
 
 export type FigureId = keyof typeof FIGURE_SIZES;
@@ -172,19 +173,26 @@ export const FORMATTING_MARKS: GuideTable = {
   ],
 };
 
+/**
+ * The keys worth keeping on the quick reference card. Written from the hotkey registry
+ * (features/hotkeys/registry.ts), like the full list in the Keyboard shortcuts section.
+ */
 export const COMPUTER_KEYS: GuideTable = {
   kind: "table",
   keys: true,
   head: ["Keys", "What they do (computer)"],
   rows: [
-    ["`⌘K` or `Ctrl+K`", "Quick find"],
-    ["`/`", "Quick find, when you are not typing in a box"],
-    ["`⌘\\` or `Ctrl+\\`", "Show or hide the sidebar"],
-    ["`F2`", "Rename the focused item in the sidebar"],
-    ["`Delete`", "Move the focused item to the trash"],
-    ["`⌘⌥M` or `Ctrl+Alt+M`", "While editing a page: a side note on the block you are in"],
-    ["`Alt+O`", "On a page: show or hide the outline"],
-  ],
+    "app.shortcuts",
+    "app.quickFind",
+    "app.sidebar",
+    "go.library",
+    "app.ask",
+    "tree.rename",
+    "tree.trash",
+    "doc.mode",
+    "doc.sideNote",
+    "doc.outline",
+  ].map(guideRow),
 };
 
 export const SECTIONS: GuideSection[] = [
@@ -892,7 +900,7 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "list",
         items: [
-          "**Quick find** opens from the search bar at the top of a larger screen, or with `Ctrl+K` or `⌘K`. On a computer, `/` does the same. It jumps to courses, lectures, folders and documents by name.",
+          "**Quick find** opens from the search bar at the top of a larger screen, or with `Ctrl+K` or `⌘K`. With a keyboard, `/` does the same, and `G` then `/` opens Search. It jumps to courses, lectures, folders and documents by name.",
           "**Search** (a tab on a phone) searches inside everything: your typed notes, study guides, practice questions, and the transcripts of your slides and handwriting. Each result shows where it was found.",
           "**Favorites**: tap the star on any item to keep it close.",
           "**Trash**: moving something to the trash does not delete it. Open Trash (in the sidebar, or in Settings on a phone) and restore it, and it goes back where it came from. Only deleting from inside the trash is permanent.",
@@ -914,10 +922,9 @@ export const SECTIONS: GuideSection[] = [
           "**Signing in:** you stay signed in on each device until you sign out. After several wrong passwords the app slows down further attempts.",
           "**Change your password:** Settings, then Password. It needs at least 10 characters, and it signs your other devices out.",
           "**Sign out everywhere** ends every session on every device, including the one you are using.",
-          "**Devices:** the app has three layouts. A phone shows one page at a time with tabs at the bottom. A tablet adds a sidebar. A computer adds a details panel in the library and keyboard shortcuts.",
+          "**Devices:** the app has three layouts. A phone shows one page at a time with tabs at the bottom. A tablet adds a sidebar. A computer adds a details panel in the library and small badges that show each button’s key. With a keyboard, a tablet and a computer both answer to keyboard shortcuts: they are all in Keyboard shortcuts, the next section.",
         ],
       },
-      COMPUTER_KEYS,
       {
         kind: "p",
         text: "The Settings page also holds the keys that let an assistant into your library. You can create one, name it, make it read only or read and write, and revoke it at any time.",
@@ -934,6 +941,29 @@ export const SECTIONS: GuideSection[] = [
           "**Panel heights:** where two panels share a sidebar on a lecture page, drag the line between them to give one more room. Side notes stay level with the text they are about. Double-click the line to go back to the usual split.",
         ],
       },
+    ],
+  },
+  {
+    id: "keyboard-shortcuts",
+    title: "Keyboard shortcuts",
+    lead: "Every key the app answers to, on a computer or a tablet with a keyboard.",
+    blocks: [
+      {
+        kind: "p",
+        text: "Press `?` on any screen to see every shortcut over the page you are on. The list there and the tables below are the same list, so a key in one is always in the other.",
+      },
+      {
+        kind: "list",
+        items: [
+          "**Pairs:** keys written as two letters, such as `G L`, are pressed one after the other. Press `G`, let go, then `L` within a second, and the Library opens.",
+          "**Badges:** on a computer, a small badge at the edge of a button shows its key, and a button that is only an icon shows its key when you point at it. To hide the badges, open Settings, then Keyboard shortcuts, and turn off Show keyboard shortcut badges. The keys keep working.",
+          "**Only where it makes sense:** a key works only on the screen that has its button. `P` practices the item you have open on a library page, and on a source file it goes back a page.",
+          "**Never while you type:** single keys and pairs do nothing while you are typing in a box or writing on a page, and while a dialog or a menu is open. Keys with `⌘` or `Ctrl` work everywhere.",
+          "**Writing keys:** bold, headings, lists and the rest are on the Keyboard button in a page’s toolbar, and on the quick reference at the end of this guide.",
+          "**Phones:** a phone has no keyboard shortcuts.",
+        ],
+      },
+      ...hotkeyGuideBlocks(),
     ],
   },
   {
@@ -992,7 +1022,13 @@ export const PARTS: GuidePart[] = [
     label: "Part four",
     title: "Help and housekeeping",
     lead: "Asking for help, finding things again, your settings, and what is not finished yet.",
-    sections: ["asking-for-help", "finding-and-keeping", "settings-and-devices", "good-to-know"],
+    sections: [
+      "asking-for-help",
+      "finding-and-keeping",
+      "settings-and-devices",
+      "keyboard-shortcuts",
+      "good-to-know",
+    ],
   },
 ];
 

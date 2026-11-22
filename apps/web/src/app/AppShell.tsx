@@ -17,7 +17,7 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useMatch, useNavigate } from "react-router";
 import { PillMark } from "../components/art/pills";
@@ -25,27 +25,36 @@ import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
 import { Tooltip } from "../components/ui/tooltip";
 import { useMe, useSignOut } from "../features/auth/useAuth";
+import {
+  HotkeyProvider,
+  Kbd,
+  ShortcutsDialog,
+  useHotkey,
+  useHotkeyAria,
+} from "../features/hotkeys";
 import { LoveLetter } from "../features/letter/LoveLetter";
 import { LibraryDialogs, useLibraryDialogs } from "../features/library/dialogs";
 import { LibraryTree } from "../features/library/LibraryTree";
 import { PickNodesProvider } from "../features/library/pickNodes";
 import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
-import { AskProvider } from "../features/mounts/ask";
+import { AskProvider, useAsk } from "../features/mounts/ask";
 import { backgroundUrl, useBackground } from "../features/preferences/useBackground";
 import {
   useInstructions,
   useMarkTourSeen,
   usePreferences,
+  useShortcutBadges,
   useTabOrder,
 } from "../features/preferences/usePreferences";
 import { InstructionsProvider } from "../features/requests/ui/instructions";
 import { QuickFind } from "../features/search/QuickFind";
 import { TourProvider, useTour } from "../features/tour/Tour";
-import { UploadProvider } from "../features/uploads/UploadProvider";
+import { UploadProvider, useUploadPicker } from "../features/uploads/UploadProvider";
 import { UploadTray } from "../features/uploads/UploadTray";
 import { cn } from "../lib/cn";
 import { readFlag, writeFlag } from "../lib/storage";
+import { useBack } from "../lib/useBack";
 import { useLayout } from "../lib/useMedia";
 import { NavBadge, useBadges } from "./badges";
 import { SideResize, useSideWidth } from "./SideResize";
@@ -57,42 +66,44 @@ import { usePageSlide } from "./usePageSlide";
 const SIDEBAR_KEY = "notes-sidebar";
 const PANEL_KEY = "notes-panel";
 
-const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
-export const MOD_KEY = isMac ? "⌘" : "Ctrl+";
-
 /**
  * Three layouts. Phone: one pane and a bottom tab bar. Tablet: a collapsible sidebar tree beside
- * the content. Computer: sidebar, content and an optional right panel, with keyboard shortcuts.
+ * the content. Computer: sidebar, content and an optional right panel. Tablet and computer answer to
+ * keyboard shortcuts (features/hotkeys); the computer also shows their badges, unless she turned them off.
  */
 export function AppShell() {
   const me = useMe();
+  const layout = useLayout();
+  const badges = useShortcutBadges();
   // Her saved instructions, handed to the request dialog wherever it opens.
   const instructions = useInstructions();
   const navigate = useNavigate();
   const markTourSeen = useMarkTourSeen();
   const tourSeen = () => markTourSeen.mutate();
   return (
-    <TreeStateProvider userId={me.data?.id ?? "unknown"}>
-      <UploadProvider>
-        <LibraryDialogs>
-          <PickNodesProvider>
-            <InstructionsProvider
-              list={instructions}
-              onManage={() => navigate("/settings#instructions")}
-            >
-              <AskProvider>
-                {/* The tour: started from the guide, and by itself the first time she signs in. */}
-                <TourProvider onEnd={tourSeen}>
-                  <TourFirstTime />
-                  <Shell />
-                </TourProvider>
-              </AskProvider>
-            </InstructionsProvider>
-          </PickNodesProvider>
-          <UploadTray />
-        </LibraryDialogs>
-      </UploadProvider>
-    </TreeStateProvider>
+    <HotkeyProvider enabled={layout !== "phone"} badges={layout === "computer" && badges}>
+      <TreeStateProvider userId={me.data?.id ?? "unknown"}>
+        <UploadProvider>
+          <LibraryDialogs>
+            <PickNodesProvider>
+              <InstructionsProvider
+                list={instructions}
+                onManage={() => navigate("/settings#instructions")}
+              >
+                <AskProvider>
+                  {/* The tour: started from the guide, and by itself the first time she signs in. */}
+                  <TourProvider onEnd={tourSeen}>
+                    <TourFirstTime />
+                    <Shell />
+                  </TourProvider>
+                </AskProvider>
+              </InstructionsProvider>
+            </PickNodesProvider>
+            <UploadTray />
+          </LibraryDialogs>
+        </UploadProvider>
+      </TreeStateProvider>
+    </HotkeyProvider>
   );
 }
 
@@ -133,39 +144,23 @@ function Shell() {
   useEffect(() => writeFlag(SIDEBAR_KEY, sidebarOpen), [sidebarOpen]);
   useEffect(() => writeFlag(PANEL_KEY, panelOpen), [panelOpen]);
 
-  useEffect(() => {
-    if (layout === "phone") return;
-    function onKey(event: KeyboardEvent) {
-      const mod = event.metaKey || event.ctrlKey;
-      if (mod && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setFindOpen((open) => !open);
-      } else if (mod && event.key === "\\") {
-        event.preventDefault();
-        setSidebarOpen((open) => !open);
-      } else if (
-        event.key === "/" &&
-        !mod &&
-        !(
-          event.target instanceof HTMLElement &&
-          /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)
-        ) &&
-        !(event.target instanceof HTMLElement && event.target.isContentEditable)
-      ) {
-        event.preventDefault();
-        setFindOpen(true);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [layout]);
-
   const showSidebar = layout !== "phone" && sidebarOpen;
   // Details belong to the library; a document, practice or the viewer want the width.
   const inLibraryPage = useMatch("/library/*");
   const inLibraryHome = useMatch("/library");
   const inLibrary = !!inLibraryPage || !!inLibraryHome;
   const showPanel = layout === "computer" && panelOpen && inLibrary;
+
+  // The app's own shortcuts (features/hotkeys/registry.ts). The provider leaves them off on a phone.
+  const [keysOpen, setKeysOpen] = useState(false);
+  useHotkey("app.quickFind", () => setFindOpen((open) => !open));
+  useHotkey("app.sidebar", () => setSidebarOpen((open) => !open));
+  useHotkey("app.details", () => setPanelOpen((open) => !open), {
+    enabled: layout === "computer" && inLibrary,
+  });
+  useHotkey("app.shortcuts", () => setKeysOpen((open) => !open));
+  useAppHotkeys();
+  const findKeys = useHotkeyAria("app.quickFind");
 
   return (
     <div className="flex h-dvh overflow-hidden bg-bg print:block print:h-auto print:overflow-visible">
@@ -197,25 +192,31 @@ function Shell() {
           <div className="px-safe border-b border-border bg-surface/80 backdrop-blur print:hidden">
             <div className="flex items-center gap-2 p-2">
               {!showSidebar ? (
-                <IconButton aria-label="Show sidebar" onClick={() => setSidebarOpen(true)}>
+                <IconButton
+                  aria-label="Show sidebar"
+                  hotkey="app.sidebar"
+                  onClick={() => setSidebarOpen(true)}
+                >
                   <PanelLeftOpen size={20} />
                 </IconButton>
               ) : null}
               <button
                 type="button"
                 onClick={() => setFindOpen(true)}
+                aria-keyshortcuts={findKeys}
                 className="relative flex h-11 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-control border border-border-strong bg-surface px-3.5 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:h-9"
               >
                 <Search size={16} aria-hidden />
                 <span>Quick find</span>
-                {layout === "computer" ? (
-                  <kbd className="absolute right-2.5 rounded-inline border border-border bg-surface px-1.5 text-caption">
-                    {MOD_KEY}K
-                  </kbd>
-                ) : null}
+                {/* The badge every other one copies (features/hotkeys/Kbd.tsx); computer layout only. */}
+                <Kbd hotkey="app.quickFind" className="absolute right-2.5" />
               </button>
               {layout === "computer" && inLibrary && !panelOpen ? (
-                <IconButton aria-label="Show details panel" onClick={() => setPanelOpen(true)}>
+                <IconButton
+                  aria-label="Show details panel"
+                  hotkey="app.details"
+                  onClick={() => setPanelOpen(true)}
+                >
                   <PanelRightOpen size={20} />
                 </IconButton>
               ) : null}
@@ -259,8 +260,83 @@ function Shell() {
           />
         </div>
       </SideSlide>
+      <GoToHotkeys />
       <QuickFind open={findOpen} onOpenChange={setFindOpen} />
+      <ShortcutsDialog open={keysOpen} onOpenChange={setKeysOpen} />
     </div>
+  );
+}
+
+/** Where each "go to" pair leads. */
+const GO_TO = [
+  ["go.library", "/library"],
+  ["go.practice", "/practice"],
+  ["go.calendar", "/calendar"],
+  ["go.search", "/search"],
+  ["go.inbox", "/inbox"],
+  ["go.settings", "/settings"],
+  ["go.requests", "/requests"],
+  ["go.concepts", "/concepts"],
+  ["go.references", "/references"],
+  ["go.activity", "/activity"],
+  ["go.guide", "/help"],
+  ["go.trash", "/trash"],
+] as const;
+
+/** The "go to" pairs, each a hotkey of its own while the shell is on screen. */
+function GoToHotkeys() {
+  return GO_TO.map(([id, to]) => <GoTo key={id} id={id} to={to} />);
+}
+
+function GoTo({ id, to }: { id: string; to: string }) {
+  const navigate = useNavigate();
+  useHotkey(id, () => navigate(to));
+  return null;
+}
+
+/**
+ * The shortcuts that work on every screen: back, a new request, uploads, the tour and a new term. A
+ * screen with its own version (a library page asks about its item and uploads into it) registers the
+ * same id, and its handler is used while it is open.
+ */
+function useAppHotkeys() {
+  const back = useBack("/library");
+  useHotkey("go.back", back);
+  const ask = useAsk();
+  useHotkey("app.ask", () => ask({ target: { type: "library" }, label: "your library" }));
+  const pick = useUploadPicker();
+  useHotkey("app.upload", () => pick({ nodeId: null, label: "the inbox" }));
+  const tour = useTour();
+  useHotkey("app.tour", () => tour.start());
+  const dialogs = useLibraryDialogs();
+  useHotkey("library.newTerm", () => dialogs.openCreate(null, "term"));
+}
+
+/** A sidebar link: icon, name, then at the trailing edge its count and its key. */
+function NavItem({
+  to,
+  end,
+  icon,
+  hotkey,
+  children,
+  extra,
+}: {
+  to: string;
+  end?: boolean;
+  icon: ReactNode;
+  hotkey: string;
+  children: string;
+  extra?: ReactNode;
+}) {
+  const keys = useHotkeyAria(hotkey);
+  return (
+    <NavLink to={to} end={end} className={linkClass} aria-keyshortcuts={keys}>
+      {icon} {children}
+      <span className="ml-auto flex items-center gap-1.5 empty:hidden">
+        {extra}
+        <Kbd hotkey={hotkey} />
+      </span>
+    </NavLink>
   );
 }
 
@@ -275,6 +351,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   const signOut = useSignOut();
   const dialogs = useLibraryDialogs();
   const badges = useBadges();
+  const newTermKeys = useHotkeyAria("library.newTerm");
   return (
     <aside
       data-testid="sidebar"
@@ -291,54 +368,75 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         <span className="min-w-0 flex-1 truncate pl-0.5 font-display text-lg font-semibold">
           Notes
         </span>
-        <IconButton aria-label="Hide sidebar" onClick={onCollapse}>
+        <IconButton aria-label="Hide sidebar" hotkey="app.sidebar" onClick={onCollapse}>
           <PanelLeftClose size={20} />
         </IconButton>
       </div>
 
       <nav aria-label="Main" className="grid gap-0.5 p-2">
-        <NavLink to="/library" end className={linkClass}>
-          <BookOpen size={18} aria-hidden /> Library
-        </NavLink>
-        <NavLink to="/practice" className={linkClass}>
-          <GraduationCap size={18} aria-hidden /> Practice
-          <NavBadge count={badges.practice} label="cards due" />
-        </NavLink>
-        <NavLink to="/calendar" className={linkClass}>
-          <CalendarDays size={18} aria-hidden /> Calendar
-        </NavLink>
-        <NavLink to="/inbox" className={linkClass}>
-          <Inbox size={18} aria-hidden /> Inbox
-          <NavBadge count={badges.inbox} label="files in the inbox" />
-        </NavLink>
-        <NavLink to="/concepts" className={linkClass}>
-          <Lightbulb size={18} aria-hidden /> Concepts
-          <NavBadge count={badges.review} label="concepts to review" tone="warning" />
-        </NavLink>
-        <NavLink to="/references" className={linkClass}>
-          <BookMarked size={18} aria-hidden /> References
-        </NavLink>
-        <NavLink to="/requests" className={linkClass}>
-          <MessageCirclePlus size={18} aria-hidden /> Requests
-          <NavBadge count={badges.requests} label="open requests" />
-        </NavLink>
-        <NavLink to="/activity" className={linkClass}>
-          <Bot size={18} aria-hidden /> Activity
-        </NavLink>
-        <NavLink to="/trash" className={linkClass}>
-          <Trash2 size={18} aria-hidden /> Trash
-        </NavLink>
+        <NavItem to="/library" end icon={<BookOpen size={18} aria-hidden />} hotkey="go.library">
+          Library
+        </NavItem>
+        <NavItem
+          to="/practice"
+          icon={<GraduationCap size={18} aria-hidden />}
+          hotkey="go.practice"
+          extra={<NavBadge count={badges.practice} label="cards due" />}
+        >
+          Practice
+        </NavItem>
+        <NavItem to="/calendar" icon={<CalendarDays size={18} aria-hidden />} hotkey="go.calendar">
+          Calendar
+        </NavItem>
+        <NavItem
+          to="/inbox"
+          icon={<Inbox size={18} aria-hidden />}
+          hotkey="go.inbox"
+          extra={<NavBadge count={badges.inbox} label="files in the inbox" />}
+        >
+          Inbox
+        </NavItem>
+        <NavItem
+          to="/concepts"
+          icon={<Lightbulb size={18} aria-hidden />}
+          hotkey="go.concepts"
+          extra={<NavBadge count={badges.review} label="concepts to review" tone="warning" />}
+        >
+          Concepts
+        </NavItem>
+        <NavItem
+          to="/references"
+          icon={<BookMarked size={18} aria-hidden />}
+          hotkey="go.references"
+        >
+          References
+        </NavItem>
+        <NavItem
+          to="/requests"
+          icon={<MessageCirclePlus size={18} aria-hidden />}
+          hotkey="go.requests"
+          extra={<NavBadge count={badges.requests} label="open requests" />}
+        >
+          Requests
+        </NavItem>
+        <NavItem to="/activity" icon={<Bot size={18} aria-hidden />} hotkey="go.activity">
+          Activity
+        </NavItem>
+        <NavItem to="/trash" icon={<Trash2 size={18} aria-hidden />} hotkey="go.trash">
+          Trash
+        </NavItem>
       </nav>
 
       <div className="mt-4 flex items-center justify-between px-5 pb-1.5">
         <h2 className="font-sans text-caption font-semibold uppercase tracking-wide text-text-muted">
           Terms and courses
         </h2>
-        <Tooltip content="New term">
+        <Tooltip content="New term" hotkey="library.newTerm">
           <button
             type="button"
             onClick={() => dialogs.openCreate(null, "term")}
             aria-label="New term"
+            aria-keyshortcuts={newTermKeys}
             className="hit-area flex size-6 items-center justify-center rounded-inline text-accent hover:bg-accent-soft"
           >
             <Plus size={16} aria-hidden />
@@ -351,12 +449,12 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
       </div>
 
       <div className="grid gap-0.5 border-t border-border p-2">
-        <NavLink to="/help" className={linkClass}>
-          <LifeBuoy size={18} aria-hidden /> Guide
-        </NavLink>
-        <NavLink to="/settings" className={linkClass}>
-          <Settings size={18} aria-hidden /> Settings
-        </NavLink>
+        <NavItem to="/help" icon={<LifeBuoy size={18} aria-hidden />} hotkey="go.guide">
+          Guide
+        </NavItem>
+        <NavItem to="/settings" icon={<Settings size={18} aria-hidden />} hotkey="go.settings">
+          Settings
+        </NavItem>
         {/* Sign out, and at the far right Alex's note to Hannah (features/letter). */}
         <div className="flex items-center gap-1">
           <button

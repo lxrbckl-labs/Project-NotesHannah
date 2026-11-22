@@ -17,6 +17,7 @@ import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { Tooltip } from "../../components/ui/tooltip";
 import { appHttp, isApiError } from "../../lib/api";
 import { DocumentView } from "../documents";
+import { useHotkey } from "../hotkeys";
 import { useNode } from "../library/queries";
 import { ReferencesButton } from "../references/ReferencesStrip";
 import { AskButton, useAsk } from "./ask";
@@ -68,6 +69,18 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
       }
     },
   });
+
+  // The app's "ask an agent" key asks about this document while its page is open.
+  const documentIdNow = doc.data?.document.id;
+  const titleNow = node.data?.name ?? "this page";
+  useHotkey(
+    "app.ask",
+    () => {
+      if (documentIdNow)
+        ask({ target: { type: "document", documentId: documentIdNow }, label: titleNow });
+    },
+    { enabled: mode === "page" && !!documentIdNow },
+  );
 
   if (node.isPending || (node.data && doc.isPending)) {
     return (
@@ -186,6 +199,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
               target={{ type: "document", documentId }}
               label={title}
               iconOnly
+              hotkey="app.ask"
               text="Ask an agent"
             />
             <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border max-sm:hidden" />

@@ -155,6 +155,8 @@ export function createMockBackend(options: MockOptions = {}) {
   let tabOrder: string[] | null = null;
   /** Her saved instructions for agent requests (the preferences store). */
   let instructions: unknown[] = [];
+  /** Whether the keyboard shortcut badges show (Settings). */
+  let shortcutBadges = true;
   let signedIn = false;
   let password = MOCK_PASSWORD;
   let failedLogins = 0;
@@ -840,17 +842,28 @@ export function createMockBackend(options: MockOptions = {}) {
     }
     if (path === "/me/preferences" && method === "GET") {
       return ok({
-        preferences: { tabOrder: resolveTabOrder(tabOrder), instructions, tourSeen: true },
+        preferences: {
+          tabOrder: resolveTabOrder(tabOrder),
+          instructions,
+          tourSeen: true,
+          shortcutBadges,
+        },
       });
     }
     if (path === "/me/preferences" && method === "PATCH") {
       const patch = body(PreferencesPatch, payload);
       if (patch.instructions !== undefined) instructions = patch.instructions;
+      if (patch.shortcutBadges !== undefined) shortcutBadges = patch.shortcutBadges;
       if (patch.tabOrder !== undefined) {
         tabOrder = patch.tabOrder === null || patch.tabOrder.length === 0 ? null : patch.tabOrder;
       }
       return ok({
-        preferences: { tabOrder: resolveTabOrder(tabOrder), instructions, tourSeen: true },
+        preferences: {
+          tabOrder: resolveTabOrder(tabOrder),
+          instructions,
+          tourSeen: true,
+          shortcutBadges,
+        },
       });
     }
     if (method === "POST" && path === "/me/password") {

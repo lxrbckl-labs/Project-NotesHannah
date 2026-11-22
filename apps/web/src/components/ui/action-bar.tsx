@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Link, type LinkProps } from "react-router";
+import { useHotkeyAria } from "../../features/hotkeys/HotkeyProvider";
 import { cn } from "../../lib/cn";
 import { ScrollCue } from "./segmented";
 import { Tooltip } from "./tooltip";
@@ -51,6 +52,8 @@ interface ItemLook {
   primary?: boolean;
   /** For a destructive or cautionary destination. */
   tone?: "default" | "danger";
+  /** A hotkey id: a bar is tight, so its key shows in the tooltip, never inline. */
+  hotkey?: string | undefined;
 }
 
 function itemClass({ primary, tone = "default" }: ItemLook, className?: string) {
@@ -96,13 +99,16 @@ export function ActionButton({
   tone,
   className,
   children,
+  hotkey,
   ...rest
 }: ActionButtonProps) {
+  const aria = useHotkeyAria(hotkey);
   return (
-    <Tooltip content={label}>
+    <Tooltip content={label} hotkey={hotkey}>
       <button
         type="button"
         aria-label={label}
+        aria-keyshortcuts={aria}
         className={itemClass({ primary, tone }, className)}
         {...rest}
       >
@@ -129,11 +135,18 @@ export function ActionLink({
   tone,
   className,
   children,
+  hotkey,
   ...rest
 }: ActionLinkProps) {
+  const aria = useHotkeyAria(hotkey);
   return (
-    <Tooltip content={label}>
-      <Link aria-label={label} className={itemClass({ primary, tone }, className)} {...rest}>
+    <Tooltip content={label} hotkey={hotkey}>
+      <Link
+        aria-label={label}
+        aria-keyshortcuts={aria}
+        className={itemClass({ primary, tone }, className)}
+        {...rest}
+      >
         {icon}
         <Word primary={primary}>{label}</Word>
         {children}

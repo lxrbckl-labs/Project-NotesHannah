@@ -22,6 +22,7 @@ import { StatTile } from "../../components/ui/stat";
 import { ErrorState } from "../../components/ui/states";
 import { appHttp } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { useHotkey } from "../hotkeys";
 import {
   addDays,
   addMonths,
@@ -82,6 +83,14 @@ export function CalendarPage() {
     // Keep a day selected in the month on screen.
     setPicked(target === today.slice(0, 7) ? today : `${target}-01`);
   };
+  const toToday = () => {
+    setMonth(today.slice(0, 7));
+    setPicked(today);
+  };
+  // The month's keys (features/hotkeys/registry.ts, "Calendar").
+  useHotkey("calendar.prev", () => go(-1));
+  useHotkey("calendar.next", () => go(1));
+  useHotkey("calendar.today", toToday);
 
   return (
     <Page>
@@ -137,18 +146,13 @@ export function CalendarPage() {
               <h2 className="min-w-0 flex-1 truncate font-display text-title font-semibold">
                 {monthTitle(month)}
               </h2>
-              <Button
-                onClick={() => {
-                  setMonth(today.slice(0, 7));
-                  setPicked(today);
-                }}
-              >
+              <Button hotkey="calendar.today" onClick={toToday}>
                 Today
               </Button>
-              <IconButton aria-label="Previous month" onClick={() => go(-1)}>
+              <IconButton aria-label="Previous month" hotkey="calendar.prev" onClick={() => go(-1)}>
                 <ChevronLeft size={20} />
               </IconButton>
-              <IconButton aria-label="Next month" onClick={() => go(1)}>
+              <IconButton aria-label="Next month" hotkey="calendar.next" onClick={() => go(1)}>
                 <ChevronRight size={20} />
               </IconButton>
             </div>

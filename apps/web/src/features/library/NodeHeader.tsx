@@ -18,6 +18,8 @@ import { IconButton } from "../../components/ui/button";
 import { ActionMenu } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
 import { useBack } from "../../lib/useBack";
+import { useHotkey } from "../hotkeys";
+import { useAsk } from "../mounts/ask";
 import { useUploadPicker } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -27,7 +29,7 @@ import { InlineName } from "./InlineName";
 import { NodeTile } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
-import { type CreatableKind, creatableIn, KIND_NAME } from "./rules";
+import { type CreatableKind, creatableIn, isPending, KIND_NAME, NEW_HOTKEY } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
 
 const MOCK = import.meta.env.VITE_MOCK_API === "1";
@@ -55,12 +57,38 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
   const { entries } = useNodeMenu(node, {
     onRename: () => setRenaming(true),
     afterTrash: () => navigate(node.parentId ? `/library/${node.parentId}` : "/library"),
+    place: "page",
   });
   const creatable = creatableIn(node.kind);
   const fixed = node.kind === "section";
   const pick = useUploadPicker();
+  const ask = useAsk();
   const opensAsPage = !MOCK && (node.kind === "lecture" || node.kind === "document");
   const canPractise = !MOCK && ["lecture", "folder", "course", "term"].includes(node.kind);
+  const upload = () => pick({ nodeId: node.id, label: node.name });
+
+  // This page's keys (features/hotkeys/registry.ts, "Library"): each only while its action is here.
+  const ready = !isPending(node);
+  const newHere = (kind: CreatableKind) => ({ enabled: ready && creatable.includes(kind) });
+  useHotkey("library.newCourse", () => dialogs.openCreate(node, "course"), newHere("course"));
+  useHotkey("library.newFolder", () => dialogs.openCreate(node, "folder"), newHere("folder"));
+  useHotkey("library.newLecture", () => dialogs.openCreate(node, "lecture"), newHere("lecture"));
+  useHotkey("library.newDocument", () => dialogs.openCreate(node, "document"), newHere("document"));
+  useHotkey("library.favorite", () => void actions.setFavourite(node, !node.favourite), {
+    enabled: ready,
+  });
+  // The sections inside a course are fixed: no rename, no move.
+  useHotkey("library.rename", () => setRenaming(true), { enabled: ready && !fixed });
+  useHotkey("library.move", () => dialogs.openMove(node), { enabled: ready && !fixed });
+  useHotkey("library.openPage", () => navigate(`/doc/${node.id}`), { enabled: opensAsPage });
+  useHotkey("library.practice", () => navigate(`/practice?node=${node.id}`), {
+    enabled: canPractise,
+  });
+  // The app's own "upload" and "ask" go to the inbox and the whole library; here they mean this item.
+  useHotkey("app.upload", upload, { enabled: ready && canHoldFiles(node) });
+  useHotkey("app.ask", () => ask({ target: { type: "node", nodeId: node.id }, label: node.name }), {
+    enabled: ready,
+  });
 
   return (
     <header data-hue={hue ?? undefined} className="mb-6">
@@ -102,6 +130,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
         <div className="flex shrink-0 items-center gap-1">
           <IconButton
             aria-label={node.favourite ? "Remove from favorites" : "Add to favorites"}
+            hotkey="library.favorite"
             pressed={node.favourite}
             onClick={() => void actions.setFavourite(node, !node.favourite)}
           >
@@ -127,6 +156,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
               icon={<KindIcon kind={kind} />}
               label={`New ${KIND_NAME[kind].toLowerCase()}`}
               primary={i === 0 && !fixed && !opensAsPage}
+              hotkey={NEW_HOTKEY[kind]}
               onClick={() => dialogs.openCreate(node, kind)}
             />
           ))}
@@ -136,6 +166,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
               <ActionButton
                 icon={<BookOpen aria-hidden />}
                 label="Open the page"
+                hotkey="library.openPage"
                 primary
                 onClick={() => navigate(`/doc/${node.id}`)}
               />
@@ -146,6 +177,7 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
             <ActionButton
               icon={<GraduationCap aria-hidden />}
               label="Practice this"
+              hotkey="library.practice"
               onClick={() => navigate(`/practice?node=${node.id}`)}
             />
           ) : null}
@@ -153,7 +185,8 @@ export function NodeHeader({ node }: { node: NodeWithLinks }) {
             <ActionButton
               icon={<Upload aria-hidden />}
               label="Upload files"
-              onClick={() => pick({ nodeId: node.id, label: node.name })}
+              hotkey="app.upload"
+              onClick={upload}
             />
           ) : null}
         </ActionBar>

@@ -65,6 +65,8 @@ export function InboxPage() {
               nodeId={null}
               target="the inbox"
               variant="primary"
+              // The app's upload key sends files to the inbox, the same place as this button.
+              hotkey="app.upload"
               // The page's one action: as wide as the screen on a phone, easy to hit with a thumb.
               className="max-md:w-full"
             >

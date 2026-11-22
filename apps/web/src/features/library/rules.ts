@@ -10,6 +10,15 @@ export type CreatableKind = Exclude<NodeKind, "section">;
 
 export const CREATABLE: CreatableKind[] = ["term", "course", "folder", "lecture", "document"];
 
+/** The hotkey (features/hotkeys/registry.ts) of each "New ..." action. */
+export const NEW_HOTKEY: Record<CreatableKind, string> = {
+  term: "library.newTerm",
+  course: "library.newCourse",
+  folder: "library.newFolder",
+  lecture: "library.newLecture",
+  document: "library.newDocument",
+};
+
 export const KIND_NAME: Record<NodeKind, string> = {
   term: "Term",
   course: "Course",

@@ -4,8 +4,10 @@ import { MessageCirclePlus } from "lucide-react";
 import { createContext, type ReactNode, use, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../../components/ui/button";
+import { HotkeyTooltip } from "../../components/ui/tooltip";
 import { appHttp } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { useHotkeyAria } from "../hotkeys";
 import { RequestComposer } from "../requests/RequestComposer";
 
 export interface AskOptions {
@@ -79,20 +81,38 @@ export function AskButton({
   className,
   iconOnly,
   text = "Ask an agent",
+  hotkey,
   ...options
-}: AskOptions & { className?: string; iconOnly?: boolean; text?: string }) {
+}: AskOptions & {
+  className?: string;
+  iconOnly?: boolean;
+  text?: string;
+  /** The hotkey that does the same (the screen registers it with this target): shown as a badge. */
+  hotkey?: string;
+}) {
   const ask = useAsk();
-  return (
+  const keys = useHotkeyAria(hotkey);
+  const button = (
     <Button
       variant="ghostAccent"
       data-testid="ask-button"
       aria-label={iconOnly ? `${text}${options.label ? ` about ${options.label}` : ""}` : undefined}
       onClick={() => ask(options)}
+      // With its words the key is a badge inside; as an icon it shows in the hint instead.
+      hotkey={iconOnly ? undefined : hotkey}
+      aria-keyshortcuts={iconOnly ? keys : undefined}
       // cn only joins classes, so the icon-only padding must win over the button size's own px-4.
       className={cn("gap-1.5 px-3", iconOnly && "size-11 px-0! xl:size-9", className)}
     >
       <MessageCirclePlus size={17} aria-hidden className="shrink-0" />
       {iconOnly ? null : <span>{text}</span>}
     </Button>
+  );
+  return iconOnly && hotkey ? (
+    <HotkeyTooltip hotkey={hotkey} content={text}>
+      {button}
+    </HotkeyTooltip>
+  ) : (
+    button
   );
 }

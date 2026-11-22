@@ -56,6 +56,7 @@ export function usePreferences() {
             tabOrder: mirrored,
             instructions: [],
             tourSeen: true,
+            shortcutBadges: true,
           } satisfies Preferences,
         }
       : {}),
@@ -93,6 +94,7 @@ export function useSaveTabOrder() {
         tabOrder: next,
         instructions: before?.instructions ?? [],
         tourSeen: before?.tourSeen ?? true,
+        shortcutBadges: before?.shortcutBadges ?? true,
       });
       writeTabOrderMirror(userId, next);
       return { before };
@@ -140,6 +142,33 @@ export function useMarkTourSeen() {
     onMutate: () => {
       const before = client.getQueryData<Preferences>(preferencesKey);
       if (before) client.setQueryData<Preferences>(preferencesKey, { ...before, tourSeen: true });
+    },
+    onSuccess: (saved) => client.setQueryData(preferencesKey, saved),
+  });
+}
+
+/** Whether the keyboard shortcut badges show (Settings, "Keyboard shortcuts"); on by default. */
+export function useShortcutBadges(): boolean {
+  return usePreferences().data?.shortcutBadges ?? true;
+}
+
+/** Show or hide the shortcut badges. The change shows at once; a refusal puts it back with a toast. */
+export function useSaveShortcutBadges() {
+  const client = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: (on: boolean) => api.updatePreferences({ shortcutBadges: on }),
+    onMutate: async (on) => {
+      await client.cancelQueries({ queryKey: preferencesKey });
+      const before = client.getQueryData<Preferences>(preferencesKey);
+      if (before)
+        client.setQueryData<Preferences>(preferencesKey, { ...before, shortcutBadges: on });
+      return { before };
+    },
+    onError: (error, _on, context) => {
+      if (context?.before) client.setQueryData(preferencesKey, context.before);
+      else void client.invalidateQueries({ queryKey: preferencesKey });
+      toast.error(error);
     },
     onSuccess: (saved) => client.setQueryData(preferencesKey, saved),
   });

@@ -80,6 +80,8 @@ export const Preferences = z.object({
   instructions: z.array(SavedInstruction).default([]),
   /** Whether she has finished or skipped the first-time tour; false until then. */
   tourSeen: z.boolean().default(false),
+  /** Whether the small keyboard shortcut badges show beside buttons and in hints; on until she turns them off. */
+  shortcutBadges: z.boolean().default(true),
 });
 export type Preferences = z.infer<typeof Preferences>;
 
@@ -94,6 +96,8 @@ export const PreferencesPatch = z
     instructions: SavedInstructions.optional(),
     /** Set once the tour has been finished or skipped, so it does not start by itself again. */
     tourSeen: z.boolean().optional(),
+    /** Show (true) or hide (false) the keyboard shortcut badges. The shortcuts work either way. */
+    shortcutBadges: z.boolean().optional(),
   })
   .strict();
 export type PreferencesPatch = z.infer<typeof PreferencesPatch>;
