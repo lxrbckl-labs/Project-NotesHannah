@@ -1,4 +1,5 @@
 import {
+  CreateRequestInput,
   canTransition,
   newId,
   type RequestAction,
@@ -6,6 +7,7 @@ import {
   type RequestTarget,
 } from "@notes/schema";
 import { describe, expect, it } from "vitest";
+import { requestLine } from "../src/mcp/tools/requests.js";
 import { type Json, type Requests, setupRequests, thrown, userAuth } from "./requests-helpers.js";
 
 const LIBRARY: RequestTarget = { type: "library" };
@@ -965,5 +967,44 @@ describe("HTTP rules", () => {
     makeIn(t, "done");
     const both = await t.call(t.asUser(t.alice), "GET", "/api/requests?status=waiting,done");
     expect(both.body.items).toHaveLength(2);
+  });
+});
+
+describe("instructions carried by a request", () => {
+  const RULES = {
+    title: "Lecture notes",
+    body: "One section per slide. Bold every drug name. Finish with five questions.",
+  };
+
+  it("keeps a copy of the instructions she chose, and shows it to the agent", () => {
+    const t = setupRequests();
+    const made = t.service.create(t.she, {
+      target: LIBRARY,
+      kind: "other",
+      message: "",
+      instructions: RULES,
+    });
+    // With instructions attached, "other" needs no message: the instructions say what she wants.
+    expect(made.instructions).toEqual(RULES);
+    const listed = t.service.list(t.bot, {}).items.find((r) => r.id === made.id);
+    expect(listed?.instructions).toEqual(RULES);
+    expect(requestLine(listed as never)).toContain('Follow her instructions "Lecture notes"');
+  });
+
+  it('a request without instructions has none, and "other" still needs a message', () => {
+    const t = setupRequests();
+    const plain = t.service.create(t.she, { target: LIBRARY, kind: "quiz_me", message: "" });
+    expect(plain.instructions).toBeNull();
+    expect(
+      CreateRequestInput.safeParse({ target: LIBRARY, kind: "other", message: "" }).success,
+    ).toBe(false);
+    expect(
+      CreateRequestInput.safeParse({
+        target: LIBRARY,
+        kind: "other",
+        message: "",
+        instructions: { title: "", body: "x" },
+      }).success,
+    ).toBe(false);
   });
 });

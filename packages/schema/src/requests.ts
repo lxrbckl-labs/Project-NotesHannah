@@ -371,6 +371,24 @@ export const RequestReopen = z.object({
 });
 export type RequestReopen = z.infer<typeof RequestReopen>;
 
+/**
+ * Instructions carried by a request: her own standing rules for a kind of work ("Lecture notes:
+ * one section per slide, bold every drug name, end with five questions"), saved in Settings and
+ * chosen in the request dialog. The request holds a copy as it was when she chose it.
+ */
+export const INSTRUCTION_LIMITS = {
+  titleChars: 80,
+  bodyChars: 4000,
+  /** Saved instructions per account. */
+  saved: 30,
+} as const;
+
+export const RequestInstructions = z.strictObject({
+  title: z.string().trim().min(1).max(INSTRUCTION_LIMITS.titleChars),
+  body: z.string().trim().min(1).max(INSTRUCTION_LIMITS.bodyChars),
+});
+export type RequestInstructions = z.infer<typeof RequestInstructions>;
+
 export const StudyRequest = z.object({
   id: RequestId,
   userId: UserId,
@@ -378,6 +396,8 @@ export const StudyRequest = z.object({
   kind: RequestKind,
   /** Her words. May be empty for a quick action. */
   message: z.string().max(REQUEST_LIMITS.messageChars),
+  /** The saved instructions she attached, as they were then; absent or null when she chose none. */
+  instructions: RequestInstructions.nullable().optional(),
   status: RequestStatus,
   /** Always her; agents never create requests. */
   createdBy: z.strictObject({ type: z.literal("user"), userId: UserId }),
@@ -435,12 +455,18 @@ export const CreateRequestInput = z
     target: RequestTarget,
     kind: RequestKind.default("other"),
     message: Message.default(""),
+    /** Saved instructions to carry with the request (a copy of their title and body). */
+    instructions: RequestInstructions.nullable().optional(),
   })
-  .refine((input) => !kindNeedsMessage(input.kind) || input.message.length > 0, {
-    error:
-      'A request of kind "other" needs a message: say what you want. Quick actions (wrong, unclear, expand, more_like_this, make_questions, summarise, quiz_me) can leave it out.',
-    path: ["message"],
-  });
+  // With instructions attached, the instructions say what she wants: no message is needed.
+  .refine(
+    (input) => !kindNeedsMessage(input.kind) || input.message.length > 0 || !!input.instructions,
+    {
+      error:
+        'A request of kind "other" needs a message: say what you want. Quick actions (wrong, unclear, expand, more_like_this, make_questions, summarise, quiz_me) can leave it out.',
+      path: ["message"],
+    },
+  );
 export type CreateRequestInput = z.infer<typeof CreateRequestInput>;
 
 /** Hers, while the request is still waiting. The target stays; to move a request, cancel and leave a new one. */

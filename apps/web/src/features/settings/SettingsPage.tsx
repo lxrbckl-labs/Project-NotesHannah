@@ -3,13 +3,13 @@ import {
   Bot,
   ChevronRight,
   LifeBuoy,
-  MessageSquarePlus,
+  MessageCirclePlus,
   Palette,
   Settings,
   Trash2,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { type ReactNode, useEffect } from "react";
+import { Link, useLocation } from "react-router";
 import { MOD_KEY } from "../../app/AppShell";
 import { ThemeSwitch } from "../../app/ThemeSwitch";
 import { Page } from "../../components/Page";
@@ -20,6 +20,7 @@ import { LoveLetter } from "../letter/LoveLetter";
 import { ChangePassword, SignOutControls } from "./Account";
 import { ApiKeys } from "./ApiKeys";
 import { BackgroundCard } from "./BackgroundCard";
+import { InstructionsCard } from "./InstructionsCard";
 import { TabBarCard } from "./TabBarCard";
 
 function SettingsCard({
@@ -58,6 +59,12 @@ function LinkRow({ to, icon, children }: { to: string; icon: ReactNode; children
 
 export function SettingsPage() {
   const me = useMe();
+  // A link to one card (the request dialog's "Manage" goes to #instructions) brings that card into view.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [hash]);
   return (
     <Page>
       <PageHeader title="Settings" icon={<Settings />} />
@@ -70,6 +77,8 @@ export function SettingsPage() {
             </LinkRow>
           </div>
         </SettingsCard>
+
+        <InstructionsCard />
 
         <BackgroundCard />
 
@@ -98,7 +107,7 @@ export function SettingsPage() {
             <LinkRow to="/references" icon={<BookMarked size={18} />}>
               References
             </LinkRow>
-            <LinkRow to="/requests" icon={<MessageSquarePlus size={18} />}>
+            <LinkRow to="/requests" icon={<MessageCirclePlus size={18} />}>
               Requests
             </LinkRow>
             <LinkRow to="/activity" icon={<Bot size={18} />}>

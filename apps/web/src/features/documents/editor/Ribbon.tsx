@@ -1,5 +1,5 @@
 import { type Block, COLOR_TOKENS } from "@notes/schema";
-import { ChevronRight, Ellipsis, Palette, Plus, Redo2, Undo2 } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Palette, Plus, Redo2, Undo2 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { menuContentClass, menuItemClass, menuSeparatorClass } from "../../../components/ui/menu";
@@ -275,7 +275,7 @@ function MoreMenu({
             onMouseDown={keepCaret}
             className="flex size-11 shrink-0 items-center justify-center rounded-control text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted hover:text-text data-[state=open]:bg-surface-muted xl:size-9 [&_svg]:size-[18px]"
           >
-            <Ellipsis />
+            <MoreHorizontal />
           </button>
         </DropdownMenu.Trigger>
       </Tooltip>

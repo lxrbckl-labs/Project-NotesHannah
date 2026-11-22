@@ -86,7 +86,7 @@ Not chosen: Dock and PillNav (navigation is another worker's area), GradientText
 Used in the app today (demonstration only):
 
 - `CountUp` on the two stat tiles at the top of the Practice home, through `features/practice/ui/StatNumber.tsx`.
-- `BlurText` was on the Library home greeting, through `features/library/GreetingTitle.tsx`. The greeting card was removed on 2026-11-16 (the page opens on Recently opened); the component is no longer placed there.
+- `BlurText` was on the Library home greeting, through `features/library/GreetingTitle.tsx`. The greeting card was removed on 2026-11-16 (the page opens on Recently Opened); the component is no longer placed there.
 
 Both keep the real text in the page for screen readers and tests. The animation only changes the sighted view.
 

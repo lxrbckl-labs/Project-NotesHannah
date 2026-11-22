@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useParams, useSearchParams } from "react-router";
 import { Page } from "../../components/Page";
-import { buttonClass } from "../../components/ui/button";
+import { IconButton } from "../../components/ui/button";
 import { useBack } from "../../lib/useBack";
 import { AskButton } from "../mounts/ask";
 import { SourceViewer } from "./SourceViewer";
@@ -14,24 +14,26 @@ export function SourceFilePage() {
   const quote = params.get("quote") ?? undefined;
   return (
     <Page className="max-w-7xl">
-      <button type="button" onClick={back} className={buttonClass({ className: "nav-back mb-3" })}>
-        <ArrowLeft size={18} aria-hidden /> Back
-      </button>
-      <div className="mb-3 flex justify-end">
-        <AskButton
-          target={{
-            type: "source",
-            fileId,
-            ...(params.get("page") ? { pageId: params.get("page") as string } : {}),
-          }}
-          label="this source"
-          text="Ask an agent about this page"
-        />
-      </div>
       <SourceViewer
         fileId={fileId}
         pageId={params.get("page") ?? undefined}
         highlightQuote={quote}
+        headerLead={
+          <IconButton aria-label="Back" variant="secondary" onClick={back} className="nav-back">
+            <ArrowLeft size={20} aria-hidden />
+          </IconButton>
+        }
+        headerActions={
+          <AskButton
+            target={{
+              type: "source",
+              fileId,
+              ...(params.get("page") ? { pageId: params.get("page") as string } : {}),
+            }}
+            label="this source"
+            text="Ask an agent about this page"
+          />
+        }
         onPageChange={(pageId) => {
           const next = new URLSearchParams(params);
           next.set("page", pageId);

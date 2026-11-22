@@ -7,6 +7,7 @@ import { IconButton } from "../../components/ui/button";
 import { ConfirmDialog } from "../../components/ui/dialog";
 import { ActionMenu } from "../../components/ui/menu";
 import { useToast } from "../../components/ui/toast";
+import { Tooltip } from "../../components/ui/tooltip";
 import { cn } from "../../lib/cn";
 import { ExternalLink } from "./ExternalLink";
 import { useReferenceMutations, useReferenceUse } from "./queries";
@@ -79,13 +80,14 @@ export function ReferenceItem({
           <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={`Where ${r.title} belongs`}>
             {places.map((p) => (
               <li key={p.nodeId} className="min-w-0 max-w-full">
-                <Link
-                  to={`/library/${p.nodeId}`}
-                  title={p.path}
-                  className="hit-area inline-flex max-w-full items-center rounded-pill border border-border bg-bg px-2.5 py-0.5 text-label hover:bg-surface-muted"
-                >
-                  <span className="truncate">{p.name}</span>
-                </Link>
+                <Tooltip content={p.path}>
+                  <Link
+                    to={`/library/${p.nodeId}`}
+                    className="hit-area inline-flex max-w-full items-center rounded-pill border border-border bg-bg px-2.5 py-0.5 text-label hover:bg-surface-muted"
+                  >
+                    <span className="truncate">{p.name}</span>
+                  </Link>
+                </Tooltip>
               </li>
             ))}
           </ul>
@@ -103,7 +105,7 @@ export function ReferenceItem({
       <ActionMenu
         trigger={
           <IconButton size="sm" label={`Actions for ${r.title}`}>
-            <MoreHorizontal size={18} />
+            <MoreHorizontal size={16} />
           </IconButton>
         }
         entries={[

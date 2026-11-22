@@ -125,6 +125,7 @@ function DropArea({ node, children }: { node: NodeWithLinks; children: ReactNode
 
 /** The source files filed under a lecture, folder or Sources section. */
 function NodeFiles({ node }: { node: NodeWithLinks }) {
+  const hue = useCourseHue(node);
   const files = useQuery({
     queryKey: fileKeys.of(node.id),
     queryFn: () => api.filesOf(node.id),
@@ -141,7 +142,7 @@ function NodeFiles({ node }: { node: NodeWithLinks }) {
       </h2>
       <ul className="grid gap-2.5" aria-label="Source files">
         {files.data.map((f) => (
-          <FileRow key={f.id} file={f} />
+          <FileRow key={f.id} file={f} hue={hue} />
         ))}
       </ul>
     </section>

@@ -1,5 +1,6 @@
-import { Download, Keyboard } from "lucide-react";
-import { buttonClass } from "../../components/ui/button";
+import { Compass, Download, Keyboard } from "lucide-react";
+import { Button, buttonClass } from "../../components/ui/button";
+import { useTour } from "../tour/Tour";
 import {
   GUIDE_BYLINE,
   GUIDE_HEADING,
@@ -46,6 +47,17 @@ export function DownloadPdf({ className }: { className?: string }) {
   );
 }
 
+/** Starts the tour. The tour's last stop points back at this button: it is how to take it again. */
+function TakeTheTour({ variant = "primary" }: { variant?: "primary" | "secondary" }) {
+  const tour = useTour();
+  return (
+    <Button variant={variant} onClick={tour.start} data-tour="start" data-testid="tour-start">
+      <Compass size={16} aria-hidden />
+      Take the tour
+    </Button>
+  );
+}
+
 function Hero() {
   return (
     <header className="relative mb-6 overflow-hidden rounded-panel border border-border bg-surface px-5 py-6 shadow-card md:px-8 md:py-8">
@@ -60,6 +72,7 @@ function Hero() {
       <p className="mt-2 max-w-prose text-body text-text-muted">{GUIDE_SUBTITLE}</p>
       <p className="mt-1 text-ui font-medium text-accent">{GUIDE_BYLINE}</p>
       <div className="guide-noprint mt-5 flex flex-wrap gap-2">
+        <TakeTheTour />
         <DownloadPdf />
         <a href={`#${QUICK_REFERENCE_ID}`} className={buttonClass({ variant: "secondary" })}>
           <Keyboard size={16} aria-hidden />
@@ -202,6 +215,22 @@ export function GuidePage() {
             </div>
           ))}
           <QuickReference />
+          {/* The guide ends by pointing back to the tour. */}
+          <section
+            aria-labelledby="guide-tour-again"
+            className="guide-noprint rounded-panel border border-accent-border bg-accent-soft px-5 py-6 md:px-8"
+          >
+            <h2 id="guide-tour-again" className="font-display text-title font-semibold">
+              Want to be shown around again?
+            </h2>
+            <p className="mt-1.5 max-w-prose text-body text-text-muted">
+              The tour walks you through each part of the app in about a minute. You can start it
+              any time from the top of this guide, or right here.
+            </p>
+            <div className="mt-4">
+              <TakeTheTour variant="secondary" />
+            </div>
+          </section>
         </article>
       </div>
     </div>

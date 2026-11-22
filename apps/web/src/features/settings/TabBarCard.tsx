@@ -175,7 +175,7 @@ export function TabBarCard() {
                   "absolute inset-y-0 left-0",
                   // The dragged icon follows the finger with no delay; the rest glide to their new slots.
                   !dragging && "transition-transform duration-(--duration-base) ease-(--ease-calm)",
-                  dragging && "z-10",
+                  dragging && "z-(--z-raised)",
                 )}
                 style={{
                   width: `${100 / count}%`,

@@ -256,6 +256,42 @@ export function fakeFiles(options: FakeFilesOptions = {}) {
       recompute(p.fileId);
       return t;
     },
+    rename(auth, fileId, name) {
+      writeOnly(auth);
+      const next = { ...file(auth, fileId), originalName: name };
+      files.set(fileId, next);
+      return next;
+    },
+    transcriptRevisions(auth, pageId, opts) {
+      page(auth, pageId);
+      const items = [...transcripts.values()]
+        .filter((t) => t.pageId === pageId)
+        .sort((a, b) => b.revision - a.revision);
+      return paged(items, opts.cursor, opts.limit);
+    },
+    restoreTranscript(auth, pageId, revision) {
+      writeOnly(auth);
+      const p = page(auth, pageId);
+      const old = [...transcripts.values()].find(
+        (t) => t.pageId === pageId && t.revision === revision,
+      );
+      if (!old) throw new AppError("not_found", `This page has no revision ${revision}.`);
+      const latest = Math.max(
+        ...[...transcripts.values()].filter((t) => t.pageId === pageId).map((t) => t.revision),
+      );
+      const t: Transcript = {
+        ...old,
+        id: newId("transcript"),
+        author: auth.actor,
+        reviewStatus: "unverified",
+        reviewedAt: null,
+        revision: latest + 1,
+        createdAt: now(),
+      };
+      transcripts.set(t.id, t);
+      pages.set(p.id, { ...p, transcriptId: t.id });
+      return t;
+    },
     requestUploads(auth, input) {
       writeOnly(auth);
       return input.files.map((f) => ({
@@ -437,6 +473,24 @@ export function fakeDocuments(
         }));
     },
     citedByCount: () => 0,
+    revisions(auth, documentId) {
+      const d = need(auth, documentId);
+      return {
+        items: [
+          {
+            id: newId("revision"),
+            documentId,
+            number: d.doc.revision,
+            author: d.doc.lastEditedBy,
+            createdAt: d.doc.updatedAt,
+            summary: null,
+            restoredFrom: null,
+            blockCount: d.blocks.length,
+          },
+        ],
+        nextCursor: null,
+      };
+    },
   };
   return { port, docs };
 }

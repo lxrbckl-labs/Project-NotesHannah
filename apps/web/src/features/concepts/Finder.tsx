@@ -68,7 +68,7 @@ export function Finder() {
       {target ? (
         <Answer question={question} target={target} />
       ) : (
-        <EmptyState icon={<SearchX size={24} />} title="Pick something to look up">
+        <EmptyState icon={<SearchX size={26} />} title="Pick something to look up">
           Choose {question.pickLabel} above and the answer appears here.
         </EmptyState>
       )}
@@ -92,7 +92,7 @@ function Answer({ question, target }: { question: FinderQuestion; target: Concep
       ) : result.status === "error" ? (
         <ErrorState error={result.error} onRetry={result.reload} />
       ) : result.data.items.length === 0 ? (
-        <EmptyState icon={<SearchX size={24} />} title="Nothing found">
+        <EmptyState icon={<SearchX size={26} />} title="Nothing found">
           Nothing in your notes answers that yet. Try another, or leave a request.
         </EmptyState>
       ) : (

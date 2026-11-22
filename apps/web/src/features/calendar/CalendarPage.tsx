@@ -4,6 +4,7 @@ import {
   CalendarClock,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   Flame,
   GraduationCap,
   NotebookPen,
@@ -348,7 +349,7 @@ function DayDetail({
             ))}
           </ul>
           <Link to="/exams" className={cn(buttonClass({ variant: "secondary" }), "mt-2")}>
-            <GraduationCap size={16} aria-hidden /> Open the exam plan
+            <ClipboardCheck size={16} aria-hidden /> Open the exam plan
           </Link>
         </section>
       ) : null}

@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronDown, ChevronUp, CircleAlert, RotateCw, X } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleAlert, CircleCheck, RotateCw, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { IconButton } from "../../components/ui/button";
@@ -41,7 +41,7 @@ export function UploadTray() {
           aria-label={open ? "Hide upload list" : "Show upload list"}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          {open ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
         </IconButton>
         {!working.length ? (
           <IconButton
@@ -49,7 +49,7 @@ export function UploadTray() {
             aria-label="Clear the upload list"
             onClick={() => manager.clearFinished()}
           >
-            <X size={18} />
+            <X size={16} />
           </IconButton>
         ) : null}
       </div>
@@ -65,7 +65,7 @@ export function UploadTray() {
               <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 shrink-0">
                   {item.status === "done" ? (
-                    <CheckCircle2 size={18} className="text-hue-green-text" aria-hidden />
+                    <CircleCheck size={18} className="text-success" aria-hidden />
                   ) : item.status === "error" ? (
                     <CircleAlert size={18} className="text-hue-red-text" aria-hidden />
                   ) : null}

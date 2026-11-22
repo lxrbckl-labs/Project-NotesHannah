@@ -9,10 +9,34 @@ if (process.argv.includes("build") && process.env.VITE_MOCK_API === "1") {
   throw new Error("Refusing to build with VITE_MOCK_API=1: the mock API must not ship.");
 }
 
+/**
+ * Local development only, and only when the local copy is served to the home network
+ * (`NOTES_WEB_HOST`, set by hand for `pnpm local`). The server accepts changes from one address, the
+ * one it was started with (APP_ORIGIN). A laptop's address changes from network to network, and the
+ * same copy is opened as localhost on the laptop itself, so here the dev proxy presents every
+ * request as coming from that one address. It never applies to a build: a built app is served by the
+ * server itself, with no proxy in between.
+ */
+const lanOrigin = process.env.NOTES_WEB_HOST ? process.env.APP_ORIGIN : undefined;
+const forward = (to: string) =>
+  lanOrigin
+    ? {
+        target: to,
+        configure: (proxy: {
+          on: (
+            event: "proxyReq",
+            handler: (req: { setHeader: (name: string, value: string) => void }) => void,
+          ) => void;
+        }) => {
+          proxy.on("proxyReq", (req) => req.setHeader("origin", lanOrigin));
+        },
+      }
+    : to;
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    proxy: { "/api": target, "/mcp": target },
+    proxy: { "/api": forward(target), "/mcp": forward(target) },
   },
   test: {
     environment: "jsdom",

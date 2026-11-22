@@ -189,7 +189,7 @@ function Row({
               aria-label={`${open ? "Collapse" : "Expand"} ${node.name}`}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+              className="flex size-9 shrink-0 items-center justify-center rounded-control text-text-muted hover:bg-surface-muted"
             >
               <ChevronRight size={16} className={cn("transition-transform", open && "rotate-90")} />
             </button>
@@ -203,7 +203,7 @@ function Row({
           aria-pressed={can ? on : undefined}
           onClick={() => onToggle(node)}
           className={cn(
-            "flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1.5 text-left text-sm xl:min-h-9",
+            "flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-control px-1.5 text-left text-sm xl:min-h-9",
             !can && "cursor-default text-text-muted",
           )}
         >

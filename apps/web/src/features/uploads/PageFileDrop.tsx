@@ -1,4 +1,4 @@
-import { UploadCloud } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUploadManager } from "./UploadProvider";
@@ -69,7 +69,7 @@ export function PageFileDrop({ target }: { target: { nodeId: string | null; labe
     >
       <div className="flex max-w-md flex-col items-center gap-3 rounded-panel border-2 border-dashed border-accent bg-surface px-8 py-10 text-center shadow-pop">
         <span className="flex size-14 items-center justify-center rounded-card bg-accent-soft text-accent">
-          <UploadCloud size={28} />
+          <Upload size={28} />
         </span>
         <p className="font-display text-title font-semibold">Drop to upload</p>
         <p className="text-ui text-text-muted">

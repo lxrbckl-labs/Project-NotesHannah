@@ -15,13 +15,15 @@ import { ActionMenu, ContextActions, type MenuEntry } from "../../components/ui/
 import { cn } from "../../lib/cn";
 import { FILE_TYPE_SHORT } from "../../lib/fileTypes";
 import { formatAgo } from "../../lib/format";
+import type { Hue } from "../../lib/hues";
 import { failureWords, STATUS_INFO } from "../../lib/messages";
 import { useFinePointer } from "../../lib/useMedia";
 import { useLibraryDialogs } from "../library/dialogs";
 import { fileLeafDragProps } from "../library/dnd";
 import { useFileActions } from "../library/fileActions";
 import { InlineName } from "../library/InlineName";
-import { FileStatusBadge, FileTypeIcon } from "../library/LibraryTree";
+import { FileStatusBadge } from "../library/LibraryTree";
+import { FileTile } from "../library/NodeIcon";
 
 /**
  * One source file in a list (inbox, a lecture's files): name, what its status means in plain
@@ -31,10 +33,13 @@ export function FileRow({
   file,
   showPlace,
   placeName,
+  hue,
 }: {
   file: SourceFile;
   showPlace?: boolean;
   placeName?: string;
+  /** The course colour of the page the row is on; the inbox has none (neutral). */
+  hue?: Hue | null | undefined;
 }) {
   const actions = useFileActions();
   const dialogs = useLibraryDialogs();
@@ -107,9 +112,7 @@ export function FileRow({
             className="hidden shrink-0 text-text-muted opacity-0 group-hover:opacity-100 xl:block"
           />
         ) : null}
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-accent-soft text-accent">
-          <FileTypeIcon type={file.type} size={20} />
-        </span>
+        <FileTile type={file.type} hue={hue} />
         <div className="min-w-0 flex-1 basis-52">
           {renaming ? (
             <InlineName
@@ -125,7 +128,6 @@ export function FileRow({
             <Link
               to={`/files/${file.id}`}
               draggable={false}
-              title={file.originalName}
               className="block break-words rounded-inline font-medium [overflow-wrap:anywhere] hover:underline"
             >
               {file.originalName}

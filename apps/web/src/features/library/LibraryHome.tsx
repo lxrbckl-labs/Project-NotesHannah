@@ -4,8 +4,10 @@ import {
   BookMarked,
   CalendarPlus,
   CalendarRange,
+  ChevronDown,
   ChevronsDownUp,
   ChevronsUpDown,
+  History,
   Lightbulb,
   Star,
   Trash2,
@@ -144,28 +146,22 @@ export function LibraryHome() {
         <PillCluster className="-mb-1" />
       </div>
 
-      <section aria-labelledby="recents-title" className="mb-8">
-        <SectionTitle>
-          <span id="recents-title">Recently opened</span>
-        </SectionTitle>
+      <FoldSection id="recents" title="Recently Opened" className="mb-4">
         <ItemStrip
           query={recents}
           empty="Things you open show up here."
-          icon={<CalendarRange size={18} />}
+          icon={<History size={18} />}
         />
-      </section>
+      </FoldSection>
 
-      {/* Favorites, then Concepts and References, sit right under Recently opened (Alex, 2026-11-21). */}
-      <section aria-labelledby="favourites-title" className="mb-5">
-        <SectionTitle>
-          <span id="favourites-title">Favorites</span>
-        </SectionTitle>
+      {/* Favorites, then Concepts and References, sit right under Recently Opened (Alex, 2026-11-21). */}
+      <FoldSection id="favourites" title="Favorites" className="mb-1">
         <ItemStrip
           query={favourites}
           empty="Star a course or lecture and it will wait for you here."
           icon={<Star size={18} />}
         />
-      </section>
+      </FoldSection>
 
       <div className="mb-10 flex flex-wrap gap-2">
         <Link to="/concepts" data-testid="home-concepts-link" className={buttonClass()}>
@@ -241,6 +237,74 @@ export function LibraryHome() {
 
       {import.meta.env.VITE_MOCK_API === "1" ? null : <ExamsStrip />}
     </Page>
+  );
+}
+
+const FOLD_KEY = "notes-library-folded";
+
+function readFolded(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(FOLD_KEY) ?? "{}") as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * A home section whose heading folds it away: the arrow sits left of the title, as on the sidebars,
+ * and each section's state is remembered on this device.
+ */
+function FoldSection({
+  id,
+  title,
+  className,
+  children,
+}: {
+  id: string;
+  title: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(() => !readFolded()[id]);
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    try {
+      localStorage.setItem(FOLD_KEY, JSON.stringify({ ...readFolded(), [id]: !next }));
+    } catch {
+      // Private window: the section still folds, it just is not remembered.
+    }
+  }
+  return (
+    <section aria-labelledby={`${id}-title`} className={className} data-testid={`fold-${id}`}>
+      <h2 className="mb-2 text-base font-semibold text-text">
+        <button
+          type="button"
+          id={`${id}-title`}
+          aria-expanded={open}
+          aria-controls={`${id}-body`}
+          onClick={toggle}
+          className="-ml-1 flex items-center gap-1.5 rounded-control py-1 pl-1 pr-2 hover:bg-surface-muted"
+        >
+          <ChevronDown
+            size={16}
+            aria-hidden
+            className={`shrink-0 text-text-muted transition-transform duration-200 motion-reduce:transition-none ${open ? "" : "-rotate-90"}`}
+          />
+          {title}
+        </button>
+      </h2>
+      <div
+        id={`${id}-body`}
+        inert={!open}
+        className={`-mx-3 grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          {/* The spare room keeps the cards' shadows from being cut while the section slides. */}
+          <div className="px-3 pb-4 pt-1">{children}</div>
+        </div>
+      </div>
+    </section>
   );
 }
 

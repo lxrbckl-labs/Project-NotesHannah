@@ -1,6 +1,6 @@
 import type { ConceptSummary, ConceptType } from "@notes/schema";
 import { CONCEPT_TYPE_INFO, CONCEPT_TYPES } from "@notes/schema";
-import { BookMarked, Search } from "lucide-react";
+import { Lightbulb, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { HeaderArt } from "../../components/art/pills";
 import { Chip } from "../../components/ui/badge";
@@ -178,11 +178,11 @@ function Browse() {
         <ErrorState error={found.error} onRetry={found.reload} />
       ) : !rows || rows.length === 0 ? (
         debounced || type ? (
-          <EmptyState icon={<Search size={24} />} title="No matches">
+          <EmptyState icon={<Search size={26} />} title="No matches">
             Nothing matches that. Try a shorter name, a brand name, or clear the filter.
           </EmptyState>
         ) : (
-          <EmptyState icon={<BookMarked size={24} />} title="No concepts yet">
+          <EmptyState icon={<Lightbulb size={26} />} title="No concepts yet">
             Agents file drugs, classes and mechanisms here as they read your notes. They will appear
             after the next time an agent runs.
           </EmptyState>

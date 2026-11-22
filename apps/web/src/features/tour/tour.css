@@ -1,0 +1,76 @@
+/* The tour (features/tour/Tour.tsx). The page dims, a spotlight glides from one part of the app to the
+   next, and a card beside it says what the part is for. Reduced motion (the global rule in
+   app/styles.css) makes every move instant. */
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+}
+.tour-shield {
+  position: absolute;
+  inset: 0;
+}
+/* The clear window. Its shadow, spread far past the screen, is the dimming. */
+.tour-spot {
+  position: absolute;
+  border-radius: var(--radius-control);
+  box-shadow:
+    0 0 0 3px var(--color-accent),
+    0 0 0 9999px var(--color-overlay);
+  pointer-events: none;
+  transition:
+    left 420ms var(--ease-calm),
+    top 420ms var(--ease-calm),
+    width 420ms var(--ease-calm),
+    height 420ms var(--ease-calm);
+}
+.tour-spot[data-empty] {
+  box-shadow: 0 0 0 9999px var(--color-overlay);
+}
+.tour-card {
+  position: absolute;
+  padding: 1rem 1.125rem;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-pop);
+  transition:
+    left 420ms var(--ease-calm),
+    top 420ms var(--ease-calm),
+    opacity var(--duration-base) linear;
+}
+/* Until the stop's target has been found, the card waits out of sight rather than jumping. */
+.tour-card[data-ready="false"] {
+  opacity: 0;
+}
+.tour-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+  transition:
+    width var(--duration-base) var(--ease-calm),
+    background-color var(--duration-base) linear;
+}
+.tour-dot[data-on] {
+  width: 1rem;
+  background: var(--color-accent);
+}
+.tour-skip {
+  position: absolute;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  min-height: var(--touch-target);
+  padding: 0 1rem;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-ui);
+  font-weight: 500;
+  box-shadow: var(--shadow-raised);
+}
+.tour-skip:hover {
+  background: var(--color-surface-muted);
+}

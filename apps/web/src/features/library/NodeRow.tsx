@@ -10,11 +10,10 @@ import { cn } from "../../lib/cn";
 import type { Hue } from "../../lib/hues";
 import { useUploadManager } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
-import { courseHue } from "./courseHue";
 import { useRowDnd } from "./dnd";
 import { useFileActions } from "./fileActions";
 import { InlineName } from "./InlineName";
-import { NodeTile } from "./NodeIcon";
+import { NodeTile, nodeHue } from "./NodeIcon";
 import { canHoldFiles } from "./picker";
 import { folderDepthOf } from "./queries";
 import { type Destination, isPending, KIND_NAME, nodeHref, toDestination } from "./rules";
@@ -56,7 +55,7 @@ export function NodeRow({
   /** The course colour of the page this row is on; terms have none. */
   hue?: Hue | null | undefined;
 }) {
-  const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
+  const hue = nodeHue(node, inherited);
   const client = useQueryClient();
   const actions = useNodeActions();
   const uploads = useUploadManager();

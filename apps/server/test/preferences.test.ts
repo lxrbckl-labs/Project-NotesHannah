@@ -159,3 +159,46 @@ describe("GET and PATCH /api/me/preferences", () => {
     expect(write.status).toBe(403);
   });
 });
+
+describe("saved instructions", () => {
+  const ONE = { id: "ins_a", title: "Lecture notes", body: "One section per slide." };
+  const TWO = { id: "ins_b", title: "Cram sheet", body: "One page. Tables only." };
+
+  test("none to begin with; the list is saved whole, per account, and survives", async () => {
+    const { get, patch, hannah, bea } = await setup();
+    expect((await get(hannah)).instructions).toEqual([]);
+    expect((await patch(hannah, { instructions: [ONE, TWO] })).status).toBe(200);
+    expect((await get(hannah)).instructions).toEqual([ONE, TWO]);
+    // Each account has its own, and the tab order is untouched.
+    expect((await get(bea)).instructions).toEqual([]);
+    expect((await get(hannah)).tabOrder).toEqual([...TAB_IDS]);
+    // Edit one, delete the other: the whole list is sent again.
+    await patch(hannah, { instructions: [{ ...ONE, body: "Bold every drug name." }] });
+    expect((await get(hannah)).instructions).toEqual([{ ...ONE, body: "Bold every drug name." }]);
+    await patch(hannah, { instructions: [] });
+    expect((await get(hannah)).instructions).toEqual([]);
+  });
+
+  test("refuses an empty name, repeated ids and too many", async () => {
+    const { patch, hannah } = await setup();
+    const many = Array.from({ length: 31 }, (_, i) => ({ id: `ins_${i}`, title: "t", body: "b" }));
+    for (const instructions of [[{ ...ONE, title: " " }], [ONE, { ...TWO, id: ONE.id }], many]) {
+      const res = await patch(hannah, { instructions });
+      expect(res.status).toBe(400);
+      expect(errorCode(res.body)).toBe("invalid_input");
+    }
+  });
+});
+
+describe("the tour flag", () => {
+  test("false for a new account, true once set, and hers alone", async () => {
+    const { get, patch, hannah, bea } = await setup();
+    expect((await get(hannah)).tourSeen).toBe(false);
+    expect((await patch(hannah, { tourSeen: true })).status).toBe(200);
+    expect((await get(hannah)).tourSeen).toBe(true);
+    expect((await get(bea)).tourSeen).toBe(false);
+    // It can be put back, to see the tour start by itself again.
+    await patch(hannah, { tourSeen: false });
+    expect((await get(hannah)).tourSeen).toBe(false);
+  });
+});

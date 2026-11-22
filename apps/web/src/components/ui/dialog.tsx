@@ -62,7 +62,7 @@ export function Modal({
             </div>
             <Dialog.Close asChild>
               <IconButton aria-label="Close" className="-mr-2 -mt-2">
-                <X size={18} />
+                <X size={20} />
               </IconButton>
             </Dialog.Close>
           </div>

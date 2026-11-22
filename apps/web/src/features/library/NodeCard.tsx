@@ -8,9 +8,8 @@ import { ActionMenu, ContextActions } from "../../components/ui/menu";
 import { cn } from "../../lib/cn";
 import type { Hue } from "../../lib/hues";
 import { useNodeActions } from "./actions";
-import { courseHue } from "./courseHue";
 import { InlineName } from "./InlineName";
-import { NodeTile } from "./NodeIcon";
+import { NodeTile, nodeHue } from "./NodeIcon";
 import { nodeMeta, nodeTitle } from "./NodeRow";
 import { isPending, nodeHref } from "./rules";
 import { useNodeMenu } from "./useNodeMenu";
@@ -31,7 +30,7 @@ export function NodeCard({
   large?: boolean;
   hue?: Hue | null | undefined;
 }) {
-  const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
+  const hue = nodeHue(node, inherited);
   const actions = useNodeActions();
   const [renaming, setRenaming] = useState(false);
   const fixed = node.kind === "section";
@@ -78,7 +77,7 @@ export function NodeCard({
         <p className="mt-0.5 truncate text-ui text-text-muted">{nodeMeta(node)}</p>
       </div>
       {!fixed ? (
-        <div className="relative z-10 -mr-2 -mt-2 shrink-0 self-start md:absolute md:right-3 md:top-3 md:m-0">
+        <div className="relative z-(--z-raised) -mr-2 -mt-2 shrink-0 self-start md:absolute md:right-3 md:top-3 md:m-0">
           <ActionMenu
             trigger={
               <IconButton aria-label={`Actions for ${node.name}`}>

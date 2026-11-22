@@ -12,9 +12,9 @@ import { useToast } from "../../components/ui/toast";
 import { api } from "../../lib/api";
 import { formatAgo } from "../../lib/format";
 import { useNodeActions } from "./actions";
+import { useCourseHue } from "./courseHue";
 import { useFileActions } from "./fileActions";
-import { FileTypeIcon } from "./LibraryTree";
-import { NodeTile } from "./NodeIcon";
+import { FileTile, NodeTile } from "./NodeIcon";
 import { nodeTitle } from "./NodeRow";
 import { fileKeys, useTrash } from "./queries";
 
@@ -54,7 +54,7 @@ export function TrashPage() {
               padding="sm"
               className="flex flex-wrap items-center gap-3"
             >
-              <NodeTile kind={node.kind} section={node.section} />
+              <TrashTile node={node} />
               <div className="min-w-0 flex-1 basis-48">
                 <p className="truncate font-medium">{nodeTitle(node)}</p>
                 <p className="truncate text-ui text-text-muted">
@@ -108,6 +108,12 @@ export function TrashPage() {
 }
 
 /** Source files in the trash: restore, or delete for good (only from here, only by her). */
+/** A trashed item keeps the colour it had in the library: its course's, or none for a term. */
+function TrashTile({ node }: { node: NodeWithLinks }) {
+  const hue = useCourseHue(node);
+  return <NodeTile kind={node.kind} section={node.section} hue={hue} />;
+}
+
 function TrashedFiles({ files: list }: { files: SourceFile[] }) {
   const actions = useFileActions();
   const [confirming, setConfirming] = useState<SourceFile | null>(null);
@@ -126,9 +132,7 @@ function TrashedFiles({ files: list }: { files: SourceFile[] }) {
             padding="sm"
             className="flex flex-wrap items-center gap-3"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
-              <FileTypeIcon type={file.type} size={20} />
-            </span>
+            <FileTile type={file.type} />
             <div className="min-w-0 flex-1 basis-48">
               <p className="break-words font-medium [overflow-wrap:anywhere]">
                 {file.originalName}

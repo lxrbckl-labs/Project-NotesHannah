@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import type { WriterOperation } from "@notes/schema";
+import type { Db } from "../db/client.js";
+import { readCalendar } from "../domains/calendar/index.js";
 import type { OperationResult } from "../domains/documents/index.js";
+import { getPreferences } from "../domains/preferences/index.js";
 import type { Services } from "../services.js";
 import type { DocumentsPort, FilesPort, McpBackend, WriteSummary } from "./ports.js";
 
@@ -10,7 +13,11 @@ import type { DocumentsPort, FilesPort, McpBackend, WriteSummary } from "./ports
  * checked, recorded in the change feed and written to the activity log the
  * same way.
  */
-export function backendFromServices(services: Services): McpBackend {
+export function backendFromServices(
+  services: Services,
+  /** The calendar and preferences are functions over the database, not services; given, they are ported too. */
+  deps?: { db: Db; now: () => number },
+): McpBackend {
   const { files, documents, changes, search, library } = services;
 
   const filesPort: FilesPort = {
@@ -30,6 +37,9 @@ export function backendFromServices(services: Services): McpBackend {
     pageImageLink: (auth, pageId, size) => files.signedImageUrl(auth, pageId, size),
     getTranscript: (auth, pageId) => files.getTranscript(auth, pageId),
     saveTranscript: (auth, input) => files.saveTranscript(auth, input),
+    rename: (auth, id, name) => files.rename(auth, id, name),
+    transcriptRevisions: (auth, pageId, options) => files.listRevisions(auth, pageId, options),
+    restoreTranscript: (auth, pageId, revision) => files.restoreRevision(auth, pageId, revision),
     requestUploads: (auth, input) => files.requestUploads(auth, input),
   };
 
@@ -89,6 +99,7 @@ export function backendFromServices(services: Services): McpBackend {
     },
     citedByCount: (auth, pageId) =>
       documents.citedBy(auth, { pageId }, { limit: 200 }).items.length,
+    revisions: (auth, documentId, options) => documents.listRevisions(auth, documentId, options),
   };
 
   return {
@@ -103,6 +114,17 @@ export function backendFromServices(services: Services): McpBackend {
     search: { search: (userId, request) => search.search(userId, request) },
     files: filesPort,
     documents: documentsPort,
+    ...(deps
+      ? {
+          // The same functions the web routes call (GET /api/calendar, GET /api/me/preferences).
+          calendar: {
+            read: (auth, query) => readCalendar(deps.db, auth.userId, deps.now(), query),
+          },
+          preferences: {
+            savedInstructions: (auth) => getPreferences(deps.db, auth.userId).instructions,
+          },
+        }
+      : {}),
     changes: {
       changesSince: (userId, cursor, limit) => changes.changesSince(userId, cursor, limit),
       latestCursor: (userId) => changes.latestCursor(userId),

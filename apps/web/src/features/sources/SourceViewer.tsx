@@ -1,11 +1,12 @@
 import type { NormalizedBox, Page, SourceFile } from "@notes/schema";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download, FileSearch, RotateCw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "../../components/ui/button";
 import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
+import { Tooltip } from "../../components/ui/tooltip";
 import { api, originalUrl, pageImageUrl } from "../../lib/api";
 import { cn } from "../../lib/cn";
 import { FILE_TYPE_LABELS, formatBytes } from "../../lib/fileTypes";
@@ -28,6 +29,10 @@ export interface SourceViewerProps {
   region?: NormalizedBox | undefined;
   /** Called when she moves to another page, so a route can keep the address in step. */
   onPageChange?: ((pageId: string) => void) | undefined;
+  /** A screen's own lead for the header (its back button), shown before the title. */
+  headerLead?: ReactNode;
+  /** A screen's own actions for the header toolbar (ask an agent), ahead of Download. */
+  headerActions?: ReactNode;
 }
 
 const pagesKey = (fileId: string) => ["files", "pages", fileId] as const;
@@ -43,6 +48,8 @@ export function SourceViewer({
   highlightQuote,
   region,
   onPageChange,
+  headerLead,
+  headerActions,
 }: SourceViewerProps) {
   const layout = useLayout();
   const actions = useFileActions();
@@ -90,7 +97,8 @@ export function SourceViewer({
         file={f}
         placePath={place.data?.path}
         placeId={place.data?.id}
-        onRetry={() => void actions.retry(f)}
+        lead={headerLead}
+        actions={headerActions}
       />
 
       {f.status === "failed" || f.status === "converting" || f.status === "uploaded" ? (
@@ -156,68 +164,92 @@ export function SourceViewer({
   );
 }
 
+/**
+ * The header, top to bottom: back and the title with its place, then the facts as quiet text, then one
+ * toolbar of the actions in groups: agent, then download. The toolbar is the document page's bar
+ * (`.doc-head-bar` in styles.css): one control height, thin lines between the groups.
+ */
 function ViewerHeader({
   file,
   placePath,
   placeId,
-  onRetry,
+  lead,
+  actions,
 }: {
   file: SourceFile;
   placePath?: string | undefined;
   placeId?: string | undefined;
-  onRetry: () => void;
+  lead?: ReactNode;
+  actions?: ReactNode;
 }) {
-  void onRetry;
   return (
-    <header className="flex flex-wrap items-start gap-3">
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-card bg-accent-soft text-accent">
-        <FileTypeIcon type={file.type} size={24} />
-      </span>
-      <div className="min-w-0 flex-1 basis-60">
-        <h1 className="break-words text-2xl font-semibold leading-tight [overflow-wrap:anywhere] md:text-3xl">
-          {file.originalName}
-        </h1>
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
-          {file.pageCount ? (
-            <span>
-              {file.pageCount} {file.pageCount === 1 ? "page" : "pages"}
-            </span>
-          ) : null}
-          <FileStatusBadge status={file.status} />
-          <span>Uploaded {formatDate(file.createdAt)}</span>
-        </p>
-        <div data-testid="file-details" className="mt-1.5 text-sm text-text-muted">
-          <p>
-            Original: {FILE_TYPE_LABELS[file.type]}, {formatBytes(file.bytes)}
+    <header className="grid grid-cols-[minmax(0,1fr)] gap-3" data-testid="file-header">
+      <div className="flex items-start gap-3">
+        {lead}
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-card bg-accent-soft text-accent">
+          <FileTypeIcon type={file.type} size={24} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words text-2xl font-semibold leading-tight [overflow-wrap:anywhere] md:text-3xl">
+            {file.originalName}
+          </h1>
+          <p className="mt-1 text-sm">
+            {file.nodeId && placePath ? (
+              <>
+                Filed under{" "}
+                <Link
+                  className="text-accent underline-offset-2 hover:underline"
+                  to={`/library/${placeId}`}
+                >
+                  {placePath}
+                </Link>
+              </>
+            ) : file.nodeId ? null : (
+              <span className="text-text-muted">In the inbox, not filed yet.</span>
+            )}
           </p>
-          {file.conversionNotes.map((note) => (
-            <p key={note}>{note}</p>
-          ))}
+          <div
+            data-testid="file-details"
+            className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted"
+          >
+            <span>
+              Original: {FILE_TYPE_LABELS[file.type]}, {formatBytes(file.bytes)}
+            </span>
+            {file.pageCount ? (
+              <span>
+                {file.pageCount} {file.pageCount === 1 ? "page" : "pages"}
+              </span>
+            ) : null}
+            <span>Uploaded {formatDate(file.createdAt)}</span>
+            <FileStatusBadge status={file.status} />
+            {file.conversionNotes.map((note) => (
+              <span key={note} className="basis-full">
+                {note}
+              </span>
+            ))}
+          </div>
         </div>
-        <p className="mt-1.5 text-sm">
-          {file.nodeId && placePath ? (
-            <>
-              Filed under{" "}
-              <Link
-                className="text-accent underline-offset-2 hover:underline"
-                to={`/library/${placeId}`}
-              >
-                {placePath}
-              </Link>
-            </>
-          ) : file.nodeId ? null : (
-            <span className="text-text-muted">In the inbox, not filed yet.</span>
-          )}
-        </p>
       </div>
-      <a
-        href={originalUrl(file.id, true)}
-        download
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-border-strong bg-surface px-4 text-sm font-medium hover:bg-surface-muted xl:min-h-9"
+      <div
+        role="toolbar"
+        aria-label="This file"
+        data-testid="file-toolbar"
+        className="doc-head-bar flex max-w-full flex-wrap items-center gap-0.5 self-start justify-self-start rounded-card border border-border-strong bg-surface p-1 shadow-card"
       >
-        <Download size={16} aria-hidden />
-        Download original
-      </a>
+        {actions}
+        {actions ? <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" /> : null}
+        <Tooltip content="Download original">
+          <a
+            href={originalUrl(file.id, true)}
+            download
+            aria-label="Download original"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 xl:h-8 xl:min-h-8 xl:min-w-8 text-ui font-medium text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted sm:px-3"
+          >
+            <Download size={15} aria-hidden />
+            <span className="max-sm:hidden">Download original</span>
+          </a>
+        </Tooltip>
+      </div>
     </header>
   );
 }

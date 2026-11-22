@@ -163,6 +163,8 @@ function translateRoute(method: string, path: string): string {
   if (pq) return `practice_questions {"action":"${pq[2]}","questionId":"${pq[1]}"}`;
   if (path.startsWith("/api/practice/questions")) return 'practice_questions {"action":"list"}';
   if (path.startsWith("/api/practice")) return 'study_progress {"action":"sessions"}';
+  if (path.startsWith("/api/calendar"))
+    return 'study_progress {"action":"calendar","from":"YYYY-MM-DD","to":"YYYY-MM-DD"}';
   if (path.startsWith("/api/exams")) return 'exams {"action":"list"}';
   if (/^\/api\/concepts\/[^/\s]+\/merge$/.test(path)) return 'concepts {"action":"merge",...}';
   if (/^\/api\/concepts\/[^/\s]+\/page$/.test(path))
@@ -186,6 +188,11 @@ function translateRoute(method: string, path: string): string {
   if (path.startsWith("/api/files")) return `source_files {"action":"list"}`;
   if (path.startsWith("/api/converter"))
     return `source_files {"action":"list"} (it shows the converter's state)`;
+  const revs = /^\/api\/(documents|pages)\/([^/\s]+)\/(?:transcript\/)?revisions$/.exec(path);
+  if (revs) {
+    const id = revs[2]?.startsWith(":") ? (revs[1] === "pages" ? "pag_…" : "doc_…") : revs[2];
+    return `get_item {"id":"${id}","history":true}`;
+  }
   const page = /^\/api\/pages\/([^/\s]+)\/(transcript|image|image-url)/.exec(path);
   if (page && !page[1]?.startsWith(":")) return `get_page {"pageId":"${page[1]}"}`;
   if (page) return "get_page";

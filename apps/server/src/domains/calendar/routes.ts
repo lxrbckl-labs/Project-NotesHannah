@@ -1,21 +1,15 @@
+import { CalendarQuery } from "@notes/schema";
 import { Hono } from "hono";
-import { z } from "zod";
 import { type AppEnv, getAuth, requireAuth } from "../../http/auth-context.js";
 import type { ServerDeps } from "../../http/deps.js";
 import { AppError } from "../../http/errors.js";
 import { readCalendar } from "./service.js";
 
-const Query = z.object({
-  from: z.iso.date(),
-  to: z.iso.date(),
-  utcOffsetMinutes: z.coerce.number().int().min(-840).max(840).optional(),
-});
-
 /** The calendar. Mount at "/api". Read-only; any sign-in (her session or an agent's key). */
 export function calendarRoutes(deps: Pick<ServerDeps, "db" | "now">): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
   app.get("/calendar", requireAuth, (c) => {
-    const parsed = Query.safeParse(c.req.query());
+    const parsed = CalendarQuery.safeParse(c.req.query());
     if (!parsed.success) {
       throw new AppError(
         "invalid_input",

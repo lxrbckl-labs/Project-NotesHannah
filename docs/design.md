@@ -301,7 +301,7 @@ An icon-only button. It always has a name: `label` (or `aria-label`). Variants: 
 with the accent fill. Wrap it in a `Tooltip` on the computer if the icon is not obvious.
 
 ```tsx
-<IconButton label="Bold" pressed={isBold} onClick={toggleBold}><Bold size={18} /></IconButton>
+<IconButton label="Bold" pressed={isBold} onClick={toggleBold}><Bold size={20} /></IconButton>
 ```
 
 An icon she can press is a solid square with an edge, like every other button (Alex, 2026-11-16): the default and
@@ -809,4 +809,45 @@ Not part of the four migrations, but worth doing when someone is nearby:
   around the trigger, never between the trigger and its button. Do not also set a native `title`:
   the browser would draw a second hint. Pass `tooltip={false}` to an `IconButton` only when
   something around it already shows a hint.
+
+## Icons and tiles (2026-11-22)
+
+- **One concept, one icon.** `ICON` in `apps/web/src/features/library/NodeIcon.tsx` names the lucide
+  icon for every library item, place and common action. A screen takes the icon from there (or
+  draws the same lucide icon) and never picks another for the same thing. `NodeIcon` draws an item
+  by kind and section, `FileTypeIcon` a source file by type (slides, text, image).
+
+  | Concept | Icon | Concept | Icon |
+  | --- | --- | --- | --- |
+  | Term | `CalendarRange` | Course | `GraduationCap` |
+  | Folder | `Folder` | Lecture, slides file | `Presentation` |
+  | Document, note, text file | `FileText` | Image file | `Image` |
+  | Sources section, Inbox | `Inbox` | Study guides, Library | `BookOpen` |
+  | Practice set (section) | `ListChecks` | Exam | `ClipboardCheck` |
+  | Practice | `GraduationCap` | Calendar | `CalendarDays` |
+  | Concept | `Lightbulb` | Reference | `BookMarked` |
+  | Request, ask an agent | `MessageCirclePlus` | Agent activity | `Bot` |
+  | Side note / add one | `MessageSquareText` / `MessageSquarePlus` | Recent, history | `History` |
+  | Search | `Search` | Settings | `Settings` |
+  | Guide | `LifeBuoy` | Trash, delete | `Trash2` |
+  | Favorite / unfavorite | `Star` / `StarOff` | Add | `Plus` |
+  | Upload / download | `Upload` / `Download` | Rename, edit | `Pencil` |
+  | Write | `PenLine` | Move, file under | `FolderInput` |
+  | Restore, reset | `RotateCcw` | Retry | `RotateCw` |
+  | Close | `X` | Back | `ArrowLeft` |
+  | Expand (tree) / disclosure | `ChevronRight` / `ChevronDown` | More menu | `MoreHorizontal` |
+  | Drag handle | `GripVertical` | Fit to view / full screen | `Maximize` / `Expand` |
+
+  Use the canonical name, not a lucide alias (`CircleCheck`, not `CheckCircle2`; `CircleHelp`, not
+  `HelpCircle`; `MoreHorizontal`, not `Ellipsis`).
+- **Icon sizes.** In an `IconButton` of size `md`: 20. In size `sm` and in menu rows, text buttons
+  and action bars: 16. Sidebar links 18, phone tab bar 22, `EmptyState` 26. A bar that sets its own
+  size (the document toolbar, 18) keeps it for every control in the bar.
+- **The tile colour rule.** An item's tile (`NodeTile`, `FileTile`), its tree row and its card take
+  their colour from `nodeHue`: a course carries its own colour (`hueForId(course.id)`), a term
+  carries none (neutral gray), and everything under a course (sections, folders, lectures,
+  documents, source files) carries that course's colour. What sits outside any course (terms, the
+  inbox, the top of the library) is neutral. The same rule holds on every screen: the library home,
+  item pages, the tree, search results, the right panel and the trash. Only the item pickers draw
+  plain uncoloured icons.
 

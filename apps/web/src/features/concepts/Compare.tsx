@@ -239,7 +239,7 @@ export function Compare() {
           />
         </section>
       ) : (
-        <EmptyState icon={<Table2 size={24} />} title="Your table will appear here">
+        <EmptyState icon={<Table2 size={26} />} title="Your table will appear here">
           Pick two or more drugs and press Build table.
         </EmptyState>
       )}

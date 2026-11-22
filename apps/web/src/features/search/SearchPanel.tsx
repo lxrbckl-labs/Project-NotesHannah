@@ -1,11 +1,11 @@
 import { practice, type SearchHit } from "@notes/schema";
 import {
   BookMarked,
+  CircleHelp,
   FileText,
   Globe,
-  HelpCircle,
+  Lightbulb,
   MessageSquareText,
-  Pill,
   Search,
   TextQuote,
 } from "lucide-react";
@@ -152,7 +152,12 @@ function AppHitLink({
               ? "Practice question"
               : hit.name;
   return (
-    <Link to={hitHref(hit, q)} onClick={onPick} data-hue={hue ?? "accent"} className={rowClass}>
+    <Link
+      to={hitHref(hit, q)}
+      onClick={onPick}
+      data-hue={hue ?? (hit.kind === "node" ? "gray" : "accent")}
+      className={rowClass}
+    >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-tone-soft text-tone-text">
         {hit.kind === "node" ? (
           <NodeIcon kind={hit.node.kind} section={hit.node.section} size={18} />
@@ -163,9 +168,9 @@ function AppHitLink({
         ) : hit.kind === "margin_note" ? (
           <MessageSquareText size={18} aria-hidden />
         ) : hit.kind === "question" ? (
-          <HelpCircle size={18} aria-hidden />
+          <CircleHelp size={18} aria-hidden />
         ) : (
-          <Pill size={18} aria-hidden />
+          <Lightbulb size={18} aria-hidden />
         )}
       </span>
       <span className="min-w-0">

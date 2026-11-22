@@ -1,4 +1,4 @@
-import { Maximize, Minus, Plus } from "lucide-react";
+import { Expand, Minimize, Minus, Plus, Scan } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../../components/ui/button";
 
@@ -15,6 +15,24 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const last = useRef<{ x: number; y: number; dist: number } | null>(null);
+  // Full screen: the viewer fills the whole window, over the page, until she leaves it. It is our own
+  // layout rather than the browser's full-screen mode, so it works the same in Safari and on an iPad
+  // or phone, where the browser's mode is missing or partial.
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setFull(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [full]);
+  // Entering or leaving changes the picture's size: start again from the whole page.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the mode changes
+  useEffect(() => setView({ scale: 1, x: 0, y: 0 }), [full]);
 
   const clamp = useCallback((scale: number, x: number, y: number) => {
     const el = box.current;
@@ -95,7 +113,15 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
   }
 
   return (
-    <div className="relative">
+    <div
+      data-testid="zoom-pan"
+      data-full={full || undefined}
+      className={
+        full
+          ? "zoom-full fixed inset-0 z-(--z-modal) flex flex-col bg-bg p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]"
+          : "relative"
+      }
+    >
       {/* biome-ignore lint/a11y/useSemanticElements: an image viewport, not a form group */}
       <div
         ref={box}
@@ -112,7 +138,7 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
             ? setView({ scale: 1, x: 0, y: 0 })
             : zoomTo(2.5, { x: event.clientX, y: event.clientY })
         }
-        className="relative flex min-h-40 touch-none select-none items-center justify-center overflow-hidden rounded-card border border-border bg-surface-muted"
+        className={`relative flex min-h-40 touch-none select-none items-center justify-center overflow-hidden rounded-card border border-border bg-surface-muted${full ? " min-h-0 flex-1" : ""}`}
         style={{ cursor: view.scale > 1 ? "grab" : "zoom-in" }}
       >
         <div
@@ -125,7 +151,9 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
           {children}
         </div>
       </div>
-      <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-card border border-border bg-(--color-chrome) p-1 shadow-card backdrop-blur">
+      <div
+        className={`absolute right-3 flex items-center gap-1 rounded-card border border-border bg-(--color-chrome) p-1 shadow-card backdrop-blur ${full ? "bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-6" : "bottom-3"}`}
+      >
         <IconButton
           aria-label="Zoom out"
           onClick={() => zoomTo(view.scale / 1.4)}
@@ -147,7 +175,15 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
           <Plus size={18} />
         </IconButton>
         <IconButton aria-label="Fit page" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
-          <Maximize size={18} />
+          <Scan size={18} />
+        </IconButton>
+        <IconButton
+          aria-label={full ? "Leave full screen" : "Full screen"}
+          data-testid="zoom-full"
+          pressed={full}
+          onClick={() => setFull((v) => !v)}
+        >
+          {full ? <Minimize size={18} /> : <Expand size={18} />}
         </IconButton>
       </div>
     </div>

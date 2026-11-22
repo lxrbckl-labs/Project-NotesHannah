@@ -56,7 +56,7 @@ export function mcpRoutes(
   source: McpBackend | Services,
   options: McpOptions = {},
 ): Hono<AppEnv> {
-  const backend = isServices(source) ? backendFromServices(source) : source;
+  const backend = isServices(source) ? backendFromServices(source, deps) : source;
   const limiter = createRateLimiter(options.rateLimit ?? DEFAULT_RATE_LIMIT, deps.now);
   const log = options.log ?? ((line: string) => console.log(line));
   const tools = toolsFor(backend);

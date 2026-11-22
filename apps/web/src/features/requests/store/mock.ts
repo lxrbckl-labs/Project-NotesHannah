@@ -120,7 +120,11 @@ export function createMockRequestsStore(options: MockRequestsOptions = {}): Mock
     },
     async create(input: CreateRequestInput) {
       await enter("create", input);
-      if (kindNeedsMessage(input.kind) && input.message.trim().length === 0) {
+      if (
+        kindNeedsMessage(input.kind) &&
+        input.message.trim().length === 0 &&
+        !input.instructions
+      ) {
         throw fail(
           "invalid_input",
           'A request of kind "other" needs a message: say what you want.',
@@ -133,6 +137,7 @@ export function createMockRequestsStore(options: MockRequestsOptions = {}): Mock
         target: input.target,
         kind: input.kind,
         message: input.message.trim(),
+        instructions: input.instructions ?? null,
         status: "waiting",
         createdBy: { type: "user", userId: "usr_00000000000000000000000001" },
         claimedBy: null,

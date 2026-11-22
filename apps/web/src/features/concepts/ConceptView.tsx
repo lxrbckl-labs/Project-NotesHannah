@@ -393,7 +393,7 @@ function AppearsIn({
         <h2 className="font-display text-body font-semibold">Appears in</h2>
         {nothing ? (
           <div className="mt-2">
-            <EmptyState icon={<FileText size={22} />} title="Not in your notes yet">
+            <EmptyState icon={<FileText size={26} />} title="Not in your notes yet">
               Pages, questions and sources that mention this will show up here.
             </EmptyState>
           </div>

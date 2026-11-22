@@ -125,6 +125,8 @@ const FILE_BRANCHES = {
   file: z.strictObject({ fileId: FileId, nodeId: NodeId, ...FORCE }),
   move: z.strictObject({ fileId: FileId, nodeId: NodeId.nullable(), ...FORCE }),
   retry: z.strictObject({ fileId: FileId }),
+  rename: z.strictObject({ fileId: FileId, name: z.string().trim().min(1).max(255) }),
+  restore_transcript: z.strictObject({ pageId: PageId, revision: z.number().int().min(1) }),
 };
 type FileAction = keyof typeof FILE_BRANCHES;
 
@@ -137,6 +139,8 @@ const FILE_EXAMPLES: Record<FileAction, Record<string, unknown>> = {
   move: { action: "move", fileId: FILE, nodeId: NODE },
   retry: { action: "retry", fileId: FILE },
   upload_links: { action: "upload_links", files: [{ name: "lecture-07.pdf" }] },
+  rename: { action: "rename", fileId: FILE, name: "Lecture 7 - Beta blockers.pdf" },
+  restore_transcript: { action: "restore_transcript", pageId: PAGE, revision: 2 },
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -145,7 +149,7 @@ const pending = (f: SourceFile) => f.status === "converting" || f.status === "up
 export const sourceFiles = defineTool({
   name: "source_files",
   title: "Uploaded files: inbox, conversion, filing and moving",
-  description: `Her uploaded source files (slides, PDFs, photos of handwritten notes). To upload files from your machine: "upload_links" (one per file; size optional), then one bare curl per file with its absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture.pdf" "<url>" (links are single use, last ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key; PDF, PowerPoint, Word, OpenDocument, JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF, BMP up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB). Each upload is converted to page images (status converting, then converted; or failed), then transcribed (transcribed), then filed under a lecture, folder or Sources section (filed). Actions: "list" the inbox with each file's status and how many pages are transcribed (with nodeId: the files filed there); "wait" until files finish converting (waits up to ${MAX_WAIT_SECONDS} s per call, call again if still converting); "claim" a file before transcribing it so no other agent works on it (claims expire after a while; claim again to renew); "release" it when done or if you stop; "file" it under the right lecture (refused while any page has no transcript, naming the pages; only if a page truly cannot be transcribed, pass "force": true with a short "reason", which is logged); "move" a filed file to another place, or back to the inbox with nodeId null; "retry" a failed conversion. Library items (folders, lectures, documents) move with edit_library instead.`,
+  description: `Her uploaded source files (slides, PDFs, photos of handwritten notes). To upload files from your machine: "upload_links" (one per file; size optional), then one bare curl per file with its absolute path: curl -sS -X PUT --data-binary @"/abs/path/lecture.pdf" "<url>" (links are single use, last ${UPLOAD_LIMITS.linkTtlSeconds / 60} minutes and need no key; PDF, PowerPoint, Word, OpenDocument, JPEG, PNG, HEIC, WebP, GIF, TIFF, AVIF, BMP up to ${UPLOAD_LIMITS.maxBytes / 1024 / 1024} MB). Each upload is converted to page images (status converting, then converted; or failed), then transcribed (transcribed), then filed under a lecture, folder or Sources section (filed). Actions: "list" the inbox with each file's status and how many pages are transcribed (with nodeId: the files filed there); "wait" until files finish converting (waits up to ${MAX_WAIT_SECONDS} s per call, call again if still converting); "claim" a file before transcribing it so no other agent works on it (claims expire after a while; claim again to renew); "release" it when done or if you stop; "file" it under the right lecture (refused while any page has no transcript, naming the pages; only if a page truly cannot be transcribed, pass "force": true with a short "reason", which is logged); "move" a filed file to another place, or back to the inbox with nodeId null; "retry" a failed conversion; "rename" a file; "restore_transcript" makes an earlier revision of a page's transcript current again (as a new revision; list them with get_item {"id":"pag_…","history":true}). Only she trashes or deletes a file. Library items (folders, lectures, documents) move with edit_library instead.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -156,7 +160,7 @@ export const sourceFiles = defineTool({
     flattenActions(
       "action",
       Object.fromEntries(Object.entries(FILE_BRANCHES).map(([k, v]) => [k, jsonOf(v)])),
-      '"upload_links" for local files; "list" the inbox (or the files under a node); "wait" for conversion; "claim" a file to work on; "release" a claim; "file" a file under a lecture, folder or Sources section; "move" it elsewhere or back to the inbox (nodeId null); "retry" a failed conversion.',
+      '"upload_links" for local files; "list" the inbox (or the files under a node); "wait" for conversion; "claim" a file to work on; "release" a claim; "file" a file under a lecture, folder or Sources section; "move" it elsewhere or back to the inbox (nodeId null); "retry" a failed conversion; "rename" it; "restore_transcript" brings back an earlier transcript revision of a page.',
     ),
     {
       status: 'list: only files with this status, e.g. "converted" for files ready to transcribe.',
@@ -165,6 +169,10 @@ export const sourceFiles = defineTool({
       fileIds: `wait: the files to wait for, e.g. ["${FILE}"].`,
       timeoutSeconds: `wait: how long to wait at most, 1 to ${MAX_WAIT_SECONDS} seconds (default 20).`,
       fileId: `The file, e.g. "${FILE}".`,
+      name: 'rename: the new file name she sees, e.g. "Lecture 7 - Beta blockers.pdf".',
+      pageId: `restore_transcript: the page, e.g. "${PAGE}".`,
+      revision:
+        "restore_transcript: the revision number to bring back (from get_item with history).",
       files: `upload_links: one entry per file, 1 to ${UPLOAD_LIMITS.maxBatch}.`,
       "files[].name": 'upload_links: the file name, e.g. "lecture-07.pdf".',
       "files[].bytes":
@@ -245,8 +253,26 @@ export const sourceFiles = defineTool({
         },
       };
     }
+    if (action === "restore_transcript") {
+      const r = value as unknown as z.output<typeof FILE_BRANCHES.restore_transcript>;
+      const t = port.restoreTranscript(ctx.auth, r.pageId, r.revision);
+      return {
+        text: `Restored revision ${r.revision} of page ${t.pageId}'s transcript as revision ${t.revision} (${t.text.length} characters, ${t.flags.length} flag(s), ${t.reviewStatus} until she reviews it). Earlier revisions are kept.`,
+        structured: {
+          action,
+          transcript: {
+            id: t.id,
+            pageId: t.pageId,
+            revision: t.revision,
+            restoredFrom: r.revision,
+            reviewStatus: t.reviewStatus,
+          },
+        },
+      };
+    }
     const v = value as unknown as {
       fileId: string;
+      name?: string;
       nodeId?: string | null;
       force?: boolean;
       reason?: string;
@@ -259,10 +285,16 @@ export const sourceFiles = defineTool({
           ? port.release(ctx.auth, v.fileId)
           : action === "retry"
             ? port.retry(ctx.auth, v.fileId)
-            : fileUnder(port, ctx, v);
+            : action === "rename"
+              ? port.rename(ctx.auth, v.fileId, v.name as string)
+              : fileUnder(port, ctx, v);
     const progress = progressOf(pagesIfAny(port, ctx.auth, file));
     const warning = untranscribedWarning(progress);
-    const said: Record<Exclude<FileAction, "list" | "wait" | "upload_links">, string> = {
+    const said: Record<
+      Exclude<FileAction, "list" | "wait" | "upload_links" | "restore_transcript">,
+      string
+    > = {
+      rename: `Renamed:\n${fileLine(file, progress)}`,
       claim: `Claimed (a claim expires after a while; claim again to renew it on long work):\n${fileLine(file, progress)}\nNext: get_item {"id":"${file.id}"} lists its pages; get_page shows each one.`,
       release: `Released:\n${fileLine(file, progress)}`,
       retry: `Queued for conversion again:\n${fileLine(file, progress)}\nWait with source_files {"action":"wait","fileIds":["${file.id}"]}.`,

@@ -163,6 +163,10 @@ Added 2026-11-15.
 - **H9** Change feed.
 - **H10** Agent activity log shown in the app.
 - **H11** Plain-text agent guide on the site; `robots.txt` keeps crawlers out.
+- **H12** Parity: agents can do what she can, through the same domain functions, except what is hers
+  by design (sign-in and account, presentational and per-device state, reviewing, practice, side
+  notes, permanent deletion). The capability-by-capability table is in `docs/mcp.md`, "Parity with
+  the app"; a new feature gets a row there.
 
 ## I. Appearance and devices
 
@@ -313,7 +317,7 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
 - **Library:** whole-page drag and drop for uploads on the library home, the Inbox and every page
   that takes files; files drop onto folder rows; breadcrumbs are drop targets, to drag things out
   of a folder; folders nest as deep as she likes (`MAX_FOLDER_DEPTH` is a backstop of 50); a section
-  can be marked as a favourite; Recently opened shows six.
+  can be marked as a favourite; Recently Opened shows six.
 - **Documents:** the right side of the bar is one grouped toolbar with one control size; sidebars
   slide and their panels fold with an ease.
 - **Concepts:** the neighbourhood graph draws concept cards with type icons and curved, coloured
@@ -336,4 +340,23 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
   header reads fold arrow, name, plus, and the grip at the far right.
 - **Tooltips:** every icon-only button names itself with the Warm Tooltip (hover, focus, long
   press). See `docs/design.md` and `docs/react-bits.md`.
+
+## S. Saved instructions and the tour (2026-11-21, local until Alex says to commit)
+
+- **Saved instructions.** Her standing rules for work she asks agents for. Settings, "Instructions
+  for agents": add, edit, delete (at most 30; name 80 characters, body 4,000). They are part of her
+  preferences document (`instructions` in `/api/me/preferences`), so they follow the account.
+- **On a request.** The request dialog has an Instructions dropdown. The chosen instruction's title
+  and body are copied onto the request (`instructions`, column added by
+  `0720_request_instructions.sql`), so a later edit or delete never changes an older request. With
+  an instruction chosen, kind "other" needs no message. The request card shows it; the agent tool
+  `requests` returns it on each item, names it in the summary line and tells agents to follow it.
+- **The tour.** `features/tour`: ten stops (welcome, Library, Quick find, Inbox, Practice, Calendar,
+  Concepts, Requests, Settings, the guide). The page dims, a spotlight glides to the navigation item
+  for the stop (sidebar or tab bar; the page title where there is neither), and a card explains it.
+  Next, Back, the arrow keys; Skip at the bottom right or Escape ends it.
+- **When it runs.** By itself the first time an account signs in (`tourSeen` in preferences, set
+  when it is finished or skipped). From "Take the tour" at the top of the guide and at its end. It
+  never starts by itself under browser automation (`navigator.webdriver`), so the test suites are
+  not covered by it.
 

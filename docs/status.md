@@ -30,7 +30,7 @@ As of 2026-11-16, after the design pass and the first deployment. Feature IDs re
   pages, under a veil in the page colour. One per account, in the new table `user_backgrounds`
   (migration `0910_user_backgrounds.sql`), served at `/api/me/background`. The app shrinks any
   picture to 2560px on its longer side before sending; the server keeps at most 8 MB.
-- Recently opened shows six.
+- Recently Opened shows six.
 - Later the same day: American spelling in everything she sees; Warm Tooltip on every icon-only
   button; Read / Edit switch with a read-only Read mode (arrow cursor, no selection); panel heights
   drag; drag and drop for uploads and for moving things in and out of folders; folders any depth;

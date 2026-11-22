@@ -104,16 +104,25 @@ const has = (f: Facts, tool: string) => f.tools.includes(tool);
 function toolMap(f: Facts): string {
   const lines: Array<[string, string]> = [
     ["start_here", `this guide; topics: ${TOPICS.slice(1).join(", ")}`],
-    ["requests", "what she asked for: list, claim, complete with a reply, decline, release"],
+    [
+      "requests",
+      "what she asked for: list, claim, complete, decline, release; her saved instructions",
+    ],
     ["browse_library", "one level of the tree (or the trash, favourites, recents)"],
-    ["get_item", "open anything by ID; a file with text:true gives every page's text at once"],
+    [
+      "get_item",
+      "open anything by ID; a file with text:true gives every page's text; history:true a document's or page's revisions",
+    ],
     ["search_notes", "find by words: names, pages, blocks, questions, concepts, her side notes"],
     [
       "edit_library",
       "create, rename, move, duplicate, trash, restore; claim a lecture you write for",
     ],
     ["changes", "what changed since your last session"],
-    ["source_files", "upload links, inbox, wait for conversion, claim, file, move, retry"],
+    [
+      "source_files",
+      "upload links, inbox, wait for conversion, claim, file, move, retry, rename; restore a transcript revision",
+    ],
     ["get_page", "a page image with its native text and current transcript"],
     ["save_transcript", "a page's verbatim transcript with flags"],
     ["write_document", "create a document of cited study material"],
@@ -121,7 +130,10 @@ function toolMap(f: Facts): string {
     ["study_map", "read or arrange a document's study map (frames, cards, labelled connectors)"],
     ["concepts", "upsert concepts and relations; search, page, graph, filter, compare"],
     ["practice_questions", "create (or validate), list, update, trash questions"],
-    ["study_progress", "her weak areas, missed notebook, due cards, sessions (read only)"],
+    [
+      "study_progress",
+      "her weak areas, missed notebook, due cards, sessions, calendar (read only)",
+    ],
     ["exams", "upcoming exams with coverage and progress; create, update"],
     [
       "references",

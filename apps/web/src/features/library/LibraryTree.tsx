@@ -1,16 +1,6 @@
 import type { NodeWithLinks, SourceFile } from "@notes/schema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ChevronRight,
-  FileSearch,
-  FileText,
-  FolderInput,
-  Image as ImageIcon,
-  Inbox,
-  Pencil,
-  Presentation,
-  Trash2,
-} from "lucide-react";
+import { ChevronRight, FileSearch, FolderInput, Inbox, Pencil, Trash2 } from "lucide-react";
 import {
   createContext,
   type KeyboardEvent,
@@ -28,19 +18,17 @@ import { MiddleTruncate } from "../../components/ui/middle-truncate";
 import { Tooltip } from "../../components/ui/tooltip";
 import { api } from "../../lib/api";
 import { cn } from "../../lib/cn";
-import { SLIDE_TYPES, TEXT_TYPES } from "../../lib/fileTypes";
 import type { Hue } from "../../lib/hues";
 import { IN_PROGRESS } from "../../lib/messages";
 import { FILE_STATUS_HUE } from "../../lib/roles";
 import { useFinePointer } from "../../lib/useMedia";
 import { useUploadManager } from "../uploads/UploadProvider";
 import { useNodeActions } from "./actions";
-import { courseHue } from "./courseHue";
 import { useLibraryDialogs } from "./dialogs";
 import { fileLeafDragProps, useInboxDrop, useRowDnd } from "./dnd";
 import { useFileActions } from "./fileActions";
 import { InlineName } from "./InlineName";
-import { NodeIcon, NodeTile } from "./NodeIcon";
+import { FileTypeIcon, NodeIcon, NodeTile, nodeHue } from "./NodeIcon";
 import { lectureParts, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
@@ -275,11 +263,8 @@ const STATUS_LABEL: Record<SourceFile["status"], string> = {
   failed: "Failed",
 };
 
-export function FileTypeIcon({ type, size = 17 }: { type: SourceFile["type"]; size?: number }) {
-  if (SLIDE_TYPES.has(type)) return <Presentation size={size} aria-hidden />;
-  if (TEXT_TYPES.has(type)) return <FileText size={size} aria-hidden />;
-  return <ImageIcon size={size} aria-hidden />;
-}
+/** Kept here for the screens that import it from the tree; it lives with the other icons. */
+export { FileTypeIcon };
 
 export function FileStatusBadge({ status }: { status: SourceFile["status"] }) {
   return <Badge hue={FILE_STATUS_HUE[status]}>{STATUS_LABEL[status]}</Badge>;
@@ -347,7 +332,6 @@ function FileLeaf({ file, depth, hue }: { file: SourceFile; depth: number; hue: 
       data-testid="tree-file"
       data-type={file.type}
       data-hue={hue ?? undefined}
-      title={file.originalName}
       onFocus={(e) => e.target === e.currentTarget && tree.setFocusId(file.id)}
       onClick={() => !renaming && tree.go(`/files/${file.id}`)}
       onKeyDown={(e) => {
@@ -500,7 +484,7 @@ function TreeItem({
   hue: Hue | null;
 }) {
   // A course starts its own color, a term has none, everything below carries its course's.
-  const hue = node.kind === "course" ? courseHue(node.id) : node.kind === "term" ? null : inherited;
+  const hue = nodeHue(node, inherited);
   const tree = useTree();
   const open_ = useTreeState();
   const titleId = useId();

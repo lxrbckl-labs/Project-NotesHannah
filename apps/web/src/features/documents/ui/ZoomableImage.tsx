@@ -1,5 +1,5 @@
 import type { NormalizedBox } from "@notes/schema";
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { Maximize, Minus, Plus } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../../../components/ui/button";
 
@@ -217,7 +217,7 @@ export function ZoomableImage({
           <Minus className="size-4" />
         </IconButton>
         <IconButton label="Reset zoom" size="sm" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
-          <RotateCcw className="size-3.5" />
+          <Maximize className="size-4" />
         </IconButton>
         <IconButton
           label="Zoom in"

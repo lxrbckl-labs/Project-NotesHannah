@@ -1,25 +1,18 @@
 import type { TabId } from "@notes/schema";
-import {
-  BookOpen,
-  CalendarDays,
-  GraduationCap,
-  Inbox,
-  type LucideIcon,
-  Search,
-  Settings,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { ICON } from "../features/library/NodeIcon";
 
 /**
  * The phone's bottom tabs, by id. Six: the things she opens most (Calendar joined on 2026-11-17). Requests, Activity, Trash and the
  * Guide live in Settings. The order they show in is hers (Settings, "Tab bar"); the ids are in the schema.
  */
 export const TAB_DEFS: Record<TabId, { to: string; label: string; icon: LucideIcon }> = {
-  library: { to: "/library", label: "Library", icon: BookOpen },
-  practice: { to: "/practice", label: "Practice", icon: GraduationCap },
-  calendar: { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  search: { to: "/search", label: "Search", icon: Search },
-  inbox: { to: "/inbox", label: "Inbox", icon: Inbox },
-  settings: { to: "/settings", label: "Settings", icon: Settings },
+  library: { to: "/library", label: "Library", icon: ICON.library },
+  practice: { to: "/practice", label: "Practice", icon: ICON.practice },
+  calendar: { to: "/calendar", label: "Calendar", icon: ICON.calendar },
+  search: { to: "/search", label: "Search", icon: ICON.search },
+  inbox: { to: "/inbox", label: "Inbox", icon: ICON.inbox },
+  settings: { to: "/settings", label: "Settings", icon: ICON.settings },
 };
 
 /** The paths in the order shown: what the slide direction is measured against. */

@@ -8,9 +8,8 @@ import {
   FileImage,
   FileText,
   FolderOpen,
-  Library,
+  Lightbulb,
   LoaderCircle,
-  Network,
   RotateCcw,
   TextCursorInput,
 } from "lucide-react";
@@ -43,7 +42,7 @@ export function TargetIcon({ type, size = 18 }: { type: RequestTarget["type"]; s
   const props = { size, "aria-hidden": true as const };
   switch (type) {
     case "library":
-      return <Library {...props} />;
+      return <BookOpen {...props} />;
     case "node":
       return <FolderOpen {...props} />;
     case "document":
@@ -60,7 +59,7 @@ export function TargetIcon({ type, size = 18 }: { type: RequestTarget["type"]; s
 function LinkIcon({ type }: { type: RequestLink["type"] }) {
   switch (type) {
     case "concept":
-      return <Network size={14} aria-hidden />;
+      return <Lightbulb size={14} aria-hidden />;
     case "question":
       return <CircleHelp size={14} aria-hidden />;
     case "source":
@@ -68,7 +67,7 @@ function LinkIcon({ type }: { type: RequestLink["type"] }) {
     case "node":
       return <FolderOpen size={14} aria-hidden />;
     default:
-      return <BookOpen size={14} aria-hidden />;
+      return <FileText size={14} aria-hidden />;
   }
 }
 

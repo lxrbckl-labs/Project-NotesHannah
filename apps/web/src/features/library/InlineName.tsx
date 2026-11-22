@@ -54,7 +54,7 @@ export function InlineName({
       onKeyDown={onKey}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        "min-h-9 w-full min-w-0 rounded-lg border border-accent bg-surface px-2.5 text-base text-text xl:text-sm",
+        "min-h-9 w-full min-w-0 rounded-control border border-accent bg-surface px-2.5 text-base text-text xl:text-sm",
         className,
       )}
     />

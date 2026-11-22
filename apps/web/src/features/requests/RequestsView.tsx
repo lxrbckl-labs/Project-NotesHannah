@@ -1,4 +1,4 @@
-import { Inbox, MessageCirclePlus } from "lucide-react";
+import { MessageCirclePlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { HeaderArt } from "../../components/art/pills";
 import { Chip } from "../../components/ui/badge";
@@ -172,7 +172,7 @@ function Screen() {
             <LoadingList rows={4} label="Loading your requests" />
           ) : items.length === 0 ? (
             <EmptyState
-              icon={<Inbox size={26} aria-hidden />}
+              icon={<MessageCirclePlus size={26} aria-hidden />}
               title={filter === "all" ? "No requests yet" : "Nothing here"}
               action={
                 filter === "all" ? (

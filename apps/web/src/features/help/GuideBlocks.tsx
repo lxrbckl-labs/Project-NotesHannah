@@ -7,7 +7,7 @@ import {
   Info,
   Lightbulb,
   Lock,
-  MessageSquarePlus,
+  MessageCirclePlus,
   Network,
   PenLine,
   ShieldCheck,
@@ -72,7 +72,7 @@ export function Note({
     >
       <span
         aria-hidden
-        className="gb-note-icon mt-px flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-tone-text"
+        className="gb-note-icon mt-px flex size-7 shrink-0 items-center justify-center rounded-pill bg-surface text-tone-text"
       >
         <Icon size={16} />
       </span>
@@ -136,7 +136,7 @@ function List({ items, ordered }: { items: string[]; ordered?: boolean | undefin
           <li key={item} className="flex gap-3">
             <span
               aria-hidden
-              className="gb-step-num mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-accent font-display text-label font-semibold text-accent-contrast"
+              className="gb-step-num mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-pill bg-accent font-display text-label font-semibold text-accent-contrast"
             >
               {i + 1}
             </span>
@@ -154,7 +154,7 @@ function List({ items, ordered }: { items: string[]; ordered?: boolean | undefin
         <li key={item} className="relative pl-5">
           <span
             aria-hidden
-            className="gb-bullet absolute top-[0.7em] left-1 size-1.5 rounded-full bg-accent"
+            className="gb-bullet absolute top-[0.7em] left-1 size-1.5 rounded-pill bg-accent"
           />
           <Inline text={item} />
         </li>
@@ -221,7 +221,7 @@ export const SHOWCASE_LOOK: { icon: typeof Lock; hue: Tone }[] = [
   { icon: Network, hue: "pink" },
   { icon: GraduationCap, hue: "orange" },
   { icon: CalendarClock, hue: "red" },
-  { icon: MessageSquarePlus, hue: "blue" },
+  { icon: MessageCirclePlus, hue: "blue" },
   { icon: ShieldCheck, hue: "green" },
   { icon: History, hue: "brown" },
   { icon: Lock, hue: "gray" },

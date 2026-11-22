@@ -229,7 +229,7 @@ function PickerRow({
             aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}
             aria-expanded={expanded}
             onClick={onToggle}
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+            className="flex size-9 shrink-0 items-center justify-center rounded-control text-text-muted hover:bg-surface-muted"
           >
             <ChevronRight
               size={16}
@@ -247,7 +247,7 @@ function PickerRow({
         aria-describedby={disabled ? reasonId : undefined}
         onClick={onSelect}
         className={cn(
-          "flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1.5 text-left text-sm xl:min-h-9",
+          "flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-control px-1.5 text-left text-sm xl:min-h-9",
           disabled ? "cursor-not-allowed text-text-muted opacity-60" : "",
         )}
       >

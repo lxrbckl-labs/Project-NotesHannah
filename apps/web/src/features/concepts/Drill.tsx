@@ -32,7 +32,7 @@ export function Drill({ rng }: { rng?: Rng }) {
   if (pairs.status === "error") return <ErrorState error={pairs.error} onRetry={pairs.reload} />;
   if (pairs.data.length === 0)
     return (
-      <EmptyState icon={<Check size={24} />} title="Nothing to drill yet">
+      <EmptyState icon={<Check size={26} />} title="Nothing to drill yet">
         Brand names show up here once drugs in your notes have them filed.
       </EmptyState>
     );

@@ -153,6 +153,8 @@ export function createMockBackend(options: MockOptions = {}) {
   let keys: Array<{ key: ApiKey; secret: string }>;
   let references: MockReference[] = [];
   let tabOrder: string[] | null = null;
+  /** Her saved instructions for agent requests (the preferences store). */
+  let instructions: unknown[] = [];
   let signedIn = false;
   let password = MOCK_PASSWORD;
   let failedLogins = 0;
@@ -837,14 +839,19 @@ export function createMockBackend(options: MockOptions = {}) {
       return ok({ from: today, to: today, today, exams: [], days: [], streak: 0 });
     }
     if (path === "/me/preferences" && method === "GET") {
-      return ok({ preferences: { tabOrder: resolveTabOrder(tabOrder) } });
+      return ok({
+        preferences: { tabOrder: resolveTabOrder(tabOrder), instructions, tourSeen: true },
+      });
     }
     if (path === "/me/preferences" && method === "PATCH") {
       const patch = body(PreferencesPatch, payload);
+      if (patch.instructions !== undefined) instructions = patch.instructions;
       if (patch.tabOrder !== undefined) {
         tabOrder = patch.tabOrder === null || patch.tabOrder.length === 0 ? null : patch.tabOrder;
       }
-      return ok({ preferences: { tabOrder: resolveTabOrder(tabOrder) } });
+      return ok({
+        preferences: { tabOrder: resolveTabOrder(tabOrder), instructions, tourSeen: true },
+      });
     }
     if (method === "POST" && path === "/me/password") {
       const input = body(ChangePasswordInput, payload);

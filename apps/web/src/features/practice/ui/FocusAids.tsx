@@ -119,7 +119,7 @@ export function FocusAidsButton({
           pressed={on}
           {...(className ? { className } : {})}
         >
-          <SlidersHorizontal size={18} />
+          <SlidersHorizontal size={20} />
         </IconButton>
       }
     >

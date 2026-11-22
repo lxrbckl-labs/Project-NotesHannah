@@ -1,9 +1,16 @@
-import { type Preferences, type PreferencesPatch, resolveTabOrder } from "@notes/schema";
+import {
+  type Preferences,
+  type PreferencesPatch,
+  resolveInstructions,
+  resolveTabOrder,
+} from "@notes/schema";
 import type { Db } from "../../db/client.js";
 
 /** What is stored: only what she chose. Anything she never set is absent and resolved on read. */
 interface StoredPreferences {
   tabOrder?: unknown;
+  instructions?: unknown;
+  tourSeen?: unknown;
 }
 
 function readStored(db: Db, userId: string): StoredPreferences {
@@ -24,6 +31,8 @@ export function getPreferences(db: Db, userId: string): Preferences {
   const stored = readStored(db, userId);
   return {
     tabOrder: resolveTabOrder(Array.isArray(stored.tabOrder) ? stored.tabOrder : null),
+    instructions: resolveInstructions(stored.instructions),
+    tourSeen: stored.tourSeen === true,
   };
 }
 
@@ -40,6 +49,15 @@ export function updatePreferences(
     // so a tab added later then lands where the default puts it.
     if (patch.tabOrder === null || patch.tabOrder.length === 0) delete doc.tabOrder;
     else doc.tabOrder = patch.tabOrder;
+  }
+  if (patch.tourSeen !== undefined) {
+    if (patch.tourSeen) doc.tourSeen = true;
+    else delete doc.tourSeen;
+  }
+  if (patch.instructions !== undefined) {
+    // An empty list is "none saved": forget the field rather than keep an empty array.
+    if (patch.instructions.length === 0) delete doc.instructions;
+    else doc.instructions = patch.instructions;
   }
   db.prepare(
     `INSERT INTO user_preferences (user_id, doc, updated_at) VALUES (?, ?, ?)

@@ -1,6 +1,6 @@
 import type { Page, SourceFile, Transcript } from "@notes/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, History, RotateCcw, ShieldQuestion } from "lucide-react";
+import { CircleCheck, History, RotateCcw, ShieldQuestion } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/field";
@@ -84,7 +84,7 @@ export function TranscriptPanel({
   return (
     <div className="grid gap-4" data-testid="transcript-panel">
       {!t ? (
-        <EmptyState icon={<ShieldQuestion size={24} />} title="Nothing transcribed yet">
+        <EmptyState icon={<ShieldQuestion size={26} />} title="Nothing transcribed yet">
           {file.status === "failed" || file.status === "converting"
             ? "This file is not ready."
             : "An agent will transcribe this page. Until then you can read the original beside it."}
@@ -109,7 +109,7 @@ export function TranscriptPanel({
             </p>
           ) : t.reviewedAt ? (
             <p className="flex items-center gap-2 text-sm text-text-muted">
-              <CheckCircle2 size={16} className="text-accent" aria-hidden />
+              <CircleCheck size={16} className="text-accent" aria-hidden />
               You reviewed this on {formatDateTime(t.reviewedAt)}.
             </p>
           ) : null}
@@ -193,7 +193,7 @@ export function TranscriptPanel({
                 disabled={review.isPending}
                 onClick={() => review.mutate(true)}
               >
-                <CheckCircle2 size={16} aria-hidden />
+                <CircleCheck size={16} aria-hidden />
                 Mark as reviewed
               </Button>
             ) : (

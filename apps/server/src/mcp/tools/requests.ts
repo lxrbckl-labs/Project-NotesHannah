@@ -71,9 +71,14 @@ export function requestLine(r: StudyRequestWithContext): string {
       ? `, claimed by ${r.claimedBy.label ?? `key ${r.claimedBy.keyId}`} until ${r.claimExpiresAt}`
       : "";
   const said = r.message ? ` She wrote: "${clip(r.message, 300).text}".` : "";
+  // Her saved instructions for this kind of work: the agent must follow them, so they are given whole
+  // in the item ("instructions") and named here.
+  const rules = r.instructions
+    ? ` Follow her instructions "${clip(r.instructions.title, 80).text}": ${clip(r.instructions.body, 600).text}`
+    : "";
   const preview = r.context.preview ? ` Preview: "${clip(r.context.preview, 120).text}".` : "";
   const note = r.context.note ? ` Note: ${r.context.note}.` : "";
-  return `- ${r.id} [${r.status}${claim}] ${r.kind} (${REQUEST_KIND_INFO[r.kind].meaning}) on ${targetPhrase(r)}.${said}${preview}${note}`;
+  return `- ${r.id} [${r.status}${claim}] ${r.kind} (${REQUEST_KIND_INFO[r.kind].meaning}) on ${targetPhrase(r)}.${said}${rules}${preview}${note}`;
 }
 
 function requestItem(r: StudyRequestWithContext) {
@@ -82,6 +87,8 @@ function requestItem(r: StudyRequestWithContext) {
     status: r.status,
     kind: r.kind,
     message: r.message,
+    // Her saved instructions attached to this request (title and body), or null. Follow them.
+    instructions: r.instructions ?? null,
     target: r.target,
     context: r.context,
     claimedBy: r.claimedBy,
@@ -104,6 +111,7 @@ const BRANCHES = {
   release: z.strictObject(RequestRef),
   complete: z.strictObject({ ...RequestRef, ...CompleteRequestInput.shape }),
   decline: z.strictObject({ ...RequestRef, ...DeclineRequestInput.shape }),
+  instructions: z.strictObject({}),
 };
 type Action = keyof typeof BRANCHES;
 
@@ -148,12 +156,13 @@ const EXAMPLES: Record<Action, Record<string, unknown>> = {
     requestId: REQ,
     reason: "The lecture has no slides on this yet; upload them and ask again.",
   },
+  instructions: { action: "instructions" },
 };
 
 export const requestsTool = defineTool({
   name: "requests",
   title: "Her requests: what she asked agents to do",
-  description: `What she has asked for, left on a lecture, a document, a block, a page, a question or the whole library ("this is wrong", "make me a quiz on this", ...). CHECK THESE FIRST in every session. Actions: "list" (open ones, waiting first, each with what it points at, its path and a preview); "claim" one before working on it (30 minutes, claim again to renew; another agent's claim is refused); "complete" it with a short reply saying what you did and links to what you made or changed (doses and other numbers with units in the reply are checked against the page or block it is about and what you link; figures found nowhere are refused with a warning until you link a source that has them or pass acknowledgeUnsourced: true, which flags the reply for her); "decline" with a reason when it cannot be done; "release" it if you stop. Her blocks and the questions she wrote are protected from agents: completing her request is the one way to change them, by passing "requestId" to edit_blocks while you hold the claim.`,
+  description: `What she has asked for, left on a lecture, a document, a block, a page, a question or the whole library ("this is wrong", "make me a quiz on this", ...). CHECK THESE FIRST in every session. A request may carry "instructions" (a title and a body): her own saved rules for that kind of work. Follow them exactly; where they and your habits differ, hers win. Actions: "list" (open ones, waiting first, each with what it points at, its path and a preview); "claim" one before working on it (30 minutes, claim again to renew; another agent's claim is refused); "complete" it with a short reply saying what you did and links to what you made or changed (doses and other numbers with units in the reply are checked against the page or block it is about and what you link; figures found nowhere are refused with a warning until you link a source that has them or pass acknowledgeUnsourced: true, which flags the reply for her); "decline" with a reason when it cannot be done; "release" it if you stop; "instructions" lists every instruction she has saved in Settings (read only: follow the one that fits work you do without a request too; only she writes them). Her blocks and the questions she wrote are protected from agents: completing her request is the one way to change them, by passing "requestId" to edit_blocks while you hold the claim.`,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -164,7 +173,7 @@ export const requestsTool = defineTool({
     flattenActions(
       "action",
       Object.fromEntries(Object.entries(PUBLISHED).map(([k, v]) => [k, jsonOf(v)])),
-      '"list" open requests; "claim" one; "complete" it with a reply; "decline" it with a reason; "release" it.',
+      '"list" open requests; "claim" one; "complete" it with a reply; "decline" it with a reason; "release" it; "instructions" lists her saved instructions.',
     ),
     {
       status:
@@ -186,7 +195,7 @@ export const requestsTool = defineTool({
     },
   ),
   parse: (raw) => parseAction("requests", "action", BRANCHES, EXAMPLES, raw),
-  writes: (input) => (input as { action: string }).action !== "list",
+  writes: (input) => !["list", "instructions"].includes((input as { action: string }).action),
   action: (input) => (input as { action: string }).action,
   run(ctx, input) {
     const p = port(ctx);
@@ -231,6 +240,17 @@ export const requestsTool = defineTool({
         structured: { counts, items: items.map(requestItem), nextCursor },
       };
     }
+    if (action === "instructions") {
+      const prefs = ctx.backend.preferences;
+      if (!prefs) throw new AppError("internal", "Saved instructions are not available.");
+      const items = prefs.savedInstructions(ctx.auth);
+      const lines = [
+        `${items.length} saved instruction(s) of hers. Follow the one for the kind of work you are doing; a request carries its own copy, which wins.`,
+        ...items.map((i) => `- ${i.id} "${clip(i.title, 80).text}": ${clip(i.body, 600).text}`),
+      ];
+      if (items.length === 0) lines.push("(none saved)");
+      return { text: lines.join("\n"), structured: { items } };
+    }
     const id = value.requestId as string;
     const { requestId: _drop, ...rest } = value;
     const r =
@@ -241,7 +261,7 @@ export const requestsTool = defineTool({
           : action === "complete"
             ? p.complete(ctx.auth, id, rest as z.output<typeof CompleteRequestInput>)
             : p.decline(ctx.auth, id, rest as z.output<typeof DeclineRequestInput>);
-    const said: Record<Exclude<Action, "list">, string> = {
+    const said: Record<Exclude<Action, "list" | "instructions">, string> = {
       claim: `Claimed until ${r.claimExpiresAt}:\n${requestLine(r)}\n${nextStep(r)}`,
       release: `Released; it is waiting again:\n${requestLine(r)}`,
       complete: `Completed; she sees your reply${r.reply?.unsourcedFigures ? `, flagged "contains figures not found in your notes" (${(r.reply.unsourcedFigureList ?? []).join(", ")})` : ""}:\n${requestLine(r)}`,

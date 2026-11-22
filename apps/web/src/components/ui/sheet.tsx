@@ -100,7 +100,7 @@ export function Sheet({
             {headerExtra}
             <Dialog.Close asChild>
               <IconButton label="Close" className="-mr-2">
-                <X size={18} />
+                <X size={20} />
               </IconButton>
             </Dialog.Close>
           </div>

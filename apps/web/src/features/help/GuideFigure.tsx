@@ -1,4 +1,4 @@
-import { Maximize2, X } from "lucide-react";
+import { Expand, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useState } from "react";
 import { IconButton } from "../../components/ui/button";
@@ -59,7 +59,7 @@ export function GuideFigure({ id }: { id: FigureId }) {
               aria-hidden
               className="absolute right-2 bottom-2 flex size-8 items-center justify-center rounded-control border border-border bg-(--color-chrome) text-text-muted opacity-90 shadow-card backdrop-blur group-hover:text-text"
             >
-              <Maximize2 size={15} />
+              <Expand size={15} />
             </span>
           </button>
         </Dialog.Trigger>
@@ -76,7 +76,7 @@ export function GuideFigure({ id }: { id: FigureId }) {
               </Dialog.Title>
               <Dialog.Close asChild>
                 <IconButton aria-label="Close">
-                  <X size={18} />
+                  <X size={20} />
                 </IconButton>
               </Dialog.Close>
             </div>

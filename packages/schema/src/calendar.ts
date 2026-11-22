@@ -58,3 +58,15 @@ export type CalendarResponse = z.infer<typeof CalendarResponse>;
 
 /** The longest range one request may ask for, in days: a month with the weeks around it. */
 export const CALENDAR_MAX_DAYS = 62;
+
+/**
+ * What a caller asks the calendar for: her local days from..to (at most CALENDAR_MAX_DAYS) and her
+ * offset from UTC in minutes (e.g. -360 for US Central in winter; default 0). The web route and the
+ * agent tool both read this.
+ */
+export const CalendarQuery = z.object({
+  from: Day,
+  to: Day,
+  utcOffsetMinutes: z.coerce.number().int().min(-840).max(840).optional(),
+});
+export type CalendarQuery = z.infer<typeof CalendarQuery>;

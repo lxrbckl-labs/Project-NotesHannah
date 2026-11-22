@@ -14,6 +14,7 @@ import {
   type ReopenRequestInput,
   type RequestAction,
   type RequestCounts,
+  type RequestInstructions,
   type RequestReopen,
   type RequestReply,
   type RequestStatus,
@@ -65,6 +66,7 @@ interface Row {
   scope_node_id: string | null;
   kind: StudyRequest["kind"];
   message: string;
+  instructions: string | null;
   status: RequestStatus;
   claimed_by: string | null;
   claimed_at: number | null;
@@ -146,9 +148,9 @@ export function createRequestsService(
     byId: db.prepare("SELECT * FROM requests WHERE id = ? AND user_id = ?"),
     insert: db.prepare(
       `INSERT INTO requests (id, user_id, target_type, node_id, document_id, block_id, file_id, page_id,
-         question_id, scope_node_id, kind, message, status, reopens, created_at, updated_at)
+         question_id, scope_node_id, kind, message, instructions, status, reopens, created_at, updated_at)
        VALUES (@id, @user_id, @target_type, @node_id, @document_id, @block_id, @file_id, @page_id,
-         @question_id, @scope_node_id, @kind, @message, 'waiting', '[]', @t, @t)`,
+         @question_id, @scope_node_id, @kind, @message, @instructions, 'waiting', '[]', @t, @t)`,
     ),
     sweep: db.prepare(
       `UPDATE requests SET status = 'waiting', claimed_by = NULL, claimed_at = NULL,
@@ -212,6 +214,7 @@ export function createRequestsService(
       target: targetOf(r),
       kind: r.kind,
       message: r.message,
+      instructions: r.instructions ? (JSON.parse(r.instructions) as RequestInstructions) : null,
       status: r.status,
       createdBy: { type: "user", userId: r.user_id },
       claimedBy: claimed ? (JSON.parse(r.claimed_by as string) as Actor) : null,
@@ -367,6 +370,8 @@ export function createRequestsService(
           : null,
       kind: input.kind,
       message: input.message,
+      // A copy of the instructions as they are now; later edits in Settings never reach this request.
+      instructions: input.instructions ? JSON.stringify(input.instructions) : null,
       t,
     });
     log(auth, need(auth.userId, id), "request.created", `Left ${words(need(auth.userId, id))}`);

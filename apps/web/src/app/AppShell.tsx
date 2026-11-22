@@ -8,7 +8,7 @@ import {
   LifeBuoy,
   Lightbulb,
   LogOut,
-  MessageSquarePlus,
+  MessageCirclePlus,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightOpen,
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useMatch } from "react-router";
+import { NavLink, Outlet, useMatch, useNavigate } from "react-router";
 import { PillMark } from "../components/art/pills";
 import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
@@ -33,8 +33,15 @@ import { RightPanel } from "../features/library/RightPanel";
 import { TreeStateProvider } from "../features/library/treeState";
 import { AskProvider } from "../features/mounts/ask";
 import { backgroundUrl, useBackground } from "../features/preferences/useBackground";
-import { useTabOrder } from "../features/preferences/usePreferences";
+import {
+  useInstructions,
+  useMarkTourSeen,
+  usePreferences,
+  useTabOrder,
+} from "../features/preferences/usePreferences";
+import { InstructionsProvider } from "../features/requests/ui/instructions";
 import { QuickFind } from "../features/search/QuickFind";
+import { TourProvider, useTour } from "../features/tour/Tour";
 import { UploadProvider } from "../features/uploads/UploadProvider";
 import { UploadTray } from "../features/uploads/UploadTray";
 import { cn } from "../lib/cn";
@@ -59,14 +66,28 @@ export const MOD_KEY = isMac ? "⌘" : "Ctrl+";
  */
 export function AppShell() {
   const me = useMe();
+  // Her saved instructions, handed to the request dialog wherever it opens.
+  const instructions = useInstructions();
+  const navigate = useNavigate();
+  const markTourSeen = useMarkTourSeen();
+  const tourSeen = () => markTourSeen.mutate();
   return (
     <TreeStateProvider userId={me.data?.id ?? "unknown"}>
       <UploadProvider>
         <LibraryDialogs>
           <PickNodesProvider>
-            <AskProvider>
-              <Shell />
-            </AskProvider>
+            <InstructionsProvider
+              list={instructions}
+              onManage={() => navigate("/settings#instructions")}
+            >
+              <AskProvider>
+                {/* The tour: started from the guide, and by itself the first time she signs in. */}
+                <TourProvider onEnd={tourSeen}>
+                  <TourFirstTime />
+                  <Shell />
+                </TourProvider>
+              </AskProvider>
+            </InstructionsProvider>
           </PickNodesProvider>
           <UploadTray />
         </LibraryDialogs>
@@ -78,6 +99,25 @@ export function AppShell() {
 /** The widths the two sidebars start at (and return to on a double-click of their edge). */
 const SIDEBAR_WIDTH = 264;
 const PANEL_WIDTH = 288;
+
+/**
+ * Starts the tour once for an account that has never seen it. It waits for the server's answer (never
+ * a guess), and it never starts under browser automation: the test suites sign in again and again,
+ * and a tour over the page would be in the way of every one of them.
+ */
+function TourFirstTime() {
+  const preferences = usePreferences();
+  const tour = useTour();
+  const started = useRef(false);
+  const seen = preferences.isPlaceholderData ? true : (preferences.data?.tourSeen ?? true);
+  useEffect(() => {
+    if (seen || started.current || tour.running) return;
+    if (typeof navigator !== "undefined" && navigator.webdriver) return;
+    started.current = true;
+    tour.start();
+  }, [seen, tour]);
+  return null;
+}
 
 function Shell() {
   const layout = useLayout();
@@ -279,7 +319,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
           <BookMarked size={18} aria-hidden /> References
         </NavLink>
         <NavLink to="/requests" className={linkClass}>
-          <MessageSquarePlus size={18} aria-hidden /> Requests
+          <MessageCirclePlus size={18} aria-hidden /> Requests
           <NavBadge count={badges.requests} label="open requests" />
         </NavLink>
         <NavLink to="/activity" className={linkClass}>

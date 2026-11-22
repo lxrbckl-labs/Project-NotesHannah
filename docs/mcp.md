@@ -17,7 +17,9 @@ Everything below is live on the shared services: `createApp` passes the one `Ser
 object to `mcpRoutes(deps, services)`, so MCP and the HTTP API run the same domain code.
 Nineteen tools are registered in production, covering the library, files, documents,
 the study map, requests, practice, exams, concepts, trusted references (added 2026-11-16) and her
-side notes (read only, added 2026-11-16). Proved end to end with the real server, the real
+side notes (read only, added 2026-11-16). On 2026-11-22 the existing tools gained the app's newer
+features (calendar, saved instructions, file rename, revision history), with no new tool; see
+"Parity with the app". Proved end to end with the real server, the real
 converter container and headless Claude Code and Codex sessions (see Live checks).
 
 ## Endpoint
@@ -39,12 +41,12 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 |---|---|---|
 | `start_here` | Orientation, the whole job in order, the rules, content types, live facts (open requests, inbox); `topic` for detail | read-only |
 | `browse_library` | One level of the tree, or trash, favourites, recents; paged | read-only |
-| `get_item` | Any object by ID (nod_, fil_, pag_, doc_, blk_, req_, qst_, con_, exm_) with links to its neighbours; a file with `text: true` gives every page's text at once; a lecture shows who is writing for it | read-only |
+| `get_item` | Any object by ID (nod_, fil_, pag_, doc_, blk_, req_, qst_, con_, exm_) with links to its neighbours; a file with `text: true` gives every page's text at once; a doc_ or pag_ with `history: true` lists its revisions (a document's versions, a page's transcript revisions), newest first; a lecture shows who is writing for it | read-only |
 | `search_notes` | Unified search: names, transcribed pages, document blocks, questions, concepts, her saved references, her side notes | read-only |
 | `edit_library` | create, update (rename), move, duplicate, trash, restore; claim and release any library item or document for writing | destructive |
 | `changes` | The change feed since a cursor | read-only |
-| `requests` | Her requests: list (waiting first, with target, path, preview), claim, release, complete with a reply and links (figures in the reply are checked against its sources), decline with a reason | write |
-| `source_files` | upload links, list (status and transcription progress), wait for conversion, claim, release, file, move (or back to the inbox), retry; filing is refused while pages have no transcript unless forced with a reason | write |
+| `requests` | Her requests: list (waiting first, with target, path, preview, and the saved instructions she attached), claim, release, complete with a reply and links (figures in the reply are checked against its sources), decline with a reason; `instructions` lists every instruction she saved in Settings (read only) | write |
+| `source_files` | upload links, list (status and transcription progress), wait for conversion, claim, release, file, move (or back to the inbox), retry, rename; `restore_transcript` makes an earlier transcript revision of a page current again (as a new revision); filing is refused while pages have no transcript unless forced with a reason | write |
 | `get_page` | Page image inline (WebP) or a signed link; native text, notes, the current transcript, neighbours, how often it is cited | read-only |
 | `save_transcript` | Verbatim transcript with flags; refuses unflagged doses | write |
 | `write_document` | `create_document` with its first blocks | write |
@@ -52,7 +54,7 @@ converter container and headless Claude Code and Codex sessions (see Live checks
 | `study_map` | A document's study map (docs/canvas.md): `get` (frames with card previews, connectors as "A -[label]-> B", hers and pinned items marked), `set_structure` (the whole map), `change` (incremental ops); never coordinates | write |
 | `concepts` | upsert concepts and relations in bulk; search, page, neighbourhood, path, filter, compare, look-alike suggestions; merge only with her claimed request | destructive |
 | `practice_questions` | create in bulk (or validate only), list, update, trash, restore | destructive |
-| `study_progress` | Her weak areas, missed-questions notebook, due cards, sessions, a session's results | read-only |
+| `study_progress` | Her weak areas, missed-questions notebook, due cards, sessions, a session's results; `calendar` (from, to, utcOffsetMinutes): what her Calendar page shows, exams by date, the days she studied and her streak | read-only |
 | `exams` | Upcoming exams with coverage and progress; create, update (never delete) | write |
 | `references` | Trusted outside references: `list` returns the built-in sites (PharmGuides and its sections, with its search address pattern, flagged trusted) and her saved references (optionally for one place and what is inside it); `add` saves one she asked for. No change or delete. The description carries the writing rule (below) | write |
 | `side_notes` | Her private side notes beside a document's blocks (docs/side-notes.md): `list` a document's notes (open first, in block order, detached last; each with its anchor block id and type, quote, colour, resolved, detached, the block's last known text, her words, timestamps); `recent` her open notes across documents, newest first, with document title and id (`limit`, default 20). No add, change or delete: only her session writes them | read-only |
@@ -239,6 +241,80 @@ Example: {"action":"create","parentId":"nod_01HZX3K9Q2V7M4N8P6R5T0W1YB","kind":"
   source) names its JSON path, e.g. `$.blocks[2].citations[0]`.
 - Anything unexpected is `internal` with no detail; the stack goes to the server log.
 
+## Parity with the app
+
+The rule (Alex, 2026-11-22): agents can do everything she can do in the app, through the same
+domain functions the web routes call, so the rules and validation live in one place and the MCP
+layer stays an abstraction over them. Exceptions are deliberate and listed with the reason: her
+sign-in and account, per-device or purely presentational state, her own judgement (reviewing,
+taking practice, writing side notes) and permanent deletion (agents trash, she deletes). A new user
+feature needs a row here: the tool that covers it, or why agents do not get it.
+
+Checked against every route in `apps/server/src/domains/*/routes.ts` on 2026-11-22.
+
+| Capability | HTTP route(s) | MCP | Status |
+|---|---|---|---|
+| Browse the tree, open an item | `GET /api/nodes`, `GET /api/nodes/:id` | `browse_library`, `get_item` | covered |
+| Create, rename, change details | `POST /api/nodes`, `PATCH /api/nodes/:id` | `edit_library` create, update | covered |
+| Favourite any item (sections and folders too) | `PATCH /api/nodes/:id` `favourite` | `edit_library` update `favourite`; `browse_library` view favourites | covered |
+| Move, drag and drop, folders of any depth | `POST /api/nodes/:id/move` | `edit_library` move (`parentId`, `afterId`) | covered (depth rule is the library's) |
+| Duplicate, trash, restore | `POST /api/nodes/:id/duplicate`, `/trash`, `/restore` | `edit_library` | covered |
+| Delete for good | `DELETE /api/nodes/:id` | none | excluded: permanent deletion is hers (route needs her session) |
+| Trash list, recents | `GET /api/trash`, `GET /api/recents` | `browse_library` views trash, recents | covered (agents' reads never count as "opened") |
+| Search | `GET /api/search` | `search_notes` | covered |
+| Change feed, activity log | `GET /api/changes`, `GET /api/activity` | `changes` | covered (same events; the plain-word log is her view of them) |
+| Upload links | `POST /api/uploads/tickets` | `source_files` upload_links | covered |
+| Browser upload (multipart) | `POST /api/uploads`, `PUT /api/uploads/:token` | the link from upload_links | covered |
+| Inbox, files under a node | `GET /api/files`, `GET /api/files/:id`, `/pages` | `source_files` list, `get_item` | covered |
+| File, move, back to the inbox | `POST /api/files/:id/file` | `source_files` file, move | covered |
+| Claim, release, retry | `POST /api/files/:id/claim`, `/release`, `/retry` | `source_files` | covered |
+| Rename a file | `PATCH /api/files/:id` | `source_files` rename | **added 2026-11-22** |
+| Trash, restore a file | `POST /api/files/:id/trash`, `/restore` | none | excluded for now: agents have never removed a source file (trashing one marks every citation to it, in all her notes, as trashed); left for Alex to decide |
+| Delete a file for good | `DELETE /api/files/:id` | none | excluded: hers (session) |
+| Download the original | `GET /api/files/:id/original` | none (page images and text via `get_page`, `get_item` text) | excluded for now: needs a signed link like the page images; left for Alex |
+| Page, image, signed link | `GET /api/pages/:id`, `/image`, `/image-url` | `get_page` | covered |
+| Read, save a transcript | `GET`, `PUT /api/pages/:id/transcript` | `get_page`, `save_transcript` | covered |
+| Transcript revisions | `GET /api/pages/:id/transcript/revisions` | `get_item` pag_ with `history: true` | **added 2026-11-22** |
+| Restore a transcript revision | `POST /api/pages/:id/transcript/revisions/:n/restore` | `source_files` restore_transcript | **added 2026-11-22** |
+| Review a transcript | `POST /api/pages/:id/transcript/review` | none | excluded: her check against the page (session) |
+| Converter state | `GET /api/converter/status` | `source_files` list, `start_here` | covered |
+| Read a document, a block, by node | `GET /api/documents/:id`, `/content`, `/blocks/:blockId`, `GET /api/nodes/:id/document` | `get_item` | covered |
+| Create, write, move, delete blocks, regenerate | `POST /api/documents`, `/blocks`, `PATCH .../blocks/:id`, `/blocks/move`, `/blocks/delete`, `/regenerate` | `write_document`, `edit_blocks` | covered |
+| Several operations in one commit | `POST /api/documents/batch` | `edit_blocks`, one operation per call | covered in effect (each call is checked the same way) |
+| Document references | `GET /api/documents/:id/references` | `get_item` doc_ | covered |
+| Document revisions | `GET /api/documents/:id/revisions`, `/revisions/:n` | `get_item` doc_ with `history: true` (summaries; not a revision's snapshot) | **added 2026-11-22** |
+| Restore a document revision | `POST /api/documents/:id/revisions/:n/restore` | `edit_blocks` restore_revision | covered |
+| What cites a page or file | `GET /api/pages/:id/citations`, `/files/:id/citations` | `get_page` (count) | partly covered (the count, not the list) |
+| Review a document | `POST /api/documents/:id/review` | none | excluded: hers (session) |
+| Study map read, structure, ops | `GET /api/documents/:id/canvas`, `PUT .../structure`, `POST .../ops` | `study_map` | covered |
+| Place cards, arrange, layout cache, live events | `PUT .../canvas/placements`, `POST .../arrange`, `.../layout-cache/:variant`, `GET .../events` | none | excluded: placing and arranging are hers (the pin rule); the cache and the event stream are her browser's |
+| Side notes read | `GET /api/documents/:id/margin-notes` | `side_notes` | covered |
+| Side notes write (text, colour, resolve, reattach, delete) | `POST`, `PATCH`, `DELETE .../margin-notes/...` | none | excluded: hers alone (docs/side-notes.md); agents read the colour |
+| Concepts: list, search, page, graph, path, query, compare, suggestions, types, brand and generic | `GET /api/concepts...`, `POST /api/concepts/query`, `/compare` | `concepts` | covered (types in `start_here` topic concepts) |
+| Create, change concepts and relations | `POST /api/concepts`, `/bulk`, `PATCH /api/concepts/:id`, `/relations...` | `concepts` upsert | covered |
+| Merge concepts | `POST /api/concepts/:id/merge` | `concepts` merge | covered (with her claimed request) |
+| Delete a concept or relation, review | `DELETE /api/concepts/:id`, `/relations/:id`, `POST .../review` | none | excluded: the domain refuses any key |
+| Drug name check | `POST /api/concepts/name-checks`, `/:id/name-check` | none | not added: runs by itself after an upsert; left for Alex |
+| Saved references: list, add | `GET`, `POST /api/references` | `references` | covered |
+| Change, delete a saved reference | `PATCH`, `DELETE /api/references/:id` | none | excluded: hers (decision of 2026-11-16) |
+| Questions: create, validate, list, get, update, trash, restore | `/api/practice/questions...` | `practice_questions`, `get_item` | covered |
+| Delete a question, review, schedule | `DELETE`, `POST .../review`, `.../schedule` | none | excluded: hers (session; her study plan) |
+| Results: weak areas, notebook, due, sessions, results, attempts | `/api/practice/...` | `study_progress` | covered (attempts as stats on `get_item` qst_) |
+| Take a practice session | `POST /api/practice/sessions...` | none | excluded: an agent never answers for her |
+| Exams: create, list, upcoming, get, update | `/api/exams...` | `exams`, `get_item` | covered |
+| Delete an exam | `DELETE /api/exams/:id` | none | excluded: hers (session) |
+| Calendar: exams, days studied, streak | `GET /api/calendar` | `study_progress` calendar | **added 2026-11-22** |
+| Requests: list, get, counts, claim, release, complete, decline | `/api/requests...` | `requests`, `get_item` | covered |
+| A request's instructions | `instructions` on each request | `requests` list and claim (follow them) | covered |
+| Leave, edit, cancel, reopen a request | `POST /api/requests`, `PATCH`, `/cancel`, `/reopen` | none | excluded: requests are hers to agents (the domain refuses agents) |
+| Saved instructions: read | `GET /api/me/preferences` `instructions` | `requests` instructions | **added 2026-11-22** |
+| Saved instructions: add, edit, delete | `PATCH /api/me/preferences` `instructions` | none | excluded for now: they are her rules for agents, so an agent rewriting them would be writing its own rules; the route takes her session only; left for Alex |
+| Tab order, guided tour seen | `PATCH /api/me/preferences` `tabOrder`, `tourSeen` | none | excluded: presentational |
+| Background picture | `GET`, `PUT`, `DELETE /api/me/background` | none | excluded: presentational, and a binary upload |
+| Folded sections, sidebar widths, panel heights and folds, Read or Edit, practice focus aids | (browser storage, no route) | none | excluded: per device |
+| Sign in and out, password, API keys, who am I | `/api/auth/...`, `/api/me`, `/api/me/password`, `/api/keys` | none | excluded: credentials and account security; `start_here` gives her name and the key's scope |
+| Health | `GET /healthz` | none | not a user feature |
+
 ## Safety and the audit trail
 
 - Every call runs as the key's user, through the domain services with the caller's
@@ -358,6 +434,13 @@ methods (start, answer, finish) are left out on purpose.
   name, in both tables, idempotent. The filing rule is tested in `files-workflow.test.ts` (HTTP: both
   callers, force without a reason, back to the inbox) and `services.test.ts` (the forced reason in
   the activity log), the MCP side in `mcp-real.test.ts`.
+- `test/mcp-parity.test.ts`, over the real composed app: `study_progress calendar` returns exactly what
+  `GET /api/calendar` returns for the same key, refuses more than 62 days and a bad date, works with a
+  read key; `requests instructions` lists what she saved through her session, is empty for another
+  user, and the preferences route refuses a key; `source_files rename`; `get_item` page history,
+  `restore_transcript` as a new revision, refused for an unknown or current revision, another agent's
+  claim and a read-only key; no `trash` action; `get_item` document history and `restore_revision`
+  from it; `history` on a node refused.
 - `test/mcp-cli.test.ts`: `admin create-key`.
 
 ## Live checks

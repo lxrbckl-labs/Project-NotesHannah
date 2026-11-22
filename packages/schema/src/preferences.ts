@@ -40,9 +40,46 @@ export function resolveTabOrder(saved: readonly unknown[] | null | undefined): T
   return out;
 }
 
+/**
+ * One saved instruction: her standing rules for a kind of work she asks agents for, written once in
+ * Settings and chosen in the request dialog. The limits are the request's (INSTRUCTION_LIMITS in
+ * requests.ts), repeated here so this file stands alone.
+ */
+export const SavedInstruction = z.strictObject({
+  id: z.string().min(1).max(40),
+  title: z.string().trim().min(1).max(80),
+  body: z.string().trim().min(1).max(4000),
+});
+export type SavedInstruction = z.infer<typeof SavedInstruction>;
+
+/** The whole list, in her order. Ids are unique. */
+export const SavedInstructions = z
+  .array(SavedInstruction)
+  .max(30, "Keep at most 30 saved instructions.")
+  .refine((list) => new Set(list.map((i) => i.id)).size === list.length, {
+    message: "Each saved instruction needs its own id.",
+  });
+
+/** Read whatever was stored tolerantly: keep the entries that are still valid, drop the rest. */
+export function resolveInstructions(saved: unknown): SavedInstruction[] {
+  if (!Array.isArray(saved)) return [];
+  const out: SavedInstruction[] = [];
+  for (const item of saved) {
+    const parsed = SavedInstruction.safeParse(item);
+    if (parsed.success && !out.some((i) => i.id === parsed.data.id) && out.length < 30) {
+      out.push(parsed.data);
+    }
+  }
+  return out;
+}
+
 /** What the server returns: every field resolved, so a client never has to fill in a default. */
 export const Preferences = z.object({
   tabOrder: TabOrder,
+  /** Her saved instructions; empty until she writes one. */
+  instructions: z.array(SavedInstruction).default([]),
+  /** Whether she has finished or skipped the first-time tour; false until then. */
+  tourSeen: z.boolean().default(false),
 });
 export type Preferences = z.infer<typeof Preferences>;
 
@@ -53,6 +90,10 @@ export type Preferences = z.infer<typeof Preferences>;
 export const PreferencesPatch = z
   .object({
     tabOrder: z.union([TabOrder, z.tuple([]), z.null()]).optional(),
+    /** The whole list of saved instructions, replacing what was there. */
+    instructions: SavedInstructions.optional(),
+    /** Set once the tour has been finished or skipped, so it does not start by itself again. */
+    tourSeen: z.boolean().optional(),
   })
   .strict();
 export type PreferencesPatch = z.infer<typeof PreferencesPatch>;

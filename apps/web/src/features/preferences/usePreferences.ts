@@ -1,4 +1,10 @@
-import { DEFAULT_TAB_ORDER, type Preferences, resolveTabOrder, type TabId } from "@notes/schema";
+import {
+  DEFAULT_TAB_ORDER,
+  type Preferences,
+  resolveTabOrder,
+  type SavedInstruction,
+  type TabId,
+} from "@notes/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useToast } from "../../components/ui/toast";
@@ -43,7 +49,16 @@ export function usePreferences() {
     queryKey: preferencesKey,
     queryFn: api.preferences,
     staleTime: 5 * 60_000,
-    ...(mirrored ? { placeholderData: { tabOrder: mirrored } satisfies Preferences } : {}),
+    ...(mirrored
+      ? {
+          // Until the server answers, assume the tour was seen: it must not start on a guess.
+          placeholderData: {
+            tabOrder: mirrored,
+            instructions: [],
+            tourSeen: true,
+          } satisfies Preferences,
+        }
+      : {}),
   });
   const data = query.data;
   const real = !query.isPlaceholderData;
@@ -74,7 +89,11 @@ export function useSaveTabOrder() {
       await client.cancelQueries({ queryKey: preferencesKey });
       const before = client.getQueryData<Preferences>(preferencesKey);
       const next = resolveTabOrder(order);
-      client.setQueryData<Preferences>(preferencesKey, { tabOrder: next });
+      client.setQueryData<Preferences>(preferencesKey, {
+        tabOrder: next,
+        instructions: before?.instructions ?? [],
+        tourSeen: before?.tourSeen ?? true,
+      });
       writeTabOrderMirror(userId, next);
       return { before };
     },
@@ -91,5 +110,37 @@ export function useSaveTabOrder() {
       client.setQueryData(preferencesKey, saved);
       writeTabOrderMirror(userId, saved.tabOrder);
     },
+  });
+}
+
+/** Her saved instructions for agent requests; empty until she writes one. */
+export function useInstructions(): readonly SavedInstruction[] {
+  const query = usePreferences();
+  // The placeholder shown before the first answer has no instructions: wait for the real one.
+  return query.isPlaceholderData ? [] : (query.data?.instructions ?? []);
+}
+
+/** Save the whole list of instructions (add, change, delete and reorder all go through this). */
+export function useSaveInstructions() {
+  const client = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: (list: readonly SavedInstruction[]) =>
+      api.updatePreferences({ instructions: [...list] }),
+    onSuccess: (saved) => client.setQueryData(preferencesKey, saved),
+    onError: (error) => toast.error(error),
+  });
+}
+
+/** Remember that she has finished or skipped the tour, so it does not start by itself again. */
+export function useMarkTourSeen() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.updatePreferences({ tourSeen: true }),
+    onMutate: () => {
+      const before = client.getQueryData<Preferences>(preferencesKey);
+      if (before) client.setQueryData<Preferences>(preferencesKey, { ...before, tourSeen: true });
+    },
+    onSuccess: (saved) => client.setQueryData(preferencesKey, saved),
   });
 }

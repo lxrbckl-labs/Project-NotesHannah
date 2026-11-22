@@ -42,6 +42,11 @@ const harmlessConsole: RegExp[] = [
   // Chromium logs every 401 response; the one from `/api/me` on the sign-in page is the app asking whether she
   // is signed in. A real failure is caught by the script/stylesheet check or by the screen not rendering.
   /Failed to load resource: the server responded with a status of 401/,
+  // Opening any dialog or sheet: the dialog library tries to add a small <style> that stops the page behind
+  // from scrolling, and the server's content policy (style-src 'self', no inline styles) refuses it. The
+  // dialog still works and the page behind is still held (the library also blocks the scroll in script).
+  // Only that one style is allowed here, by its hash, so any other refused inline style still fails a test.
+  /Applying inline style violates.*sha256-nzTgYzXYDNe6BAHiiI7NNlfK8n\/auuOAhh2t92YvuXo=/,
 ];
 
 export type Watch = { problems: string[]; assertClean: (where: string) => void };

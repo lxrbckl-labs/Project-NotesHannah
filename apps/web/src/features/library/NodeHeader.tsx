@@ -2,7 +2,6 @@ import type { NodeWithLinks } from "@notes/schema";
 import {
   ArrowLeft,
   BookOpen,
-  BookPlus,
   CalendarPlus,
   FilePlus,
   FolderPlus,
@@ -37,7 +36,7 @@ const MOCK = import.meta.env.VITE_MOCK_API === "1";
 function KindIcon({ kind }: { kind: CreatableKind }) {
   const Icon = {
     term: CalendarPlus,
-    course: BookPlus,
+    course: GraduationCap,
     folder: FolderPlus,
     lecture: Presentation,
     document: FilePlus,

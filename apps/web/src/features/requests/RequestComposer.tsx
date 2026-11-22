@@ -9,6 +9,7 @@ import { REQUEST_STATUS_HUE } from "../../lib/roles";
 import { HONEST_NOTE, TARGET_NOUN } from "./model/wording";
 import type { SubmitRequest } from "./types";
 import { Examples, KindPicker, MessageBox } from "./ui/form";
+import { InstructionPicker, useSavedInstructions } from "./ui/instructions";
 import { TargetIcon } from "./ui/parts";
 
 export interface RequestComposerProps {
@@ -49,6 +50,10 @@ export function RequestComposer({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [created, setCreated] = useState<StudyRequest | null>(null);
+  // Her saved instructions (Settings), and the one chosen for this request.
+  const saved = useSavedInstructions();
+  const [instructionId, setInstructionId] = useState<string | null>(null);
+  const instruction = saved.list.find((i) => i.id === instructionId) ?? null;
 
   // Each time the dialog opens it starts fresh from what the caller preset.
   useEffect(() => {
@@ -58,10 +63,12 @@ export function RequestComposer({
     setBusy(false);
     setError(null);
     setCreated(null);
+    setInstructionId(null);
   }, [open, defaultKind, defaultMessage]);
 
   const trimmed = message.trim();
-  const canSend = kind !== null || trimmed.length > 0;
+  // Instructions say what she wants on their own, so they are enough to send.
+  const canSend = kind !== null || trimmed.length > 0 || instruction !== null;
   const name = targetLabel ?? TARGET_NOUN[target.type];
 
   async function send() {
@@ -69,7 +76,15 @@ export function RequestComposer({
     setBusy(true);
     setError(null);
     try {
-      const request = await submit({ target, kind: kind ?? "other", message: trimmed });
+      const request = await submit({
+        target,
+        kind: kind ?? "other",
+        message: trimmed,
+        // A copy of the instruction as it reads now travels with the request.
+        ...(instruction
+          ? { instructions: { title: instruction.title, body: instruction.body } }
+          : {}),
+      });
       setCreated(request);
       onCreated?.(request);
     } catch (caught) {
@@ -156,13 +171,26 @@ export function RequestComposer({
             label={kind ? "Anything to add?" : "What would you like?"}
             value={message}
             onChange={setMessage}
-            required={kind === null}
+            required={kind === null && instruction === null}
             placeholder={
               kind
                 ? "Optional: say more about what you want."
                 : "Write it the way you would say it."
             }
             autoFocus={!defaultMessage}
+          />
+          <InstructionPicker
+            list={saved.list}
+            value={instructionId}
+            onChange={setInstructionId}
+            onManage={
+              saved.onManage
+                ? () => {
+                    onOpenChange(false);
+                    saved.onManage?.();
+                  }
+                : undefined
+            }
           />
           <Examples
             targetType={target.type}

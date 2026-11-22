@@ -35,6 +35,7 @@ const GetInput = z.strictObject({
   id: z.string().min(1).max(200),
   documentId: z.string().max(40).optional(),
   text: z.boolean().default(false),
+  history: z.boolean().default(false),
   cursor: PageRequest.shape.cursor,
   offset: z.number().int().min(0).default(0),
   limit: z.number().int().min(1).max(500).optional(),
@@ -282,6 +283,66 @@ function getPageSummary(ctx: ToolContext, id: string): ToolOutput {
   };
 }
 
+/** A document's or a page's revisions, newest first (get_item with history: true). */
+function getHistory(
+  ctx: ToolContext,
+  id: string,
+  kind: "document" | "page",
+  input: GetInput,
+): ToolOutput {
+  const limit = Math.min(input.limit ?? 20, 50);
+  const more = (next: string | null) =>
+    next ? [`Older revisions: get_item {"id":"${id}","history":true,"cursor":"${next}"}.`] : [];
+  if (kind === "document") {
+    const page = docs(ctx).revisions(ctx.auth, id, { cursor: input.cursor, limit });
+    const lines = [
+      `Revisions of document ${id}, newest first:`,
+      ...page.items.map(
+        (r) =>
+          `- revision ${r.number}, ${r.createdAt} by ${r.author.type === "agent" ? (r.author.label ?? "an agent") : "her"}, ${r.blockCount} block(s)${r.restoredFrom ? `, restored from ${r.restoredFrom}` : ""}${r.summary ? `: ${r.summary}` : ""}`,
+      ),
+      ...more(page.nextCursor),
+      `Bring one back with edit_blocks {"operation":"restore_revision","documentId":"${id}","revision":<number>}.`,
+    ];
+    return {
+      text: lines.join("\n"),
+      structured: {
+        kind: "document_history",
+        documentId: id,
+        items: page.items,
+        nextCursor: page.nextCursor,
+      },
+    };
+  }
+  const page = files(ctx).transcriptRevisions(ctx.auth, id, { cursor: input.cursor, limit });
+  const lines = [
+    `Transcript revisions of page ${id}, newest first:`,
+    ...page.items.map(
+      (t) =>
+        `- revision ${t.revision}, ${t.createdAt} by ${t.author.type === "agent" ? (t.author.label ?? "an agent") : "her"}, ${t.reviewStatus}, ${t.flags.length} flag(s): ${clip(t.text.replace(/\s+/g, " "), 120).text}`,
+    ),
+    ...more(page.nextCursor),
+    `Bring one back with source_files {"action":"restore_transcript","pageId":"${id}","revision":<number>}.`,
+  ];
+  return {
+    text: lines.join("\n"),
+    structured: {
+      kind: "transcript_history",
+      pageId: id,
+      items: page.items.map((t) => ({
+        id: t.id,
+        revision: t.revision,
+        author: t.author,
+        reviewStatus: t.reviewStatus,
+        createdAt: t.createdAt,
+        flags: t.flags.length,
+        characters: t.text.length,
+      })),
+      nextCursor: page.nextCursor,
+    },
+  };
+}
+
 function getDocument(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
   const port = docs(ctx);
   const limit = Math.min(input.limit ?? BLOCK_WINDOW, BLOCK_WINDOW);
@@ -344,7 +405,7 @@ function getBlock(ctx: ToolContext, id: string, input: GetInput): ToolOutput {
 export const getItem = defineTool({
   name: "get_item",
   title: "Open any item by ID",
-  description: `Open one item by its ID with links to its neighbours. The prefix says the kind: nod_ library node (children, its document, the source files filed there with transcription progress), fil_ uploaded file (status and pages; with "text": true every page's transcript or native text in one call, which is how to collect exact quotes for citations), pag_ page (its transcript; use get_page for the image), doc_ document (blocks with full JSON, and its references list), blk_ block (also give documentId), req_ her request, qst_ practice question, con_ concept (its page), exm_ exam. A lecture or document shows which agent is writing for it, if any. Long content comes in windows: offset and limit for a file's pages or a document's blocks, cursor for a node's children.`,
+  description: `Open one item by its ID with links to its neighbours. The prefix says the kind: nod_ library node (children, its document, the source files filed there with transcription progress), fil_ uploaded file (status and pages; with "text": true every page's transcript or native text in one call, which is how to collect exact quotes for citations), pag_ page (its transcript; use get_page for the image), doc_ document (blocks with full JSON, and its references list); a doc_ or pag_ with "history": true lists its revisions instead, blk_ block (also give documentId), req_ her request, qst_ practice question, con_ concept (its page), exm_ exam. A lecture or document shows which agent is writing for it, if any. Long content comes in windows: offset and limit for a file's pages or a document's blocks, cursor for a node's children.`,
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,
@@ -355,7 +416,10 @@ export const getItem = defineTool({
     id: `The ID, copied exactly, e.g. "${exampleId("node")}" (a library node) or "${exampleId("file")}" (a file).`,
     documentId: `Only for a block ID: the document it belongs to, e.g. "${exampleId("document")}".`,
     text: "Only for a file ID: include every page's text (transcript, or native text when there is none), up to about 40,000 characters per call.",
-    cursor: "Next page of a node's children: the nextCursor from the previous get_item result.",
+    history:
+      "Only for a document (doc_) or page (pag_) ID: list its revisions, newest first (a document's versions, or a page's transcript revisions), paged with cursor and limit.",
+    cursor:
+      "Next page of a node's children, or of a history: the nextCursor from the previous get_item result.",
     offset: "Where to start: a page index - 1 for a file, a block index for a document. Default 0.",
     limit: `How many pages (file) or blocks (document, at most ${BLOCK_WINDOW}) to return.`,
   }),
@@ -389,6 +453,18 @@ export const getItem = defineTool({
       throw new AppError("invalid_input", "documentId is only for opening a block (blk_ ID).", {
         example: { id: input.id },
       });
+    }
+    if (input.history) {
+      if (kind !== "document" && kind !== "page") {
+        throw new AppError(
+          "invalid_input",
+          "history is only for a document (doc_) or a page (pag_).",
+          {
+            example: { id: exampleId("document"), history: true },
+          },
+        );
+      }
+      return getHistory(ctx, input.id, kind, input);
     }
     switch (kind) {
       case "node":

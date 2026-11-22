@@ -1,9 +1,13 @@
 import type {
   Block,
+  CalendarQuery,
+  CalendarResponse,
   Document,
   FileStatus,
   Page,
   RequestUploadsInput,
+  RevisionSummary,
+  SavedInstruction,
   SaveTranscriptInput,
   SearchKind,
   SearchPage,
@@ -91,6 +95,16 @@ export interface FilesPort {
   /** The page's current transcript, or null. */
   getTranscript(auth: AuthContext, pageId: string): Transcript | null;
   saveTranscript(auth: AuthContext, input: SaveTranscriptInput): Transcript;
+  /** Rename a file (its original name as she sees it). */
+  rename(auth: AuthContext, fileId: string, name: string): SourceFile;
+  /** A page's transcript revisions, newest first. */
+  transcriptRevisions(
+    auth: AuthContext,
+    pageId: string,
+    options: { cursor?: string | undefined; limit: number },
+  ): PageResult<Transcript>;
+  /** Make an earlier transcript revision current again, as a new revision. */
+  restoreTranscript(auth: AuthContext, pageId: string, revision: number): Transcript;
   requestUploads(auth: AuthContext, input: RequestUploadsInput): UploadTicket[];
 }
 
@@ -135,6 +149,12 @@ export interface DocumentsPort {
   references(auth: AuthContext, documentId: string): Reference[];
   /** How many blocks cite a page (K5). */
   citedByCount(auth: AuthContext, pageId: string): number;
+  /** The document's revision history, newest first (restore one with restore_revision). */
+  revisions(
+    auth: AuthContext,
+    documentId: string,
+    options: { cursor?: string | undefined; limit: number },
+  ): PageResult<RevisionSummary>;
 }
 
 export interface ChangeItem {
@@ -214,6 +234,20 @@ export type ReferencesToolPort = Pick<ReferencesService, "list" | "create">;
 /** Her side notes (docs/side-notes.md): read only. Only her browser session writes them. */
 export type MarginNotesToolPort = Pick<MarginNotesService, "forAgent" | "recent">;
 
+/** The calendar (src/domains/calendar): exams by date and the days she studied. Read only. */
+export interface CalendarToolPort {
+  read(auth: AuthContext, query: CalendarQuery): CalendarResponse;
+}
+
+/**
+ * Her preferences (src/domains/preferences), as far as agents see them: her saved instructions for
+ * work she asks agents for. Read only; writing them, and everything presentational (tab order, the
+ * tour, the background), stays with her browser session.
+ */
+export interface PreferencesToolPort {
+  savedInstructions(auth: AuthContext): SavedInstruction[];
+}
+
 /** The study map (docs/canvas.md): read, set the structure, change; validation problems come back, not thrown. */
 export type CanvasToolPort = CanvasPort;
 
@@ -231,4 +265,6 @@ export interface McpBackend {
   canvas?: CanvasToolPort | undefined;
   references?: ReferencesToolPort | undefined;
   marginNotes?: MarginNotesToolPort | undefined;
+  calendar?: CalendarToolPort | undefined;
+  preferences?: PreferencesToolPort | undefined;
 }

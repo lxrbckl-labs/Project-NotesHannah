@@ -106,6 +106,20 @@ export function RequestCard({
       {request.context.note ? (
         <p className="mt-1.5 text-ui text-text-muted">{request.context.note}</p>
       ) : null}
+      {/* The saved instructions she attached, as they read when she left the request. */}
+      {request.instructions ? (
+        <details
+          className="mt-2 rounded-control bg-surface-muted px-3 py-2 text-ui"
+          data-testid="request-instructions"
+        >
+          <summary className="cursor-pointer font-medium">
+            Instructions: {request.instructions.title}
+          </summary>
+          <p className="mt-1.5 whitespace-pre-wrap text-text-muted [overflow-wrap:anywhere]">
+            {request.instructions.body}
+          </p>
+        </details>
+      ) : null}
 
       {answered && reply ? (
         <section

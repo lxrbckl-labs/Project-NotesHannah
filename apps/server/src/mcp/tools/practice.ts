@@ -1,4 +1,5 @@
 import {
+  CalendarQuery,
   ConceptId,
   ExamId,
   NodeId,
@@ -281,6 +282,10 @@ const PROGRESS = {
   }),
   sessions: z.strictObject({ limit: z.number().int().min(1).max(50).default(10) }),
   results: z.strictObject({ sessionId: PracticeSessionId }),
+  calendar: z.strictObject({
+    ...CalendarQuery.shape,
+    utcOffsetMinutes: z.number().int().min(-840).max(840).optional(),
+  }),
 };
 type ProgressAction = keyof typeof PROGRESS;
 
@@ -290,6 +295,7 @@ const PROGRESS_EXAMPLES: Record<ProgressAction, Record<string, unknown>> = {
   due: { action: "due" },
   sessions: { action: "sessions" },
   results: { action: "results", sessionId: exampleId("practiceSession") },
+  calendar: { action: "calendar", from: "2026-11-01", to: "2026-11-30", utcOffsetMinutes: -360 },
 };
 
 const pct = (x: number | null | undefined) => (x == null ? "n/a" : `${Math.round(x * 100)}%`);
@@ -298,7 +304,7 @@ export const studyProgress = defineTool({
   name: "study_progress",
   title: "Read her practice results",
   description:
-    'How she is doing, to build targeted practice: "weak_areas" (accuracy by tag, concept and lecture, each weak, ok or insufficient_data), "notebook" (questions she missed and must still get right), "due" (spaced-repetition cards due now and the next 14 days), "sessions" (her recent practice sessions) and "results" of one session. Read only; scope any of them with nodeId (a course, lecture or folder).',
+    'How she is doing, to build targeted practice: "weak_areas" (accuracy by tag, concept and lecture, each weak, ok or insufficient_data), "notebook" (questions she missed and must still get right), "due" (spaced-repetition cards due now and the next 14 days), "sessions" (her recent practice sessions), "results" of one session, and "calendar" (what her Calendar page shows: exams by date and, for each day she studied, questions answered, correct, minutes, the lectures practised and the notes she wrote in herself; plus her study streak; at most 62 days per call). Read only; scope any of them with nodeId (a course, lecture or folder).',
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,
@@ -309,7 +315,7 @@ export const studyProgress = defineTool({
     flattenActions(
       "action",
       Object.fromEntries(Object.entries(PROGRESS).map(([k, v]) => [k, jsonOf(v)])),
-      '"weak_areas", "notebook", "due", "sessions" or "results".',
+      '"weak_areas", "notebook", "due", "sessions", "results" or "calendar".',
     ),
     {
       nodeId: "Only questions under this node (a course, lecture or folder).",
@@ -320,6 +326,10 @@ export const studyProgress = defineTool({
       examId: "due: only cards an exam covers.",
       limit: "due: cards to list (default 20); sessions: how many (default 10).",
       sessionId: `results: the session, e.g. "${exampleId("practiceSession")}".`,
+      from: 'calendar: the first day, "YYYY-MM-DD".',
+      to: 'calendar: the last day, "YYYY-MM-DD", at most 62 days after from.',
+      utcOffsetMinutes:
+        "calendar: her offset from UTC in minutes, so moments fall on her local days (e.g. -360 for US Central in winter; default 0).",
     },
   ),
   parse: (raw) => parseAction("study_progress", "action", PROGRESS, PROGRESS_EXAMPLES, raw),
@@ -390,6 +400,22 @@ export const studyProgress = defineTool({
           ),
         ];
         return { text: lines.join("\n"), structured: { items: s.items } };
+      }
+      case "calendar": {
+        const cal = ctx.backend.calendar;
+        if (!cal) throw new AppError("internal", "The calendar is not available.");
+        const c = cal.read(ctx.auth, value as z.output<typeof PROGRESS.calendar>);
+        const lines = [
+          `Calendar ${c.from} to ${c.to} (today ${c.today}): study streak ${c.streak} day(s), ${c.days.length} day(s) studied, ${c.exams.length} exam(s).`,
+          ...c.exams.map(
+            (e) => `- exam ${e.id} "${e.title}" on ${e.date} (${e.courseName}, ${e.courseId})`,
+          ),
+          ...c.days.map(
+            (d) =>
+              `- ${d.date}: ${d.answered} answered, ${d.correct} correct, ${d.minutes} min${d.topics.length ? `; practised ${d.topics.map((t) => `${t.name} (${t.count})`).join(", ")}` : ""}${d.notes.length ? `; wrote in ${d.notes.map((n) => `${n.title} (${n.edits})`).join(", ")}` : ""}`,
+          ),
+        ];
+        return { text: lines.join("\n"), structured: { calendar: c } };
       }
       default: {
         const r = p.results(ctx.auth, value.sessionId as string);

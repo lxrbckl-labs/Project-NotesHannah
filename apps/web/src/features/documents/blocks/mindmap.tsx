@@ -5,7 +5,7 @@ import {
   type MindMapNode,
   walkMindMap,
 } from "@notes/schema";
-import { Maximize2, Minus, Plus } from "lucide-react";
+import { Maximize, Minus, Plus } from "lucide-react";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -326,7 +326,7 @@ export function MindMapBlock({ block }: { block: BlockOf<"mind_map"> }) {
             <Minus className="size-4" />
           </IconButton>
           <IconButton variant="bare" label="Fit the map" size="sm" onClick={fit}>
-            <Maximize2 className="size-3.5" />
+            <Maximize className="size-4" />
           </IconButton>
           <IconButton variant="bare" label="Zoom in" size="sm" onClick={() => zoomAt(1.25)}>
             <Plus className="size-4" />

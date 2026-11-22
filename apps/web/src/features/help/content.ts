@@ -838,6 +838,15 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "When something in your notes is wrong, unclear or missing, leave a request. Use the Ask button on a course, lecture, document, source page or concept, or the Ask about this block option on a single block. Write it the way you would say it: “quiz me on beta blockers”, “this card is wrong”, “explain this more”. On a block there are quick choices for the common cases: This is wrong, This is unclear, and Make questions from this.",
       },
+      { kind: "h3", text: "Your own instructions" },
+      {
+        kind: "p",
+        text: "If you always want something built the same way, write it down once. In Settings, under Instructions for agents, choose New instruction, give it a name such as “Lecture notes”, and write how you want it done: one section per slide, bold every drug name, a table for anything compared, five questions at the end. You can change or delete an instruction there at any time.",
+      },
+      {
+        kind: "p",
+        text: "When you ask an agent, pick one from the Instructions list in the request. It travels with the request and the assistant follows it. With an instruction chosen you do not have to type anything else. The request keeps its own copy, so changing the instruction later does not change what an older request asked for.",
+      },
       {
         kind: "p",
         text: "Your requests are listed on the Requests screen: the sidebar on a larger screen, or Settings on a phone.",
@@ -920,6 +929,7 @@ export const SECTIONS: GuideSection[] = [
           "**Your own background:** Settings, then Background. Choose any picture, of any size, and it replaces the dots behind every page on every device you sign in on. Remove puts the dots back.",
           "**Sidebars:** drag the inner edge of any sidebar to make it wider or narrower; double-click the edge to go back to the usual width. Each sidebar’s button closes it, and the same button in the top bar opens it again.",
           "**Calendar tab:** the phone’s tab bar has six tabs, Calendar among them. Reorder them under Tab bar.",
+          "**The tour:** the first time you sign in, a short tour walks you through each part of the app. Skip, at the bottom right, ends it at any point. To take it again, press Take the tour at the top of this guide in the app.",
           "**Read or Edit:** every lecture and document page has a Read and Edit switch in its bar. Read is for studying: nothing can be changed by accident, and the formatting bar is out of the way. Edit is for writing. The app remembers which one you last chose on that device.",
           "**Panel heights:** where two panels share a sidebar on a lecture page, drag the line between them to give one more room. Side notes stay level with the text they are about. Double-click the line to go back to the usual split.",
         ],

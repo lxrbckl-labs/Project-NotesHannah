@@ -690,6 +690,11 @@ h3 {
   }
 }
 
+/* A source page in full screen (sources/ZoomPan.tsx): the picture may use the whole window. */
+.zoom-full img {
+  max-height: calc(100dvh - 2rem);
+}
+
 /* The faint dotted grid motif. */
 .dot-grid {
   background-image: radial-gradient(var(--color-dot) 1.1px, transparent 1.2px);
