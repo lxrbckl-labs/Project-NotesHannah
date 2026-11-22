@@ -26,6 +26,8 @@ const item = (page: Page, label: string) =>
 
 /** Press on an icon, drag it to a slot of the replica, and let go. Mouse here; the card uses pointer events. */
 async function dragTo(page: Page, label: string, slot: number) {
+  // The card can sit below the fold on a phone; the mouse only reaches what is on screen.
+  await item(page, label).scrollIntoViewIfNeeded();
   // The other icons glide into place after a change; measure once they have stopped.
   let box = await item(page, label).boundingBox();
   for (let i = 0; i < 20; i++) {
@@ -52,6 +54,8 @@ async function openSettings(page: Page) {
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   // The page slides in; wait for it to stop before measuring anything on it.
   await expect(page.locator("html")).not.toHaveClass(/tab-sliding/);
+  // Cards above it can push the tab bar card below the fold; mouse and touch only reach what is on screen.
+  await page.getByTestId("tab-bar-card").scrollIntoViewIfNeeded();
 }
 
 const save = (page: Page) => page.getByRole("button", { name: "Save", exact: true });
