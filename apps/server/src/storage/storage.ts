@@ -133,9 +133,13 @@ export interface InitStorageOptions {
 
 export type InitStorageResult =
   | { status: "created"; storage: Storage }
-  | { status: "exists"; storage: Storage };
+  | { status: "exists"; storage: Storage; restored: string[] };
 
-/** Write the marker and the top-level layout. Idempotent when the marker already exists. */
+/**
+ * Write the marker and the top-level layout. When the marker already exists the marker is left alone
+ * and any missing top-level directory is made again (`restored` names them): after the folders are
+ * moved away for a reset, the converter's mounts need them back before it can start.
+ */
 export function initStorage(dataDir: string, options: InitStorageOptions = {}): InitStorageResult {
   const dir = resolve(dataDir);
   if (!existsSync(dir)) {
@@ -148,7 +152,13 @@ export function initStorage(dataDir: string, options: InitStorageOptions = {}): 
   }
   if (!statSync(dir).isDirectory()) throw unavailable(`Storage path ${dir} is not a directory.`);
   if (existsSync(join(dir, STORAGE_MARKER))) {
-    return { status: "exists", storage: openStorage(dir) };
+    const restored: string[] = [];
+    for (const top of TOP_LEVEL_DIRS) {
+      if (existsSync(join(dir, top))) continue;
+      mkdirSync(join(dir, top), { recursive: true, mode: 0o700 });
+      restored.push(top);
+    }
+    return { status: "exists", storage: openStorage(dir), restored };
   }
   const entries = readdirSync(dir).filter((name) => name !== ".DS_Store");
   if (entries.length > 0 && !options.force) {

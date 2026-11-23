@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   statSync,
   symlinkSync,
   writeFileSync,
@@ -28,6 +29,7 @@ import {
   queueDir,
   resolveInside,
   STORAGE_MARKER,
+  TOP_LEVEL_DIRS,
   tmpDir,
 } from "../src/storage/storage.js";
 
@@ -84,6 +86,25 @@ describe("storage guard", () => {
     const again = initStorage(dir);
     expect(again.status).toBe("exists");
     expect(again.storage.marker.storageId).toBe(marker.storageId);
+  });
+
+  test("with the marker there, missing top-level folders are made again and the marker is kept", () => {
+    const dir = temp();
+    const first = initStorage(dir);
+    const id = first.storage.marker.storageId;
+    rmSync(join(dir, "originals"), { recursive: true });
+    rmSync(join(dir, "queue"), { recursive: true });
+    const again = initStorage(dir);
+    expect(again.status).toBe("exists");
+    if (again.status !== "exists") throw new Error("unreachable");
+    expect(again.restored).toContain("originals");
+    expect(again.restored.some((name) => name.startsWith("queue/"))).toBe(true);
+    expect(again.restored).not.toContain("pages");
+    for (const top of TOP_LEVEL_DIRS) expect(existsSync(join(dir, top))).toBe(true);
+    expect(again.storage.marker.storageId).toBe(id);
+    // Nothing missing: nothing restored.
+    const third = initStorage(dir);
+    expect(third.status === "exists" && third.restored).toEqual([]);
   });
 
   test("init-storage will not create a missing directory unless asked", () => {

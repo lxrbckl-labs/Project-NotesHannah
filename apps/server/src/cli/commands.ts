@@ -128,7 +128,9 @@ export async function runAdmin(argv: string[], io: CliIo): Promise<number> {
         io.out(
           result.status === "created"
             ? `Initialized storage at ${result.storage.root} (id ${result.storage.marker.storageId}).`
-            : `Storage at ${result.storage.root} is already initialized (id ${result.storage.marker.storageId}); nothing changed.`,
+            : result.restored.length > 0
+              ? `Storage at ${result.storage.root} is already initialized (id ${result.storage.marker.storageId}); made the missing folders again: ${result.restored.join(", ")}.`
+              : `Storage at ${result.storage.root} is already initialized (id ${result.storage.marker.storageId}); nothing changed.`,
         );
         return 0;
       }

@@ -12,9 +12,9 @@ As of 2026-11-16, after the design pass and the first deployment. Feature IDs re
   Before: users alex, demo, pharmacy; 15 documents, 9 requests, 3 API keys. Kept copy:
   `/Volumes/NVME1/notes-pre-clean-20261122/` (database and storage), a labelled `pre-clean` backup snapshot, and
   the old database inside the volume at `/db/pre-clean-20261122/`. Old agent API keys no longer work.
-- Open: `admin init-storage` does not recreate the top-level storage directories when the `.notes-storage` marker
-  is already there (`apps/server/src/storage/storage.ts`), so the converter could not start after the sweep until
-  the directories were made by hand. A repair path is wanted.
+- Fixed 2026-11-23 (not yet deployed): `admin init-storage` on a directory that already has the `.notes-storage`
+  marker now makes any missing top-level folder again and names them; the marker is left alone. Before, the
+  converter could not start after the sweep until the folders were made by hand.
 - Open: `e2e/files.spec.ts:231` (right-click, Back to inbox) fails on the mini on the computer and tablet
   projects and passes on the MacBook; cause unknown.
 
