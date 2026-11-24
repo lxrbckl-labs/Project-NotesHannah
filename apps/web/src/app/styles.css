@@ -556,6 +556,12 @@ h3 {
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* The page area itself (AppShell's <main>) takes focus from the skip link, and from a key press followed by
+   a click on empty space. It is not a control, so it gets no ring: a blue frame round the whole page looked
+   like everything had been selected. Its `outline-none` class alone loses to the rule above. */
+#main:focus-visible {
+  outline: none;
+}
 
 /*
  * The phone's tab bar is fixed over the bottom of the main area, so the main area keeps exactly the tab
