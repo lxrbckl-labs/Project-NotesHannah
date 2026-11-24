@@ -138,9 +138,9 @@ export function GuideTocWide({ active }: { active?: string | undefined }) {
   return (
     <nav
       aria-label="On this page, side list"
-      className="guide-toc-wide sticky top-6 hidden max-h-[calc(100dvh-3rem)] self-start overflow-y-auto pb-6 xl:block"
+      className="guide-toc-wide sticky top-6 hidden max-h-[calc(100dvh-3rem)] self-start overflow-y-auto rounded-card border border-border bg-surface p-3 shadow-card xl:block"
     >
-      <h2 className="mb-3 px-3 font-sans text-caption font-semibold tracking-wide text-text-muted uppercase">
+      <h2 className="mb-3 px-3 pt-1 font-sans text-caption font-semibold tracking-wide text-text-muted uppercase">
         On this page
       </h2>
       <List active={active} />
