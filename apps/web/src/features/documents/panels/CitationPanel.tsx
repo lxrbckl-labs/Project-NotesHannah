@@ -6,10 +6,11 @@ import {
   citationKey,
   isBlockType,
 } from "@notes/schema";
-import { ChevronLeft, ChevronRight, FileText, FileX, Locate, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, FileText, FileX, Locate, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "../../../components/ui/button";
 import { DOCUMENT_HUE } from "../../../lib/roles";
+import { openInTab } from "../../tabs/openInTab";
 import { useActions, useView } from "../context";
 import { locateQuote, segmentTranscript } from "../model/references";
 import type { CitationSource } from "../store/types";
@@ -207,6 +208,23 @@ export function CitationPanel({
             testId="source-image"
             // The side panel is narrow; a sheet on a phone is already most of the screen.
             fullScreen={variant === "side"}
+            // The whole file, at this page with the quote marked, in a tab of its own (the same address a
+            // practice question's source link uses).
+            corner={
+              <IconButton
+                label="Open this page in a new tab"
+                size="sm"
+                data-testid="source-open-tab"
+                onClick={() =>
+                  openInTab(
+                    `/files/${citation.fileId}?page=${citation.pageId}&quote=${encodeURIComponent(citation.quote)}`,
+                    available.fileName,
+                  )
+                }
+              >
+                <ExternalLink className="size-4" />
+              </IconButton>
+            }
           />
         )}
 

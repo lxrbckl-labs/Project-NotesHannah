@@ -412,7 +412,6 @@ export const HOTKEYS: readonly HotkeyDef[] = [
     where: "source",
     repeat: true,
   },
-  { id: "source.fit", keys: ["0"], label: "Fit the page", group: "Source file", where: "source" },
   {
     id: "source.fullScreen",
     keys: ["f"],

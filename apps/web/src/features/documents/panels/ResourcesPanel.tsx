@@ -9,10 +9,17 @@ import {
 } from "@notes/schema";
 import { BookMarked, ChevronRight, ExternalLink, FileText } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { Collapse } from "../../../components/ui/collapse";
 import { cn } from "../../../lib/cn";
 import { DOCUMENT_HUE } from "../../../lib/roles";
 import { useActions, useSignal } from "../context";
 import type { ReferenceIndex } from "../model/references";
+
+/**
+ * How long a group takes to open or close. Groups open by themselves as she scrolls the page, so the move
+ * is slower than a tap-to-open list: it should be something she can follow, not a jolt.
+ */
+const GROUP_MS = 300;
 
 /** One resource of one block: a numbered source of hers, or an outside reference. */
 interface Entry {
@@ -159,8 +166,14 @@ export const ResourcesPanel = memo(function ResourcesPanel({
     if (!head) return;
     // Move only this list, never the page.
     const offset = head.offsetTop - box.offsetTop;
-    if (offset < box.scrollTop || offset > box.scrollTop + box.clientHeight - 80)
-      box.scrollTop = offset - 4;
+    if (offset < box.scrollTop || offset > box.scrollTop + box.clientHeight - 80) {
+      // Glide there, in step with the group opening; at once where motion is reduced.
+      const still =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (still || typeof box.scrollTo !== "function") box.scrollTop = offset - 4;
+      else box.scrollTo({ top: offset - 4, behavior: "smooth" });
+    }
   }, [current]);
 
   if (groups.length === 0) {
@@ -187,7 +200,6 @@ export const ResourcesPanel = memo(function ResourcesPanel({
     >
       {groups.map((group) => {
         const open = manual[group.key] ?? group.key === current;
-        const live = group.entries.filter((e) => inView.has(e.blockId)).length;
         return (
           <section key={group.key} className="mb-1" data-testid="resource-group">
             <button
@@ -204,17 +216,17 @@ export const ResourcesPanel = memo(function ResourcesPanel({
               <ChevronRight
                 aria-hidden
                 className={cn(
-                  "size-4 shrink-0 transition-transform duration-(--duration-fast)",
+                  // The arrow turns at the pace the group opens (GROUP_MS), not in a blink.
+                  "size-4 shrink-0 transition-transform duration-300 ease-(--ease-calm)",
                   open && "rotate-90",
                 )}
               />
               <span className="min-w-0 flex-1 truncate">{group.title}</span>
               <span className="rounded-pill border border-border px-1.5 text-caption font-medium tabular-nums">
-                {live > 0 ? `${live} here · ` : ""}
                 {group.entries.length}
               </span>
             </button>
-            {open && (
+            <Collapse open={open} ms={GROUP_MS}>
               <ul className="m-0 flex list-none flex-col gap-1 p-0 pl-2">
                 {group.entries.map((entry) => (
                   <ResourceRow
@@ -226,7 +238,7 @@ export const ResourcesPanel = memo(function ResourcesPanel({
                   />
                 ))}
               </ul>
-            )}
+            </Collapse>
           </section>
         );
       })}

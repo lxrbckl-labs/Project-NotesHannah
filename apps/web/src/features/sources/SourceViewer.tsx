@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download, FileSearch, RotateCw } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { Button } from "../../components/ui/button";
+import { Button, IconButton } from "../../components/ui/button";
 import { segmentItemClass } from "../../components/ui/segmented";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui/states";
 import { Tooltip } from "../../components/ui/tooltip";
@@ -18,7 +18,7 @@ import { useFileActions } from "../library/fileActions";
 import { FileStatusBadge, FileTypeIcon } from "../library/LibraryTree";
 import { fileKeys, useNode } from "../library/queries";
 import { TranscriptPanel } from "./TranscriptPanel";
-import { ZoomPan } from "./ZoomPan";
+import { type ZoomPaging, ZoomPan } from "./ZoomPan";
 
 export interface SourceViewerProps {
   fileId: string;
@@ -72,6 +72,8 @@ export function SourceViewer({
     if (pageId) setCurrentId(pageId);
   }, [pageId]);
 
+  // The place in the header's row of bars where the transcript draws its review and history buttons.
+  const [barSlot, setBarSlot] = useState<HTMLElement | null>(null);
   const list = pages.data ?? [];
   const page = list.find((p) => p.id === currentId) ?? list[0];
   const index = page ? list.indexOf(page) : -1;
@@ -103,6 +105,44 @@ export function SourceViewer({
         placeId={place.data?.id}
         lead={headerLead}
         actions={headerActions}
+        onActionsSlot={layout === "phone" ? undefined : setBarSlot}
+        // The pager sits in the header row as a bar of its own, at the right of the file's actions: one
+        // page (a photo, a single image) has no pager to nowhere.
+        pager={
+          page && list.length > 1 ? (
+            // biome-ignore lint/a11y/useSemanticElements: a group of the page's one toolbar
+            <div role="group" aria-label="Pages" data-testid="file-pager" className="contents">
+              <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+              <IconButton
+                aria-label="Previous page"
+                hotkey="source.prevPage"
+                size="sm"
+                variant="bare"
+                disabled={index <= 0}
+                onClick={() => go(list[index - 1])}
+              >
+                <ChevronLeft size={18} />
+              </IconButton>
+              <p
+                className="min-w-28 px-2 text-center text-label font-medium text-text-muted tabular-nums"
+                aria-live="polite"
+                data-testid="page-position"
+              >
+                Page <span className="font-semibold text-text">{page.index}</span> of {list.length}
+              </p>
+              <IconButton
+                aria-label="Next page"
+                hotkey="source.nextPage"
+                size="sm"
+                variant="bare"
+                disabled={index >= list.length - 1}
+                onClick={() => go(list[index + 1])}
+              >
+                <ChevronRight size={18} />
+              </IconButton>
+            </div>
+          ) : undefined
+        }
       />
 
       {f.status === "failed" || f.status === "converting" || f.status === "uploaded" ? (
@@ -118,38 +158,7 @@ export function SourceViewer({
       ) : (
         <>
           {/* One page (a photo, a single image): no strip of one thumbnail and no pager to nowhere. */}
-          {list.length > 1 ? (
-            <>
-              <Thumbnails pages={list} currentId={page.id} onPick={go} />
-              <div className="flex items-center justify-between gap-2">
-                <Button
-                  aria-label="Previous page"
-                  hotkey="source.prevPage"
-                  disabled={index <= 0}
-                  onClick={() => go(list[index - 1])}
-                >
-                  <ChevronLeft size={18} aria-hidden />
-                  <span className="hidden sm:inline">Previous</span>
-                </Button>
-                <p
-                  className="text-sm text-text-muted"
-                  aria-live="polite"
-                  data-testid="page-position"
-                >
-                  Page {page.index} of {list.length}
-                </p>
-                <Button
-                  aria-label="Next page"
-                  hotkey="source.nextPage"
-                  disabled={index >= list.length - 1}
-                  onClick={() => go(list[index + 1])}
-                >
-                  <span className="hidden sm:inline">Next</span>
-                  <ChevronRight size={18} aria-hidden />
-                </Button>
-              </div>
-            </>
-          ) : null}
+          {list.length > 1 ? <Thumbnails pages={list} currentId={page.id} onPick={go} /> : null}
           {layout === "phone" ? (
             <PhonePanes
               key={page.id}
@@ -160,8 +169,26 @@ export function SourceViewer({
             />
           ) : (
             <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <PageImage page={page} region={region} />
-              <TranscriptPanel file={f} page={page} highlightQuote={highlightQuote} />
+              <PageImage
+                page={page}
+                region={region}
+                // In full screen the pager below is covered, so the picture carries its own arrows.
+                paging={
+                  list.length > 1
+                    ? {
+                        position: `Page ${page.index} of ${list.length}`,
+                        onPrevious: index > 0 ? () => go(list[index - 1]) : undefined,
+                        onNext: index < list.length - 1 ? () => go(list[index + 1]) : undefined,
+                      }
+                    : undefined
+                }
+              />
+              <TranscriptPanel
+                file={f}
+                page={page}
+                highlightQuote={highlightQuote}
+                actionsSlot={barSlot}
+              />
             </div>
           )}
         </>
@@ -181,12 +208,18 @@ function ViewerHeader({
   placeId,
   lead,
   actions,
+  pager,
+  onActionsSlot,
 }: {
   file: SourceFile;
   placePath?: string | undefined;
   placeId?: string | undefined;
   lead?: ReactNode;
   actions?: ReactNode;
+  /** The page pager, shown at the right of the actions bar. */
+  pager?: ReactNode;
+  /** Given the element that holds the transcript's bar in this row (tablet and computer). */
+  onActionsSlot?: ((el: HTMLElement | null) => void) | undefined;
 }) {
   const download = useRef<HTMLAnchorElement>(null);
   useHotkey("source.download", () => download.current?.click());
@@ -239,27 +272,37 @@ function ViewerHeader({
           </div>
         </div>
       </div>
-      <div
-        role="toolbar"
-        aria-label="This file"
-        data-testid="file-toolbar"
-        className="doc-head-bar flex max-w-full flex-wrap items-center gap-0.5 self-start justify-self-start rounded-card border border-border-strong bg-surface p-1 shadow-card"
-      >
-        {actions}
-        {actions ? <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" /> : null}
-        <Tooltip content="Download original" hotkey="source.download">
-          <a
-            ref={download}
-            href={originalUrl(file.id, true)}
-            download
-            aria-label="Download original"
-            aria-keyshortcuts={downloadKeys}
-            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 xl:h-8 xl:min-h-8 xl:min-w-8 text-ui font-medium text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted sm:px-3"
-          >
-            <Download size={15} aria-hidden />
-            <span className="max-sm:hidden">Download original</span>
-          </a>
-        </Tooltip>
+      {/* One bar for the whole page, in groups with a thin line between them: what she can do with the
+          file, then the transcript's review and history (drawn in by TranscriptPanel), and at the right end
+          where she is in the file. */}
+      <div>
+        <div
+          role="toolbar"
+          aria-label="This file"
+          data-testid="file-toolbar"
+          className="doc-head-bar flex w-full flex-wrap items-center gap-0.5 rounded-card border border-border-strong bg-surface p-1 shadow-card"
+        >
+          {actions}
+          {actions ? <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" /> : null}
+          <Tooltip content="Download original" hotkey="source.download">
+            <a
+              ref={download}
+              href={originalUrl(file.id, true)}
+              download
+              aria-label="Download original"
+              aria-keyshortcuts={downloadKeys}
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-2 xl:h-8 xl:min-h-8 xl:min-w-8 text-ui font-medium text-text transition-colors duration-(--duration-instant) hover:bg-surface-muted sm:px-3"
+            >
+              <Download size={15} aria-hidden />
+              <span className="max-sm:hidden">Download original</span>
+            </a>
+          </Tooltip>
+          {/* The transcript's buttons (review, history) are drawn into this place by TranscriptPanel. */}
+          {onActionsSlot ? (
+            <div ref={onActionsSlot} className="contents" data-testid="transcript-bar" />
+          ) : null}
+          {pager ? <div className="ml-auto flex items-center gap-0.5">{pager}</div> : null}
+        </div>
       </div>
     </header>
   );
@@ -335,13 +378,24 @@ function Thumbnails({
   );
 }
 
-function PageImage({ page, region }: { page: Page; region?: NormalizedBox | undefined }) {
+function PageImage({
+  page,
+  region,
+  paging,
+}: {
+  page: Page;
+  region?: NormalizedBox | undefined;
+  paging?: ZoomPaging | undefined;
+}) {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset the state for each page
   useEffect(() => setState("loading"), [page.id]);
   return (
     <div>
-      <ZoomPan label={`Page ${page.index} image. Scroll or pinch to zoom, drag to move.`}>
+      <ZoomPan
+        label={`Page ${page.index} image. Scroll or pinch to zoom, drag to move.`}
+        paging={paging}
+      >
         {state === "error" ? (
           <p role="alert" className="p-8 text-sm text-danger">
             The page image could not load.

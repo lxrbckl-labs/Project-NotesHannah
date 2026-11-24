@@ -166,6 +166,29 @@ test.describe("source viewer", () => {
     await expect(page.getByTestId("page-position")).toContainText("Page 5 of 34");
   });
 
+  test("full screen has an arrow at each side to change page", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name === "phone",
+      "a phone swipes between the page and its transcript",
+    );
+    await openSlides(page);
+    await page.getByTestId("zoom-full").click();
+    await expect(page.getByTestId("zoom-position")).toHaveText("Page 1 of 34");
+    // The first page has nowhere to go back to.
+    await expect(page.getByTestId("zoom-previous")).toBeDisabled();
+    await page.getByTestId("zoom-next").click();
+    await expect(page.getByTestId("zoom-position")).toHaveText("Page 2 of 34");
+    await page.getByTestId("zoom-previous").click();
+    await expect(page.getByTestId("zoom-position")).toHaveText("Page 1 of 34");
+    // Still in full screen, and the arrows sit at the two sides of the window.
+    await expect(page.getByTestId("zoom-pan")).toHaveAttribute("data-full", "true");
+    const left = await page.getByTestId("zoom-previous").boundingBox();
+    const right = await page.getByTestId("zoom-next").boundingBox();
+    const width = page.viewportSize()?.width ?? 0;
+    expect(left?.x ?? 999).toBeLessThan(60);
+    expect((right?.x ?? 0) + (right?.width ?? 0)).toBeGreaterThan(width - 60);
+  });
+
   test("zooms the page image", async ({ page }, testInfo) => {
     await openSlides(page);
     if (layoutOf(testInfo) === "phone") await page.getByRole("tab", { name: "Page" }).click();
@@ -173,10 +196,14 @@ test.describe("source viewer", () => {
     await expect(zoom).toHaveAttribute("data-scale", "1.00");
     await page.getByRole("button", { name: "Zoom in" }).click();
     await expect(zoom).not.toHaveAttribute("data-scale", "1.00");
-    await page.getByRole("button", { name: "Fit page" }).click();
+    await page.getByRole("button", { name: "Zoom out" }).click();
     await expect(zoom).toHaveAttribute("data-scale", "1.00");
+    // A double-click zooms in, and a second one goes back to the whole page.
     await zoom.dblclick();
     await expect(zoom).toHaveAttribute("data-scale", "2.50");
+    await zoom.dblclick();
+    await expect(zoom).toHaveAttribute("data-scale", "1.00");
+    await expect(page.getByRole("button", { name: "Fit page" })).toHaveCount(0);
   });
 
   test("marks a transcript reviewed and restores an older revision", async ({ page }, testInfo) => {

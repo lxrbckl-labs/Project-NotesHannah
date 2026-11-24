@@ -1,4 +1,4 @@
-import { Expand, Minimize, Minus, Plus, Scan } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, Minimize, Minus, Plus } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../../components/ui/button";
 import { useHotkey } from "../hotkeys";
@@ -11,7 +11,23 @@ const MAX = 6;
  * double-click or double-tap to jump in and out. Children are drawn inside the transform, so
  * overlays (a highlighted region) move with the page.
  */
-export function ZoomPan({ children, label }: { children: ReactNode; label: string }) {
+/** Moving between pages from inside full screen: where she is, and the way to each side (absent at an end). */
+export interface ZoomPaging {
+  position: string;
+  onPrevious?: (() => void) | undefined;
+  onNext?: (() => void) | undefined;
+}
+
+export function ZoomPan({
+  children,
+  label,
+  paging,
+}: {
+  children: ReactNode;
+  label: string;
+  /** In full screen, an arrow at each side and the page's position: the pager under the picture is covered there. */
+  paging?: ZoomPaging | undefined;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -34,7 +50,6 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
   // Its keys (features/hotkeys/registry.ts, "Source file"). Escape, above, stays its own.
   useHotkey("source.zoomIn", () => zoomTo(view.scale * 1.4));
   useHotkey("source.zoomOut", () => zoomTo(view.scale / 1.4));
-  useHotkey("source.fit", () => setView({ scale: 1, x: 0, y: 0 }));
   useHotkey("source.fullScreen", () => setFull((v) => !v));
   // Entering or leaving changes the picture's size: start again from the whole page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the mode changes
@@ -157,6 +172,40 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
           {children}
         </div>
       </div>
+      {full && paging ? (
+        <>
+          {/* An arrow at each side, so it is plain there are more pages (the arrow keys do the same). */}
+          <IconButton
+            aria-label="Previous page"
+            hotkey="source.prevPage"
+            tooltip="right"
+            data-testid="zoom-previous"
+            disabled={!paging.onPrevious}
+            onClick={() => paging.onPrevious?.()}
+            className="absolute left-6 top-1/2 size-12! -translate-y-1/2 rounded-pill! border border-border bg-(--color-chrome) shadow-card backdrop-blur"
+          >
+            <ChevronLeft size={24} />
+          </IconButton>
+          <IconButton
+            aria-label="Next page"
+            hotkey="source.nextPage"
+            tooltip="left"
+            data-testid="zoom-next"
+            disabled={!paging.onNext}
+            onClick={() => paging.onNext?.()}
+            className="absolute right-6 top-1/2 size-12! -translate-y-1/2 rounded-pill! border border-border bg-(--color-chrome) shadow-card backdrop-blur"
+          >
+            <ChevronRight size={24} />
+          </IconButton>
+          <p
+            aria-live="polite"
+            data-testid="zoom-position"
+            className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-card border border-border bg-(--color-chrome) px-3 py-1.5 text-label text-text-muted tabular-nums shadow-card backdrop-blur"
+          >
+            {paging.position}
+          </p>
+        </>
+      ) : null}
       <div
         className={`absolute right-3 flex items-center gap-1 rounded-card border border-border bg-(--color-chrome) p-1 shadow-card backdrop-blur ${full ? "bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-6" : "bottom-3"}`}
       >
@@ -181,13 +230,6 @@ export function ZoomPan({ children, label }: { children: ReactNode; label: strin
           disabled={view.scale >= MAX}
         >
           <Plus size={18} />
-        </IconButton>
-        <IconButton
-          aria-label="Fit page"
-          hotkey="source.fit"
-          onClick={() => setView({ scale: 1, x: 0, y: 0 })}
-        >
-          <Scan size={18} />
         </IconButton>
         <IconButton
           aria-label={full ? "Leave full screen" : "Full screen"}

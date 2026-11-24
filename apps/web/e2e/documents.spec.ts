@@ -119,6 +119,21 @@ test("the source page opens full screen from the side panel and closes again", a
   await expect(page.getByTestId("image-full")).toHaveCount(0);
 });
 
+test("the source image has a button that opens the file at that page", async ({ page }) => {
+  await open(page);
+  await block(page, "paragraph").getByTestId("cite-chip").first().click();
+  const panel = page.getByTestId("citation-panel");
+  const button = panel.getByRole("button", { name: "Open this page in a new tab" });
+  await expect(button).toBeVisible();
+  // Bottom left of the picture, opposite the zoom buttons.
+  const image = await panel.getByTestId("source-image").boundingBox();
+  const at = await button.boundingBox();
+  expect((at?.x ?? 0) - (image?.x ?? 0)).toBeLessThan(40);
+  // This demo page has no app shell around it, so the browser goes to the file's own address.
+  await button.click();
+  await expect(page).toHaveURL(/\/files\/[^?]+\?page=[^&]+&quote=/);
+});
+
 test("opens a citation and highlights the quote", async ({ page }) => {
   await open(page);
   const chip = block(page, "paragraph").getByTestId("cite-chip").first();

@@ -2,6 +2,17 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## File page bar, folding cards, viewer arrows (2026-11-24, on main, not deployed)
+
+Tried in the local copy first. Gate passes and the mock end-to-end suite is green (424 passed). Details in
+features.md, section V. Open: the guide's screenshots still show the old header and file page.
+
+## Publishing by image (2026-11-24, in progress)
+
+The repository was made public on Alex's word (12:13 CST) so the org's Docker Hub secrets reach it. The
+first `publish` run built both images but the push was refused (401): the org's new token can log in but
+not write. Waiting on a Read & Write token; then rerun, confirm the images, and have the mini switch.
+
 ## Snapshot before a migration (2026-11-24, on main, not deployed)
 
 First step toward rolling out by published image (Watchtower) instead of `update.sh`: the app copies the

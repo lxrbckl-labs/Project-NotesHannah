@@ -29,6 +29,7 @@ export function ZoomableImage({
   overlay,
   testId,
   fullScreen = false,
+  corner,
 }: {
   src: string;
   width: number;
@@ -44,6 +45,8 @@ export function ZoomableImage({
    * Escape). Off where the picture already sits in a dialog or sheet.
    */
   fullScreen?: boolean;
+  /** Something for the bottom left corner, opposite the zoom buttons (a button that leads somewhere). */
+  corner?: ReactNode;
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
@@ -239,6 +242,11 @@ export function ZoomableImage({
           {overlay}
         </div>
       </div>
+      {corner && !full ? (
+        <div className="absolute bottom-2 left-2 flex gap-1 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur">
+          {corner}
+        </div>
+      ) : null}
       <div
         className={`absolute flex gap-1 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur ${full ? "right-6 bottom-[max(1.5rem,env(safe-area-inset-bottom))]" : "right-2 bottom-2"}`}
       >

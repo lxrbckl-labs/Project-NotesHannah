@@ -425,3 +425,20 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
 - **Even bars.** Every button in the lecture's action bar is 32px with no edge of its own (Ask was 36px with
   a border), and the app bar, the lecture bar and the document toolbar share one right inset (8px).
 - The guide covers the top bar, tabs and the home page; its key tables come from the registry.
+
+## V. The file page's one bar, folding cards and viewer changes (2026-11-24, on main, not deployed)
+
+- **The file page** has one full-width bar under the file's name, in groups: Ask an agent, Download original,
+  the transcript's Mark as reviewed (or Take back review) and History, and at the right end the pager
+  (previous, "Page N of M", next). The separate Previous / Next row is gone. On a phone the review and
+  history buttons stay under the transcript. Transcript, Text from the file and Speaker notes are titled
+  cards that slide open and closed (`components/ui/collapse.tsx`); the browser's plain dropdowns are gone.
+- **Full screen on the file page** has an arrow at each side to change page and the page number at the
+  bottom (tablet and computer). The Fit page button and its `0` key are removed; a double-click or zooming
+  out returns to the whole page.
+- **A cited page beside a document** has a button at its bottom left that opens the whole file at that
+  page, quote marked, in a new tab of the app (`features/tabs/openInTab.ts`; on a phone it goes there).
+- **Resources** groups slide open and closed over 300ms, the arrow turns at the same pace and the list
+  glides to the current group. A group's badge shows only its number of sources.
+- The guide has a new part, "Looking at a file", and its PDF was rebuilt. The guide's screenshots were not
+  retaken: `pnpm guide:figures` needs its own instance with the pharmacy demo set.

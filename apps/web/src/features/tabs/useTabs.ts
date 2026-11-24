@@ -13,6 +13,7 @@ import {
   setTitle,
   type TabsState,
 } from "./model";
+import { OPEN_TAB_EVENT, type OpenTabDetail } from "./openInTab";
 
 const key = (userId: string) => `notes-tabs:${userId}`;
 
@@ -182,6 +183,22 @@ export function useTabs(userId: string | undefined, enabled: boolean) {
       document.removeEventListener("auxclick", onClick, true);
     };
   }, [enabled, open]);
+
+  // A request from outside the shell's hooks (openInTab.ts): a new tab on that page, shown at once. On a
+  // phone, or at the tab limit, the page opens where she is.
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<OpenTabDetail>).detail;
+      const path = detail?.path ? inAppPath(detail.path, window.location.origin) : null;
+      if (!path) return;
+      detail.handled = true;
+      if (enabled && canOpen(stateRef.current)) {
+        open(path, detail.title ? { title: detail.title } : {});
+      } else navigate(path);
+    };
+    window.addEventListener(OPEN_TAB_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_TAB_EVENT, onOpen);
+  }, [enabled, open, navigate]);
 
   /** The tab to the right (1) or the left (-1), going round at the ends. */
   const step = useCallback(

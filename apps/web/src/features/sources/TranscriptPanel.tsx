@@ -1,8 +1,10 @@
 import type { Page, SourceFile, Transcript } from "@notes/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, History, RotateCcw, ShieldQuestion } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, CircleCheck, History, RotateCcw, ShieldQuestion, Undo2 } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../../components/ui/button";
+import { Collapse } from "../../components/ui/collapse";
 import { Badge } from "../../components/ui/field";
 import { EmptyState, ErrorState, LoadingList } from "../../components/ui/states";
 import { useToast } from "../../components/ui/toast";
@@ -32,10 +34,16 @@ export function TranscriptPanel({
   file,
   page,
   highlightQuote,
+  actionsSlot,
 }: {
   file: SourceFile;
   page: Page;
   highlightQuote?: string | undefined;
+  /**
+   * A place in the page's row of bars (SourceViewer's header) for the review and history buttons. When
+   * given, they are drawn there as a bar of their own; without it (a phone) they stay under the transcript.
+   */
+  actionsSlot?: HTMLElement | null | undefined;
 }) {
   const client = useQueryClient();
   const toast = useToast();
@@ -127,43 +135,45 @@ export function TranscriptPanel({
           ) : null}
 
           {shown ? (
-            <div
-              data-testid="transcript-text"
-              className="whitespace-pre-wrap break-words rounded-card border border-border bg-surface p-4 text-body leading-relaxed"
-            >
-              {segmentText(shown.text, shown.flags, highlightQuote).map((seg, i) => {
-                const key = `seg-${i}`;
-                if (seg.flag || seg.quoted) {
-                  return (
-                    <mark
-                      key={key}
-                      data-flag={seg.flag?.kind}
-                      data-quote={seg.quoted ? "true" : undefined}
-                      title={
-                        seg.flag ? (seg.flag.note ?? FLAG_LABEL[seg.flag.kind]) : "Cited passage"
-                      }
-                      data-hue={seg.flag ? flagHue(seg.flag.kind) : DOCUMENT_HUE.highlight}
-                      className={cn(
-                        "rounded-inline bg-tone-mark px-0.5 text-text",
-                        seg.flag && "border-b-2 border-dotted border-tone-solid",
-                        seg.quoted && seg.flag && "outline-2 outline-hue-yellow-solid",
-                      )}
-                    >
-                      {seg.text}
-                      {seg.flag ? (
-                        <sup className="ml-0.5 rounded-inline bg-surface px-1 text-[10px] font-medium text-text">
-                          {FLAG_LABEL[seg.flag.kind]}
-                        </sup>
-                      ) : null}
-                    </mark>
-                  );
-                }
-                return <span key={key}>{seg.text}</span>;
-              })}
-              {shown.text === "" ? (
-                <span className="text-text-muted">This page has no text.</span>
-              ) : null}
-            </div>
+            <Fold title="Transcript" startOpen resetKey={page.id}>
+              <div
+                data-testid="transcript-text"
+                className="whitespace-pre-wrap break-words px-4 pb-4 pt-1 text-body leading-relaxed"
+              >
+                {segmentText(shown.text, shown.flags, highlightQuote).map((seg, i) => {
+                  const key = `seg-${i}`;
+                  if (seg.flag || seg.quoted) {
+                    return (
+                      <mark
+                        key={key}
+                        data-flag={seg.flag?.kind}
+                        data-quote={seg.quoted ? "true" : undefined}
+                        title={
+                          seg.flag ? (seg.flag.note ?? FLAG_LABEL[seg.flag.kind]) : "Cited passage"
+                        }
+                        data-hue={seg.flag ? flagHue(seg.flag.kind) : DOCUMENT_HUE.highlight}
+                        className={cn(
+                          "rounded-inline bg-tone-mark px-0.5 text-text",
+                          seg.flag && "border-b-2 border-dotted border-tone-solid",
+                          seg.quoted && seg.flag && "outline-2 outline-hue-yellow-solid",
+                        )}
+                      >
+                        {seg.text}
+                        {seg.flag ? (
+                          <sup className="ml-0.5 rounded-inline bg-surface px-1 text-[10px] font-medium text-text">
+                            {FLAG_LABEL[seg.flag.kind]}
+                          </sup>
+                        ) : null}
+                      </mark>
+                    );
+                  }
+                  return <span key={key}>{seg.text}</span>;
+                })}
+                {shown.text === "" ? (
+                  <span className="text-text-muted">This page has no text.</span>
+                ) : null}
+              </div>
+            </Fold>
           ) : null}
 
           {shown && shown.flags.length > 0 ? (
@@ -186,26 +196,44 @@ export function TranscriptPanel({
             </section>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
-            {t.reviewStatus === "unverified" ? (
-              <Button
-                variant="primary"
-                disabled={review.isPending}
-                onClick={() => review.mutate(true)}
-              >
-                <CircleCheck size={16} aria-hidden />
-                Mark as reviewed
-              </Button>
+          {(() => {
+            const buttons = (
+              <>
+                {t.reviewStatus === "unverified" ? (
+                  <Button
+                    variant="primary"
+                    className="doc-head-main"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate(true)}
+                  >
+                    <CircleCheck size={16} aria-hidden />
+                    Mark as reviewed
+                  </Button>
+                ) : (
+                  <Button disabled={review.isPending} onClick={() => review.mutate(false)}>
+                    <Undo2 size={16} aria-hidden />
+                    Take back review
+                  </Button>
+                )}
+                <Button aria-expanded={historyOpen} onClick={() => setHistoryOpen((v) => !v)}>
+                  <History size={16} aria-hidden />
+                  History{t.revision > 1 ? ` (${t.revision})` : ""}
+                </Button>
+              </>
+            );
+            return actionsSlot ? (
+              // Inside the file's one bar: a thin line, then these, as the next group along.
+              createPortal(
+                <>
+                  <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+                  {buttons}
+                </>,
+                actionsSlot,
+              )
             ) : (
-              <Button disabled={review.isPending} onClick={() => review.mutate(false)}>
-                Take back review
-              </Button>
-            )}
-            <Button aria-expanded={historyOpen} onClick={() => setHistoryOpen((v) => !v)}>
-              <History size={16} aria-hidden />
-              History{t.revision > 1 ? ` (${t.revision})` : ""}
-            </Button>
-          </div>
+              <div className="flex flex-wrap gap-2">{buttons}</div>
+            );
+          })()}
 
           {historyOpen ? (
             <section aria-label="Transcript history" data-testid="revision-list">
@@ -254,21 +282,63 @@ export function TranscriptPanel({
       )}
 
       {page.nativeText ? (
-        <details className="rounded-card border border-border bg-surface px-4 py-3" open={!t}>
-          <summary className="cursor-pointer text-sm font-medium">Text from the file</summary>
-          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-text-muted">
+        <Fold title="Text from the file" startOpen={!t} resetKey={page.id}>
+          <p className="whitespace-pre-wrap break-words px-4 pb-3 pt-1 text-sm text-text-muted">
             {page.nativeText}
           </p>
-        </details>
+        </Fold>
       ) : null}
       {page.speakerNotes ? (
-        <details className="rounded-card border border-border bg-surface px-4 py-3" open>
-          <summary className="cursor-pointer text-sm font-medium">Speaker notes</summary>
-          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-text-muted">
+        <Fold title="Speaker notes" startOpen resetKey={page.id}>
+          <p className="whitespace-pre-wrap break-words px-4 pb-3 pt-1 text-sm text-text-muted">
             {page.speakerNotes}
           </p>
-        </details>
+        </Fold>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * A titled card that folds away: the transcript, the text layer of the file, the speaker notes. The arrow turns
+ * and the text slides open and closed (components/ui/collapse), like the other folding parts of the app.
+ */
+function Fold({
+  title,
+  startOpen,
+  resetKey,
+  children,
+}: {
+  title: string;
+  startOpen: boolean;
+  /** The page: each page starts as `startOpen` says, whatever she did on the last one. */
+  resetKey: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(startOpen);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: start again for each page
+  useEffect(() => setOpen(startOpen), [resetKey, startOpen]);
+  return (
+    <section className="rounded-card border border-border bg-surface">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex min-h-11 w-full items-center gap-2 rounded-card px-4 text-left text-sm font-medium transition-colors duration-(--duration-instant) hover:bg-surface-muted"
+      >
+        <ChevronRight
+          size={16}
+          aria-hidden
+          className={cn(
+            "shrink-0 text-text-muted transition-transform duration-300 ease-(--ease-calm)",
+            open && "rotate-90",
+          )}
+        />
+        {title}
+      </button>
+      <Collapse open={open} ms={260}>
+        {children}
+      </Collapse>
+    </section>
   );
 }

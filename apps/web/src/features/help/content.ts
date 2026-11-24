@@ -389,6 +389,20 @@ export const SECTIONS: GuideSection[] = [
         kind: "p",
         text: "Use the “…” menu on a file to File under…, rename it, send it back to the Inbox, or move it to the trash. A file filed under a lecture also shows in that lecture’s Source files.",
       },
+      { kind: "h3", text: "Looking at a file" },
+      {
+        kind: "p",
+        text: "Open a file to see it page by page: the page on one side and its transcript on the other. One bar under the file’s name holds everything: Ask an agent about this page, Download original, Mark as reviewed (or Take back review), History, and at the right end the arrows to the previous and the next page with where you are. The row of small pages under it jumps straight to a page.",
+      },
+      {
+        kind: "list",
+        items: [
+          "**Zoom:** use the minus and plus on the page, a pinch, or the scroll wheel, and drag to move around. Double-click to zoom in, and again to see the whole page.",
+          "**Full screen:** the button at the end of the zoom buttons fills the window with the page. On a tablet or a computer an arrow at each side goes to the previous and the next page, and the page number shows at the bottom. `Esc` or the same button leaves full screen.",
+          "**Transcript, Text from the file and Speaker notes** are three cards beside the page. Tap a card’s title to fold it away or open it again.",
+          "**History** lists every version of a page’s transcript. View an older one, or restore it: restoring adds a new version, so nothing is lost.",
+        ],
+      },
       {
         kind: "note",
         tone: "tip",
@@ -589,7 +603,7 @@ export const SECTIONS: GuideSection[] = [
       { kind: "h3", text: "Resources" },
       {
         kind: "p",
-        text: "The Resources panel lists the sources and outside references of the page, grouped by section. The section you are reading is open, and the entries for the blocks on screen are highlighted. Tap an entry to jump to its block. The button at its end opens the source: the slide beside the page, or the outside page in a new tab. Point at a block and its entries light up; point at an entry and its block does.",
+        text: "The Resources panel lists the sources and outside references of the page, grouped by section. The section you are reading is open, and the entries for the blocks on screen are highlighted. Tap an entry to jump to its block. The button at its end opens the source: the slide beside the page, or the outside page in a new tab. Beside the page, the slide has a button at its bottom left that opens the whole file at that slide in a new tab of the app, and at its bottom right the zoom buttons and Full screen. The other sections fold away as you read on, and each shows how many sources it has. Point at a block and its entries light up; point at an entry and its block does.",
       },
       { kind: "h3", text: "Arranging the sidebars" },
       {

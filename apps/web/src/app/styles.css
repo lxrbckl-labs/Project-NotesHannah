@@ -576,9 +576,10 @@ h3 {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
+  /* components/ui/collapse.tsx sets --collapse-ms where a slower move reads better. */
   transition:
-    grid-template-rows 200ms var(--ease-calm),
-    opacity 160ms ease-out;
+    grid-template-rows var(--collapse-ms, 200ms) var(--ease-calm),
+    opacity calc(var(--collapse-ms, 200ms) * 0.8) ease-out;
 }
 .tree-collapse[data-open="true"] {
   grid-template-rows: 1fr;
