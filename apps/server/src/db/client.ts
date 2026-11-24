@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
@@ -32,8 +32,16 @@ export function openDatabase(path: string): Db {
  *   0800-0899 references
  *   0900-0949 per-person preferences   0950-0999 side notes
  *   0600-0699 integration (changes that span domains)
+ *
+ * `beforeFirst` is called once, with the names about to run, before the first of them: only when there is
+ * something to apply AND the database already holds earlier migrations (a brand-new database has nothing
+ * to lose). The server passes a snapshot there (index.ts); if it throws, nothing is applied.
  */
-export function migrate(db: Db, dir: string = MIGRATIONS_DIR): string[] {
+export function migrate(
+  db: Db,
+  dir: string = MIGRATIONS_DIR,
+  options: { beforeFirst?: (pending: readonly string[]) => void } = {},
+): string[] {
   db.exec(
     "CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)",
   );
@@ -45,9 +53,10 @@ export function migrate(db: Db, dir: string = MIGRATIONS_DIR): string[] {
   const files = readdirSync(dir)
     .filter((name) => /^\d{4}_.+\.sql$/.test(name))
     .sort();
+  const pending = files.filter((name) => !done.has(name));
+  if (pending.length > 0 && done.size > 0) options.beforeFirst?.(pending);
   const applied: string[] = [];
-  for (const name of files) {
-    if (done.has(name)) continue;
+  for (const name of pending) {
     const sql = readFileSync(join(dir, name), "utf8");
     // A file that rebuilds a table other tables point at must run with foreign keys off (the pragma cannot
     // change inside a transaction), or dropping the old table cascades into its children. It opts in with
@@ -80,4 +89,33 @@ export function createTestDatabase(): Db {
   const db = openDatabase(":memory:");
   migrate(db);
   return db;
+}
+
+/**
+ * A complete copy of the database in one file, taken before migrations change it. `VACUUM INTO` writes a
+ * consistent copy even in WAL mode and never touches the live file. The copy goes to
+ * `<backupsDir>/pre-migration/` and is named after the moment and the first migration about to run. Old
+ * copies are never removed here: migrations are rare, and clearing them out is a person's decision.
+ *
+ * Why the app does this itself: when a new image replaces the container (Watchtower), nothing else runs
+ * between the old version stopping and the new one migrating, so there is no other place for a restore
+ * point. It throws if the copy cannot be written or comes out empty, and the caller must then not migrate.
+ */
+export function snapshotBeforeMigration(
+  db: Db,
+  backupsDir: string,
+  pending: readonly string[],
+  now: Date = new Date(),
+): string {
+  const dir = join(backupsDir, "pre-migration");
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const stamp = now
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z");
+  const first = (pending[0] ?? "unknown").replace(/\.sql$/, "").replace(/[^A-Za-z0-9_]/g, "_");
+  const file = join(dir, `notes-${stamp}-before-${first}.db`);
+  db.prepare("VACUUM INTO ?").run(file);
+  if (statSync(file).size === 0) throw new Error(`the pre-migration snapshot ${file} is empty`);
+  return file;
 }

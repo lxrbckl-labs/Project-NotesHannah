@@ -2,6 +2,14 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Snapshot before a migration (2026-11-24, on main, not deployed)
+
+First step toward rolling out by published image (Watchtower) instead of `update.sh`: the app copies the
+database to `backups/pre-migration/` before applying migrations to a database that holds data, and refuses
+to start if it cannot. See deploy.md, "Rolling out a change". Still open for that move: a first `publish`
+run, the one-time image switch on the mini, and a working scheduled backup of the uploaded files.
+The top bar work below went live at f835ee2 on 2026-11-24 11:43 CST.
+
 ## Top bar, open tabs, home page, full screen (2026-11-24, on main; deploy asked for by Alex 11:27 CST)
 
 Tried in the local copy first, at Alex's request, then committed on his word. Gate passes; the mock

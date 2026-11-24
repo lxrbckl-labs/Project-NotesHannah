@@ -1,7 +1,8 @@
+import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { ConfigError, loadConfig } from "./config.js";
-import { migrate, openDatabase } from "./db/client.js";
+import { migrate, openDatabase, snapshotBeforeMigration } from "./db/client.js";
 import { startQueueWatcher, stopQueueWatcher } from "./domains/files/index.js";
 import { AppError } from "./http/errors.js";
 import { createServices } from "./services.js";
@@ -13,7 +14,14 @@ try {
   // Storage first: if the drive is missing, stop before touching anything.
   const storage = openStorage(config.DATA_DIR);
   const db = openDatabase(config.DB_PATH);
-  const applied = migrate(db);
+  // A restore point before any migration changes her data: a full copy of the database on the storage
+  // drive. If it cannot be written the server stops here, before anything is applied.
+  const applied = migrate(db, undefined, {
+    beforeFirst: (pending) => {
+      const file = snapshotBeforeMigration(db, join(storage.root, "backups"), pending);
+      console.log(`pre-migration snapshot: ${file} (before ${pending.join(", ")})`);
+    },
+  });
   if (applied.length > 0) console.log(`applied migrations: ${applied.join(", ")}`);
   bindStorage(db, storage);
   // One instance of every domain service, shared by the routes and the queue watcher.

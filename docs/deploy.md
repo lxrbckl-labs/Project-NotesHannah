@@ -248,6 +248,11 @@ Notes:
 - The build logs in to Docker Hub with the org secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
 - A new Docker Hub repository is public unless the account's default is private. The images hold the app's code, never
   her data or any secret.
-- Watchtower does not take a database snapshot first. Run `scripts/backup.sh` on the mini before publishing a change
-  that alters the database.
+- Watchtower does not run `scripts/backup.sh` first, so the app takes its own restore point: when it starts
+  with migrations to apply to a database that already holds data, it first writes a full copy to
+  `${DATA_DIR}/backups/pre-migration/notes-<time>-before-<first migration>.db` and logs the path. If the copy
+  cannot be written it refuses to start and applies nothing. These copies are never removed automatically.
+  To go back: stop the stack, put that file in place of the database (`deploy/tools/restore-db.mjs`), and run
+  the earlier image. A full `scripts/backup.sh` before a risky publish is still the better habit: it also
+  verifies the copy and keeps a second one.
 - To go back, point the two image names at an earlier `:<commit hash>` tag and run `scripts/up.sh`.
