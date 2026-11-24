@@ -1,5 +1,7 @@
 import {
+  DEFAULT_HOME_PAGE,
   DEFAULT_TAB_ORDER,
+  type HomePage,
   type Preferences,
   resolveTabOrder,
   type SavedInstruction,
@@ -57,6 +59,7 @@ export function usePreferences() {
             instructions: [],
             tourSeen: true,
             shortcutBadges: true,
+            homePage: DEFAULT_HOME_PAGE,
           } satisfies Preferences,
         }
       : {}),
@@ -95,6 +98,7 @@ export function useSaveTabOrder() {
         instructions: before?.instructions ?? [],
         tourSeen: before?.tourSeen ?? true,
         shortcutBadges: before?.shortcutBadges ?? true,
+        homePage: before?.homePage ?? DEFAULT_HOME_PAGE,
       });
       writeTabOrderMirror(userId, next);
       return { before };
@@ -166,6 +170,32 @@ export function useSaveShortcutBadges() {
       return { before };
     },
     onError: (error, _on, context) => {
+      if (context?.before) client.setQueryData(preferencesKey, context.before);
+      else void client.invalidateQueries({ queryKey: preferencesKey });
+      toast.error(error);
+    },
+    onSuccess: (saved) => client.setQueryData(preferencesKey, saved),
+  });
+}
+
+/** The page the app's mark in the header leads to (Settings, "Home page"); the library by default. */
+export function useHomePage(): HomePage {
+  return usePreferences().data?.homePage ?? DEFAULT_HOME_PAGE;
+}
+
+/** Choose the home page. The change shows at once; a refusal puts it back with a toast. */
+export function useSaveHomePage() {
+  const client = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: (page: HomePage) => api.updatePreferences({ homePage: page }),
+    onMutate: async (page) => {
+      await client.cancelQueries({ queryKey: preferencesKey });
+      const before = client.getQueryData<Preferences>(preferencesKey);
+      if (before) client.setQueryData<Preferences>(preferencesKey, { ...before, homePage: page });
+      return { before };
+    },
+    onError: (error, _page, context) => {
       if (context?.before) client.setQueryData(preferencesKey, context.before);
       else void client.invalidateQueries({ queryKey: preferencesKey });
       toast.error(error);

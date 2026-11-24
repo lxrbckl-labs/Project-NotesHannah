@@ -203,6 +203,23 @@ describe("the tour flag", () => {
   });
 });
 
+describe("the home page", () => {
+  test("the library for a new account, hers alone once chosen, and back to the default", async () => {
+    const { get, patch, hannah, bea } = await setup();
+    expect((await get(hannah)).homePage).toBe("library");
+    expect((await patch(hannah, { homePage: "calendar" })).status).toBe(200);
+    expect((await get(hannah)).homePage).toBe("calendar");
+    expect((await get(bea)).homePage).toBe("library");
+    await patch(hannah, { homePage: "library" });
+    expect((await get(hannah)).homePage).toBe("library");
+  });
+
+  test("refuses a place that is not one of the sidebar's", async () => {
+    const { patch, hannah } = await setup();
+    expect((await patch(hannah, { homePage: "trash" })).status).toBe(400);
+  });
+});
+
 describe("the shortcut badges switch", () => {
   test("on for a new account, off once turned off, hers alone, and back on", async () => {
     const { get, patch, hannah, bea } = await setup();

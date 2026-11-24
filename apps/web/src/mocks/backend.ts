@@ -8,6 +8,7 @@ import {
   CreateReferenceInput,
   canContain,
   type FileType,
+  type HomePage,
   isFixed,
   type LibraryNode,
   LoginInput,
@@ -157,6 +158,8 @@ export function createMockBackend(options: MockOptions = {}) {
   let instructions: unknown[] = [];
   /** Whether the keyboard shortcut badges show (Settings). */
   let shortcutBadges = true;
+  /** Where the header's mark leads (Settings, "Home page"). */
+  let homePage: HomePage = "library";
   let signedIn = false;
   let password = MOCK_PASSWORD;
   let failedLogins = 0;
@@ -847,6 +850,7 @@ export function createMockBackend(options: MockOptions = {}) {
           instructions,
           tourSeen: true,
           shortcutBadges,
+          homePage,
         },
       });
     }
@@ -854,6 +858,7 @@ export function createMockBackend(options: MockOptions = {}) {
       const patch = body(PreferencesPatch, payload);
       if (patch.instructions !== undefined) instructions = patch.instructions;
       if (patch.shortcutBadges !== undefined) shortcutBadges = patch.shortcutBadges;
+      if (patch.homePage !== undefined) homePage = patch.homePage;
       if (patch.tabOrder !== undefined) {
         tabOrder = patch.tabOrder === null || patch.tabOrder.length === 0 ? null : patch.tabOrder;
       }
@@ -863,6 +868,7 @@ export function createMockBackend(options: MockOptions = {}) {
           instructions,
           tourSeen: true,
           shortcutBadges,
+          homePage,
         },
       });
     }

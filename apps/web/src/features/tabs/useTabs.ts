@@ -183,7 +183,25 @@ export function useTabs(userId: string | undefined, enabled: boolean) {
     };
   }, [enabled, open]);
 
-  return { tabs: state.tabs, active: state.active, canOpen: canOpen(state), select, open, close };
+  /** The tab to the right (1) or the left (-1), going round at the ends. */
+  const step = useCallback(
+    (by: 1 | -1) => {
+      const { tabs, active } = stateRef.current;
+      const next = tabs[(tabs.findIndex((t) => t.id === active) + by + tabs.length) % tabs.length];
+      if (next) select(next.id);
+    },
+    [select],
+  );
+
+  return {
+    tabs: state.tabs,
+    active: state.active,
+    canOpen: canOpen(state),
+    select,
+    open,
+    close,
+    step,
+  };
 }
 
 export type TabsApi = ReturnType<typeof useTabs>;

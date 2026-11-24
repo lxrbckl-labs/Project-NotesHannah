@@ -11,16 +11,16 @@ import {
   MessageCirclePlus,
   PanelLeftClose,
   PanelLeftOpen,
+  PanelRightClose,
   PanelRightOpen,
   Plus,
   Search,
   Settings,
-  SquarePlus,
   Trash2,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useMatch, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useMatch, useNavigate } from "react-router";
 import { PillMark } from "../components/art/pills";
 import { Badge } from "../components/ui/badge";
 import { IconButton } from "../components/ui/button";
@@ -42,6 +42,7 @@ import { TreeStateProvider } from "../features/library/treeState";
 import { AskProvider, useAsk } from "../features/mounts/ask";
 import { backgroundUrl, useBackground } from "../features/preferences/useBackground";
 import {
+  useHomePage,
   useInstructions,
   useMarkTourSeen,
   usePreferences,
@@ -60,6 +61,7 @@ import { readFlag, writeFlag } from "../lib/storage";
 import { useBack } from "../lib/useBack";
 import { useLayout } from "../lib/useMedia";
 import { NavBadge, useBadges } from "./badges";
+import { HOME_DEFS } from "./home";
 import { SideResize, useSideWidth } from "./SideResize";
 import { SideSlide } from "./SideSlide";
 import { tabDirection } from "./tabDirection";
@@ -167,117 +169,185 @@ function Shell() {
   // Her open tabs (features/tabs): several pages kept side by side. Not on a phone.
   const me = useMe();
   const tabs = useTabs(me.data?.id, layout !== "phone");
+  const homePage = useHomePage();
+  useHotkey("tabs.new", () => tabs.open(), { enabled: layout !== "phone" });
+  useHotkey("tabs.close", () => tabs.close(tabs.active), {
+    enabled: layout !== "phone" && tabs.tabs.length > 1,
+  });
+  useHotkey("tabs.next", () => tabs.step(1), {
+    enabled: layout !== "phone" && tabs.tabs.length > 1,
+  });
+  useHotkey("tabs.previous", () => tabs.step(-1), {
+    enabled: layout !== "phone" && tabs.tabs.length > 1,
+  });
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-bg print:block print:h-auto print:overflow-visible">
+    <div className="flex h-dvh flex-col overflow-hidden bg-bg print:block print:h-auto print:overflow-visible">
       <a
         href="#main"
         className="sr-only z-(--z-skip) rounded-control bg-accent px-4 py-2 text-accent-contrast focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
       >
         Skip to content
       </a>
-      <SideSlide open={showSidebar} side="left">
-        {/* Her width, dragged from the inner edge and remembered in this browser (app/SideResize). */}
-        <div className="relative flex" style={{ width: sidebarWidth }}>
-          <Sidebar onCollapse={() => setSidebarOpen(false)} />
-          <SideResize
-            side="left"
-            width={sidebarWidth}
-            initial={SIDEBAR_WIDTH}
-            onWidth={setSidebarWidth}
-            label="Resize the sidebar"
-          />
-        </div>
-      </SideSlide>
-
-      <div className="flex min-w-0 flex-1 flex-col print:block">
-        {layout !== "phone" ? (
-          // One row, one size, one gap: every control is 36px on a computer (44px on touch), with the
-          // same 8px around and between them. The search fills whatever the toggles leave. A toggle
-          // sits here only while its side is closed; while open it lives in that side's own header.
-          <div className="px-safe border-b border-border bg-surface/80 backdrop-blur print:hidden">
-            <div className="flex items-center gap-2 p-2">
-              {!showSidebar ? (
-                <IconButton
-                  aria-label="Show sidebar"
-                  hotkey="app.sidebar"
-                  onClick={() => setSidebarOpen(true)}
-                >
-                  <PanelLeftOpen size={20} />
-                </IconButton>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setFindOpen(true)}
-                aria-keyshortcuts={findKeys}
-                className="relative flex h-11 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-control border border-border-strong bg-surface px-3.5 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:h-9"
+      {layout !== "phone" ? (
+        // The header runs the whole width; both sidebars start under it. Left: the app's mark. Then one bar
+        // that holds everything (the document toolbar's look): the two sidebar toggles, the search, her open
+        // tabs, and the button for a new one. With one tab the search is a wide field; from two tabs on it
+        // shrinks to its icon and the tabs take the room, scrolling sideways when they do not fit.
+        <header className="pt-safe px-safe border-b border-border bg-surface/80 backdrop-blur print:hidden">
+          <div className="flex items-center gap-2 p-2">
+            {/* The app's mark is the way home: to the place she chose in Settings ("Home page"). */}
+            <Tooltip content={`Home: ${HOME_DEFS[homePage].label}`} side="bottom">
+              <Link
+                to={HOME_DEFS[homePage].to}
+                aria-label={`Home: ${HOME_DEFS[homePage].label}`}
+                data-testid="home-button"
+                className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent text-accent-contrast transition-[filter] duration-(--duration-instant) hover:brightness-110 active:brightness-95 xl:size-9"
               >
-                <Search size={16} aria-hidden />
-                <span>Quick find</span>
-                {/* The badge every other one copies (features/hotkeys/Kbd.tsx); computer layout only. */}
-                <Kbd hotkey="app.quickFind" className="absolute right-2.5" />
-              </button>
-              {/* While there is one tab the strip below is hidden, and this is how she opens a second. */}
-              {tabs.tabs.length === 1 ? (
-                <IconButton aria-label="New tab" tooltip="bottom" onClick={() => tabs.open()}>
-                  <SquarePlus size={20} />
-                </IconButton>
-              ) : null}
-              {layout === "computer" && inLibrary && !panelOpen ? (
-                <IconButton
-                  aria-label="Show details panel"
-                  hotkey="app.details"
-                  onClick={() => setPanelOpen(true)}
+                <PillMark size={20} />
+              </Link>
+            </Tooltip>
+            <div
+              role="toolbar"
+              aria-label="App"
+              data-testid="app-bar"
+              className="flex min-w-0 flex-1 items-center gap-0.5 rounded-card border border-border-strong bg-surface p-1 shadow-card"
+            >
+              <IconButton
+                aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
+                size="sm"
+                variant="bare"
+                tooltip="bottom"
+                hotkey="app.sidebar"
+                onClick={() => setSidebarOpen((open) => !open)}
+              >
+                {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+              </IconButton>
+              <BarLine />
+              {tabs.tabs.length > 1 ? (
+                <>
+                  <IconButton
+                    aria-label="Quick find"
+                    size="sm"
+                    variant="bare"
+                    tooltip="bottom"
+                    hotkey="app.quickFind"
+                    onClick={() => setFindOpen(true)}
+                  >
+                    <Search size={18} />
+                  </IconButton>
+                  <BarLine />
+                  <TabStrip tabs={tabs} />
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setFindOpen(true)}
+                  aria-keyshortcuts={findKeys}
+                  className="relative flex h-11 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-control px-3.5 text-ui text-text-muted transition-colors duration-(--duration-instant) hover:bg-surface-muted xl:h-8"
                 >
-                  <PanelRightOpen size={20} />
-                </IconButton>
+                  <Search size={16} aria-hidden />
+                  <span>Quick find</span>
+                  {/* The badge every other one copies (features/hotkeys/Kbd.tsx); computer layout only. */}
+                  <Kbd hotkey="app.quickFind" className="absolute right-2.5" />
+                </button>
+              )}
+              <BarLine />
+              <IconButton
+                aria-label="New tab"
+                size="sm"
+                variant="bare"
+                tooltip="bottom"
+                hotkey="tabs.new"
+                disabled={!tabs.canOpen}
+                onClick={() => tabs.open()}
+              >
+                <Plus size={18} />
+              </IconButton>
+              {/* The details panel's button, at its own end of the bar: the right, where the panel is. */}
+              {layout === "computer" && inLibrary ? (
+                <>
+                  <BarLine />
+                  <IconButton
+                    aria-label={panelOpen ? "Hide details panel" : "Show details panel"}
+                    size="sm"
+                    variant="bare"
+                    tooltip="bottom"
+                    hotkey="app.details"
+                    onClick={() => setPanelOpen((open) => !open)}
+                  >
+                    {panelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+                  </IconButton>
+                </>
               ) : null}
             </div>
-            {tabs.tabs.length > 1 ? <TabStrip tabs={tabs} /> : null}
           </div>
-        ) : null}
+        </header>
+      ) : null}
 
-        <main
-          id="main"
-          tabIndex={-1}
-          className={cn(
-            // `relative`: anything positioned inside a page (a hidden table for screen readers, a popover) is then
-            // measured and clipped by this scrolling area. Without it such an element escaped and made the whole
-            // window scroll past the app.
-            "relative min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
-            // Her own picture when she has set one (Settings, Background), the dotted grid otherwise.
-            backgroundAt === null ? "dot-grid" : "own-background",
-            layout === "phone" && "px-safe clear-tabbar",
-          )}
-          style={
-            backgroundAt === null
-              ? undefined
-              : ({ "--own-background": `url("${backgroundUrl(backgroundAt)}")` } as CSSProperties)
-          }
-        >
-          <Outlet />
-        </main>
+      <div className="flex min-h-0 flex-1 print:block">
+        <SideSlide open={showSidebar} side="left">
+          {/* Her width, dragged from the inner edge and remembered in this browser (app/SideResize). */}
+          <div className="relative flex" style={{ width: sidebarWidth }}>
+            <Sidebar />
+            <SideResize
+              side="left"
+              width={sidebarWidth}
+              initial={SIDEBAR_WIDTH}
+              onWidth={setSidebarWidth}
+              label="Resize the sidebar"
+            />
+          </div>
+        </SideSlide>
 
-        {layout === "phone" ? <TabBar /> : null}
-      </div>
+        <div className="flex min-w-0 flex-1 flex-col print:block">
+          <main
+            id="main"
+            tabIndex={-1}
+            className={cn(
+              // `relative`: anything positioned inside a page (a hidden table for screen readers, a popover) is then
+              // measured and clipped by this scrolling area. Without it such an element escaped and made the whole
+              // window scroll past the app.
+              "relative min-h-0 flex-1 overflow-y-auto outline-none print:overflow-visible print:bg-none",
+              // Her own picture when she has set one (Settings, Background), the dotted grid otherwise.
+              backgroundAt === null ? "dot-grid" : "own-background",
+              layout === "phone" && "px-safe clear-tabbar",
+            )}
+            style={
+              backgroundAt === null
+                ? undefined
+                : ({ "--own-background": `url("${backgroundUrl(backgroundAt)}")` } as CSSProperties)
+            }
+          >
+            <Outlet />
+          </main>
 
-      <SideSlide open={showPanel} side="right">
-        <div className="relative flex" style={{ width: panelWidth }}>
-          <RightPanel nodeId={match?.params.nodeId} onCollapse={() => setPanelOpen(false)} />
-          <SideResize
-            side="right"
-            width={panelWidth}
-            initial={PANEL_WIDTH}
-            onWidth={setPanelWidth}
-            label="Resize the details panel"
-          />
+          {layout === "phone" ? <TabBar /> : null}
         </div>
-      </SideSlide>
+
+        <SideSlide open={showPanel} side="right">
+          <div className="relative flex" style={{ width: panelWidth }}>
+            <RightPanel nodeId={match?.params.nodeId} />
+            <SideResize
+              side="right"
+              width={panelWidth}
+              initial={PANEL_WIDTH}
+              onWidth={setPanelWidth}
+              label="Resize the details panel"
+            />
+          </div>
+        </SideSlide>
+      </div>
       <GoToHotkeys />
       <QuickFind open={findOpen} onOpenChange={setFindOpen} />
       <ShortcutsDialog open={keysOpen} onOpenChange={setKeysOpen} />
     </div>
   );
+}
+
+/** A thin line between the groups of the header bar. */
+function BarLine() {
+  return <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />;
 }
 
 /** Where each "go to" pair leads. */
@@ -359,7 +429,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-accent-soft text-accent" : "text-text hover:bg-surface-muted",
   );
 
-function Sidebar({ onCollapse }: { onCollapse: () => void }) {
+function Sidebar() {
   const me = useMe();
   const signOut = useSignOut();
   const dialogs = useLibraryDialogs();
@@ -371,21 +441,8 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
       aria-label="Sidebar"
       // overflow-y-auto: in a very short window even the fixed parts (the links above and below the tree) do
       // not fit; then the whole sidebar scrolls, rather than growing past the window.
-      className="pt-safe pb-safe flex w-full min-w-0 flex-col overflow-y-auto border-r border-border bg-surface print:hidden"
+      className="pb-safe flex w-full min-w-0 flex-col overflow-y-auto border-r border-border bg-surface print:hidden"
     >
-      {/* The same height, padding and line as the header beside it, so the two read as one bar. */}
-      <div className="flex items-center gap-2 border-b border-border p-2">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent text-accent-contrast xl:size-9">
-          <PillMark size={20} />
-        </span>
-        <span className="min-w-0 flex-1 truncate pl-0.5 font-display text-lg font-semibold">
-          Notes
-        </span>
-        <IconButton aria-label="Hide sidebar" hotkey="app.sidebar" onClick={onCollapse}>
-          <PanelLeftClose size={20} />
-        </IconButton>
-      </div>
-
       <nav aria-label="Main" className="grid gap-0.5 p-2">
         <NavItem to="/library" end icon={<BookOpen size={18} aria-hidden />} hotkey="go.library">
           Library

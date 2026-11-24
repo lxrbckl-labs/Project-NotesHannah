@@ -1,6 +1,8 @@
 import {
+  DEFAULT_HOME_PAGE,
   type Preferences,
   type PreferencesPatch,
+  resolveHomePage,
   resolveInstructions,
   resolveTabOrder,
 } from "@notes/schema";
@@ -12,6 +14,7 @@ interface StoredPreferences {
   instructions?: unknown;
   tourSeen?: unknown;
   shortcutBadges?: unknown;
+  homePage?: unknown;
 }
 
 function readStored(db: Db, userId: string): StoredPreferences {
@@ -36,6 +39,7 @@ export function getPreferences(db: Db, userId: string): Preferences {
     tourSeen: stored.tourSeen === true,
     // On unless she turned them off: only `false` is ever stored.
     shortcutBadges: stored.shortcutBadges !== false,
+    homePage: resolveHomePage(stored.homePage),
   };
 }
 
@@ -61,6 +65,11 @@ export function updatePreferences(
     // The default (on) is never stored, so only "off" is kept.
     if (patch.shortcutBadges) delete doc.shortcutBadges;
     else doc.shortcutBadges = false;
+  }
+  if (patch.homePage !== undefined) {
+    // The default (the library) is never stored.
+    if (patch.homePage === DEFAULT_HOME_PAGE) delete doc.homePage;
+    else doc.homePage = patch.homePage;
   }
   if (patch.instructions !== undefined) {
     // An empty list is "none saved": forget the field rather than keep an empty array.

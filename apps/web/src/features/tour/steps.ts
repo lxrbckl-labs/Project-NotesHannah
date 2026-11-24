@@ -42,7 +42,11 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: "find",
     route: "/library",
-    target: ['button:has-text("Quick find")', `[data-testid="tab-bar"] a[href="/search"]`],
+    target: [
+      'button:has-text("Quick find")',
+      'button[aria-label="Quick find"]',
+      `[data-testid="tab-bar"] a[href="/search"]`,
+    ],
     title: "Find anything",
     text: "Search looks through your notes, your slides (handwriting included), concepts and practice questions at once.",
   },

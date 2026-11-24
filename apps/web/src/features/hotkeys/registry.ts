@@ -180,6 +180,23 @@ export const HOTKEYS: readonly HotkeyDef[] = [
     where: "everywhere",
   },
   { id: "app.tour", keys: ["shift+g"], label: "Start the tour", group: "App", where: "everywhere" },
+  // Open tabs (features/tabs). The browser keeps Command T and Command W for its own tabs, so these use Option.
+  { id: "tabs.new", keys: ["alt+t"], label: "New tab", group: "App", where: "everywhere" },
+  { id: "tabs.close", keys: ["alt+w"], label: "Close this tab", group: "App", where: "everywhere" },
+  {
+    id: "tabs.next",
+    keys: ["alt+]"],
+    label: "Next tab",
+    group: "App",
+    where: "everywhere",
+  },
+  {
+    id: "tabs.previous",
+    keys: ["alt+["],
+    label: "Previous tab",
+    group: "App",
+    where: "everywhere",
+  },
 
   // ---- Library ------------------------------------------------------------------------------
   {

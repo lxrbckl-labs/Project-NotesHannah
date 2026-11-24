@@ -1226,7 +1226,7 @@ function TopBar({
 }) {
   const modeKeys = useHotkeyAria("doc.mode");
   return (
-    <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-2 border-b border-border bg-surface/85 px-2 pb-1.5 pt-[max(0.375rem,env(safe-area-inset-top))] backdrop-blur md:px-3">
+    <div className="sticky top-0 z-(--z-sticky) flex shrink-0 items-center gap-2 border-b border-border bg-surface/85 px-2 pb-1.5 pt-[max(0.375rem,env(safe-area-inset-top))] backdrop-blur md:pl-3 md:pr-2">
       <div className="flex min-w-0 flex-1 items-center gap-1">
         <SaveStatus state={state} controller={controller} compact={compact} />
         {showUndo && (

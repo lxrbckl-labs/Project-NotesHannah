@@ -73,6 +73,30 @@ export function resolveInstructions(saved: unknown): SavedInstruction[] {
   return out;
 }
 
+/**
+ * The page the app's mark in the header leads to (Settings, "Home page"): one of the sidebar's main places.
+ * The library until she picks another.
+ */
+export const HOME_PAGES = [
+  "library",
+  "practice",
+  "calendar",
+  "inbox",
+  "concepts",
+  "references",
+  "requests",
+  "activity",
+] as const;
+export const HomePage = z.enum(HOME_PAGES);
+export type HomePage = z.infer<typeof HomePage>;
+export const DEFAULT_HOME_PAGE: HomePage = "library";
+
+/** Read whatever was stored tolerantly: a place that still exists, or the default. */
+export function resolveHomePage(saved: unknown): HomePage {
+  const parsed = HomePage.safeParse(saved);
+  return parsed.success ? parsed.data : DEFAULT_HOME_PAGE;
+}
+
 /** What the server returns: every field resolved, so a client never has to fill in a default. */
 export const Preferences = z.object({
   tabOrder: TabOrder,
@@ -82,6 +106,8 @@ export const Preferences = z.object({
   tourSeen: z.boolean().default(false),
   /** Whether the small keyboard shortcut badges show beside buttons and in hints; on until she turns them off. */
   shortcutBadges: z.boolean().default(true),
+  /** Where the app's mark in the header leads; the library until she picks another place. */
+  homePage: HomePage.default(DEFAULT_HOME_PAGE),
 });
 export type Preferences = z.infer<typeof Preferences>;
 
@@ -98,6 +124,8 @@ export const PreferencesPatch = z
     tourSeen: z.boolean().optional(),
     /** Show (true) or hide (false) the keyboard shortcut badges. The shortcuts work either way. */
     shortcutBadges: z.boolean().optional(),
+    /** The page the app's mark in the header leads to. */
+    homePage: HomePage.optional(),
   })
   .strict();
 export type PreferencesPatch = z.infer<typeof PreferencesPatch>;

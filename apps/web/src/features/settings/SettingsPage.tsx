@@ -20,6 +20,7 @@ import { LoveLetter } from "../letter/LoveLetter";
 import { ChangePassword, SignOutControls } from "./Account";
 import { ApiKeys } from "./ApiKeys";
 import { BackgroundCard } from "./BackgroundCard";
+import { HomeCard } from "./HomeCard";
 import { InstructionsCard } from "./InstructionsCard";
 import { KeyboardCard } from "./KeyboardCard";
 import { TabBarCard } from "./TabBarCard";
@@ -82,6 +83,8 @@ export function SettingsPage() {
         <InstructionsCard />
 
         <BackgroundCard />
+
+        <HomeCard />
 
         <TabBarCard />
 

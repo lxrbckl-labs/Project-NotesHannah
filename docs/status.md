@@ -2,10 +2,11 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
-## Open tabs and full screen for a cited page (2026-11-24, on main, not deployed)
+## Top bar, open tabs, home page, full screen (2026-11-24, on main; deploy asked for by Alex 11:27 CST)
 
-Built and tried in the local copy first, at Alex's request. Gate and the mock end-to-end suite pass (412
-passed). Details in features.md, section U. Waits for Alex's word to deploy.
+Tried in the local copy first, at Alex's request, then committed on his word. Gate passes; the mock
+end-to-end suite passes except `e2e/files.spec.ts:231`, which fails about 1 run in 24 on the code before
+this work too (a right-click lands while the tree is redrawing). Details in features.md, section U.
 
 ## Database backups from a sidecar container (2026-11-23, merged; running on the mini)
 

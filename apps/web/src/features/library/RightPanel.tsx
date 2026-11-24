@@ -1,6 +1,6 @@
-import { PanelRightClose, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { Link } from "react-router";
-import { Button, IconButton } from "../../components/ui/button";
+import { Button } from "../../components/ui/button";
 import { formatDateTime } from "../../lib/format";
 import { AskButton } from "../mounts/ask";
 import { useNodeActions } from "./actions";
@@ -11,14 +11,7 @@ import { useNode } from "./queries";
 import { KIND_NAME } from "./rules";
 
 /** Computer layout only: details of the open item, and quick actions. */
-export function RightPanel({
-  nodeId,
-  onCollapse,
-}: {
-  nodeId: string | undefined;
-  /** Closes the panel; its button sits in the panel's own header while the panel is open. */
-  onCollapse?: () => void;
-}) {
+export function RightPanel({ nodeId }: { nodeId: string | undefined }) {
   const node = useNode(nodeId);
   const actions = useNodeActions();
   const hue = useCourseHue(node.data);
@@ -28,13 +21,8 @@ export function RightPanel({
       aria-label="Details"
       className="flex w-full min-w-0 flex-col border-l border-border bg-surface"
     >
-      {/* The same height, padding and line as the header beside it. */}
+      {/* Its button to close it is in the app header (app/AppShell). */}
       <div className="flex items-center gap-2 border-b border-border p-2">
-        {onCollapse ? (
-          <IconButton aria-label="Hide details panel" hotkey="app.details" onClick={onCollapse}>
-            <PanelRightClose size={20} />
-          </IconButton>
-        ) : null}
         <h2 className="min-w-0 flex-1 px-1 font-sans text-caption font-semibold uppercase tracking-wide text-text-muted">
           Details
         </h2>

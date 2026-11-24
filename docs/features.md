@@ -400,14 +400,28 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
 - **The guide.** A "Keyboard shortcuts" section (part four) is written from the registry, one table
   per group; the quick reference's computer keys come from it too.
 
-## U. Open tabs and full screen for a cited page (2026-11-24, on main, not on the live site)
+## U. The top bar, open tabs, home page and full screen for a cited page (2026-11-24)
 
-- **Open tabs** (tablet and computer; a phone stays one page at a time). A "New tab" button beside Quick find
-  opens a second tab; from two tabs on, a strip under the search bar lists them, each with a close button,
-  and a plus at the end. A tab remembers its page and where it was scrolled, and is named after the page's
-  heading. Command or Control and a click (or the middle button) on a link to a page of the app opens it in
-  a tab behind the current page. Tabs are kept per account in the browser and survive a reload; the limit is
-  12. Not built: keyboard shortcuts for tabs, dragging to reorder. Code: `apps/web/src/features/tabs`.
-- **Full screen for a cited page.** In a document's source panel the middle button was "Reset zoom" with a
-  full-screen icon. It now has a fit icon, and a Full screen button beside it opens the page over the whole
-  window (Escape or the button closes it). Side panel only; a phone shows the source in a sheet.
+- **The top bar** (tablet and computer) runs the whole width; both sidebars start under it. Left: the app's
+  mark, a button that goes to her home page. Then one bar in the document toolbar's look: the sidebar toggle
+  at its left end, the search, her open tabs, the plus for a new tab, and at its right end (library, on a
+  computer) the details panel's toggle. With one tab the search is a wide field; from two tabs on it is a
+  magnifier icon and the tabs take the room.
+- **Open tabs** (not on a phone). Each tab remembers its page and where it was scrolled, and is named after
+  the page's heading. Tabs share the bar's width (up to 24rem each, never under 9rem) and scroll sideways
+  past that; inactive tabs have the lighter gray fill. Command or Control and a click (or the middle
+  button) on a link to a page of the app opens it in a tab behind the current page. Keys: `alt+t` new,
+  `alt+w` close, `alt+]` next, `alt+[` previous (the browser keeps Command T and W, and the registry refuses
+  Option and the arrows). Kept per account in the browser; the limit is 12. Not built: dragging to reorder.
+  Code: `apps/web/src/features/tabs`.
+- **Home page** (Settings, "Home page"): where the mark leads, one of Library, Practice, Calendar, Inbox,
+  Concepts, References, Requests, Activity. A preference on the account (`homePage`, default library; only a
+  non-default value is stored).
+- **Sidebars slide with a transform.** The room they take changes in one step and the sidebar slides and
+  fades; the width is no longer animated, which laid the page out again on every frame.
+- **Full screen for a cited page.** In a document's source panel, Reset zoom has a reset arrow and a Full
+  screen button (the frame icon) opens the page over the whole window; Escape or the button closes it. Side
+  panel only. The panel's header is as tall as the document bar beside it.
+- **Even bars.** Every button in the lecture's action bar is 32px with no edge of its own (Ask was 36px with
+  a border), and the app bar, the lecture bar and the document toolbar share one right inset (8px).
+- The guide covers the top bar, tabs and the home page; its key tables come from the registry.

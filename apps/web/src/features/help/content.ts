@@ -185,6 +185,8 @@ export const COMPUTER_KEYS: GuideTable = {
     "app.shortcuts",
     "app.quickFind",
     "app.sidebar",
+    "tabs.new",
+    "tabs.next",
     "go.library",
     "app.ask",
     "tree.rename",
@@ -900,7 +902,7 @@ export const SECTIONS: GuideSection[] = [
       {
         kind: "list",
         items: [
-          "**Quick find** opens from the search bar at the top of a larger screen, or with `Ctrl+K` or `⌘K`. With a keyboard, `/` does the same, and `⌘/` (`Ctrl+/`) opens Search. It jumps to courses, lectures, folders and documents by name.",
+          "**Quick find** opens from the search bar at the top of a larger screen (a magnifier icon once you have more than one tab open), or with `Ctrl+K` or `⌘K`. With a keyboard, `/` does the same, and `⌘/` (`Ctrl+/`) opens Search. It jumps to courses, lectures, folders and documents by name.",
           "**Search** (a tab on a phone) searches inside everything: your typed notes, study guides, practice questions, and the transcripts of your slides and handwriting. Each result shows where it was found.",
           "**Favorites**: tap the star on any item to keep it close.",
           "**Trash**: moving something to the trash does not delete it. Open Trash (in the sidebar, or in Settings on a phone) and restore it, and it goes back where it came from. Only deleting from inside the trash is permanent.",
@@ -919,10 +921,13 @@ export const SECTIONS: GuideSection[] = [
         items: [
           "**Light and dark:** Settings, then Appearance. Follow your device, or choose light or dark.",
           "**Your tab bar:** on a phone, Settings, then Tab bar, shows a copy of the bar along the bottom. Drag the icons into the order you want, for example Settings at the far left, and press Save. The real bar changes when you save, and the order is kept for your account on every device. If you would rather not drag, tap an icon and use Move left and Move right, or the arrow keys. Reset puts the usual order back.",
+          "**The bar across the top** (tablet and computer) holds everything in one row: the button that shows or hides the sidebar at its left end, the search, your open tabs, the plus for a new tab, and at its right end, in the library on a computer, the button for the details panel.",
+          "**Open tabs** (tablet and computer) keep several pages side by side, for example a lecture note in one and the calendar in another. Press the plus in the top bar, or `⌥T` (`Alt+T`), for a new tab. Each tab remembers its page and how far down you were. `⌥]` and `⌥[` move to the next and the previous tab, and `⌥W` closes the one you are on. Hold `⌘` (`Ctrl`) and click any link to open it in a new tab behind the page you are on. When there are more tabs than fit, slide the row sideways. Your tabs are remembered in this browser; you can have up to 12.",
+          "**Home page:** the pill button at the top left takes you home. Settings, then Home page, chooses where that is: Library, Practice, Calendar, Inbox, Concepts, References, Requests or Activity. The choice is kept for your account.",
           "**Signing in:** you stay signed in on each device until you sign out. After several wrong passwords the app slows down further attempts.",
           "**Change your password:** Settings, then Password. It needs at least 10 characters, and it signs your other devices out.",
           "**Sign out everywhere** ends every session on every device, including the one you are using.",
-          "**Devices:** the app has three layouts. A phone shows one page at a time with tabs at the bottom. A tablet adds a sidebar. A computer adds a details panel in the library and small badges that show each button’s key. With a keyboard, a tablet and a computer both answer to keyboard shortcuts: they are all in Keyboard shortcuts, the next section.",
+          "**Devices:** the app has three layouts. A phone shows one page at a time with tabs at the bottom. A tablet adds a sidebar and the bar across the top. A computer adds a details panel in the library and small badges that show each button’s key. With a keyboard, a tablet and a computer both answer to keyboard shortcuts: they are all in Keyboard shortcuts, the next section.",
         ],
       },
       {

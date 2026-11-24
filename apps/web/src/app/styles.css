@@ -585,9 +585,12 @@ h3 {
   opacity: 1;
 }
 
-/* A sidebar opening and closing (app/SideSlide.tsx): its width runs from nothing to its own width,
- * with a fade, while the page beside it makes room. The left one stays pinned to its right edge, so it
- * slides out to the left; the right one slides out to the right. Reduced motion makes it instant. */
+/* A sidebar opening and closing (app/SideSlide.tsx). The room it takes changes in ONE step and the sidebar
+ * itself then slides with a transform and a fade, which the browser draws without laying the page out
+ * again. Until 2026-11-24 the width itself was animated: the page beside it was laid out afresh on every
+ * frame, and a long lecture note or a full library made that stutter. Opening: the room is made at once
+ * and the sidebar slides into it. Closing: the sidebar slides away and the room is given back when it has
+ * gone. The left one slides out to the left, the right one to the right. Reduced motion makes it instant. */
 .side-slide {
   display: grid;
   flex-shrink: 0;
@@ -597,14 +600,27 @@ h3 {
   grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   grid-template-columns: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-columns 220ms var(--ease-calm),
-    opacity 180ms ease-out;
+  /* Closing: keep the room until the slide is over, then give it back in one step. */
+  transition: grid-template-columns 0s linear 200ms;
 }
 .side-slide[data-open="true"] {
   grid-template-columns: 1fr;
+  /* Opening: make the room at once. */
+  transition: grid-template-columns 0s;
+}
+.side-slide > div {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition:
+    transform 200ms var(--ease-calm),
+    opacity 160ms ease-out;
+}
+.side-slide[data-side="right"] > div {
+  transform: translateX(100%);
+}
+.side-slide[data-open="true"] > div {
   opacity: 1;
+  transform: none;
 }
 .side-slide > div {
   display: flex;
@@ -668,22 +684,25 @@ h3 {
   background-repeat: no-repeat;
 }
 
+/* Every button in the bar, not only its direct children: Ask sits inside a hint wrapper, and while the
+   rule missed it that one button kept its edge and its 36px, which made the bar taller than its sides are
+   wide (2026-11-24). The view switch's two tabs keep their own look. */
 /* The lecture page's action bar (mounts/DocScreen.tsx): everything directly in the bar is one height,
    with no edge or fill of its own, so the bar reads as one piece. The main action keeps its fill. */
-.doc-head-bar > :is(a, button) {
+.doc-head-bar :is(a, button):not([role="tab"]) {
   min-height: var(--touch-target);
   min-width: var(--touch-target);
   border-color: transparent;
   box-shadow: none;
 }
-.doc-head-bar > :is(a, button):not(.doc-head-main) {
+.doc-head-bar :is(a, button):not([role="tab"]):not(.doc-head-main) {
   background-color: transparent;
 }
-.doc-head-bar > :is(a, button):not(.doc-head-main):hover {
+.doc-head-bar :is(a, button):not([role="tab"]):not(.doc-head-main):hover {
   background-color: var(--color-surface-muted);
 }
 @media (min-width: 80rem) {
-  .doc-head-bar > :is(a, button) {
+  .doc-head-bar :is(a, button):not([role="tab"]) {
     height: 2rem;
     min-height: 2rem;
     min-width: 2rem;
@@ -1003,4 +1022,13 @@ html[data-tab-dir="back"]::view-transition-new(page) {
     /* biome-ignore lint/complexity/noImportantStyles: reduced motion must win */
     scroll-behavior: auto !important;
   }
+}
+
+/* The open tabs in the header bar (features/tabs/TabStrip.tsx): they scroll sideways without a scrollbar
+   taking height from the bar. */
+.tab-strip {
+  scrollbar-width: none;
+}
+.tab-strip::-webkit-scrollbar {
+  display: none;
 }

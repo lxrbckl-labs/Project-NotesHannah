@@ -136,7 +136,7 @@ function DocScreen({ mode }: { mode: "page" | "canvas" }) {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="doc-screen" data-mode={mode}>
       {mode === "page" ? (
-        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface px-3 py-2 md:px-5">
+        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border bg-surface px-3 py-2 md:pl-5 md:pr-2">
           <Tooltip content="Back to the library">
             <Link
               to={n.parentId ? `/library/${n.parentId}` : "/library"}
