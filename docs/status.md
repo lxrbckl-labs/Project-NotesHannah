@@ -2,6 +2,19 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Database backups from a sidecar container (2026-11-23, merged; running on the mini)
+
+- The host's 5-minute snapshot job (`app.notes.snapshot`) had failed on every run for a week: macOS privacy rules
+  stop a launchd job from the external drives, so no second copy and no status were written. The mini disabled it
+  (the plist is still there; `scripts/install-launchd.sh` may register it again).
+- Replaced by the `backup` service in `deploy/docker-compose.yml` (`deploy/tools/backup-loop.mjs`): a verified
+  snapshot, a checksummed second copy on the second drive, the retention ladder, and a heartbeat its healthcheck
+  reads. `BACKUP_INTERVAL_SECONDS` defaults to 300; the mini's `deploy/.env` sets 86400 (once a day, Alex's word).
+  `docs/backups.md`, "The sidecar".
+- Still blocked by the same macOS rule: the nightly restic backup of the file tree (`app.notes.backup`) and
+  `restic-check`. Uploaded files have no working scheduled backup until that is solved.
+- Not run on the MacBook; the mini reports the first snapshot verified on both drives.
+
 ## Live site reset for Hannah (2026-11-22 17:17 CST)
 
 - Live at `ba8a263`: every change of 2026-11-22, including the Command go-to keys (`⌘L`, `⌘C`; they replace the
