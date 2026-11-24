@@ -1,5 +1,5 @@
 import type { NormalizedBox } from "@notes/schema";
-import { Expand, Minimize, Minus, Plus, Scan } from "lucide-react";
+import { Minus, Plus, RotateCcw, Scan } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IconButton } from "../../../components/ui/button";
@@ -251,7 +251,7 @@ export function ZoomableImage({
           <Minus className="size-4" />
         </IconButton>
         <IconButton label="Reset zoom" size="sm" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
-          <Scan className="size-4" />
+          <RotateCcw className="size-4" />
         </IconButton>
         <IconButton
           label="Zoom in"
@@ -269,7 +269,7 @@ export function ZoomableImage({
             data-testid="image-full-toggle"
             onClick={() => setFull((v) => !v)}
           >
-            {full ? <Minimize className="size-4" /> : <Expand className="size-4" />}
+            <Scan className="size-4" />
           </IconButton>
         ) : null}
       </div>
