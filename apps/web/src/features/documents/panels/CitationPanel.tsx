@@ -113,7 +113,12 @@ export function CitationPanel({
       data-testid="citation-panel"
       aria-label={`Source ${number}`}
     >
-      <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-2">
+      {/* Beside the document's own bar (DocumentView's toolbar row): the same height, so the two lines under
+          them meet. That bar is 71px on a tablet and 55px on a computer; e2e/documents.spec.ts holds them equal. */}
+      <div
+        className={`flex shrink-0 items-center gap-1 border-b border-border px-3 py-2${variant === "side" ? " min-h-[71px] xl:min-h-[55px]" : ""}`}
+        data-testid="citation-head"
+      >
         <IconButton
           label="Previous source"
           size="sm"

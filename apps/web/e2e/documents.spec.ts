@@ -93,6 +93,11 @@ test("the source page opens full screen from the side panel and closes again", a
   await block(page, "paragraph").getByTestId("cite-chip").first().click();
   const panel = page.getByTestId("citation-panel");
   await expect(panel.getByTestId("source-image")).toBeVisible();
+  // The panel's header is as tall as the document's bar beside it.
+  const bar = await page.getByTestId("doc-toolbar").locator("xpath=..").boundingBox();
+  const head = await panel.getByTestId("citation-head").boundingBox();
+  expect(head?.height).toBe(bar?.height);
+  expect(head?.y).toBe(bar?.y);
   await panel.getByRole("button", { name: "Full screen" }).click();
   // Over the whole window, not clipped by the panel.
   const full = page.getByTestId("image-full");
