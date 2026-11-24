@@ -6,7 +6,7 @@ import { AskButton } from "../mounts/ask";
 import { useNodeActions } from "./actions";
 import { useCourseHue } from "./courseHue";
 import { NodeTile } from "./NodeIcon";
-import { nodeTitle } from "./NodeRow";
+import { itemsInside, nodeTitle } from "./NodeRow";
 import { useNode } from "./queries";
 import { KIND_NAME } from "./rules";
 
@@ -49,7 +49,7 @@ export function RightPanel({ nodeId }: { nodeId: string | undefined }) {
             </div>
             <dl className="grid gap-3">
               <Row label="Location" value={node.data.path} />
-              <Row label="Items inside" value={String(node.data.childCount)} />
+              <Row label="Items inside" value={String(itemsInside(node.data))} />
               <Row label="Created" value={formatDateTime(node.data.createdAt)} />
               <Row label="Changed" value={formatDateTime(node.data.updatedAt)} />
             </dl>

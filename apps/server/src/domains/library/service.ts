@@ -186,6 +186,9 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
       `SELECT COUNT(*) AS n FROM nodes
        WHERE parent_id = ? AND (trashed_at IS NULL OR trashed_at = ?)`,
     ),
+    fileCount: db.prepare(
+      "SELECT COUNT(*) AS n FROM source_files WHERE node_id = ? AND trashed_at IS NULL",
+    ),
     maxKey: db.prepare(
       "SELECT MAX(sort_key) AS k FROM nodes WHERE user_id = ? AND parent_id IS ? AND id != ?",
     ),
@@ -257,6 +260,7 @@ export function createLibraryService(db: Db, options: LibraryServiceOptions = {}
         ...toNode(r),
         path: [...above.map((a) => a.name), r.name].join(" / "),
         childCount: count,
+        fileCount: (q.fileCount.get(r.id) as { n: number }).n,
         ancestors: above.map((a) => a.id),
       };
     });

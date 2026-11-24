@@ -153,6 +153,19 @@ describe("the spine", () => {
 
     const got = await t.call(t.alice, "GET", `/api/nodes/${lecture.id}`);
     expect(got.body.node.childCount).toBe(1);
+    expect(got.body.node.fileCount).toBe(0);
+
+    // Source files filed under it are counted on their own, and one in the trash is not counted.
+    const file = t.db.prepare(
+      `INSERT INTO source_files (id, user_id, node_id, original_name, sha256, bytes, type, status,
+         uploaded_by, created_at, updated_at, trashed_at)
+       VALUES (?, ?, ?, ?, ?, 10, 'pdf', 'converted', '{}', 1, 1, ?)`,
+    );
+    file.run("fil_a", "usr_test", lecture.id, "slides.pdf", "a".repeat(64), null);
+    file.run("fil_b", "usr_test", lecture.id, "notes.pdf", "b".repeat(64), null);
+    file.run("fil_c", "usr_test", lecture.id, "old.pdf", "c".repeat(64), 5);
+    const after = await t.call(t.alice, "GET", `/api/nodes/${lecture.id}`);
+    expect(after.body.node).toMatchObject({ childCount: 1, fileCount: 2 });
   });
 
   it("creating a course is atomic: a refused course leaves no sections", async () => {

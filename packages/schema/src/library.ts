@@ -104,6 +104,11 @@ export const NodeWithLinks = LibraryNode.extend({
   /** Readable path from the root, e.g. "Fall 2026 / Pharmacology II / Lectures". */
   path: z.string(),
   childCount: z.number().int().min(0),
+  /**
+   * Source files filed directly under this node (not in the trash). Not part of `childCount`, which is
+   * library items only; what the app shows as "N items" is the two together.
+   */
+  fileCount: z.number().int().min(0).default(0),
   /** IDs from the root down to the parent, for breadcrumbs. */
   ancestors: z.array(NodeId),
 });

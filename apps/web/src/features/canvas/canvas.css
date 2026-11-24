@@ -282,20 +282,32 @@
   background: var(--tone-mark);
 }
 
-/* ---- Frames: a soft fill, a hue border and a hue label ---- */
+/* ---- Frames: a soft fill, a hue border and a hue label ----
+   The fill is solid: the same soft tint as before, laid over the page colour rather than let through to
+   the dotted grid, so a frame reads as a surface of its own and the grid does not show inside it. */
 .nc-frame {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
   border-radius: var(--radius-panel);
-  background: color-mix(in srgb, var(--hue-gray-soft) 55%, transparent);
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--hue-gray-soft) 55%, transparent),
+      color-mix(in srgb, var(--hue-gray-soft) 55%, transparent)
+    ),
+    var(--color-bg);
   border: 1.5px solid var(--color-border-strong);
   transition:
     opacity var(--duration-base) ease,
     border-color var(--duration-base) ease;
 }
 .nc-frame[data-hue] {
-  background: color-mix(in srgb, var(--tone-soft) 55%, transparent);
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--tone-soft) 55%, transparent),
+      color-mix(in srgb, var(--tone-soft) 55%, transparent)
+    ),
+    var(--color-bg);
   border: 2px solid var(--tone-border);
 }
 .react-flow__node.selected > .nc-frame {
@@ -378,7 +390,8 @@
   font-weight: 600;
   line-height: 20px;
   white-space: nowrap;
-  background: var(--tone-soft);
+  /* Solid too: the tint over the surface colour, so the line and the frame behind never show through. */
+  background: linear-gradient(var(--tone-soft), var(--tone-soft)), var(--color-surface);
   color: var(--tone-text);
   border: 1.5px solid var(--tone-solid);
   box-shadow: var(--shadow-card);
@@ -420,6 +433,9 @@
 /* Frames take pointer events only on their title bar: the rest pans and marquee-selects. */
 .nc-canvas .react-flow__nodes .react-flow__node-frame {
   pointer-events: none;
+  /* Under every line: a frame's fill is solid, and a line that crosses a frame must stay in view. */
+  /* biome-ignore lint/complexity/noImportantStyles: React Flow sets z-index inline on every node */
+  z-index: -1 !important;
 }
 .nc-canvas .react-flow__node-frame .nc-frame-head {
   pointer-events: auto;

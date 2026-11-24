@@ -32,12 +32,20 @@ export function lectureParts(node: NodeWithLinks): { text: string; date: string 
   return { text, date: lecture?.date ? full.slice(text.length).replace(/^ · /, "") : null };
 }
 
+/** How many things are directly inside a node: its library items plus the source files filed under it. */
+export function itemsInside(node: NodeWithLinks): number {
+  return node.childCount + (node.fileCount ?? 0);
+}
+
 export function nodeMeta(node: NodeWithLinks): string {
   const kind = node.section ? "Section" : KIND_NAME[node.kind];
   if (node.kind === "document") return kind;
-  const count = `${node.childCount} ${node.childCount === 1 ? "item" : "items"}`;
+  // Everything directly inside: library items and the source files filed here. Until 2026-11-24 files were
+  // left out, and a folder holding only slides read "0 items" above a list of them.
+  const inside = itemsInside(node);
+  const count = `${inside} ${inside === 1 ? "item" : "items"}`;
   if (node.kind === "course" && node.course?.code) return `${node.course.code} · ${count}`;
-  return node.kind === "lecture" && node.childCount === 0 ? kind : `${kind} · ${count}`;
+  return node.kind === "lecture" && inside === 0 ? kind : `${kind} · ${count}`;
 }
 
 /** One item in a list: a link, a "..." menu, right-click and long-press, drag and drop. */

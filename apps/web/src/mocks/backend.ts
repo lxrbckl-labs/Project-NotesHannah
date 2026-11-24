@@ -250,6 +250,7 @@ export function createMockBackend(options: MockOptions = {}) {
       path: [...chain, node].map((n) => n.name).join(" / "),
       ancestors: chain.map((n) => n.id),
       childCount: childrenOf(node.id).filter((c) => !c.trashedAt).length,
+      fileCount: files.filter((f) => f.nodeId === node.id && !f.trashedAt).length,
     };
   }
 

@@ -2,6 +2,17 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Live on published images (2026-11-24 17:05 CST); Watchtower not running
+
+The mini switched to lxrbckl/notes-app:main and lxrbckl/notes-converter:main (built from b487932) after a
+verified full backup; the local images are kept as :local-f835ee2 and the old env as
+deploy/.env.bak-local-images-20261124. The mini's Watchtower container has been stopped since 2026-11-07,
+so a publish does not roll out by itself yet: Alex decides how it comes back (it watches all 28 containers
+on the mini). Until then: docker pull both :main tags and scripts/up.sh on the mini.
+
+On main after that build, not yet published: a folder's item count includes its source files
+(`fileCount` on a node), canvas frames and connector labels are solid.
+
 ## File page bar, folding cards, viewer arrows (2026-11-24, on main, not deployed)
 
 Tried in the local copy first. Gate passes and the mock end-to-end suite is green (424 passed). Details in

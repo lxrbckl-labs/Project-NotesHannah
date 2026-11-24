@@ -29,7 +29,7 @@ import { fileLeafDragProps, useInboxDrop, useRowDnd } from "./dnd";
 import { useFileActions } from "./fileActions";
 import { InlineName } from "./InlineName";
 import { FileTypeIcon, NodeIcon, NodeTile, nodeHue } from "./NodeIcon";
-import { lectureParts, nodeTitle } from "./NodeRow";
+import { itemsInside, lectureParts, nodeTitle } from "./NodeRow";
 import { canHoldFiles } from "./picker";
 import { fileKeys, folderDepthOf, useChildren, useNode } from "./queries";
 import { type Destination, isPending, nodeHref, toDestination } from "./rules";
@@ -679,10 +679,10 @@ function TreeItem({
           )}
         </span>
       )}
-      {tree.variant === "page" && !renaming && node.kind !== "lecture" && node.childCount > 0 ? (
+      {tree.variant === "page" && !renaming && node.kind !== "lecture" && itemsInside(node) > 0 ? (
         <span aria-hidden className="hidden shrink-0 sm:block">
           <Badge hue={hue ?? "gray"} size="sm">
-            {node.childCount}
+            {itemsInside(node)}
           </Badge>
         </span>
       ) : null}

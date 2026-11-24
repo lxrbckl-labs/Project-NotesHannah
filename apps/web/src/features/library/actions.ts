@@ -106,6 +106,7 @@ export function useNodeActions() {
               trashedAt: null,
               path: v.name,
               childCount: 0,
+              fileCount: 0,
               ancestors: [],
             };
             return [...(asList(data) ?? []), placeholder];
