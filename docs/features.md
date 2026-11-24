@@ -400,3 +400,14 @@ Added 2026-11-17 at Alex's request. `/calendar`, in the sidebar and the phone's 
 - **The guide.** A "Keyboard shortcuts" section (part four) is written from the registry, one table
   per group; the quick reference's computer keys come from it too.
 
+## U. Open tabs and full screen for a cited page (2026-11-24, on main, not on the live site)
+
+- **Open tabs** (tablet and computer; a phone stays one page at a time). A "New tab" button beside Quick find
+  opens a second tab; from two tabs on, a strip under the search bar lists them, each with a close button,
+  and a plus at the end. A tab remembers its page and where it was scrolled, and is named after the page's
+  heading. Command or Control and a click (or the middle button) on a link to a page of the app opens it in
+  a tab behind the current page. Tabs are kept per account in the browser and survive a reload; the limit is
+  12. Not built: keyboard shortcuts for tabs, dragging to reorder. Code: `apps/web/src/features/tabs`.
+- **Full screen for a cited page.** In a document's source panel the middle button was "Reset zoom" with a
+  full-screen icon. It now has a fit icon, and a Full screen button beside it opens the page over the whole
+  window (Escape or the button closes it). Side panel only; a phone shows the source in a sheet.

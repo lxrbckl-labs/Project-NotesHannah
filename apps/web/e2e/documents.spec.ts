@@ -85,6 +85,35 @@ test("reads the guide: every kind of block is there", async ({ page }) => {
   if (test.info().project.name === "phone") expect(overflow).toBe(true);
 });
 
+test("the source page opens full screen from the side panel and closes again", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "phone", "a phone shows the source in a sheet");
+  await open(page);
+  await block(page, "paragraph").getByTestId("cite-chip").first().click();
+  const panel = page.getByTestId("citation-panel");
+  await expect(panel.getByTestId("source-image")).toBeVisible();
+  await panel.getByRole("button", { name: "Full screen" }).click();
+  // Over the whole window, not clipped by the panel.
+  const full = page.getByTestId("image-full");
+  await expect(full).toBeVisible();
+  const box = await full.boundingBox();
+  const size = page.viewportSize();
+  expect(box?.width).toBe(size?.width);
+  expect(box?.height).toBe(size?.height);
+  const image = await full.getByTestId("source-image").boundingBox();
+  expect(image?.width ?? 0).toBeGreaterThan(400);
+  expect(
+    (image?.y ?? -1) >= 0 && (image?.y ?? 0) + (image?.height ?? 0) <= (size?.height ?? 0),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(full).toHaveCount(0);
+  await expect(panel.getByTestId("source-image")).toBeVisible();
+  await panel.getByRole("button", { name: "Full screen" }).click();
+  await page.getByRole("button", { name: "Leave full screen" }).click();
+  await expect(page.getByTestId("image-full")).toHaveCount(0);
+});
+
 test("opens a citation and highlights the quote", async ({ page }) => {
   await open(page);
   const chip = block(page, "paragraph").getByTestId("cite-chip").first();

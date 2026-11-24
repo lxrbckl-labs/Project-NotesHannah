@@ -200,6 +200,8 @@ export function CitationPanel({
             alt={`${available.fileName}, page ${available.pageIndex}`}
             region={available.region}
             testId="source-image"
+            // The side panel is narrow; a sheet on a phone is already most of the screen.
+            fullScreen={variant === "side"}
           />
         )}
 

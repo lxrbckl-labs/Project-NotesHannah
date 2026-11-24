@@ -1,6 +1,7 @@
 import type { NormalizedBox } from "@notes/schema";
-import { Maximize, Minus, Plus } from "lucide-react";
+import { Expand, Minimize, Minus, Plus, Scan } from "lucide-react";
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { IconButton } from "../../../components/ui/button";
 
 interface View {
@@ -27,6 +28,7 @@ export function ZoomableImage({
   focusRegion,
   overlay,
   testId,
+  fullScreen = false,
 }: {
   src: string;
   width: number;
@@ -37,6 +39,11 @@ export function ZoomableImage({
   focusRegion?: boolean;
   overlay?: ReactNode;
   testId?: string;
+  /**
+   * Offer a full screen button: the picture fills the whole window until she leaves it (the button again, or
+   * Escape). Off where the picture already sits in a dialog or sheet.
+   */
+  fullScreen?: boolean;
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
@@ -48,6 +55,20 @@ export function ZoomableImage({
     view: View;
   } | null>(null);
   const lastTap = useRef(0);
+  // Full screen is our own layer on the body, not the browser's mode (missing on a phone, partial on an iPad),
+  // and on the body so that no panel around the picture can clip it.
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setFull(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [full]);
 
   const bound = useCallback((next: View): View => {
     const el = frame.current;
@@ -88,8 +109,10 @@ export function ZoomableImage({
     const cx = (region.x + region.width / 2) * w;
     const cy = (region.y + region.height / 2) * h;
     setView(bound({ scale, x: w / 2 - cx * scale, y: h / 2 - cy * scale }));
-  }, [src, region?.x, region?.y, region?.width, region?.height, focusRegion]);
+  }, [src, region?.x, region?.y, region?.width, region?.height, focusRegion, full]);
 
+  // `full`: entering or leaving full screen draws a new frame, which needs the listener too.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attach again when the frame is redrawn
   useEffect(() => {
     const el = frame.current;
     if (!el) return;
@@ -101,7 +124,7 @@ export function ZoomableImage({
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [zoomAt]);
+  }, [zoomAt, full]);
 
   const onPointerDown = (event: PointerEvent) => {
     const el = frame.current;
@@ -171,8 +194,15 @@ export function ZoomableImage({
     if (pointers.current.size === 0) gesture.current = null;
   };
 
-  return (
-    <div className="relative">
+  const viewer = (
+    <div
+      className={
+        full
+          ? "pointer-events-auto fixed inset-0 z-(--z-modal) flex items-center justify-center bg-bg p-4"
+          : "relative"
+      }
+      data-testid={full ? "image-full" : undefined}
+    >
       <div
         ref={frame}
         data-testid={testId}
@@ -180,6 +210,8 @@ export function ZoomableImage({
         style={{
           aspectRatio: `${width} / ${height}`,
           touchAction: view.scale > 1 ? "none" : "pan-y",
+          // Full screen: as large as fits the window in both directions, at the page's own shape.
+          ...(full ? { width: `min(100%, calc((100dvh - 2rem) * ${width} / ${height}))` } : null),
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -207,7 +239,9 @@ export function ZoomableImage({
           {overlay}
         </div>
       </div>
-      <div className="absolute right-2 bottom-2 flex gap-1 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur">
+      <div
+        className={`absolute flex gap-1 rounded-card border border-border bg-(--color-chrome) p-0.5 shadow-card backdrop-blur ${full ? "right-6 bottom-[max(1.5rem,env(safe-area-inset-bottom))]" : "right-2 bottom-2"}`}
+      >
         <IconButton
           label="Zoom out"
           size="sm"
@@ -217,7 +251,7 @@ export function ZoomableImage({
           <Minus className="size-4" />
         </IconButton>
         <IconButton label="Reset zoom" size="sm" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
-          <Maximize className="size-4" />
+          <Scan className="size-4" />
         </IconButton>
         <IconButton
           label="Zoom in"
@@ -227,7 +261,19 @@ export function ZoomableImage({
         >
           <Plus className="size-4" />
         </IconButton>
+        {fullScreen ? (
+          <IconButton
+            label={full ? "Leave full screen" : "Full screen"}
+            size="sm"
+            pressed={full}
+            data-testid="image-full-toggle"
+            onClick={() => setFull((v) => !v)}
+          >
+            {full ? <Minimize className="size-4" /> : <Expand className="size-4" />}
+          </IconButton>
+        ) : null}
       </div>
     </div>
   );
+  return full ? createPortal(viewer, document.body) : viewer;
 }

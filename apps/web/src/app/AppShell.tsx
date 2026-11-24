@@ -15,6 +15,7 @@ import {
   Plus,
   Search,
   Settings,
+  SquarePlus,
   Trash2,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
@@ -49,6 +50,8 @@ import {
 } from "../features/preferences/usePreferences";
 import { InstructionsProvider } from "../features/requests/ui/instructions";
 import { QuickFind } from "../features/search/QuickFind";
+import { TabStrip } from "../features/tabs/TabStrip";
+import { useTabs } from "../features/tabs/useTabs";
 import { TourProvider, useTour } from "../features/tour/Tour";
 import { UploadProvider, useUploadPicker } from "../features/uploads/UploadProvider";
 import { UploadTray } from "../features/uploads/UploadTray";
@@ -161,6 +164,9 @@ function Shell() {
   useHotkey("app.shortcuts", () => setKeysOpen((open) => !open));
   useAppHotkeys();
   const findKeys = useHotkeyAria("app.quickFind");
+  // Her open tabs (features/tabs): several pages kept side by side. Not on a phone.
+  const me = useMe();
+  const tabs = useTabs(me.data?.id, layout !== "phone");
 
   return (
     <div className="flex h-dvh overflow-hidden bg-bg print:block print:h-auto print:overflow-visible">
@@ -211,6 +217,12 @@ function Shell() {
                 {/* The badge every other one copies (features/hotkeys/Kbd.tsx); computer layout only. */}
                 <Kbd hotkey="app.quickFind" className="absolute right-2.5" />
               </button>
+              {/* While there is one tab the strip below is hidden, and this is how she opens a second. */}
+              {tabs.tabs.length === 1 ? (
+                <IconButton aria-label="New tab" tooltip="bottom" onClick={() => tabs.open()}>
+                  <SquarePlus size={20} />
+                </IconButton>
+              ) : null}
               {layout === "computer" && inLibrary && !panelOpen ? (
                 <IconButton
                   aria-label="Show details panel"
@@ -221,6 +233,7 @@ function Shell() {
                 </IconButton>
               ) : null}
             </div>
+            {tabs.tabs.length > 1 ? <TabStrip tabs={tabs} /> : null}
           </div>
         ) : null}
 

@@ -2,6 +2,11 @@
 
 As of 2026-11-16, after the design pass and the first deployment. Feature IDs refer to [features.md](features.md).
 
+## Open tabs and full screen for a cited page (2026-11-24, on main, not deployed)
+
+Built and tried in the local copy first, at Alex's request. Gate and the mock end-to-end suite pass (412
+passed). Details in features.md, section U. Waits for Alex's word to deploy.
+
 ## Database backups from a sidecar container (2026-11-23, merged; running on the mini)
 
 - The host's 5-minute snapshot job (`app.notes.snapshot`) had failed on every run for a week: macOS privacy rules
