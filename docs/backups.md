@@ -21,6 +21,32 @@ every run. Also not covered, ever: deleting something and emptying the trash is 
 backups only until the retention ladder ages those copies out. Corruption that is copied into every backup before anyone
 notices is limited by the monthly snapshots, not eliminated.
 
+## The sidecar: snapshots from inside Docker (2026-11-23)
+
+The database snapshot is taken by the `backup` service in `deploy/docker-compose.yml`, a container in the
+same compose project that runs `deploy/tools/backup-loop.mjs` as the app's uid. Every `BACKUP_INTERVAL_SECONDS`
+(default 300; the mini runs it once a day, `BACKUP_INTERVAL_SECONDS=86400` in `deploy/.env`, by Alex's choice on 2026-11-23) it runs the same `db-snapshot.mjs` the host script uses (SQLite's online backup API, integrity and
+foreign-key checks, sha256, manifest) into `backups/db` on the data drive, re-hashes the file that reached the drive,
+copies it to `BACKUP_COPY_DIR/db` on the second drive with the checksum verified, applies the retention ladder to
+both, and writes `backups/status/last-snapshot.json` (same shape as `backup.sh`) and `backups/status/sidecar.json`,
+the heartbeat its healthcheck reads: the container shows unhealthy when a snapshot is more than two intervals late or
+the last run failed. It mounts only the database volume, `backups/` and the second drive's directory, never
+originals or pages; it has no network.
+
+Why a container: on macOS a launchd job cannot read or write the external drives without a privacy grant (TCC). The
+host-side 5-minute job wrote its snapshots but failed on the verification step for a week (`sha256sum: Operation not
+permitted`), so the second copy and the status files never happened. Containers reach the drives through Docker's
+own file sharing and need no grant. The live database stays in the named volume on purpose (see the compose file:
+SQLite locking and WAL files are unreliable on bind mounts to the external drives); only snapshots land on the drives,
+so a file-sharing stall can delay a backup but never damage the live database.
+
+What the host scripts still do: `scripts/backup.sh` (the nightly full run) adds the restic file tree for originals and
+pages, and `scripts/restore.sh` restores from any snapshot in `backups/db`, whichever process wrote it. The host's
+5-minute `app.notes.snapshot` launchd job is redundant with the sidecar and was unloaded on the mini on 2026-11-23.
+
+The same pattern for any app with a SQLite database, as a generic image: Project-Harah `skill/backup/sqlite-sidecar`
+(used for Vaultwarden since 2026-11-23).
+
 ## Where each copy lives
 
 | Copy | Location | Written by | Contents | Kept |

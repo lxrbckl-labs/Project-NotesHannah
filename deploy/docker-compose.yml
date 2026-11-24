@@ -186,6 +186,75 @@ services:
       start_period: 20s
     logging: *logging
 
+  # The backup sidecar: a verified snapshot of the live database onto the first drive every 5 minutes, a checksummed
+  # second copy onto the second drive, and the retention ladder; all from inside Docker, so no macOS privacy grant is
+  # needed (a launchd job cannot read the external drives without one). The live database stays in the named volume.
+  # docs/backups.md, "The sidecar". Starts only after the app is healthy, which proves the drive is mounted.
+  backup:
+    image: "${APP_IMAGE:-notes-app}"
+    pull_policy: never
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint: ["node", "/app/tools/backup-loop.mjs"]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 60s
+    user: "${NOTES_UID:-10001}:${NOTES_GID:-10001}"
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 64
+    environment:
+      DB_PATH: /db/notes.db
+      BACKUPS_DIR: /data/backups
+      BACKUP_COPY_MOUNT: /copy
+      BACKUP_INTERVAL_SECONDS: "${BACKUP_INTERVAL_SECONDS:-300}"
+      RETAIN_ALL_HOURS: "${RETAIN_ALL_HOURS:-2}"
+      RETAIN_HOURLY_HOURS: "${RETAIN_HOURLY_HOURS:-48}"
+      RETAIN_DAILY_DAYS: "${RETAIN_DAILY_DAYS:-30}"
+      RETAIN_WEEKLY_WEEKS: "${RETAIN_WEEKLY_WEEKS:-26}"
+      RETAIN_MONTHLY_MONTHS: "${RETAIN_MONTHLY_MONTHS:-24}"
+    volumes:
+      # The repo's tools, so a newer backup-loop.mjs runs without rebuilding the app image (the image's own copy
+      # of tools/ is shadowed; db-snapshot.mjs is the same file in both).
+      - type: bind
+        source: ./tools
+        target: /app/tools
+        read_only: true
+      # The live database: read for the online backup (SQLite needs the -shm file, so not a read-only mount).
+      - type: volume
+        source: notes-db
+        target: /db
+      # Only the backups/ directory of the data drive, never originals/ or pages/.
+      - type: bind
+        source: "${DATA_DIR}/backups"
+        target: /data/backups
+        bind:
+          create_host_path: false
+      # The second drive. Must carry the .notes-backup-target marker, as for backup.sh.
+      - type: bind
+        source: "${BACKUP_COPY_DIR:?set BACKUP_COPY_DIR in the env file to the backup directory on the second drive}"
+        target: /copy
+        bind:
+          create_host_path: false
+    healthcheck:
+      # Healthy while the sidecar's heartbeat is fresher than two intervals and its last run succeeded.
+      test:
+        - CMD
+        - node
+        - -e
+        - "const s=JSON.parse(require('fs').readFileSync('/data/backups/status/sidecar.json'));process.exit(s.ok&&Date.now()-Date.parse(s.at)<2*(+process.env.BACKUP_INTERVAL_SECONDS||300)*1000?0:1)"
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    logging: *logging
+
 # A fixed subnet makes the app's view of the host proxy predictable: connections to the published loopback port
 # reach the app from the network's gateway address (10.77.88.1 here; measured on Docker Desktop for Mac), so
 # TRUSTED_PROXIES can name it exactly. Change NOTES_SUBNET only if it collides with a network you already use.
