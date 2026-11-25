@@ -1,10 +1,17 @@
 import { Heart, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useState } from "react";
-import letter from "../../assets/letter-for-hannah.jpg";
 import { Tooltip } from "../../components/ui/tooltip";
 import { cn } from "../../lib/cn";
 import "./letter.css";
+
+/**
+ * The picture of the note. It is not kept in this repository: it is served from Alex's own photo library
+ * (Immich) through a share link, and the app only points at it. The server's content policy names that one
+ * host for images (apps/server/src/http/security.ts). If the picture cannot load, the note's words show.
+ */
+const LETTER_IMAGE =
+  "https://immich.lxrbckl.com/api/assets/90185182-1d8b-49b3-929a-3861da5be7fc/original?key=fho84UxsUVZMmQ0_UDcdjyq0uWZ31AyOpF3OHtBGofNrt3lywMcGpDtdo6e79Dnw_W8";
 
 /** Alex's handwritten note to Hannah, word for word, for anyone who cannot see the picture. */
 const LETTER_WORDS =
@@ -17,6 +24,8 @@ const LETTER_WORDS =
  */
 export function LoveLetter({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
+  // The picture lives on another server; if that server cannot be reached, show the words.
+  const [failed, setFailed] = useState(false);
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Tooltip content="A note for Hannah">
@@ -51,7 +60,7 @@ export function LoveLetter({ className }: { className?: string }) {
             <div className="ll-envelope">
               <div className="ll-back" />
               <div className="ll-note">
-                <img src={letter} alt="" />
+                {failed ? null : <img src={LETTER_IMAGE} alt="" referrerPolicy="no-referrer" />}
               </div>
               <div className="ll-front" />
               <div className="ll-flap">
@@ -61,11 +70,22 @@ export function LoveLetter({ className }: { className?: string }) {
           </div>
 
           <figure className="ll-letter relative m-0">
-            <img
-              src={letter}
-              alt={LETTER_WORDS}
-              className="block max-h-[82dvh] w-auto max-w-[min(92vw,44rem)] rounded-card shadow-pop"
-            />
+            {failed ? (
+              <p
+                data-testid="love-letter-words"
+                className="m-0 max-w-[min(92vw,30rem)] rounded-card bg-surface p-8 text-center font-display text-xl leading-relaxed text-text shadow-pop"
+              >
+                {LETTER_WORDS.replace(/^A handwritten note: /, "")}
+              </p>
+            ) : (
+              <img
+                src={LETTER_IMAGE}
+                alt={LETTER_WORDS}
+                referrerPolicy="no-referrer"
+                onError={() => setFailed(true)}
+                className="block max-h-[82dvh] w-auto max-w-[min(92vw,44rem)] rounded-card shadow-pop"
+              />
+            )}
             <Tooltip content="Close the note">
               <Dialog.Close asChild>
                 <button

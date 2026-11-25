@@ -15,7 +15,9 @@ export const CONTENT_SECURITY_POLICY = [
   "script-src 'self'",
   "style-src 'self'",
   "style-src-attr 'unsafe-inline'",
-  "img-src 'self' blob: data:",
+  // The one outside host: the picture of Alex's note to Hannah (web: features/letter), kept in his photo
+  // library and not in the repository.
+  "img-src 'self' blob: data: https://immich.lxrbckl.com",
   "font-src 'self'",
   "connect-src 'self'",
   "media-src 'self' blob:",
