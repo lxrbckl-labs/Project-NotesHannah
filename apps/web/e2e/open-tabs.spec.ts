@@ -140,3 +140,10 @@ test("the pill button goes to the home page chosen in Settings", async ({ page }
   await expect(page).toHaveURL(/\/calendar/);
   await expect(page.getByRole("heading", { level: 1, name: "Calendar" })).toBeVisible();
 });
+
+test("the home button's hint says which version is running", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "computer");
+  await signIn(page);
+  await page.getByTestId("home-button").hover();
+  await expect(page.getByText(/Home: Library · v\d+\.\d+\.\d+/).first()).toBeVisible();
+});

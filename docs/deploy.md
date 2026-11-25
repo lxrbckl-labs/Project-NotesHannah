@@ -227,14 +227,45 @@ what they delete. The 5-minute snapshots exist for that day, and so does `restor
 `scripts/stack-test.sh` (about 2.5 minutes with warm image caches; the first build is longer) and `scripts/restore-test.sh` (about 2 minutes) use temporary
 paths and private Docker projects (`notes-st`, `notes-rt`) and clean up after themselves. They need Docker, Node and restic.
 
+## Version number
+
+The app has one version number, written like `1.4.2`. It is the same in every `package.json` of the repo and
+`tools/version.mjs` is the only thing that changes it.
+
+Where it shows:
+
+- the hint on the home button (the pill at the top left, on a tablet or a computer): "Home: Library · v1.4.2";
+- `GET /healthz` on the server: `{"ok":true,"version":"1.4.2"}`.
+
+So after a rollout, the number on the live site says which build is running.
+
+**The rule: every publish gets a new number.** Bump it in the commit that publishes, never apart from one, so
+two different builds never carry the same number:
+
+| What the publish contains | Command | Example |
+| --- | --- | --- |
+| Fixes, or small changes to how something looks | `pnpm version:bump patch` | 1.4.2 to 1.4.3 |
+| Something new she can do (a feature, a new screen, a new setting) | `pnpm version:bump minor` | 1.4.2 to 1.5.0 |
+| A change Alex calls a new major version | `pnpm version:bump major` | 1.4.2 to 2.0.0 |
+
+A publish that holds both fixes and something new is a minor bump. The steps for a rollout are then:
+
+1. `pnpm version:bump patch` (or `minor`), which prints `1.4.2 -> 1.4.3`.
+2. Commit the changed `package.json` files with a message that starts with `publish` and names the number,
+   for example `publish: 1.4.3, item count includes source files`. Push.
+3. When the build has rolled out, check `https://notes.hannahporras.app/healthz` shows the new number.
+
+Commits that are not published leave the number alone. `pnpm version:show` prints the current one. The
+numbering started at 1.0.0 on 2026-11-24.
+
 ## Rolling out a change (Watchtower)
 
 The mini runs Watchtower, which replaces a container when its image gets a newer version in the registry. The stack
 uses that instead of rebuilding on the mini. It is the same arrangement as the other labs projects.
 
 1. Push to `main` as usual. Nothing is built: `.github/workflows/dockerhub-build-push.yml` runs and skips.
-2. To roll out, make a commit on `main` whose message **starts with `publish`** (an empty commit is fine:
-   `git commit --allow-empty -m "publish: <what changed>"`) and push it. GitHub builds both images for arm64 with the
+2. To roll out, bump the version (see "Version number" above) and commit it on `main` with a message that
+   **starts with `publish`**, then push it. GitHub builds both images for arm64 with the
    org's shared workflow and pushes `<dockerhub user>/notes-app` and `<dockerhub user>/notes-converter`, tagged `main`
    and the commit hash. Publishing is Alex's call each time.
 3. Watchtower on the mini sees the new `main` tag on its next poll and recreates `app` and `converter` with it.

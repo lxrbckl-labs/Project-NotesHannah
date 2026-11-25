@@ -1,5 +1,6 @@
 {
   "name": "project-noteshannah",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.30.2",
@@ -20,6 +21,8 @@
     "gate:full": "pnpm gate && pnpm --filter @notes/web e2e:mock && pnpm --filter @notes/web e2e:real && pnpm --filter @notes/web e2e:built",
     "smoke": "node tools/smoke.mjs",
     "guide:pdf": "node tools/guide-pdf.mjs",
+    "version:show": "node tools/version.mjs show",
+    "version:bump": "node tools/version.mjs bump",
     "guide:figures": "node tools/guide-figures.mjs",
     "gate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "local": "node tools/dev/local.mjs",

@@ -60,6 +60,7 @@ import { cn } from "../lib/cn";
 import { readFlag, writeFlag } from "../lib/storage";
 import { useBack } from "../lib/useBack";
 import { useLayout } from "../lib/useMedia";
+import { APP_VERSION } from "../lib/version";
 import { NavBadge, useBadges } from "./badges";
 import { HOME_DEFS } from "./home";
 import { SideResize, useSideWidth } from "./SideResize";
@@ -197,7 +198,8 @@ function Shell() {
         <header className="pt-safe px-safe border-b border-border bg-surface/80 backdrop-blur print:hidden">
           <div className="flex items-center gap-2 p-2">
             {/* The app's mark is the way home: to the place she chose in Settings ("Home page"). */}
-            <Tooltip content={`Home: ${HOME_DEFS[homePage].label}`} side="bottom">
+            {/* Its hint also says which version of the app is running (lib/version.ts). */}
+            <Tooltip content={`Home: ${HOME_DEFS[homePage].label} · v${APP_VERSION}`} side="bottom">
               <Link
                 to={HOME_DEFS[homePage].to}
                 aria-label={`Home: ${HOME_DEFS[homePage].label}`}

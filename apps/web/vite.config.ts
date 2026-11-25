@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
@@ -33,8 +34,19 @@ const forward = (to: string) =>
       }
     : to;
 
+/**
+ * The app's version, from the repo's root package.json (tools/version.mjs keeps it; docs/deploy.md,
+ * "Version number"). Built into the app as `__APP_VERSION__` and shown in the home button's hint.
+ */
+const appVersion = (
+  JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as {
+    version?: string;
+  }
+).version;
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: { __APP_VERSION__: JSON.stringify(appVersion ?? "0.0.0") },
   server: {
     proxy: { "/api": forward(target), "/mcp": forward(target) },
   },
